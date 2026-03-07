@@ -52,8 +52,20 @@
     <Reference Include="GameAssembly">
       <HintPath>Assembly\GameAssembly.dll</HintPath>
     </Reference>
-    <Reference Include="GameAssembly">
-      <HintPath>Assembly\GameAssembly.dll</HintPath>
+    <Reference Include="UnityEngine.InputForUIModule">
+      <HintPath>Assembly\UnityEngine.InputForUIModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule.dll">
+      <HintPath>Assembly\UnityEngine.InputLegacyModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.InputModule.dll">
+      <HintPath>Assembly\UnityEngine.InputModule.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.InputSystem.dll">
+      <HintPath>Assembly\Unity.InputSystem.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.InputSystem.ForUI.dll">
+      <HintPath>Assembly\Unity.InputSystem.ForUI.dll</HintPath>
     </Reference>
   </ItemGroup>
 </Project>

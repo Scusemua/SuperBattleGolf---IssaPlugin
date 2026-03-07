@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using IssaPlugin.Patches;
 using Mirror;
 using UnityEngine;
 
@@ -13,6 +14,8 @@ namespace IssaPlugin.Items
         private static bool _isBombing;
         private static int _bomberUseIndex;
 
+        private static MethodInfo _cmdInformShotRocket;
+
         public static void GiveBomberToLocalPlayer()
         {
             var inventory = GameManager.LocalPlayerInventory;
@@ -24,15 +27,22 @@ namespace IssaPlugin.Items
 
             if (NetworkServer.active)
             {
-                bool added = inventory.ServerTryAddItem(BomberItemType, Configuration.BomberUses.Value);
-                IssaPluginPlugin.Log.LogInfo(added
-                    ? "[Bomber] Stealth bomber added to inventory."
-                    : "[Bomber] Failed to add bomber (inventory full?).");
+                bool added = InventoryPatches.DirectAddCustomItem(
+                    inventory,
+                    BomberItemType,
+                    Configuration.BomberUses.Value
+                );
+                if (!added)
+                    IssaPluginPlugin.Log.LogWarning(
+                        "[Bomber] Failed to add bomber (inventory full?)."
+                    );
             }
             else
             {
                 var cmdAddItem = typeof(PlayerInventory).GetMethod(
-                    "CmdAddItem", BindingFlags.NonPublic | BindingFlags.Instance);
+                    "CmdAddItem",
+                    BindingFlags.NonPublic | BindingFlags.Instance
+                );
 
                 if (cmdAddItem != null)
                 {
@@ -48,14 +58,11 @@ namespace IssaPlugin.Items
 
         public static IEnumerator BomberRunRoutine(PlayerInventory inventory)
         {
-            if (_isBombing) yield break;
-            if (!NetworkServer.active)
-            {
-                IssaPluginPlugin.Log.LogWarning("[Bomber] Bombing runs are server-only.");
+            if (_isBombing)
                 yield break;
-            }
 
-            Vector3 startPos, endPos;
+            Vector3 startPos,
+                endPos;
             if (!TryGetBomberPath(out startPos, out endPos))
             {
                 IssaPluginPlugin.Log.LogWarning("[Bomber] Could not determine tee/hole positions.");
@@ -64,7 +71,6 @@ namespace IssaPlugin.Items
 
             _isBombing = true;
 
-            var playerInfo = inventory.PlayerInfo;
             float altitude = Configuration.BomberAltitude.Value;
             float speed = Configuration.BomberSpeed.Value;
             float rocketInterval = Configuration.BomberRocketInterval.Value;
@@ -81,20 +87,21 @@ namespace IssaPlugin.Items
                 rocketDropPoints.Add(rocketSpacing * i);
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[Bomber] Run started: {rocketCount} rockets over {totalDistance:F0}m at altitude {altitude:F0}m");
+                $"[Bomber] Run started: {rocketCount} rockets over {totalDistance:F0}m at altitude {altitude:F0}m"
+            );
 
             float distanceTravelled = 0f;
             int rocketsDropped = 0;
-            Vector3 currentPos = startPos;
 
             while (distanceTravelled < totalDistance && rocketsDropped < rocketCount)
             {
                 float step = speed * Time.deltaTime;
                 distanceTravelled += step;
-                currentPos = startPos + direction * distanceTravelled;
 
-                while (rocketsDropped < rocketCount &&
-                       distanceTravelled >= rocketDropPoints[rocketsDropped])
+                while (
+                    rocketsDropped < rocketCount
+                    && distanceTravelled >= rocketDropPoints[rocketsDropped]
+                )
                 {
                     Vector3 dropPos = startPos + direction * rocketDropPoints[rocketsDropped];
 
@@ -102,9 +109,10 @@ namespace IssaPlugin.Items
                     Vector3 offset = new Vector3(
                         Random.Range(-spread, spread),
                         0f,
-                        Random.Range(-spread, spread));
+                        Random.Range(-spread, spread)
+                    );
 
-                    SpawnDownwardRocket(dropPos + offset, playerInfo);
+                    RequestRocketSpawn(inventory, dropPos + offset);
                     rocketsDropped++;
 
                     yield return new WaitForSeconds(rocketInterval);
@@ -113,8 +121,49 @@ namespace IssaPlugin.Items
                 yield return null;
             }
 
-            IssaPluginPlugin.Log.LogInfo($"[Bomber] Run complete. {rocketsDropped} rockets dropped.");
+            IssaPluginPlugin.Log.LogInfo(
+                $"[Bomber] Run complete. {rocketsDropped} rockets dropped."
+            );
             _isBombing = false;
+        }
+
+        /// <summary>
+        /// Spawn a downward rocket via the game's own CmdInformShotRocket command.
+        /// On a host this spawns directly; on a client it sends the request to the server.
+        /// </summary>
+        private static void RequestRocketSpawn(PlayerInventory inventory, Vector3 position)
+        {
+            Quaternion rotation = Quaternion.LookRotation(Vector3.down, Vector3.forward);
+
+            _bomberUseIndex++;
+            var itemUseId = new ItemUseId(
+                inventory.PlayerInfo.PlayerId.Guid,
+                _bomberUseIndex,
+                ItemType.RocketLauncher
+            );
+
+            if (_cmdInformShotRocket == null)
+            {
+                _cmdInformShotRocket = typeof(PlayerInventory).GetMethod(
+                    "CmdInformShotRocket",
+                    BindingFlags.NonPublic | BindingFlags.Instance
+                );
+            }
+
+            if (_cmdInformShotRocket != null)
+            {
+                // Mirror fills the sender parameter automatically on the server side
+                _cmdInformShotRocket.Invoke(
+                    inventory,
+                    new object[] { position, rotation, null, itemUseId, null }
+                );
+            }
+            else
+            {
+                IssaPluginPlugin.Log.LogError(
+                    "[Bomber] Could not find CmdInformShotRocket method."
+                );
+            }
         }
 
         private static bool TryGetBomberPath(out Vector3 start, out Vector3 end)
@@ -122,12 +171,14 @@ namespace IssaPlugin.Items
             start = end = Vector3.zero;
 
             var hole = GolfHoleManager.MainHole;
-            if (hole == null) return false;
+            if (hole == null)
+                return false;
 
             end = hole.transform.position;
 
             var tees = GolfTeeManager.ActiveTeeingPlaforms;
-            if (tees == null || tees.Count == 0) return false;
+            if (tees == null || tees.Count == 0)
+                return false;
 
             float maxDist = 0f;
             foreach (var tee in tees)
@@ -141,29 +192,6 @@ namespace IssaPlugin.Items
             }
 
             return maxDist > 1f;
-        }
-
-        private static void SpawnDownwardRocket(Vector3 position, PlayerInfo launcher)
-        {
-            Quaternion rotation = Quaternion.LookRotation(Vector3.down, Vector3.forward);
-
-            Rocket rocket = Object.Instantiate(
-                GameManager.ItemSettings.RocketPrefab, position, rotation);
-
-            if (rocket == null)
-            {
-                IssaPluginPlugin.Log.LogError("[Bomber] Failed to instantiate rocket.");
-                return;
-            }
-
-            _bomberUseIndex++;
-            var itemUseId = new ItemUseId(
-                launcher != null ? launcher.PlayerId.Guid : 0UL,
-                _bomberUseIndex,
-                ItemType.RocketLauncher);
-
-            rocket.ServerInitialize(launcher, null, itemUseId);
-            NetworkServer.Spawn(rocket.gameObject, null);
         }
     }
 }

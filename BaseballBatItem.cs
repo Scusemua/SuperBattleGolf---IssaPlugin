@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Reflection;
+using IssaPlugin.Patches;
 using Mirror;
 using UnityEngine;
 
@@ -23,10 +24,10 @@ namespace IssaPlugin.Items
 
             if (NetworkServer.active)
             {
-                bool added = inventory.ServerTryAddItem(BatItemType, Configuration.BaseballBatUses.Value);
-                IssaPluginPlugin.Log.LogInfo(added
-                    ? "[Bat] Baseball bat added to inventory."
-                    : "[Bat] Failed to add bat (inventory full?).");
+                bool added = InventoryPatches.DirectAddCustomItem(
+                    inventory, BatItemType, Configuration.BaseballBatUses.Value);
+                if (!added)
+                    IssaPluginPlugin.Log.LogWarning("[Bat] Failed to add bat (inventory full?).");
             }
             else
             {

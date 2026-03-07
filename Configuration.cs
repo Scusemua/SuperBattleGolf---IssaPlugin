@@ -1,4 +1,5 @@
 using BepInEx.Configuration;
+using UnityEngine.InputSystem;
 
 namespace IssaPlugin
 {
@@ -9,7 +10,7 @@ namespace IssaPlugin
         public static ConfigEntry<float> BaseballBatChargeTime { get; private set; }
         public static ConfigEntry<float> BaseballBatCooldown { get; private set; }
         public static ConfigEntry<int> BaseballBatUses { get; private set; }
-        public static ConfigEntry<UnityEngine.KeyCode> BaseballBatGiveKey { get; private set; }
+        public static ConfigEntry<Key> BaseballBatGiveKey { get; private set; }
 
         // --- Stealth Bomber ---
         public static ConfigEntry<float> BomberAltitude { get; private set; }
@@ -18,7 +19,7 @@ namespace IssaPlugin
         public static ConfigEntry<int> BomberRocketCount { get; private set; }
         public static ConfigEntry<float> BomberSpread { get; private set; }
         public static ConfigEntry<int> BomberUses { get; private set; }
-        public static ConfigEntry<UnityEngine.KeyCode> BomberGiveKey { get; private set; }
+        public static ConfigEntry<Key> BomberGiveKey { get; private set; }
 
         public static void Initialize(ConfigFile cfg)
         {
@@ -35,7 +36,7 @@ namespace IssaPlugin
             BaseballBatUses = cfg.Bind("BaseballBat", "Uses", 99,
                 "Number of swings before the bat is consumed. Set high for near-infinite use.");
 
-            BaseballBatGiveKey = cfg.Bind("BaseballBat", "GiveKey", UnityEngine.KeyCode.F7,
+            BaseballBatGiveKey = cfg.Bind("BaseballBat", "GiveKey", Key.F7,
                 "Key to press to add the baseball bat to your inventory.");
 
             // Stealth Bomber
@@ -57,7 +58,7 @@ namespace IssaPlugin
             BomberUses = cfg.Bind("StealthBomber", "Uses", 1,
                 "Number of bombing runs per pickup.");
 
-            BomberGiveKey = cfg.Bind("StealthBomber", "GiveKey", UnityEngine.KeyCode.F8,
+            BomberGiveKey = cfg.Bind("StealthBomber", "GiveKey", Key.F8,
                 "Key to press to add the stealth bomber to your inventory.");
 
             IssaPluginPlugin.Log.LogInfo("Configuration initialized.");

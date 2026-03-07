@@ -3,6 +3,7 @@ using BepInEx.Logging;
 using HarmonyLib;
 using IssaPlugin.Items;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace IssaPlugin
 {
@@ -16,7 +17,11 @@ namespace IssaPlugin
 
         private void Awake()
         {
-            if (Instance != null) { Destroy(this); return; }
+            if (Instance != null)
+            {
+                Destroy(this);
+                return;
+            }
             Instance = this;
 
             Log = base.Logger;
@@ -42,10 +47,13 @@ namespace IssaPlugin
 
         private void Update()
         {
-            if (Input.GetKeyDown(Configuration.BaseballBatGiveKey.Value))
+            var keyboard = Keyboard.current;
+            if (keyboard == null) return;
+
+            if (keyboard[Configuration.BaseballBatGiveKey.Value].wasPressedThisFrame)
                 BatItem.GiveBatToLocalPlayer();
 
-            if (Input.GetKeyDown(Configuration.BomberGiveKey.Value))
+            if (keyboard[Configuration.BomberGiveKey.Value].wasPressedThisFrame)
                 StealthBomberItem.GiveBomberToLocalPlayer();
         }
 
