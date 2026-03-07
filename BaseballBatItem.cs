@@ -17,10 +17,9 @@ namespace IssaPlugin.Items
 
         public static IEnumerator LoadHomerunSound()
         {
-            string pluginDir = Path.GetDirectoryName(
-                Assembly.GetExecutingAssembly().Location);
+            string pluginDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
-            string[] candidates = { "homerun.wav", "homerun.ogg", "homerun.mp3" };
+            string[] candidates = { "homerun.wav", "homerun.ogg" };
             string audioPath = null;
 
             foreach (var name in candidates)
@@ -36,8 +35,9 @@ namespace IssaPlugin.Items
             if (audioPath == null)
             {
                 IssaPluginPlugin.Log.LogWarning(
-                    $"[Bat] No homerun audio file found in: {pluginDir}  " +
-                    "(supported: homerun.wav, homerun.ogg, homerun.mp3)");
+                    $"[Bat] No homerun audio file found in: {pluginDir}  "
+                        + "(supported: homerun.wav, homerun.ogg)"
+                );
                 yield break;
             }
 
@@ -52,8 +52,7 @@ namespace IssaPlugin.Items
 
             if (request.result != UnityWebRequest.Result.Success)
             {
-                IssaPluginPlugin.Log.LogError(
-                    $"[Bat] Failed to load audio: {request.error}");
+                IssaPluginPlugin.Log.LogError($"[Bat] Failed to load audio: {request.error}");
                 request.Dispose();
                 yield break;
             }
@@ -64,15 +63,17 @@ namespace IssaPlugin.Items
             if (HomerunClip == null)
             {
                 IssaPluginPlugin.Log.LogError(
-                    "[Bat] Audio clip decoded as null. " +
-                    "Try converting to WAV (PCM 16-bit) or OGG format.");
+                    "[Bat] Audio clip decoded as null. "
+                        + "Try converting to WAV (PCM 16-bit) or OGG format."
+                );
                 yield break;
             }
 
             HomerunClip.name = "homerun";
             IssaPluginPlugin.Log.LogInfo(
-                $"[Bat] Loaded {Path.GetFileName(audioPath)} " +
-                $"({HomerunClip.length:F1}s, {HomerunClip.channels}ch, {HomerunClip.frequency}Hz).");
+                $"[Bat] Loaded {Path.GetFileName(audioPath)} "
+                    + $"({HomerunClip.length:F1}s, {HomerunClip.channels}ch, {HomerunClip.frequency}Hz)."
+            );
         }
 
         public static void PlayHomerunSound(Vector3 position)
