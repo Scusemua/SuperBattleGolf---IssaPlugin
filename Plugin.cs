@@ -63,13 +63,17 @@ namespace IssaPlugin
             }
 
             var keyboard = Keyboard.current;
-            if (keyboard == null) return;
+            if (keyboard == null)
+                return;
 
             if (keyboard[Configuration.BaseballBatGiveKey.Value].wasPressedThisFrame)
                 BatItem.GiveBatToLocalPlayer();
 
             if (keyboard[Configuration.BomberGiveKey.Value].wasPressedThisFrame)
                 StealthBomberItem.GiveBomberToLocalPlayer();
+
+            if (keyboard[Configuration.MissileGiveKey.Value].wasPressedThisFrame)
+                PredatorMissileItem.GiveMissileToLocalPlayer();
         }
 
         private void OnMatchStateChanged(MatchState previousState, MatchState currentState)

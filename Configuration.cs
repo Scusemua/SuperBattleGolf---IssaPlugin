@@ -10,6 +10,14 @@ namespace IssaPlugin
         public static ConfigEntry<int> BaseballBatUses { get; private set; }
         public static ConfigEntry<Key> BaseballBatGiveKey { get; private set; }
 
+        // --- Predator Missile ---
+        public static ConfigEntry<float> MissileAltitude { get; private set; }
+        public static ConfigEntry<float> MissileFallSpeed { get; private set; }
+        public static ConfigEntry<float> MissileSteerSpeed { get; private set; }
+        public static ConfigEntry<float> MissileTimeout { get; private set; }
+        public static ConfigEntry<int> MissileUses { get; private set; }
+        public static ConfigEntry<Key> MissileGiveKey { get; private set; }
+
         // --- Stealth Bomber ---
         public static ConfigEntry<float> BomberAltitude { get; private set; }
         public static ConfigEntry<float> BomberSpeed { get; private set; }
@@ -94,6 +102,49 @@ namespace IssaPlugin
                 "WaitTime",
                 2.0f,
                 "Seconds to wait before starting the bombing run."
+            );
+
+            // Predator Missile
+            MissileAltitude = cfg.Bind(
+                "PredatorMissile",
+                "Altitude",
+                120f,
+                "Height above the player where the missile spawns."
+            );
+
+            MissileFallSpeed = cfg.Bind(
+                "PredatorMissile",
+                "FallSpeed",
+                20f,
+                "Downward speed of the missile in units per second."
+            );
+
+            MissileSteerSpeed = cfg.Bind(
+                "PredatorMissile",
+                "SteerSpeed",
+                30f,
+                "Horizontal steering speed when directing the missile."
+            );
+
+            MissileTimeout = cfg.Bind(
+                "PredatorMissile",
+                "Timeout",
+                15f,
+                "Maximum seconds before the missile auto-detonates."
+            );
+
+            MissileUses = cfg.Bind(
+                "PredatorMissile",
+                "Uses",
+                1,
+                "Number of missile uses per pickup."
+            );
+
+            MissileGiveKey = cfg.Bind(
+                "PredatorMissile",
+                "GiveKey",
+                Key.F9,
+                "Key to press to add the predator missile to your inventory."
             );
 
             IssaPluginPlugin.Log.LogInfo("Configuration initialized.");

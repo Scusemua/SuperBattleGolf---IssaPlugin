@@ -30,7 +30,9 @@ namespace IssaPlugin.Patches
 
         public static bool IsCustomItem(ItemType type)
         {
-            return type == BatItem.BatItemType || type == StealthBomberItem.BomberItemType;
+            return type == BatItem.BatItemType
+                || type == StealthBomberItem.BomberItemType
+                || type == PredatorMissileItem.MissileItemType;
         }
 
         public static int GetMaxUses(ItemType type)
@@ -39,6 +41,8 @@ namespace IssaPlugin.Patches
                 return Configuration.BaseballBatUses.Value;
             if (type == StealthBomberItem.BomberItemType)
                 return Configuration.BomberUses.Value;
+            if (type == PredatorMissileItem.MissileItemType)
+                return Configuration.MissileUses.Value;
             return 1;
         }
 
@@ -85,8 +89,8 @@ namespace IssaPlugin.Patches
 
             var batData = GetOrCreateItemData(BatItem.BatItemType);
             var bomberData = GetOrCreateItemData(StealthBomberItem.BomberItemType);
+            var missileData = GetOrCreateItemData(PredatorMissileItem.MissileItemType);
 
-            // Borrow icons from existing game items
             if (
                 dict.TryGetValue(ItemType.DuelingPistol, out var pistolData)
                 && pistolData.Icon != null
@@ -97,10 +101,14 @@ namespace IssaPlugin.Patches
                 dict.TryGetValue(ItemType.RocketLauncher, out var rocketData)
                 && rocketData.Icon != null
             )
+            {
                 IconProperty.SetValue(bomberData, rocketData.Icon);
+                IconProperty.SetValue(missileData, rocketData.Icon);
+            }
 
             dict[BatItem.BatItemType] = batData;
             dict[StealthBomberItem.BomberItemType] = bomberData;
+            dict[PredatorMissileItem.MissileItemType] = missileData;
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[Inventory] Injected {CustomItemDataCache.Count} custom items into ItemCollection."
@@ -193,6 +201,7 @@ namespace IssaPlugin.Patches
 
                 addEntryMethod.Invoke(table, new object[] { "ITEM_100", "Baseball Bat" });
                 addEntryMethod.Invoke(table, new object[] { "ITEM_101", "Stealth Bomber" });
+                addEntryMethod.Invoke(table, new object[] { "ITEM_102", "Predator Missile" });
 
                 IssaPluginPlugin.Log.LogInfo(
                     "[Inventory] Custom item names registered in string table."
@@ -261,7 +270,10 @@ namespace IssaPlugin.Patches
             static void Postfix(PlayerInventory __instance)
             {
                 var equipped = __instance.GetEffectivelyEquippedItem(true);
-                if (equipped == StealthBomberItem.BomberItemType)
+                if (
+                    equipped == StealthBomberItem.BomberItemType
+                    || equipped == PredatorMissileItem.MissileItemType
+                )
                 {
                     __instance.PlayerInfo.RightHandEquipmentSwitcher.SetEquipment(
                         EquipmentType.RocketLauncher
@@ -440,6 +452,14 @@ namespace IssaPlugin.Patches
                     return false;
                 }
 
+                if (equipped == PredatorMissileItem.MissileItemType)
+                {
+                    shouldEatInput = true;
+                    __result = true;
+                    __instance.StartCoroutine(PredatorMissileItem.MissileRoutine(__instance));
+                    return false;
+                }
+
                 return true;
             }
         }
@@ -499,6 +519,43 @@ namespace IssaPlugin.Patches
 
                 DirectAddCustomItem(__instance, item, GetMaxUses(item));
                 return false;
+            }
+        }
+
+        // ================================================================
+        //  Predator missile: override rocket Start() velocity and
+        //  reset the distance counter so it doesn't auto-explode.
+        // ================================================================
+
+        [HarmonyPatch(typeof(Rocket), "Start")]
+        static class RocketStartPatch
+        {
+            static void Postfix(Rocket __instance)
+            {
+                if (PredatorMissileItem.ActiveMissileRocket != __instance)
+                    return;
+
+                var entity = __instance.GetComponent<Entity>();
+                if (entity != null && entity.HasRigidbody)
+                {
+                    entity.Rigidbody.linearVelocity =
+                        Vector3.down * Configuration.MissileFallSpeed.Value;
+                }
+            }
+        }
+
+        [HarmonyPatch(typeof(Rocket), "OnFixedBUpdate")]
+        static class RocketFixedBUpdatePatch
+        {
+            private static readonly FieldInfo DistanceField =
+                AccessTools.Field(typeof(Rocket), "distanceTravelled");
+
+            static void Prefix(Rocket __instance)
+            {
+                if (PredatorMissileItem.ActiveMissileRocket != __instance)
+                    return;
+
+                DistanceField?.SetValue(__instance, 0f);
             }
         }
 
