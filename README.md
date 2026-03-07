@@ -1,12 +1,11 @@
 # IssaPlugin
 
-A [BepInEx](https://github.com/BepInEx/BepInEx) mod for **Super Battle Golf** that adds new items to the game, including a swingable bat with custom animations and combat logic.
+A [BepInEx](https://github.com/BepInEx/BepInEx) mod for **Super Battle Golf** that adds new items to the game, including a swingable bat and a stealth bomber.
 
 ## Features
 
-- Adds custom items (e.g. the **Bat**) with unique swing mechanics
+- Adds custom items (e.g. the **Baseball Bat** and **Stealth Bomber**) with unique mechanics
 - Patches player inventory and animation systems to support new item types
-- Uses the Golf Club animation rig as a base for new melee items
 
 ## Requirements
 
@@ -35,7 +34,9 @@ A [BepInEx](https://github.com/BepInEx/BepInEx) mod for **Super Battle Golf** th
 ```
 IssaPlugin/
 ├── Plugin.cs               # BepInEx plugin entry point
-├── BatItem.cs              # Bat item definition and swing coroutine
+├── Configuration.cs        # Defines configuration parameters for custom items
+├── BaseballBatItem.cs      # Baseball Bat item definition and swing coroutine
+├── StealthBomberItem.cs    # Stealth Bomber item definition and bombing run coroutine
 └── Patches/
     └── InventoryPatches.cs # Harmony patches for inventory & animation
 ```
