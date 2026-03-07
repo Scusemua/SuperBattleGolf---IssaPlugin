@@ -59,6 +59,20 @@ namespace IssaPlugin.Items
             if (_isBombing)
                 yield break;
 
+            var setCurrentItemUse = typeof(PlayerInventory).GetMethod(
+                "SetCurrentItemUse",
+                BindingFlags.NonPublic | BindingFlags.Instance
+            );
+            if (setCurrentItemUse != null)
+            {
+                setCurrentItemUse.Invoke(inventory, new object[] { ItemUseType.Regular });
+                IssaPluginPlugin.Log.LogInfo("[Bomber] Decrementing item useage.");
+            }
+            else
+            {
+                IssaPluginPlugin.Log.LogError("[Bomber] Could not find SetCurrentItemUse method.");
+            }
+
             Vector3 startPos,
                 endPos;
             if (!TryGetBomberPath(out startPos, out endPos))
@@ -123,6 +137,80 @@ namespace IssaPlugin.Items
                 $"[Bomber] Run complete. {rocketsDropped} rockets dropped."
             );
             _isBombing = false;
+
+            var decrementUseFromSlotAt = typeof(PlayerInventory).GetMethod(
+                "DecrementUseFromSlotAt",
+                BindingFlags.NonPublic | BindingFlags.Instance
+            );
+            if (decrementUseFromSlotAt != null)
+            {
+                setCurrentItemUse.Invoke(inventory, new object[] { inventory.EquippedItemIndex });
+                IssaPluginPlugin.Log.LogInfo("[Bomber] Decrementing item useage.");
+            }
+            else
+            {
+                IssaPluginPlugin.Log.LogError(
+                    "[Bomber] Could not find DecrementUseFromSlotAt method."
+                );
+            }
+
+            var throwUsedItemForAllClients = typeof(PlayerInventory).GetMethod(
+                "ThrowUsedItemForAllClients",
+                BindingFlags.NonPublic | BindingFlags.Instance
+            );
+            var markThrownItem = typeof(PlayerInventory).GetMethod(
+                "MarkThrownItem",
+                BindingFlags.NonPublic | BindingFlags.Instance
+            );
+            if (throwUsedItemForAllClients != null)
+            {
+                for (
+                    float timeSince = BMath.GetTimeSince(inventory.ItemUseTimestamp);
+                    timeSince < GameManager.ItemSettings.RocketLauncherShotDuration;
+                    timeSince = BMath.GetTimeSince(inventory.ItemUseTimestamp)
+                )
+                {
+                    throwUsedItemForAllClients.Invoke(
+                        inventory,
+                        new object[] { ThrownUsedItemType.RocketLauncher, false, default(Vector3) }
+                    );
+                    if (markThrownItem != null)
+                    {
+                        var thrownHandType = markThrownItem.GetParameters()[0].ParameterType;
+                        markThrownItem.Invoke(
+                            inventory,
+                            new object[] { System.Enum.ToObject(thrownHandType, 2) } // 2 is PlayerInventory.ThrownItemHand.Right
+                        );
+                    }
+                }
+                IssaPluginPlugin.Log.LogInfo("[Bomber] Throwing used stealth bomber item.");
+            }
+            else
+            {
+                IssaPluginPlugin.Log.LogError(
+                    "[Bomber] Could not find ThrowUsedItemForAllClients and/or markThrownItem method."
+                );
+            }
+
+            if (setCurrentItemUse != null)
+            {
+                setCurrentItemUse.Invoke(inventory, new object[] { ItemUseType.None });
+            }
+
+            var removeIfOutOfUses = typeof(PlayerInventory).GetMethod(
+                "RemoveIfOutOfUses",
+                BindingFlags.NonPublic | BindingFlags.Instance
+            );
+            if (removeIfOutOfUses != null)
+            {
+                IssaPluginPlugin.Log.LogInfo("[Bomber] Removing out-of-uses Stealth Bomber item.");
+                removeIfOutOfUses.Invoke(inventory, new object[] { inventory.EquippedItemIndex });
+            }
+            else
+            {
+                IssaPluginPlugin.Log.LogError("[Bomber] Could not find RemoveIfOutOfUses method.");
+            }
+            yield break;
         }
 
         /// <summary>

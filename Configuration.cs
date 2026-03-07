@@ -6,9 +6,7 @@ namespace IssaPlugin
     public static class Configuration
     {
         // --- Baseball Bat ---
-        public static ConfigEntry<float> BaseballBatPower { get; private set; }
-        public static ConfigEntry<float> BaseballBatChargeTime { get; private set; }
-        public static ConfigEntry<float> BaseballBatCooldown { get; private set; }
+        public static ConfigEntry<float> BaseballBatPowerMultiplier { get; private set; }
         public static ConfigEntry<int> BaseballBatUses { get; private set; }
         public static ConfigEntry<Key> BaseballBatGiveKey { get; private set; }
 
@@ -24,14 +22,8 @@ namespace IssaPlugin
         public static void Initialize(ConfigFile cfg)
         {
             // Baseball Bat
-            BaseballBatPower = cfg.Bind("BaseballBat", "Power", 3.0f,
-                "Swing power multiplier. Higher values launch targets further.");
-
-            BaseballBatChargeTime = cfg.Bind("BaseballBat", "ChargeTime", 0.1f,
-                "Windup delay in seconds before the swing connects.");
-
-            BaseballBatCooldown = cfg.Bind("BaseballBat", "Cooldown", 0.5f,
-                "Seconds to wait after a swing before the next swing is allowed.");
+            BaseballBatPowerMultiplier = cfg.Bind("BaseballBat", "PowerMultiplier", 3.0f,
+                "Multiplier applied to the golf swing power when using the bat.");
 
             BaseballBatUses = cfg.Bind("BaseballBat", "Uses", 99,
                 "Number of swings before the bat is consumed. Set high for near-infinite use.");

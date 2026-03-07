@@ -248,7 +248,8 @@ namespace IssaPlugin.Patches
         }
 
         // ================================================================
-        //  Equipment display
+        //  Equipment display — bomber only (bat is handled automatically
+        //  via GetEffectivelyEquippedItem returning None → GolfClub)
         // ================================================================
 
         [HarmonyPatch]
@@ -259,17 +260,8 @@ namespace IssaPlugin.Patches
 
             static void Postfix(PlayerInventory __instance)
             {
-                var equipped = __instance.GetEffectivelyEquippedItem(false);
-                if (equipped == BatItem.BatItemType)
-                {
-                    __instance.PlayerInfo.RightHandEquipmentSwitcher.SetEquipment(
-                        EquipmentType.GolfClub
-                    );
-                    __instance.PlayerInfo.LeftHandEquipmentSwitcher.SetEquipment(
-                        EquipmentType.None
-                    );
-                }
-                else if (equipped == StealthBomberItem.BomberItemType)
+                var equipped = __instance.GetEffectivelyEquippedItem(true);
+                if (equipped == StealthBomberItem.BomberItemType)
                 {
                     __instance.PlayerInfo.RightHandEquipmentSwitcher.SetEquipment(
                         EquipmentType.RocketLauncher
@@ -282,7 +274,89 @@ namespace IssaPlugin.Patches
         }
 
         // ================================================================
-        //  Item use — intercept for custom items
+        //  Make the bat invisible to the equipped-item check so the
+        //  golf swing system treats it as "no item" (golf club).
+        // ================================================================
+
+        [HarmonyPatch]
+        static class GetEffectivelyEquippedItemPatch
+        {
+            static MethodBase TargetMethod() =>
+                AccessTools.Method(typeof(PlayerInventory), "GetEffectivelyEquippedItem");
+
+            static void Postfix(
+                PlayerInventory __instance,
+                bool ignoreEquipmentHiding,
+                ref ItemType __result
+            )
+            {
+                if (!ignoreEquipmentHiding && __result == BatItem.BatItemType)
+                    __result = ItemType.None;
+            }
+        }
+
+        // ================================================================
+        //  Power multiplier — boost HitWithGolfSwing when bat is equipped
+        // ================================================================
+
+        [HarmonyPatch]
+        static class HitWithGolfSwingPatch
+        {
+            static MethodBase TargetMethod() =>
+                AccessTools.Method(typeof(Hittable), "HitWithGolfSwing");
+
+            static void Prefix(PlayerGolfer hitter, ref float power)
+            {
+                if (hitter == null)
+                    return;
+
+                var inventory = hitter.PlayerInfo.Inventory;
+                if (inventory.GetEffectivelyEquippedItem(true) == BatItem.BatItemType)
+                    power *= Configuration.BaseballBatPowerMultiplier.Value;
+            }
+        }
+
+        // ================================================================
+        //  Decrement bat uses after each golf swing
+        // ================================================================
+
+        [HarmonyPatch]
+        static class OnFinishedSwingingPatch
+        {
+            private static readonly MethodInfo DecrementMethod = AccessTools.Method(
+                typeof(PlayerInventory),
+                "DecrementUseFromSlotAt"
+            );
+
+            private static readonly MethodInfo RemoveMethod = AccessTools.Method(
+                typeof(PlayerInventory),
+                "RemoveIfOutOfUses"
+            );
+
+            static MethodBase TargetMethod() =>
+                AccessTools.Method(typeof(PlayerGolfer), "OnFinishedSwinging");
+
+            static void Postfix(PlayerGolfer __instance)
+            {
+                if (!__instance.isLocalPlayer)
+                    return;
+
+                var inventory = __instance.PlayerInfo.Inventory;
+                if (inventory.GetEffectivelyEquippedItem(true) != BatItem.BatItemType)
+                    return;
+
+                int slotIndex = inventory.EquippedItemIndex;
+                if (slotIndex < 0)
+                    return;
+
+                DecrementMethod.Invoke(inventory, new object[] { slotIndex });
+                RemoveMethod.Invoke(inventory, new object[] { slotIndex });
+            }
+        }
+
+        // ================================================================
+        //  Item use — intercept for custom items (bomber only;
+        //  bat uses the native golf swing system)
         // ================================================================
 
         [HarmonyPatch]
@@ -298,13 +372,12 @@ namespace IssaPlugin.Patches
                 ref bool __result
             )
             {
-                var equipped = __instance.GetEffectivelyEquippedItem(false);
+                var equipped = __instance.GetEffectivelyEquippedItem(true);
 
                 if (equipped == BatItem.BatItemType)
                 {
-                    shouldEatInput = true;
-                    __result = true;
-                    __instance.StartCoroutine(BatItem.BatSwingRoutine(__instance));
+                    shouldEatInput = false;
+                    __result = false;
                     return false;
                 }
 
