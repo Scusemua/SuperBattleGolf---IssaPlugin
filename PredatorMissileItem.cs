@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using System.Reflection;
 using IssaPlugin.Patches;
 using Mirror;
@@ -16,8 +17,57 @@ namespace IssaPlugin.Items
         private static int _missileUseIndex;
 
         internal static Rocket ActiveMissileRocket;
+        internal static readonly List<GameObject> DebugDummies = new List<GameObject>();
 
         public static bool IsSteering => _isSteering;
+
+        public static void ToggleDebugDummies()
+        {
+            if (DebugDummies.Count > 0)
+            {
+                foreach (var dummy in DebugDummies)
+                {
+                    if (dummy != null)
+                        Object.Destroy(dummy);
+                }
+                DebugDummies.Clear();
+                IssaPluginPlugin.Log.LogInfo("[Missile] Debug dummies removed.");
+                return;
+            }
+
+            var playerPos = GameManager.LocalPlayerInfo?.transform.position
+                            ?? Vector3.zero;
+
+            Vector3[] offsets =
+            {
+                new Vector3(10f, 0f, 10f),
+                new Vector3(-12f, 0f, 5f),
+                new Vector3(5f, 0f, -15f),
+                new Vector3(-8f, 0f, -8f),
+                new Vector3(18f, 0f, 0f),
+            };
+
+            foreach (var offset in offsets)
+            {
+                var go = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+                go.name = "MissileDummy";
+                go.transform.position = playerPos + offset;
+                go.transform.localScale = new Vector3(0.6f, 1f, 0.6f);
+
+                var col = go.GetComponent<Collider>();
+                if (col != null)
+                    Object.Destroy(col);
+
+                var renderer = go.GetComponent<Renderer>();
+                if (renderer != null)
+                    renderer.material.color = new Color(1f, 0.3f, 0.3f, 0.7f);
+
+                DebugDummies.Add(go);
+            }
+
+            IssaPluginPlugin.Log.LogInfo(
+                $"[Missile] Spawned {offsets.Length} debug dummies near {playerPos}.");
+        }
 
         public static void GiveMissileToLocalPlayer()
         {

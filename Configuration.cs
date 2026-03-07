@@ -5,6 +5,11 @@ namespace IssaPlugin
 {
     public static class Configuration
     {
+        // --- Item Box Spawn Weights ---
+        public static ConfigEntry<float> BaseballBatSpawnWeight { get; private set; }
+        public static ConfigEntry<float> BomberSpawnWeight { get; private set; }
+        public static ConfigEntry<float> MissileSpawnWeight { get; private set; }
+
         // --- Baseball Bat ---
         public static ConfigEntry<float> BaseballBatPowerMultiplier { get; private set; }
         public static ConfigEntry<int> BaseballBatUses { get; private set; }
@@ -145,6 +150,28 @@ namespace IssaPlugin
                 "GiveKey",
                 Key.F9,
                 "Key to press to add the predator missile to your inventory."
+            );
+
+            // Item Box Spawn Weights (0 = disabled, higher = more common)
+            BaseballBatSpawnWeight = cfg.Bind(
+                "ItemBoxSpawns",
+                "BaseballBatWeight",
+                5f,
+                "Spawn weight for the baseball bat in item boxes. Set to 0 to disable."
+            );
+
+            BomberSpawnWeight = cfg.Bind(
+                "ItemBoxSpawns",
+                "StealthBomberWeight",
+                100f,
+                "Spawn weight for the stealth bomber in item boxes. Set to 0 to disable."
+            );
+
+            MissileSpawnWeight = cfg.Bind(
+                "ItemBoxSpawns",
+                "PredatorMissileWeight",
+                3f,
+                "Spawn weight for the predator missile in item boxes. Set to 0 to disable."
             );
 
             IssaPluginPlugin.Log.LogInfo("Configuration initialized.");

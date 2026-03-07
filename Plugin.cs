@@ -75,6 +75,9 @@ namespace IssaPlugin
 
             if (keyboard[Configuration.MissileGiveKey.Value].wasPressedThisFrame)
                 PredatorMissileItem.GiveMissileToLocalPlayer();
+
+            if (keyboard[Key.F10].wasPressedThisFrame)
+                PredatorMissileItem.ToggleDebugDummies();
         }
 
         private static Texture2D _redTex;
@@ -98,36 +101,41 @@ namespace IssaPlugin
                 _redTex.Apply();
             }
 
-            List<PlayerInfo> remotePlayers = GameManager.RemotePlayers;
-            if (remotePlayers == null)
-                return;
-
             float screenH = Screen.height;
 
-            foreach (var player in remotePlayers)
+            List<PlayerInfo> remotePlayers = GameManager.RemotePlayers;
+            if (remotePlayers != null)
             {
-                if (player == null)
-                    continue;
-
-                Vector3 worldPos = player.transform.position + Vector3.up * 1f;
-                Vector3 screenPos = cam.WorldToScreenPoint(worldPos);
-
-                if (screenPos.z <= 0f)
-                    continue;
-
-                float x = screenPos.x - BoxWidth * 0.5f;
-                float y = screenH - screenPos.y - BoxHeight * 0.5f;
-                float t = BorderThickness;
-
-                // Top
-                GUI.DrawTexture(new Rect(x, y, BoxWidth, t), _redTex);
-                // Bottom
-                GUI.DrawTexture(new Rect(x, y + BoxHeight - t, BoxWidth, t), _redTex);
-                // Left
-                GUI.DrawTexture(new Rect(x, y, t, BoxHeight), _redTex);
-                // Right
-                GUI.DrawTexture(new Rect(x + BoxWidth - t, y, t, BoxHeight), _redTex);
+                foreach (var player in remotePlayers)
+                {
+                    if (player == null)
+                        continue;
+                    DrawTargetBox(cam, player.transform.position + Vector3.up * 1f, screenH);
+                }
             }
+
+            foreach (var dummy in PredatorMissileItem.DebugDummies)
+            {
+                if (dummy == null)
+                    continue;
+                DrawTargetBox(cam, dummy.transform.position + Vector3.up * 1f, screenH);
+            }
+        }
+
+        private void DrawTargetBox(Camera cam, Vector3 worldPos, float screenH)
+        {
+            Vector3 screenPos = cam.WorldToScreenPoint(worldPos);
+            if (screenPos.z <= 0f)
+                return;
+
+            float x = screenPos.x - BoxWidth * 0.5f;
+            float y = screenH - screenPos.y - BoxHeight * 0.5f;
+            float t = BorderThickness;
+
+            GUI.DrawTexture(new Rect(x, y, BoxWidth, t), _redTex);
+            GUI.DrawTexture(new Rect(x, y + BoxHeight - t, BoxWidth, t), _redTex);
+            GUI.DrawTexture(new Rect(x, y, t, BoxHeight), _redTex);
+            GUI.DrawTexture(new Rect(x + BoxWidth - t, y, t, BoxHeight), _redTex);
         }
 
         private void OnMatchStateChanged(MatchState previousState, MatchState currentState)
