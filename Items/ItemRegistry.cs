@@ -90,20 +90,23 @@ namespace IssaPlugin.Items
             var bomberData = GetOrCreateItemData(StealthBomberItem.BomberItemType);
             var missileData = GetOrCreateItemData(PredatorMissileItem.MissileItemType);
 
-            if (
-                dict.TryGetValue(ItemType.DuelingPistol, out var pistolData)
-                && pistolData.Icon != null
-            )
-                IconProperty.SetValue(batData, pistolData.Icon);
-
+            Sprite rocketFallbackIcon = null;
             if (
                 dict.TryGetValue(ItemType.RocketLauncher, out var rocketData)
                 && rocketData.Icon != null
             )
-            {
-                IconProperty.SetValue(bomberData, rocketData.Icon);
-                IconProperty.SetValue(missileData, rocketData.Icon);
-            }
+                rocketFallbackIcon = rocketData.Icon;
+
+            Sprite pistolFallbackIcon = null;
+            if (
+                dict.TryGetValue(ItemType.DuelingPistol, out var pistolData)
+                && pistolData.Icon != null
+            )
+                pistolFallbackIcon = pistolData.Icon;
+
+            IconProperty.SetValue(batData, AssetLoader.BatIcon ?? pistolFallbackIcon);
+            IconProperty.SetValue(bomberData, AssetLoader.BomberIcon ?? rocketFallbackIcon);
+            IconProperty.SetValue(missileData, AssetLoader.MissileIcon ?? rocketFallbackIcon);
 
             dict[BatItem.BatItemType] = batData;
             dict[StealthBomberItem.BomberItemType] = bomberData;

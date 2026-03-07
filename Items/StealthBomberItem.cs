@@ -213,6 +213,19 @@ namespace IssaPlugin.Items
                     + $"at altitude {altitude:F0}m"
             );
 
+            GameObject bomberVisual = null;
+            if (AssetLoader.BomberPrefab != null)
+            {
+                bomberVisual = Object.Instantiate(
+                    AssetLoader.BomberPrefab,
+                    startPos,
+                    Quaternion.LookRotation(direction, Vector3.up)
+                );
+                var flyComp = bomberVisual.AddComponent<BomberFlyBehaviour>();
+                flyComp.destination = endPos;
+                flyComp.speed = speed;
+            }
+
             float distanceTravelled = 0f;
             int rocketsDropped = 0;
 
@@ -237,6 +250,9 @@ namespace IssaPlugin.Items
 
                 yield return null;
             }
+
+            if (bomberVisual != null)
+                Object.Destroy(bomberVisual);
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[Bomber] Run complete. {rocketsDropped} rockets dropped."
@@ -323,6 +339,9 @@ namespace IssaPlugin.Items
 
                 var mat = new Material(shader);
                 mat.color = color;
+                mat.SetInt("_ZTest", (int)UnityEngine.Rendering.CompareFunction.Always);
+                mat.SetInt("_ZWrite", 0);
+                mat.renderQueue = 3100;
                 renderer.material = mat;
             }
 
@@ -378,6 +397,28 @@ namespace IssaPlugin.Items
 
             rocket.ServerInitialize(inventory.PlayerInfo, null, itemUseId);
             NetworkServer.Spawn(rocket.gameObject, (NetworkConnectionToClient)null);
+        }
+
+        /// <summary>
+        /// Attached to the bomber prefab instance so it flies smoothly
+        /// from spawn to destination independent of the rocket-drop coroutine.
+        /// </summary>
+        private class BomberFlyBehaviour : MonoBehaviour
+        {
+            public Vector3 destination;
+            public float speed;
+
+            private void Update()
+            {
+                transform.position = Vector3.MoveTowards(
+                    transform.position,
+                    destination,
+                    speed * Time.deltaTime
+                );
+
+                if (Vector3.Distance(transform.position, destination) < 0.5f)
+                    Destroy(gameObject);
+            }
         }
     }
 }

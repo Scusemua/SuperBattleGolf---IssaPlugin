@@ -30,6 +30,7 @@ namespace IssaPlugin
             Log.LogInfo($"IssaPlugin {PluginInfo.PLUGIN_VERSION} loading...");
 
             Configuration.Initialize(Config);
+            AssetLoader.Load();
 
             _harmony = new Harmony(PluginInfo.PLUGIN_GUID);
             _harmony.PatchAll(typeof(IssaPluginPlugin).Assembly);
@@ -47,6 +48,7 @@ namespace IssaPlugin
         {
             CourseManager.MatchStateChanged -= OnMatchStateChanged;
             _harmony?.UnpatchSelf();
+            AssetLoader.Unload();
             Log.LogInfo("IssaPlugin unloaded.");
         }
 

@@ -17,7 +17,7 @@ namespace IssaPlugin.Patches
             ref ItemType __result
         )
         {
-            if (!ignoreEquipmentHiding && __result == BatItem.BatItemType)
+            if (!ignoreEquipmentHiding && ItemRegistry.IsCustomItem(__result))
                 __result = ItemType.None;
         }
     }
