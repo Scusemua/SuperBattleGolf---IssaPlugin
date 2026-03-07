@@ -131,7 +131,8 @@ namespace IssaPlugin.Items
         /// </summary>
         private static void RequestRocketSpawn(PlayerInventory inventory, Vector3 position)
         {
-            if (!NetworkServer.active) return;
+            if (!NetworkServer.active)
+                return;
 
             Quaternion rotation = Quaternion.LookRotation(Vector3.down, Vector3.forward);
 
@@ -143,7 +144,10 @@ namespace IssaPlugin.Items
             );
 
             var rocket = Object.Instantiate(
-                GameManager.ItemSettings.RocketPrefab, position, rotation);
+                GameManager.ItemSettings.RocketPrefab,
+                position,
+                rotation
+            );
 
             if (rocket == null)
             {

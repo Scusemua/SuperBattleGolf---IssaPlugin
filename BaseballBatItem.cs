@@ -25,7 +25,10 @@ namespace IssaPlugin.Items
             if (NetworkServer.active)
             {
                 bool added = InventoryPatches.DirectAddCustomItem(
-                    inventory, BatItemType, Configuration.BaseballBatUses.Value);
+                    inventory,
+                    BatItemType,
+                    Configuration.BaseballBatUses.Value
+                );
                 if (!added)
                     IssaPluginPlugin.Log.LogWarning("[Bat] Failed to add bat (inventory full?).");
             }
@@ -35,7 +38,8 @@ namespace IssaPlugin.Items
                 {
                     _cmdAddItemMethod = typeof(PlayerInventory).GetMethod(
                         "CmdAddItem",
-                        BindingFlags.NonPublic | BindingFlags.Instance);
+                        BindingFlags.NonPublic | BindingFlags.Instance
+                    );
                 }
 
                 if (_cmdAddItemMethod != null)
@@ -52,7 +56,8 @@ namespace IssaPlugin.Items
 
         public static IEnumerator BatSwingRoutine(PlayerInventory inventory)
         {
-            if (_isSwinging) yield break;
+            if (_isSwinging)
+                yield break;
             _isSwinging = true;
 
             var playerInfo = inventory.PlayerInfo;
@@ -65,8 +70,13 @@ namespace IssaPlugin.Items
             Vector3 halfExtents = new Vector3(1.5f, 1f, 1.5f);
             int mask = GameManager.LayerSettings.SwingHittableMask;
 
-            var hits = Physics.OverlapBox(center, halfExtents,
-                playerInfo.transform.rotation, mask, QueryTriggerInteraction.Ignore);
+            var hits = Physics.OverlapBox(
+                center,
+                halfExtents,
+                playerInfo.transform.rotation,
+                mask,
+                QueryTriggerInteraction.Ignore
+            );
 
             foreach (var col in hits)
             {
@@ -79,9 +89,16 @@ namespace IssaPlugin.Items
                 Vector3 localHit = hittable.transform.InverseTransformPoint(hitPos);
                 Vector3 localOrigin = hittable.transform.InverseTransformPoint(center);
 
-                hittable.HitWithGolfSwing(localHit, localOrigin, dir,
-                    isPutt: false, power: Configuration.BaseballBatPower.Value, sideSpin: 0f,
-                    hitter: golfer, homingTargetHittable: null);
+                hittable.HitWithGolfSwing(
+                    localHit,
+                    localOrigin,
+                    dir,
+                    isPutt: false,
+                    power: Configuration.BaseballBatPower.Value,
+                    sideSpin: 0f,
+                    hitter: golfer,
+                    homingTargetHittable: null
+                );
             }
 
             yield return new WaitForSeconds(Configuration.BaseballBatCooldown.Value);
