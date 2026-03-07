@@ -1,0 +1,59 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>IssaPlugin</AssemblyName>
+    <Product>My first plugin</Product>
+    <Version>1.0.0</Version>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>latest</LangVersion>
+    <RestoreAdditionalProjectSources>
+      https://api.nuget.org/v3/index.json;
+      https://nuget.bepinex.dev/v3/index.json;
+      https://nuget.samboy.dev/v3/index.json
+    </RestoreAdditionalProjectSources>
+    <RootNamespace>IssaPlugin</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />
+    <PackageReference Include="BepInEx.Core" Version="5.*" />
+    <PackageReference Include="BepInEx.PluginInfoProps" Version="2.*" />
+    <PackageReference Include="UnityEngine.Modules" Version="6000.2.4"
+      IncludeAssets="compile" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework.TrimEnd(`0123456789`))' == 'net'">
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2"
+      PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="DECOMPILED_SOURCE\**" />
+    <Content Remove="DECOMPILED_SOURCE**" />
+    <EmbeddedResource Remove="DECOMPILED_SOURCE**" />
+    <None Remove="DECOMPILED_SOURCE**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="SAMPLE_PLUGIN\**" />
+    <Content Remove="SAMPLE_PLUGIN**" />
+    <EmbeddedResource Remove="SAMPLE_PLUGIN**" />
+    <None Remove="SAMPLE_PLUGIN**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="SharedAssembly">
+      <HintPath>Assembly\SharedAssembly.dll</HintPath>
+    </Reference>
+    <Reference Include="Mirror">
+      <HintPath>Assembly\Mirror.dll</HintPath>
+    </Reference>
+    <Reference Include="GameAssembly">
+      <HintPath>Assembly\GameAssembly.dll</HintPath>
+    </Reference>
+    <Reference Include="GameAssembly">
+      <HintPath>Assembly\GameAssembly.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>
