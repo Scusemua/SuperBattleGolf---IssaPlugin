@@ -54,7 +54,7 @@ namespace IssaPlugin.Items
             }
         }
 
-        private static void SetItemUsage(PlayerInventory inventory, ItemUseType itemUseType)
+        private static void SetCurrentItemUse(PlayerInventory inventory, ItemUseType itemUseType)
         {
             var setCurrentItemUse = typeof(PlayerInventory).GetMethod(
                 "SetCurrentItemUse",
@@ -149,7 +149,7 @@ namespace IssaPlugin.Items
             if (_isBombing)
                 yield break;
 
-            SetItemUsage(inventory, ItemUseType.Regular);
+            SetCurrentItemUse(inventory, ItemUseType.Regular);
 
             Vector3 startPos,
                 endPos;
@@ -157,11 +157,19 @@ namespace IssaPlugin.Items
             {
                 IssaPluginPlugin.Log.LogWarning("[Bomber] Could not determine tee/hole positions.");
                 _isBombing = false;
-                SetItemUsage(inventory, ItemUseType.None);
+                SetCurrentItemUse(inventory, ItemUseType.None);
                 yield break;
             }
 
             _isBombing = true;
+            DecrementUseFromSlotAt(inventory, inventory.EquippedItemIndex);
+            RemoveIfOutOfUses(inventory, inventory.EquippedItemIndex);
+            SetCurrentItemUse(inventory, ItemUseType.None);
+
+            // Return immediately to update the player's inventory.
+            yield return new WaitForSeconds(0.01f);
+
+            yield return new WaitForSeconds(Configuration.BomberWaitTime.Value);
 
             float altitude = Configuration.BomberAltitude.Value;
             float speed = Configuration.BomberSpeed.Value;
@@ -217,22 +225,6 @@ namespace IssaPlugin.Items
                 $"[Bomber] Run complete. {rocketsDropped} rockets dropped."
             );
             _isBombing = false;
-
-            DecrementUseFromSlotAt(inventory, inventory.EquippedItemIndex);
-            RemoveIfOutOfUses(inventory, inventory.EquippedItemIndex);
-
-            for (
-                float timeSince = BMath.GetTimeSince(inventory.ItemUseTimestamp);
-                timeSince < GameManager.ItemSettings.RocketLauncherShotDuration;
-                timeSince = BMath.GetTimeSince(inventory.ItemUseTimestamp)
-            )
-            {
-                ThrowUsedItemForAllClients(inventory);
-                MarkThrownItem(inventory, 2); // 2 is PlayerInventory.ThrownItemHand.Right
-            }
-
-            SetItemUsage(inventory, ItemUseType.None);
-            RemoveIfOutOfUses(inventory, inventory.EquippedItemIndex);
 
             yield break;
         }

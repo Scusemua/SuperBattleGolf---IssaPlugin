@@ -59,7 +59,7 @@ namespace IssaPlugin
             if (!_audioLoadStarted)
             {
                 _audioLoadStarted = true;
-                StartCoroutine(BatItem.LoadHomerunSound());
+                BatItem.LoadHomerunSound();
             }
 
             var keyboard = Keyboard.current;

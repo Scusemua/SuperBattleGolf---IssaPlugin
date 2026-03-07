@@ -511,7 +511,9 @@ namespace IssaPlugin.Patches
         static class DropItemPatch
         {
             private static readonly MethodInfo RemoveItemAtMethod = AccessTools.Method(
-                typeof(PlayerInventory), "RemoveItemAt");
+                typeof(PlayerInventory),
+                "RemoveItemAt"
+            );
 
             static MethodBase TargetMethod() =>
                 AccessTools.Method(typeof(PlayerInventory), "DropItem");
