@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
@@ -74,6 +75,59 @@ namespace IssaPlugin
 
             if (keyboard[Configuration.MissileGiveKey.Value].wasPressedThisFrame)
                 PredatorMissileItem.GiveMissileToLocalPlayer();
+        }
+
+        private static Texture2D _redTex;
+        private const float BoxWidth = 40f;
+        private const float BoxHeight = 56f;
+        private const float BorderThickness = 2f;
+
+        private void OnGUI()
+        {
+            if (!PredatorMissileItem.IsSteering)
+                return;
+
+            var cam = GameManager.Camera;
+            if (cam == null)
+                return;
+
+            if (_redTex == null)
+            {
+                _redTex = new Texture2D(1, 1);
+                _redTex.SetPixel(0, 0, Color.red);
+                _redTex.Apply();
+            }
+
+            List<PlayerInfo> remotePlayers = GameManager.RemotePlayers;
+            if (remotePlayers == null)
+                return;
+
+            float screenH = Screen.height;
+
+            foreach (var player in remotePlayers)
+            {
+                if (player == null)
+                    continue;
+
+                Vector3 worldPos = player.transform.position + Vector3.up * 1f;
+                Vector3 screenPos = cam.WorldToScreenPoint(worldPos);
+
+                if (screenPos.z <= 0f)
+                    continue;
+
+                float x = screenPos.x - BoxWidth * 0.5f;
+                float y = screenH - screenPos.y - BoxHeight * 0.5f;
+                float t = BorderThickness;
+
+                // Top
+                GUI.DrawTexture(new Rect(x, y, BoxWidth, t), _redTex);
+                // Bottom
+                GUI.DrawTexture(new Rect(x, y + BoxHeight - t, BoxWidth, t), _redTex);
+                // Left
+                GUI.DrawTexture(new Rect(x, y, t, BoxHeight), _redTex);
+                // Right
+                GUI.DrawTexture(new Rect(x + BoxWidth - t, y, t, BoxHeight), _redTex);
+            }
         }
 
         private void OnMatchStateChanged(MatchState previousState, MatchState currentState)

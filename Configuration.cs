@@ -108,21 +108,21 @@ namespace IssaPlugin
             MissileAltitude = cfg.Bind(
                 "PredatorMissile",
                 "Altitude",
-                120f,
+                175f,
                 "Height above the player where the missile spawns."
             );
 
             MissileFallSpeed = cfg.Bind(
                 "PredatorMissile",
                 "FallSpeed",
-                20f,
+                30f,
                 "Downward speed of the missile in units per second."
             );
 
             MissileSteerSpeed = cfg.Bind(
                 "PredatorMissile",
                 "SteerSpeed",
-                30f,
+                25f,
                 "Horizontal steering speed when directing the missile."
             );
 

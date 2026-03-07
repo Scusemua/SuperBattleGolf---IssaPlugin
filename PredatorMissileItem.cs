@@ -37,7 +37,8 @@ namespace IssaPlugin.Items
                 );
                 if (!added)
                     IssaPluginPlugin.Log.LogWarning(
-                        "[Missile] Failed to add missile (inventory full?).");
+                        "[Missile] Failed to add missile (inventory full?)."
+                    );
             }
             else
             {
@@ -51,15 +52,12 @@ namespace IssaPlugin.Items
 
                 if (_cmdAddItemMethod != null)
                 {
-                    _cmdAddItemMethod.Invoke(
-                        inventory, new object[] { MissileItemType });
-                    IssaPluginPlugin.Log.LogInfo(
-                        "[Missile] Requested missile via server command.");
+                    _cmdAddItemMethod.Invoke(inventory, new object[] { MissileItemType });
+                    IssaPluginPlugin.Log.LogInfo("[Missile] Requested missile via server command.");
                 }
                 else
                 {
-                    IssaPluginPlugin.Log.LogError(
-                        "[Missile] Could not find CmdAddItem method.");
+                    IssaPluginPlugin.Log.LogError("[Missile] Could not find CmdAddItem method.");
                 }
             }
         }
@@ -68,10 +66,12 @@ namespace IssaPlugin.Items
         {
             var decrement = typeof(PlayerInventory).GetMethod(
                 "DecrementUseFromSlotAt",
-                BindingFlags.NonPublic | BindingFlags.Instance);
+                BindingFlags.NonPublic | BindingFlags.Instance
+            );
             var remove = typeof(PlayerInventory).GetMethod(
                 "RemoveIfOutOfUses",
-                BindingFlags.NonPublic | BindingFlags.Instance);
+                BindingFlags.NonPublic | BindingFlags.Instance
+            );
 
             decrement?.Invoke(inventory, new object[] { slotIndex });
             remove?.Invoke(inventory, new object[] { slotIndex });
@@ -125,9 +125,12 @@ namespace IssaPlugin.Items
             NetworkServer.Spawn(rocket.gameObject, (NetworkConnectionToClient)null);
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[Missile] Launched at {spawnPos}, falling at {fallSpeed} m/s.");
+                $"[Missile] Launched at {spawnPos}, falling at {fallSpeed} m/s."
+            );
 
             yield return null;
+
+            InputManager.Controls.Gameplay.Disable();
 
             OrbitCameraModule orbitModule = null;
             CameraModuleController.TryGetOrbitModule(out orbitModule);
@@ -188,22 +191,20 @@ namespace IssaPlugin.Items
                     if (orbitModule != null)
                     {
                         float yawRad = orbitModule.Yaw * Mathf.Deg2Rad;
-                        camForward = new Vector3(
-                            Mathf.Sin(yawRad), 0f, Mathf.Cos(yawRad));
-                        camRight = new Vector3(
-                            Mathf.Cos(yawRad), 0f, -Mathf.Sin(yawRad));
+                        camForward = new Vector3(Mathf.Sin(yawRad), 0f, Mathf.Cos(yawRad));
+                        camRight = new Vector3(Mathf.Cos(yawRad), 0f, -Mathf.Sin(yawRad));
                     }
 
-                    Vector3 steer = (camRight * inputX + camForward * inputZ)
-                                    * steerSpeed;
+                    Vector3 steer = (camRight * inputX + camForward * inputZ) * steerSpeed;
 
-                    rocketRb.linearVelocity = new Vector3(
-                        steer.x, -fallSpeed, steer.z);
+                    rocketRb.linearVelocity = new Vector3(steer.x, -fallSpeed, steer.z);
                 }
 
                 elapsed += Time.deltaTime;
                 yield return null;
             }
+
+            InputManager.Controls.Gameplay.Enable();
 
             if (orbitModule != null)
             {
@@ -223,8 +224,7 @@ namespace IssaPlugin.Items
                     "ServerExplode",
                     BindingFlags.NonPublic | BindingFlags.Instance
                 );
-                explodeMethod?.Invoke(rocket,
-                    new object[] { rocket.transform.position });
+                explodeMethod?.Invoke(rocket, new object[] { rocket.transform.position });
             }
 
             ActiveMissileRocket = null;
