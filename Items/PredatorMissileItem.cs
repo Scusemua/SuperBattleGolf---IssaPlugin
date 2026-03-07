@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
-using IssaPlugin.Patches;
 using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -12,7 +11,6 @@ namespace IssaPlugin.Items
     {
         public static readonly ItemType MissileItemType = (ItemType)102;
 
-        private static MethodInfo _cmdAddItemMethod;
         private static bool _isSteering;
         private static int _missileUseIndex;
 
@@ -20,6 +18,15 @@ namespace IssaPlugin.Items
         internal static readonly List<GameObject> DebugDummies = new List<GameObject>();
 
         public static bool IsSteering => _isSteering;
+
+        public static void GiveMissileToLocalPlayer()
+        {
+            ItemHelper.GiveItemToLocalPlayer(
+                MissileItemType,
+                Configuration.MissileUses.Value,
+                "Missile"
+            );
+        }
 
         public static void ToggleDebugDummies()
         {
@@ -35,8 +42,7 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            var playerPos = GameManager.LocalPlayerInfo?.transform.position
-                            ?? Vector3.zero;
+            var playerPos = GameManager.LocalPlayerInfo?.transform.position ?? Vector3.zero;
 
             Vector3[] offsets =
             {
@@ -66,65 +72,8 @@ namespace IssaPlugin.Items
             }
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[Missile] Spawned {offsets.Length} debug dummies near {playerPos}.");
-        }
-
-        public static void GiveMissileToLocalPlayer()
-        {
-            var inventory = GameManager.LocalPlayerInventory;
-            if (inventory == null)
-            {
-                IssaPluginPlugin.Log.LogWarning("[Missile] No local player inventory.");
-                return;
-            }
-
-            if (NetworkServer.active)
-            {
-                bool added = InventoryPatches.DirectAddCustomItem(
-                    inventory,
-                    MissileItemType,
-                    Configuration.MissileUses.Value
-                );
-                if (!added)
-                    IssaPluginPlugin.Log.LogWarning(
-                        "[Missile] Failed to add missile (inventory full?)."
-                    );
-            }
-            else
-            {
-                if (_cmdAddItemMethod == null)
-                {
-                    _cmdAddItemMethod = typeof(PlayerInventory).GetMethod(
-                        "CmdAddItem",
-                        BindingFlags.NonPublic | BindingFlags.Instance
-                    );
-                }
-
-                if (_cmdAddItemMethod != null)
-                {
-                    _cmdAddItemMethod.Invoke(inventory, new object[] { MissileItemType });
-                    IssaPluginPlugin.Log.LogInfo("[Missile] Requested missile via server command.");
-                }
-                else
-                {
-                    IssaPluginPlugin.Log.LogError("[Missile] Could not find CmdAddItem method.");
-                }
-            }
-        }
-
-        private static void DecrementAndRemove(PlayerInventory inventory, int slotIndex)
-        {
-            var decrement = typeof(PlayerInventory).GetMethod(
-                "DecrementUseFromSlotAt",
-                BindingFlags.NonPublic | BindingFlags.Instance
+                $"[Missile] Spawned {offsets.Length} debug dummies near {playerPos}."
             );
-            var remove = typeof(PlayerInventory).GetMethod(
-                "RemoveIfOutOfUses",
-                BindingFlags.NonPublic | BindingFlags.Instance
-            );
-
-            decrement?.Invoke(inventory, new object[] { slotIndex });
-            remove?.Invoke(inventory, new object[] { slotIndex });
         }
 
         public static IEnumerator MissileRoutine(PlayerInventory inventory)
@@ -138,7 +87,7 @@ namespace IssaPlugin.Items
 
             int slotIndex = inventory.EquippedItemIndex;
             if (slotIndex >= 0)
-                DecrementAndRemove(inventory, slotIndex);
+                ItemHelper.DecrementAndRemove(inventory, slotIndex);
 
             var playerInfo = inventory.PlayerInfo;
             var playerTransform = playerInfo.transform;
@@ -260,9 +209,8 @@ namespace IssaPlugin.Items
             {
                 var playerMovement = GameManager.LocalPlayerMovement;
                 if (playerMovement != null)
-                {
                     orbitModule.SetSubject(playerMovement.transform);
-                }
+
                 orbitModule.SetPitch(savedPitch);
                 orbitModule.SetYaw(savedYaw);
                 orbitModule.ForceUpdateModule();

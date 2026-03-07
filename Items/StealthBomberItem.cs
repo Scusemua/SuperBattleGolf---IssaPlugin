@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
-using IssaPlugin.Patches;
 using Mirror;
 using UnityEngine;
 
@@ -16,132 +15,24 @@ namespace IssaPlugin.Items
 
         public static void GiveBomberToLocalPlayer()
         {
-            var inventory = GameManager.LocalPlayerInventory;
-            if (inventory == null)
-            {
-                IssaPluginPlugin.Log.LogWarning("[Bomber] No local player inventory.");
-                return;
-            }
-
-            if (NetworkServer.active)
-            {
-                bool added = InventoryPatches.DirectAddCustomItem(
-                    inventory,
-                    BomberItemType,
-                    Configuration.BomberUses.Value
-                );
-                if (!added)
-                    IssaPluginPlugin.Log.LogWarning(
-                        "[Bomber] Failed to add bomber (inventory full?)."
-                    );
-            }
-            else
-            {
-                var cmdAddItem = typeof(PlayerInventory).GetMethod(
-                    "CmdAddItem",
-                    BindingFlags.NonPublic | BindingFlags.Instance
-                );
-
-                if (cmdAddItem != null)
-                {
-                    cmdAddItem.Invoke(inventory, new object[] { BomberItemType });
-                    IssaPluginPlugin.Log.LogInfo("[Bomber] Requested bomber via server command.");
-                }
-                else
-                {
-                    IssaPluginPlugin.Log.LogError("[Bomber] Could not find CmdAddItem method.");
-                }
-            }
+            ItemHelper.GiveItemToLocalPlayer(
+                BomberItemType,
+                Configuration.BomberUses.Value,
+                "Bomber"
+            );
         }
 
         private static void SetCurrentItemUse(PlayerInventory inventory, ItemUseType itemUseType)
         {
-            var setCurrentItemUse = typeof(PlayerInventory).GetMethod(
+            var method = typeof(PlayerInventory).GetMethod(
                 "SetCurrentItemUse",
                 BindingFlags.NonPublic | BindingFlags.Instance
             );
-            if (setCurrentItemUse != null)
-            {
-                setCurrentItemUse.Invoke(inventory, new object[] { itemUseType });
-                IssaPluginPlugin.Log.LogInfo(
-                    "[Bomber] Setting item usage to " + itemUseType.ToString() + "."
-                );
-            }
+
+            if (method != null)
+                method.Invoke(inventory, new object[] { itemUseType });
             else
-            {
                 IssaPluginPlugin.Log.LogError("[Bomber] Could not find SetCurrentItemUse method.");
-            }
-        }
-
-        private static void DecrementUseFromSlotAt(PlayerInventory inventory, int slotIndex)
-        {
-            var decrementUseFromSlotAt = typeof(PlayerInventory).GetMethod(
-                "DecrementUseFromSlotAt",
-                BindingFlags.NonPublic | BindingFlags.Instance
-            );
-            if (decrementUseFromSlotAt != null)
-            {
-                decrementUseFromSlotAt.Invoke(inventory, new object[] { slotIndex });
-            }
-            else
-            {
-                IssaPluginPlugin.Log.LogError(
-                    "[Bomber] Could not find DecrementUseFromSlotAt method."
-                );
-            }
-        }
-
-        private static void RemoveIfOutOfUses(PlayerInventory inventory, int slotIndex)
-        {
-            var removeIfOutOfUses = typeof(PlayerInventory).GetMethod(
-                "RemoveIfOutOfUses",
-                BindingFlags.NonPublic | BindingFlags.Instance
-            );
-            if (removeIfOutOfUses != null)
-            {
-                removeIfOutOfUses.Invoke(inventory, new object[] { slotIndex });
-            }
-            else
-            {
-                IssaPluginPlugin.Log.LogError("[Bomber] Could not find RemoveIfOutOfUses method.");
-            }
-        }
-
-        private static void ThrowUsedItemForAllClients(PlayerInventory inventory)
-        {
-            var throwUsedItemForAllClients = typeof(PlayerInventory).GetMethod(
-                "ThrowUsedItemForAllClients",
-                BindingFlags.NonPublic | BindingFlags.Instance
-            );
-            if (throwUsedItemForAllClients != null)
-            {
-                throwUsedItemForAllClients.Invoke(
-                    inventory,
-                    new object[] { ThrownUsedItemType.RocketLauncher, false, default(Vector3) }
-                );
-            }
-            else
-            {
-                IssaPluginPlugin.Log.LogError(
-                    "[Bomber] Could not find ThrowUsedItemForAllClients method."
-                );
-            }
-        }
-
-        private static void MarkThrownItem(PlayerInventory inventory, int hand)
-        {
-            var markThrownItem = typeof(PlayerInventory).GetMethod(
-                "MarkThrownItem",
-                BindingFlags.NonPublic | BindingFlags.Instance
-            );
-            if (markThrownItem != null)
-            {
-                markThrownItem.Invoke(inventory, new object[] { hand });
-            }
-            else
-            {
-                IssaPluginPlugin.Log.LogError("[Bomber] Could not find MarkThrownItem method.");
-            }
         }
 
         public static IEnumerator BomberRunRoutine(PlayerInventory inventory)
@@ -162,13 +53,10 @@ namespace IssaPlugin.Items
             }
 
             _isBombing = true;
-            DecrementUseFromSlotAt(inventory, inventory.EquippedItemIndex);
-            RemoveIfOutOfUses(inventory, inventory.EquippedItemIndex);
+            ItemHelper.DecrementAndRemove(inventory, inventory.EquippedItemIndex);
             SetCurrentItemUse(inventory, ItemUseType.None);
 
-            // Return immediately to update the player's inventory.
             yield return new WaitForSeconds(0.01f);
-
             yield return new WaitForSeconds(Configuration.BomberWaitTime.Value);
 
             float altitude = Configuration.BomberAltitude.Value;
@@ -187,7 +75,8 @@ namespace IssaPlugin.Items
                 rocketDropPoints.Add(rocketSpacing * i);
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[Bomber] Run started: {rocketCount} rockets over {totalDistance:F0}m at altitude {altitude:F0}m"
+                $"[Bomber] Run started: {rocketCount} rockets over {totalDistance:F0}m "
+                    + $"at altitude {altitude:F0}m"
             );
 
             float distanceTravelled = 0f;
@@ -204,7 +93,6 @@ namespace IssaPlugin.Items
                 )
                 {
                     Vector3 dropPos = startPos + direction * rocketDropPoints[rocketsDropped];
-
                     float spread = Configuration.BomberSpread.Value;
                     Vector3 offset = new Vector3(
                         Random.Range(-spread, spread),
@@ -212,7 +100,7 @@ namespace IssaPlugin.Items
                         Random.Range(-spread, spread)
                     );
 
-                    RequestRocketSpawn(inventory, dropPos + offset);
+                    SpawnRocket(inventory, dropPos + offset);
                     rocketsDropped++;
 
                     yield return new WaitForSeconds(rocketInterval);
@@ -225,15 +113,9 @@ namespace IssaPlugin.Items
                 $"[Bomber] Run complete. {rocketsDropped} rockets dropped."
             );
             _isBombing = false;
-
-            yield break;
         }
 
-        /// <summary>
-        /// Spawns a downward-facing rocket directly on the server,
-        /// bypassing CmdInformShotRocket and its anti-cheat rate limiter.
-        /// </summary>
-        private static void RequestRocketSpawn(PlayerInventory inventory, Vector3 position)
+        private static void SpawnRocket(PlayerInventory inventory, Vector3 position)
         {
             if (!NetworkServer.active)
                 return;

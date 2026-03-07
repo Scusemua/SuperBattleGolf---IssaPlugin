@@ -5,23 +5,11 @@ namespace IssaPlugin
 {
     public static class Configuration
     {
-        // --- Item Box Spawn Weights ---
-        public static ConfigEntry<float> BaseballBatSpawnWeight { get; private set; }
-        public static ConfigEntry<float> BomberSpawnWeight { get; private set; }
-        public static ConfigEntry<float> MissileSpawnWeight { get; private set; }
-
         // --- Baseball Bat ---
         public static ConfigEntry<float> BaseballBatPowerMultiplier { get; private set; }
         public static ConfigEntry<int> BaseballBatUses { get; private set; }
         public static ConfigEntry<Key> BaseballBatGiveKey { get; private set; }
-
-        // --- Predator Missile ---
-        public static ConfigEntry<float> MissileAltitude { get; private set; }
-        public static ConfigEntry<float> MissileFallSpeed { get; private set; }
-        public static ConfigEntry<float> MissileSteerSpeed { get; private set; }
-        public static ConfigEntry<float> MissileTimeout { get; private set; }
-        public static ConfigEntry<int> MissileUses { get; private set; }
-        public static ConfigEntry<Key> MissileGiveKey { get; private set; }
+        public static ConfigEntry<float> BaseballBatSpawnWeight { get; private set; }
 
         // --- Stealth Bomber ---
         public static ConfigEntry<float> BomberAltitude { get; private set; }
@@ -32,10 +20,20 @@ namespace IssaPlugin
         public static ConfigEntry<int> BomberUses { get; private set; }
         public static ConfigEntry<Key> BomberGiveKey { get; private set; }
         public static ConfigEntry<float> BomberWaitTime { get; private set; }
+        public static ConfigEntry<float> BomberSpawnWeight { get; private set; }
+
+        // --- Predator Missile ---
+        public static ConfigEntry<float> MissileAltitude { get; private set; }
+        public static ConfigEntry<float> MissileFallSpeed { get; private set; }
+        public static ConfigEntry<float> MissileSteerSpeed { get; private set; }
+        public static ConfigEntry<float> MissileTimeout { get; private set; }
+        public static ConfigEntry<int> MissileUses { get; private set; }
+        public static ConfigEntry<Key> MissileGiveKey { get; private set; }
+        public static ConfigEntry<float> MissileSpawnWeight { get; private set; }
 
         public static void Initialize(ConfigFile cfg)
         {
-            // Baseball Bat
+            // --- Baseball Bat ---
             BaseballBatPowerMultiplier = cfg.Bind(
                 "BaseballBat",
                 "PowerMultiplier",
@@ -57,7 +55,7 @@ namespace IssaPlugin
                 "Key to press to add the baseball bat to your inventory."
             );
 
-            // Stealth Bomber
+            // --- Stealth Bomber ---
             BomberAltitude = cfg.Bind(
                 "StealthBomber",
                 "Altitude",
@@ -93,7 +91,12 @@ namespace IssaPlugin
                 "Random lateral spread in units for each rocket's drop position."
             );
 
-            BomberUses = cfg.Bind("StealthBomber", "Uses", 1, "Number of bombing runs per pickup.");
+            BomberUses = cfg.Bind(
+                "StealthBomber",
+                "Uses",
+                1,
+                "Number of bombing runs per pickup."
+            );
 
             BomberGiveKey = cfg.Bind(
                 "StealthBomber",
@@ -109,7 +112,7 @@ namespace IssaPlugin
                 "Seconds to wait before starting the bombing run."
             );
 
-            // Predator Missile
+            // --- Predator Missile ---
             MissileAltitude = cfg.Bind(
                 "PredatorMissile",
                 "Altitude",
@@ -152,7 +155,7 @@ namespace IssaPlugin
                 "Key to press to add the predator missile to your inventory."
             );
 
-            // Item Box Spawn Weights (0 = disabled, higher = more common)
+            // --- Item Box Spawn Weights ---
             BaseballBatSpawnWeight = cfg.Bind(
                 "ItemBoxSpawns",
                 "BaseballBatWeight",
@@ -163,7 +166,7 @@ namespace IssaPlugin
             BomberSpawnWeight = cfg.Bind(
                 "ItemBoxSpawns",
                 "StealthBomberWeight",
-                100f,
+                2f,
                 "Spawn weight for the stealth bomber in item boxes. Set to 0 to disable."
             );
 
