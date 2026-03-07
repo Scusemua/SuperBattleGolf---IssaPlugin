@@ -16,6 +16,7 @@ namespace IssaPlugin
 
         private Harmony _harmony;
         private bool _itemNamesRegistered;
+        private bool _audioLoadStarted;
 
         private void Awake()
         {
@@ -53,6 +54,12 @@ namespace IssaPlugin
             {
                 InventoryPatches.RegisterCustomItemNames();
                 _itemNamesRegistered = true;
+            }
+
+            if (!_audioLoadStarted)
+            {
+                _audioLoadStarted = true;
+                StartCoroutine(BatItem.LoadHomerunSound());
             }
 
             var keyboard = Keyboard.current;

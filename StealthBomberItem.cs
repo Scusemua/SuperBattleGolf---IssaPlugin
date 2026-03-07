@@ -157,7 +157,7 @@ namespace IssaPlugin.Items
             {
                 IssaPluginPlugin.Log.LogWarning("[Bomber] Could not determine tee/hole positions.");
                 _isBombing = false;
-                // TODO: Move logic for end of item usage to method and call it.
+                SetItemUsage(inventory, ItemUseType.None);
                 yield break;
             }
 

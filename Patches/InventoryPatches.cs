@@ -296,23 +296,74 @@ namespace IssaPlugin.Patches
         }
 
         // ================================================================
-        //  Power multiplier — boost HitWithGolfSwing when bat is equipped
+        //  Power multiplier — amplify the velocity delta from each hit
+        //  instead of modifying the normalized power input, so we don't
+        //  accidentally trigger BecomeSwingProjectile at lower charge.
         // ================================================================
 
         [HarmonyPatch]
-        static class HitWithGolfSwingPatch
+        static class HitWithGolfSwingInternalPatch
         {
-            static MethodBase TargetMethod() =>
-                AccessTools.Method(typeof(Hittable), "HitWithGolfSwing");
+            internal static bool BatActive;
+            private static Vector3 _velocityBefore;
+            private static Vector3 _angularVelocityBefore;
 
-            static void Prefix(PlayerGolfer hitter, ref float power)
+            static MethodBase TargetMethod() =>
+                AccessTools.Method(typeof(Hittable), "HitWithGolfSwingInternal");
+
+            static void Prefix(Hittable __instance, PlayerGolfer hitter)
             {
+                BatActive = false;
                 if (hitter == null)
                     return;
 
-                var inventory = hitter.PlayerInfo.Inventory;
-                if (inventory.GetEffectivelyEquippedItem(true) == BatItem.BatItemType)
-                    power *= Configuration.BaseballBatPowerMultiplier.Value;
+                var inv = hitter.PlayerInfo.Inventory;
+                if (inv.GetEffectivelyEquippedItem(true) != BatItem.BatItemType)
+                    return;
+
+                BatActive = true;
+                if (__instance.AsEntity.HasRigidbody)
+                {
+                    _velocityBefore = __instance.AsEntity.Rigidbody.linearVelocity;
+                    _angularVelocityBefore = __instance.AsEntity.Rigidbody.angularVelocity;
+                }
+            }
+
+            static void Postfix(Hittable __instance)
+            {
+                if (!BatActive)
+                    return;
+
+                BatItem.PlayHomerunSound(__instance.transform.position);
+
+                if (!__instance.AsEntity.HasRigidbody)
+                    return;
+
+                float extra = Configuration.BaseballBatPowerMultiplier.Value - 1f;
+                if (extra <= 0f)
+                    return;
+
+                var rb = __instance.AsEntity.Rigidbody;
+                rb.linearVelocity += (rb.linearVelocity - _velocityBefore) * extra;
+                rb.angularVelocity += (rb.angularVelocity - _angularVelocityBefore) * extra;
+            }
+        }
+
+        // ================================================================
+        //  Skip BecomeSwingProjectile for bat hits — the projectile
+        //  system's post-hit bounce resets velocity, which cancels
+        //  out the bat's power boost at high charge levels.
+        // ================================================================
+
+        [HarmonyPatch]
+        static class BecomeSwingProjectilePatch
+        {
+            static MethodBase TargetMethod() =>
+                AccessTools.Method(typeof(Hittable), "BecomeSwingProjectile");
+
+            static bool Prefix()
+            {
+                return !HitWithGolfSwingInternalPatch.BatActive;
             }
         }
 
@@ -452,18 +503,30 @@ namespace IssaPlugin.Patches
         }
 
         // ================================================================
-        //  Prevent dropping custom items (no physical prefabs)
+        //  Custom items have no physical prefab, so instead of spawning
+        //  a dropped object, just remove them from the inventory.
         // ================================================================
 
         [HarmonyPatch]
         static class DropItemPatch
         {
+            private static readonly MethodInfo RemoveItemAtMethod = AccessTools.Method(
+                typeof(PlayerInventory), "RemoveItemAt");
+
             static MethodBase TargetMethod() =>
                 AccessTools.Method(typeof(PlayerInventory), "DropItem");
 
             static bool Prefix(PlayerInventory __instance)
             {
-                return !IsCustomItem(__instance.GetEffectivelyEquippedItem(false));
+                if (!IsCustomItem(__instance.GetEffectivelyEquippedItem(true)))
+                    return true;
+
+                int index = __instance.EquippedItemIndex;
+                if (index < 0)
+                    return false;
+
+                RemoveItemAtMethod.Invoke(__instance, new object[] { index, false });
+                return false;
             }
         }
     }
