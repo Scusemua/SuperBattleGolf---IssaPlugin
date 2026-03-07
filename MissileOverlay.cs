@@ -11,6 +11,31 @@ namespace IssaPlugin
         private const float BoxHeight = 56f;
         private const float BorderThickness = 2f;
 
+        private static string[] _playerNames = new string[]
+        {
+            "Lucy",
+            "Charlie",
+            "Daisy",
+            "Ethan",
+            "Fiona",
+            "George",
+            "Harry",
+            "Isabella",
+            "Jack",
+            "Kate",
+            "Liam",
+            "Mia",
+            "Noah",
+            "Olivia",
+            "Patrick",
+            "Quinn",
+            "Ryan",
+            "Bob",
+            "Tony",
+            "Ashley",
+            "George",
+        };
+
         private void OnGUI()
         {
             if (!PredatorMissileItem.IsSteering)
@@ -37,15 +62,41 @@ namespace IssaPlugin
                     if (player == null)
                         continue;
                     DrawTargetBox(cam, player.transform.position + Vector3.up * 1f, screenH);
+                    DrawTargetName(
+                        cam,
+                        player.transform.position + Vector3.up * 1f,
+                        screenH,
+                        player.PlayerId.PlayerName
+                    );
                 }
             }
 
-            foreach (var dummy in PredatorMissileItem.DebugDummies)
+            for (int i = 0; i < PredatorMissileItem.DebugDummies.Count; i++)
             {
+                var dummy = PredatorMissileItem.DebugDummies[i];
                 if (dummy == null)
                     continue;
                 DrawTargetBox(cam, dummy.transform.position + Vector3.up * 1f, screenH);
+                DrawTargetName(
+                    cam,
+                    dummy.transform.position + Vector3.up * 1f,
+                    screenH,
+                    _playerNames[i % _playerNames.Length]
+                );
             }
+        }
+
+        private static void DrawTargetName(Camera cam, Vector3 worldPos, float screenH, string name)
+        {
+            Vector3 screenPos = cam.WorldToScreenPoint(worldPos);
+            if (screenPos.z <= 0f)
+                return;
+
+            float x = screenPos.x - BoxWidth * 0.5f;
+            float y = screenH - screenPos.y - BoxHeight * 0.5f;
+            float t = BorderThickness;
+
+            GUI.Label(new Rect(x, y, BoxWidth, t), name);
         }
 
         private static void DrawTargetBox(Camera cam, Vector3 worldPos, float screenH)

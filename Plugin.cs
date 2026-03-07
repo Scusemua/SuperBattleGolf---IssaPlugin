@@ -38,6 +38,7 @@ namespace IssaPlugin
             CourseManager.MatchStateChanged += OnMatchStateChanged;
 
             gameObject.AddComponent<MissileOverlay>();
+            gameObject.AddComponent<BomberOverlay>();
 
             Log.LogInfo("IssaPlugin by Scusemua has loaded.");
         }

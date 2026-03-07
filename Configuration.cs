@@ -20,6 +20,10 @@ namespace IssaPlugin
         public static ConfigEntry<int> BomberUses { get; private set; }
         public static ConfigEntry<Key> BomberGiveKey { get; private set; }
         public static ConfigEntry<float> BomberWaitTime { get; private set; }
+        public static ConfigEntry<float> BomberStripLength { get; private set; }
+        public static ConfigEntry<float> BomberTargetingAltitude { get; private set; }
+        public static ConfigEntry<float> BomberTargetMoveSpeed { get; private set; }
+        public static ConfigEntry<float> BomberTargetRotateSpeed { get; private set; }
         public static ConfigEntry<float> BomberSpawnWeight { get; private set; }
 
         // --- Predator Missile ---
@@ -91,12 +95,7 @@ namespace IssaPlugin
                 "Random lateral spread in units for each rocket's drop position."
             );
 
-            BomberUses = cfg.Bind(
-                "StealthBomber",
-                "Uses",
-                1,
-                "Number of bombing runs per pickup."
-            );
+            BomberUses = cfg.Bind("StealthBomber", "Uses", 1, "Number of bombing runs per pickup.");
 
             BomberGiveKey = cfg.Bind(
                 "StealthBomber",
@@ -108,8 +107,36 @@ namespace IssaPlugin
             BomberWaitTime = cfg.Bind(
                 "StealthBomber",
                 "WaitTime",
-                2.0f,
+                1.5f,
                 "Seconds to wait before starting the bombing run."
+            );
+
+            BomberStripLength = cfg.Bind(
+                "StealthBomber",
+                "StripLength",
+                300f,
+                "Length of the targeting strip in units."
+            );
+
+            BomberTargetingAltitude = cfg.Bind(
+                "StealthBomber",
+                "TargetingAltitude",
+                120f,
+                "Extra camera distance (zoom out) during bird's-eye targeting."
+            );
+
+            BomberTargetMoveSpeed = cfg.Bind(
+                "StealthBomber",
+                "TargetMoveSpeed",
+                50f,
+                "How fast the targeting strip moves with WASD."
+            );
+
+            BomberTargetRotateSpeed = cfg.Bind(
+                "StealthBomber",
+                "TargetRotateSpeed",
+                90f,
+                "Rotation speed of the targeting strip in degrees per second (Q/E)."
             );
 
             // --- Predator Missile ---
