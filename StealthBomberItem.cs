@@ -14,8 +14,6 @@ namespace IssaPlugin.Items
         private static bool _isBombing;
         private static int _bomberUseIndex;
 
-        private static MethodInfo _cmdInformShotRocket;
-
         public static void GiveBomberToLocalPlayer()
         {
             var inventory = GameManager.LocalPlayerInventory;
@@ -128,11 +126,13 @@ namespace IssaPlugin.Items
         }
 
         /// <summary>
-        /// Spawn a downward rocket via the game's own CmdInformShotRocket command.
-        /// On a host this spawns directly; on a client it sends the request to the server.
+        /// Spawns a downward-facing rocket directly on the server,
+        /// bypassing CmdInformShotRocket and its anti-cheat rate limiter.
         /// </summary>
         private static void RequestRocketSpawn(PlayerInventory inventory, Vector3 position)
         {
+            if (!NetworkServer.active) return;
+
             Quaternion rotation = Quaternion.LookRotation(Vector3.down, Vector3.forward);
 
             _bomberUseIndex++;
@@ -142,28 +142,17 @@ namespace IssaPlugin.Items
                 ItemType.RocketLauncher
             );
 
-            if (_cmdInformShotRocket == null)
+            var rocket = Object.Instantiate(
+                GameManager.ItemSettings.RocketPrefab, position, rotation);
+
+            if (rocket == null)
             {
-                _cmdInformShotRocket = typeof(PlayerInventory).GetMethod(
-                    "CmdInformShotRocket",
-                    BindingFlags.NonPublic | BindingFlags.Instance
-                );
+                IssaPluginPlugin.Log.LogError("[Bomber] Rocket did not instantiate.");
+                return;
             }
 
-            if (_cmdInformShotRocket != null)
-            {
-                // Mirror fills the sender parameter automatically on the server side
-                _cmdInformShotRocket.Invoke(
-                    inventory,
-                    new object[] { position, rotation, null, itemUseId, null }
-                );
-            }
-            else
-            {
-                IssaPluginPlugin.Log.LogError(
-                    "[Bomber] Could not find CmdInformShotRocket method."
-                );
-            }
+            rocket.ServerInitialize(inventory.PlayerInfo, null, itemUseId);
+            NetworkServer.Spawn(rocket.gameObject, (NetworkConnectionToClient)null);
         }
 
         private static bool TryGetBomberPath(out Vector3 start, out Vector3 end)

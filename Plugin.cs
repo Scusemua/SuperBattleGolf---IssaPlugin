@@ -2,6 +2,7 @@ using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
 using IssaPlugin.Items;
+using IssaPlugin.Patches;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -14,6 +15,7 @@ namespace IssaPlugin
         internal static ManualLogSource Log { get; private set; }
 
         private Harmony _harmony;
+        private bool _itemNamesRegistered;
 
         private void Awake()
         {
@@ -47,6 +49,12 @@ namespace IssaPlugin
 
         private void Update()
         {
+            if (!_itemNamesRegistered)
+            {
+                InventoryPatches.RegisterCustomItemNames();
+                _itemNamesRegistered = true;
+            }
+
             var keyboard = Keyboard.current;
             if (keyboard == null) return;
 

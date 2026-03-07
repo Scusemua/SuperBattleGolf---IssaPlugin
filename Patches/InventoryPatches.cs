@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
@@ -9,15 +10,14 @@ namespace IssaPlugin.Patches
 {
     public static class InventoryPatches
     {
-        private static readonly FieldInfo SlotsField = AccessTools.Field(
-            typeof(PlayerInventory),
-            "slots"
-        );
+        private static readonly FieldInfo SlotsField =
+            AccessTools.Field(typeof(PlayerInventory), "slots");
 
-        private static readonly FieldInfo AllItemDataField = AccessTools.Field(
-            typeof(ItemCollection),
-            "allItemData"
-        );
+        private static readonly FieldInfo AllItemDataField =
+            AccessTools.Field(typeof(ItemCollection), "allItemData");
+
+        private static readonly PropertyInfo IconProperty =
+            AccessTools.Property(typeof(ItemData), "Icon");
 
         private static readonly Dictionary<ItemType, ItemData> CustomItemDataCache =
             new Dictionary<ItemType, ItemData>();
@@ -29,10 +29,8 @@ namespace IssaPlugin.Patches
 
         public static int GetMaxUses(ItemType type)
         {
-            if (type == BatItem.BatItemType)
-                return Configuration.BaseballBatUses.Value;
-            if (type == StealthBomberItem.BomberItemType)
-                return Configuration.BomberUses.Value;
+            if (type == BatItem.BatItemType) return Configuration.BaseballBatUses.Value;
+            if (type == StealthBomberItem.BomberItemType) return Configuration.BomberUses.Value;
             return 1;
         }
 
@@ -40,8 +38,7 @@ namespace IssaPlugin.Patches
         {
             if (CustomItemDataCache.TryGetValue(type, out var cached))
             {
-                AccessTools
-                    .Property(typeof(ItemData), "MaxUses")
+                AccessTools.Property(typeof(ItemData), "MaxUses")
                     .SetValue(cached, GetMaxUses(type));
                 return cached;
             }
@@ -68,10 +65,6 @@ namespace IssaPlugin.Patches
             return data;
         }
 
-        /// <summary>
-        /// Injects custom ItemData into an ItemCollection's internal dictionary.
-        /// Call after the collection is initialized (or from the Initialize postfix).
-        /// </summary>
         private static void InjectCustomItems(ItemCollection collection)
         {
             var dict = (Dictionary<ItemType, ItemData>)AllItemDataField.GetValue(collection);
@@ -81,24 +74,100 @@ namespace IssaPlugin.Patches
                 return;
             }
 
-            dict[BatItem.BatItemType] = GetOrCreateItemData(BatItem.BatItemType);
-            dict[StealthBomberItem.BomberItemType] = GetOrCreateItemData(
-                StealthBomberItem.BomberItemType
-            );
+            var batData = GetOrCreateItemData(BatItem.BatItemType);
+            var bomberData = GetOrCreateItemData(StealthBomberItem.BomberItemType);
+
+            // Borrow icons from existing game items
+            if (dict.TryGetValue(ItemType.DuelingPistol, out var pistolData) && pistolData.Icon != null)
+                IconProperty.SetValue(batData, pistolData.Icon);
+
+            if (dict.TryGetValue(ItemType.RocketLauncher, out var rocketData) && rocketData.Icon != null)
+                IconProperty.SetValue(bomberData, rocketData.Icon);
+
+            dict[BatItem.BatItemType] = batData;
+            dict[StealthBomberItem.BomberItemType] = bomberData;
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[Inventory] Injected {CustomItemDataCache.Count} custom items into ItemCollection (dict now has {dict.Count} entries)."
-            );
+                $"[Inventory] Injected {CustomItemDataCache.Count} custom items into ItemCollection.");
         }
 
-        public static bool DirectAddCustomItem(
-            PlayerInventory inventory,
-            ItemType itemType,
-            int uses
-        )
+        /// <summary>
+        /// Adds entries to the Unity Localization "Data" StringTable at runtime
+        /// so that our custom item names resolve correctly everywhere.
+        /// Uses pure reflection to avoid needing a compile-time reference to Unity.Localization.dll.
+        /// Must be called after the game is fully initialized (not during ScriptableObject.OnEnable).
+        /// </summary>
+        public static void RegisterCustomItemNames()
         {
-            if (!NetworkServer.active)
-                return false;
+            try
+            {
+                Assembly locAsm = null;
+                foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    if (asm.GetName().Name == "Unity.Localization")
+                    {
+                        locAsm = asm;
+                        break;
+                    }
+                }
+                if (locAsm == null)
+                {
+                    IssaPluginPlugin.Log.LogWarning("[Inventory] Unity.Localization assembly not found.");
+                    return;
+                }
+
+                var locSettingsType = locAsm.GetType("UnityEngine.Localization.Settings.LocalizationSettings");
+                var stringDbProp = locSettingsType.GetProperty("StringDatabase",
+                    BindingFlags.Public | BindingFlags.Static);
+                var stringDb = stringDbProp.GetValue(null);
+                if (stringDb == null) return;
+
+                // Build a TableReference from the string "Data"
+                var tableRefType = locAsm.GetType("UnityEngine.Localization.Tables.TableReference");
+                var implicitOp = tableRefType.GetMethod("op_Implicit",
+                    BindingFlags.Public | BindingFlags.Static,
+                    null, new[] { typeof(string) }, null);
+                var tableRef = implicitOp.Invoke(null, new object[] { "Data" });
+
+                // Find GetTable(TableReference, Locale) on the StringDatabase
+                MethodInfo getTableMethod = null;
+                foreach (var m in stringDb.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance))
+                {
+                    if (m.Name != "GetTable") continue;
+                    var pars = m.GetParameters();
+                    if (pars.Length == 2 && pars[0].ParameterType == tableRefType)
+                    {
+                        getTableMethod = m;
+                        break;
+                    }
+                }
+                if (getTableMethod == null) return;
+
+                var table = getTableMethod.Invoke(stringDb, new[] { tableRef, null });
+                if (table == null)
+                {
+                    IssaPluginPlugin.Log.LogWarning("[Inventory] Data string table not loaded yet; names will be set on next init.");
+                    return;
+                }
+
+                var addEntryMethod = table.GetType().GetMethod("AddEntry",
+                    new[] { typeof(string), typeof(string) });
+                if (addEntryMethod == null) return;
+
+                addEntryMethod.Invoke(table, new object[] { "ITEM_100", "Baseball Bat" });
+                addEntryMethod.Invoke(table, new object[] { "ITEM_101", "Stealth Bomber" });
+
+                IssaPluginPlugin.Log.LogInfo("[Inventory] Custom item names registered in string table.");
+            }
+            catch (Exception e)
+            {
+                IssaPluginPlugin.Log.LogWarning($"[Inventory] Failed to register item names: {e.Message}");
+            }
+        }
+
+        public static bool DirectAddCustomItem(PlayerInventory inventory, ItemType itemType, int uses)
+        {
+            if (!NetworkServer.active) return false;
 
             int emptyIndex;
             if (!inventory.HasSpaceForItem(out emptyIndex))
@@ -111,16 +180,12 @@ namespace IssaPlugin.Patches
             slots[emptyIndex] = new InventorySlot(itemType, uses > 0 ? uses : 1);
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[Inventory] Added custom item {(int)itemType} to slot {emptyIndex} ({uses} uses)."
-            );
+                $"[Inventory] Added custom item {(int)itemType} to slot {emptyIndex} ({uses} uses).");
             return true;
         }
 
         // ================================================================
         //  Inject custom items into the game's item registry.
-        //  ItemCollection.Initialize() clears & rebuilds allItemData;
-        //  our postfix adds custom entries so every TryGetItemData /
-        //  GetItemIcon / direct-dictionary lookup just works.
         // ================================================================
 
         [HarmonyPatch]
@@ -150,21 +215,17 @@ namespace IssaPlugin.Patches
                 var equipped = __instance.GetEffectivelyEquippedItem(false);
                 if (equipped == BatItem.BatItemType)
                 {
-                    __instance.PlayerInfo.RightHandEquipmentSwitcher.SetEquipment(
-                        EquipmentType.GolfClub
-                    );
-                    __instance.PlayerInfo.LeftHandEquipmentSwitcher.SetEquipment(
-                        EquipmentType.None
-                    );
+                    __instance.PlayerInfo.RightHandEquipmentSwitcher
+                        .SetEquipment(EquipmentType.GolfClub);
+                    __instance.PlayerInfo.LeftHandEquipmentSwitcher
+                        .SetEquipment(EquipmentType.None);
                 }
                 else if (equipped == StealthBomberItem.BomberItemType)
                 {
-                    __instance.PlayerInfo.RightHandEquipmentSwitcher.SetEquipment(
-                        EquipmentType.RocketLauncher
-                    );
-                    __instance.PlayerInfo.LeftHandEquipmentSwitcher.SetEquipment(
-                        EquipmentType.None
-                    );
+                    __instance.PlayerInfo.RightHandEquipmentSwitcher
+                        .SetEquipment(EquipmentType.RocketLauncher);
+                    __instance.PlayerInfo.LeftHandEquipmentSwitcher
+                        .SetEquipment(EquipmentType.None);
                 }
             }
         }
@@ -179,12 +240,8 @@ namespace IssaPlugin.Patches
             static MethodBase TargetMethod() =>
                 AccessTools.Method(typeof(PlayerInventory), "TryUseItem");
 
-            static bool Prefix(
-                PlayerInventory __instance,
-                bool isAirhornReaction,
-                ref bool shouldEatInput,
-                ref bool __result
-            )
+            static bool Prefix(PlayerInventory __instance, bool isAirhornReaction,
+                ref bool shouldEatInput, ref bool __result)
             {
                 var equipped = __instance.GetEffectivelyEquippedItem(false);
 
@@ -235,15 +292,10 @@ namespace IssaPlugin.Patches
             static MethodBase TargetMethod() =>
                 AccessTools.Method(typeof(PlayerInventory), "ServerTryAddItem");
 
-            static bool Prefix(
-                PlayerInventory __instance,
-                ItemType itemToAdd,
-                int remainingUses,
-                ref bool __result
-            )
+            static bool Prefix(PlayerInventory __instance,
+                ItemType itemToAdd, int remainingUses, ref bool __result)
             {
-                if (!IsCustomItem(itemToAdd))
-                    return true;
+                if (!IsCustomItem(itemToAdd)) return true;
 
                 __result = DirectAddCustomItem(__instance, itemToAdd, remainingUses);
                 return false;
@@ -258,8 +310,7 @@ namespace IssaPlugin.Patches
 
             static bool Prefix(PlayerInventory __instance, ItemType item)
             {
-                if (!IsCustomItem(item))
-                    return true;
+                if (!IsCustomItem(item)) return true;
 
                 DirectAddCustomItem(__instance, item, GetMaxUses(item));
                 return false;
