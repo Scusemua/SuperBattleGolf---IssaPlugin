@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Reflection;
 using HarmonyLib;
@@ -67,12 +68,11 @@ namespace IssaPlugin.Items
                 "Assets/predator_missile_tablet.prefab"
             );
 
-            // In AssetLoader, after loading the AC130 prefab:
-            RegisterPrefab(AC130Prefab);
-            RegisterPrefab(BomberTabletPrefab);
-            RegisterPrefab(MissileTabletPrefab);
-            RegisterPrefab(BomberPrefab);
-            RegisterPrefab(BatModelPrefab);
+            RegisterNetworkedPrefab(AC130Prefab);
+            RegisterNetworkedPrefab(BomberTabletPrefab);
+            RegisterNetworkedPrefab(MissileTabletPrefab);
+            RegisterNetworkedPrefab(BomberPrefab);
+            RegisterNetworkedPrefab(BatModelPrefab);
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[Assets] Bundle loaded. "
@@ -83,16 +83,41 @@ namespace IssaPlugin.Items
             );
         }
 
-        private static void RegisterPrefab(GameObject prefab)
+        private static void RegisterNetworkedPrefab(GameObject prefab)
         {
-            if (prefab != null)
-            {
-                // Ensure it has a NetworkIdentity, which Mirror requires for spawning.
-                if (prefab.GetComponent<NetworkIdentity>() == null)
-                    prefab.AddComponent<NetworkIdentity>();
+            if (prefab == null)
+                return;
 
-                NetworkClient.RegisterPrefab(prefab);
+            var identity = prefab.GetComponent<NetworkIdentity>();
+            if (identity == null)
+                identity = prefab.AddComponent<NetworkIdentity>();
+
+            // Derive a stable uint assetId from the prefab name via FNV-1a hash,
+            // then set it via reflection since the property has no public setter.
+            uint assetId = Fnv1aHash(prefab.name);
+            typeof(NetworkIdentity)
+                .GetField(
+                    "assetId",
+                    System.Reflection.BindingFlags.NonPublic
+                        | System.Reflection.BindingFlags.Instance
+                )
+                ?.SetValue(identity, assetId);
+
+            NetworkClient.RegisterPrefab(prefab);
+            IssaPluginPlugin.Log.LogInfo(
+                $"[AssetLoader] Registered networked prefab: {prefab.name} (assetId={assetId})"
+            );
+        }
+
+        private static uint Fnv1aHash(string input)
+        {
+            uint hash = 2166136261u;
+            foreach (char c in input)
+            {
+                hash ^= (byte)c;
+                hash *= 16777619u;
             }
+            return hash;
         }
 
         private static Sprite LoadSprite(string assetPath)

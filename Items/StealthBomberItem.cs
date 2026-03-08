@@ -22,7 +22,7 @@ namespace IssaPlugin.Items
             public BombingStripInfo? Strip;
         }
 
-        private struct BombingStripInfo
+        public struct BombingStripInfo
         {
             public Vector3 Center;
             public Vector3 Forward;
@@ -68,8 +68,19 @@ namespace IssaPlugin.Items
                 yield break;
             }
 
-            var bombing = RunBombingPhase(inventory, equippedIndex, result.Strip.Value);
-            yield return bombing;
+            var bridge = inventory.GetComponent<BomberNetworkBridge>();
+            if (bridge == null)
+            {
+                IssaPluginPlugin.Log.LogError("[Bomber] No BomberNetworkBridge on player.");
+                yield break;
+            }
+
+            bridge.CmdRequestBombingRun(
+                result.Strip.Value.Center,
+                result.Strip.Value.Forward,
+                result.Strip.Value.Length,
+                equippedIndex
+            );
         }
 
         private static void HandleTargetingMovement(
@@ -231,7 +242,17 @@ namespace IssaPlugin.Items
             InputManager.Controls.Gameplay.Enable();
         }
 
-        private static IEnumerator RunBombingPhase(
+        public static void LocalSpawnBomberVisual(
+            Vector3 spawnPos,
+            Vector3 exitPos,
+            Vector3 direction,
+            float speed
+        )
+        {
+            SpawnBomberVisual(spawnPos, exitPos, direction, speed);
+        }
+
+        public static IEnumerator ServerBombingPhase(
             PlayerInventory inventory,
             int equippedIndex,
             BombingStripInfo strip
