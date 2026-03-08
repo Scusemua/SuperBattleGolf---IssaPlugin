@@ -16,30 +16,20 @@ namespace IssaPlugin
         private GUIStyle _timerStyle;
 
         private float _noiseTimer;
+        private Color32[] _noisePixels;
 
         private static Vector3 _crosshairWorld;
         private static float _elapsed;
         private static float _duration;
 
         private const float ScanlineSpacing = 3f;
-        private const float NoiseUpdateRate = 0.04f;
+        private const float NoiseUpdateRate = 0.1f;
 
         public static void UpdateAimInfo(Vector3 crosshairWorld, float elapsed, float duration)
         {
             _crosshairWorld = crosshairWorld;
             _elapsed = elapsed;
             _duration = duration;
-        }
-
-        private void OnRenderImage(RenderTexture src, RenderTexture dest)
-        {
-            if (!AC130Item.IsActive)
-            {
-                Graphics.Blit(src, dest);
-                return;
-            }
-
-            Graphics.Blit(src, dest);
         }
 
         private void OnGUI()
@@ -203,14 +193,20 @@ namespace IssaPlugin
                 _bgTex.Apply();
             }
 
+            int qw = Mathf.Max(1, (int)w / 4);
+            int qh = Mathf.Max(1, (int)h / 4);
+
             if (_vignetteRingTex == null)
-                _vignetteRingTex = GenerateVignette((int)w, (int)h);
+                _vignetteRingTex = GenerateVignette(qw, qh);
 
             if (_scanlineTex == null)
-                _scanlineTex = GenerateScanlines((int)w, (int)h);
+                _scanlineTex = GenerateScanlines(qw, qh);
+
+            int nw = Mathf.Max(1, (int)w / 8);
+            int nh = Mathf.Max(1, (int)h / 8);
 
             if (_noiseTex == null)
-                _noiseTex = GenerateNoise((int)(w / 4), (int)(h / 4));
+                _noiseTex = GenerateNoise(nw, nh);
         }
 
         private void EnsureStyles()
@@ -294,26 +290,23 @@ namespace IssaPlugin
             return tex;
         }
 
-        private static Texture2D GenerateNoise(int w, int h)
+        private Texture2D GenerateNoise(int w, int h)
         {
             var tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
-            RegenerateNoise(tex, w, h);
+            _noisePixels = new Color32[w * h];
+            RegenerateNoise();
             return tex;
         }
 
-        private void RegenerateNoise() =>
-            RegenerateNoise(_noiseTex, _noiseTex.width, _noiseTex.height);
-
-        private static void RegenerateNoise(Texture2D tex, int w, int h)
+        private void RegenerateNoise()
         {
-            var pixels = new Color[w * h];
-            for (int i = 0; i < pixels.Length; i++)
+            for (int i = 0; i < _noisePixels.Length; i++)
             {
-                float v = Random.value;
-                pixels[i] = new Color(v, v, v, 1f);
+                byte v = (byte)Random.Range(0, 256);
+                _noisePixels[i] = new Color32(v, v, v, 255);
             }
-            tex.SetPixels(pixels);
-            tex.Apply();
+            _noiseTex.SetPixels32(_noisePixels);
+            _noiseTex.Apply(false, false);
         }
     }
 }

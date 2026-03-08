@@ -66,6 +66,8 @@ namespace IssaPlugin.Items
             NetworkServer.Spawn(rocket.gameObject, (NetworkConnectionToClient)null);
             ActiveMissileRockets.Add(rocket);
 
+            ExplosionScaler.Register(rocket, Configuration.PredatorMissileExplosionScale.Value);
+
             IssaPluginPlugin.Log.LogInfo($"[Missile] Launched at {spawnPos}.");
 
             // Give Mirror one frame to sync the new NetworkIdentity to clients

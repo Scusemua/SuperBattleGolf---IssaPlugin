@@ -511,6 +511,8 @@ namespace IssaPlugin.Items
 
             rocket.ServerInitialize(inventory.PlayerInfo, null, itemUseId);
             NetworkServer.Spawn(rocket.gameObject, (NetworkConnectionToClient)null);
+
+            ExplosionScaler.Register(rocket, Configuration.StealthBomberExplosionScale.Value);
         }
 
         /// <summary>

@@ -61,6 +61,11 @@ namespace IssaPlugin
         public static ConfigEntry<float> AC130ZoomFov { get; private set; }
         public static ConfigEntry<float> AC130ZoomSpeed { get; private set; }
 
+        // --- Explosion Scaling ---
+        public static ConfigEntry<float> AC130ExplosionScale { get; private set; }
+        public static ConfigEntry<float> PredatorMissileExplosionScale { get; private set; }
+        public static ConfigEntry<float> StealthBomberExplosionScale { get; private set; }
+
         public static void Initialize(ConfigFile cfg)
         {
             // --- Baseball Bat ---
@@ -391,6 +396,28 @@ namespace IssaPlugin
                 "ZoomSpeed",
                 8f,
                 "Speed at which the camera lerps to and from the zoomed FOV when right-clicking."
+            );
+
+            // --- Explosion Scaling ---
+            AC130ExplosionScale = cfg.Bind(
+                "Explosions",
+                "AC130Scale",
+                1.5f,
+                "Multiplier for AC130 rocket explosions. Affects blast radius, knockback, and VFX size."
+            );
+
+            PredatorMissileExplosionScale = cfg.Bind(
+                "Explosions",
+                "PredatorMissileScale",
+                2.0f,
+                "Multiplier for Predator Missile explosions. Affects blast radius, knockback, and VFX size."
+            );
+
+            StealthBomberExplosionScale = cfg.Bind(
+                "Explosions",
+                "StealthBomberScale",
+                0.7f,
+                "Multiplier for Stealth Bomber rocket explosions. Affects blast radius, knockback, and VFX size."
             );
 
             IssaPluginPlugin.Log.LogInfo("Configuration initialized.");

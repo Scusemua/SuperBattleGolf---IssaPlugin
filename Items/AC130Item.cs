@@ -17,6 +17,8 @@ namespace IssaPlugin.Items
         public static Vector3 GunshipPosition { get; private set; }
         public static Vector3 GunshipFacing { get; private set; }
 
+        private static readonly int GroundLayerMask = LayerMask.GetMask("Default", "Terrain");
+
         public static void GiveAC130ToLocalPlayer()
         {
             ItemHelper.GiveItemToLocalPlayer(AC130ItemType, Configuration.AC130Uses.Value, "AC130");
@@ -59,20 +61,21 @@ namespace IssaPlugin.Items
                 HandleFlight(keyboard, session);
                 HandleZoom(mouse, ref session.CurrentFov, session.OriginalFov);
 
-                Vector3 gunshipPos =
-                    session.GunshipVisual != null
-                        ? session.GunshipVisual.transform.position
-                        : AC130Helpers.OrbitPosition(
-                            session.MapCentre,
-                            session.Elapsed * session.BaseOrbitSpeed,
-                            session.OrbitRadius,
-                            session.Altitude + session.AltitudeOffset
-                        );
+                // Use the FlyComp's current orbit angle for horizontal position
+                // but the TARGET altitude (not the lerped visual altitude) so the
+                // camera responds instantly to Q/E input instead of lagging.
+                float currentAngle = session.FlyComp != null
+                    ? session.FlyComp.currentAngle
+                    : session.Elapsed * session.BaseOrbitSpeed;
 
-                Vector3 gunshipFacing =
-                    session.GunshipVisual != null
-                        ? session.GunshipVisual.transform.forward
-                        : AC130Helpers.OrbitTangent(session.Elapsed * session.BaseOrbitSpeed);
+                Vector3 gunshipPos = AC130Helpers.OrbitPosition(
+                    session.MapCentre,
+                    currentAngle,
+                    session.OrbitRadius,
+                    session.Altitude + session.AltitudeOffset
+                );
+
+                Vector3 gunshipFacing = AC130Helpers.OrbitTangent(currentAngle);
 
                 GunshipPosition = gunshipPos;
                 GunshipFacing = gunshipFacing;
@@ -82,10 +85,12 @@ namespace IssaPlugin.Items
                 // Mouse-based aiming: raycast from camera through mouse cursor
                 Vector3 crosshairWorld = gunshipPos;
                 Vector3 aimDirection = Vector3.down;
+
                 if (Camera.main != null && mouse != null)
                 {
                     Ray aimRay = Camera.main.ScreenPointToRay(mouse.position.ReadValue());
-                    if (Physics.Raycast(aimRay, out RaycastHit hit, 5000f))
+
+                    if (Physics.Raycast(aimRay, out RaycastHit hit, 5000f, GroundLayerMask))
                         crosshairWorld = hit.point;
                     else
                         crosshairWorld = ProjectAimToGround(aimRay.origin, aimRay.direction);
@@ -196,6 +201,8 @@ namespace IssaPlugin.Items
 
             rocket.ServerInitialize(inventory.PlayerInfo, null, itemUseId);
             NetworkServer.Spawn(rocket.gameObject, (NetworkConnectionToClient)null);
+
+            ExplosionScaler.Register(rocket, Configuration.AC130ExplosionScale.Value);
         }
 
         // ----------------------------------------------------------------

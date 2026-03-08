@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Reflection;
 using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -20,6 +18,8 @@ namespace IssaPlugin.Items
 
         private float _currentAltitude;
 
+        private const float AltitudeSnapThreshold = 0.01f;
+
         private void Start()
         {
             _currentAltitude = altitude;
@@ -33,6 +33,11 @@ namespace IssaPlugin.Items
                 altitude,
                 altitudeLerpSpeed * Time.deltaTime
             );
+
+            // Snap to target and stop lerping once close enough to avoid
+            // continuously dirtying the NetworkTransform at the clamp boundary.
+            if (Mathf.Abs(_currentAltitude - altitude) < AltitudeSnapThreshold)
+                _currentAltitude = altitude;
 
             float rad = currentAngle * Mathf.Deg2Rad;
             transform.position = new Vector3(
