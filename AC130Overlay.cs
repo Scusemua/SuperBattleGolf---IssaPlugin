@@ -108,9 +108,11 @@ namespace IssaPlugin
             DrawCornerBracket(0, h - bSize, bSize, bThick, true, false);
             DrawCornerBracket(w - bSize, h - bSize, bSize, bThick, false, false);
 
-            // Crosshair — larger than the bomber's, with a circle to suggest a gun reticle.
-            float cx = w / 2f,
-                cy = h / 2f;
+            // Crosshair follows the mouse cursor
+            var mousePos = UnityEngine.InputSystem.Mouse.current?.position.ReadValue()
+                           ?? new Vector2(w / 2f, h / 2f);
+            float cx = mousePos.x;
+            float cy = h - mousePos.y; // InputSystem Y is bottom-up, GUI Y is top-down
             float cLen = 28f,
                 cGap = 10f,
                 cRadius = 22f;
@@ -167,7 +169,7 @@ namespace IssaPlugin
             GUI.Label(new Rect(0, h - 75, w, 35), "AC-130 GUNSHIP", _titleStyle);
             GUI.Label(
                 new Rect(0, h - 42, w, 30),
-                "Shift: Speed Up   |   Q/E: Raise/Lower   |   Click: Shoot   |   Space: Exit/Cancel",
+                "Aim: Mouse   |   Click: Shoot   |   Q/E: Raise/Lower   |   Shift: Speed Up   |   Space: Exit",
                 _instructionStyle
             );
         }

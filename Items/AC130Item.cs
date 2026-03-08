@@ -57,16 +57,6 @@ namespace IssaPlugin.Items
                 }
 
                 HandleFlight(keyboard, session);
-                HandleAim(
-                    keyboard,
-                    ref session.AimYaw,
-                    ref session.AimPitch,
-                    session.AimYawSpeed,
-                    session.AimPitchSpeed,
-                    session.AimPitchMin,
-                    session.AimPitchMax,
-                    session.AimYawMax
-                );
                 HandleZoom(mouse, ref session.CurrentFov, session.OriginalFov);
 
                 Vector3 gunshipPos =
@@ -89,17 +79,24 @@ namespace IssaPlugin.Items
                 session.PivotGo.transform.position = gunshipPos;
                 session.OrbitModule?.ForceUpdateModule();
 
-                Quaternion aimRotation =
-                    Quaternion.LookRotation(gunshipFacing, Vector3.up)
-                    * Quaternion.Euler(session.AimPitch, session.AimYaw, 0f);
-                Vector3 aimDirection = aimRotation * Vector3.down;
-                Vector3 crosshairWorld = ProjectAimToGround(gunshipPos, aimDirection);
+                // Mouse-based aiming: raycast from camera through mouse cursor
+                Vector3 crosshairWorld = gunshipPos;
+                Vector3 aimDirection = Vector3.down;
+                if (Camera.main != null && mouse != null)
+                {
+                    Ray aimRay = Camera.main.ScreenPointToRay(mouse.position.ReadValue());
+                    if (Physics.Raycast(aimRay, out RaycastHit hit, 5000f))
+                        crosshairWorld = hit.point;
+                    else
+                        crosshairWorld = ProjectAimToGround(aimRay.origin, aimRay.direction);
+
+                    aimDirection = (crosshairWorld - gunshipPos).normalized;
+                }
 
                 AC130Overlay.UpdateAimInfo(crosshairWorld, session.Elapsed, session.Duration);
 
                 bool firePressed =
-                    (keyboard != null && keyboard[Key.F].wasPressedThisFrame)
-                    || (mouse != null && mouse.leftButton.wasPressedThisFrame);
+                    mouse != null && mouse.leftButton.wasPressedThisFrame;
 
                 if (firePressed && session.Cooldown <= 0f)
                 {
@@ -164,32 +161,6 @@ namespace IssaPlugin.Items
 
             if (s.FlyComp != null)
                 s.FlyComp.altitude = s.Altitude + s.AltitudeOffset;
-        }
-
-        private static void HandleAim(
-            Keyboard keyboard,
-            ref float aimYaw,
-            ref float aimPitch,
-            float yawSpeed,
-            float pitchSpeed,
-            float pitchMin,
-            float pitchMax,
-            float yawMax
-        )
-        {
-            if (keyboard == null)
-                return;
-
-            if (keyboard[Key.A].isPressed || keyboard[Key.LeftArrow].isPressed)
-                aimYaw -= yawSpeed * Time.deltaTime;
-            if (keyboard[Key.D].isPressed || keyboard[Key.RightArrow].isPressed)
-                aimYaw += yawSpeed * Time.deltaTime;
-            if (keyboard[Key.W].isPressed || keyboard[Key.UpArrow].isPressed)
-                aimPitch = Mathf.Clamp(aimPitch - pitchSpeed * Time.deltaTime, pitchMin, pitchMax);
-            if (keyboard[Key.S].isPressed || keyboard[Key.DownArrow].isPressed)
-                aimPitch = Mathf.Clamp(aimPitch + pitchSpeed * Time.deltaTime, pitchMin, pitchMax);
-
-            aimYaw = Mathf.Clamp(aimYaw, -yawMax, yawMax);
         }
 
         // ----------------------------------------------------------------
