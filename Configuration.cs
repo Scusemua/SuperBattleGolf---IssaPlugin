@@ -60,6 +60,8 @@ namespace IssaPlugin
 
         public static ConfigEntry<float> AC130ZoomFov { get; private set; }
         public static ConfigEntry<float> AC130ZoomSpeed { get; private set; }
+        public static ConfigEntry<float> AC130ApproachDistance { get; private set; }
+        public static ConfigEntry<float> AC130ApproachSpeed { get; private set; }
 
         // --- Explosion Scaling ---
         public static ConfigEntry<float> AC130ExplosionScale { get; private set; }
@@ -396,6 +398,20 @@ namespace IssaPlugin
                 "ZoomSpeed",
                 8f,
                 "Speed at which the camera lerps to and from the zoomed FOV when right-clicking."
+            );
+
+            AC130ApproachDistance = cfg.Bind(
+                "AC130",
+                "ApproachDistance",
+                800f,
+                "How far away the AC130 spawns and flies in from before reaching the orbit point."
+            );
+
+            AC130ApproachSpeed = cfg.Bind(
+                "AC130",
+                "ApproachSpeed",
+                120f,
+                "Speed in units per second at which the AC130 flies in and out."
             );
 
             // --- Explosion Scaling ---

@@ -44,6 +44,58 @@ namespace IssaPlugin.Items
 
             var session = new AC130Session(inventory, GetMapCentre(inventory));
 
+            // ============================================================
+            //  Phase 1: Fly-in — camera follows the visual as it approaches
+            // ============================================================
+            if (session.FlyComp != null)
+            {
+                if (session.OrbitModule != null)
+                {
+                    session.OrbitModule.SetSubject(session.PivotGo.transform);
+                    session.OrbitModule.SetPitch(Configuration.AC130CameraPitch.Value);
+                    session.OrbitModule.SetDistanceAddition(
+                        Configuration.AC130CameraDistance.Value
+                    );
+                    session.OrbitModule.disablePhysics = true;
+                }
+
+                IssaPluginPlugin.Log.LogInfo("[AC130] Fly-in phase started.");
+
+                while (!session.FlyComp.HasArrived && !_forceEnd)
+                {
+                    if (Keyboard.current != null
+                        && Keyboard.current[Key.Space].wasPressedThisFrame)
+                    {
+                        _forceEnd = true;
+                        break;
+                    }
+
+                    var visualPos = session.GunshipVisual.transform.position;
+                    session.PivotGo.transform.position = visualPos;
+                    GunshipPosition = visualPos;
+                    GunshipFacing = session.GunshipVisual.transform.forward;
+                    session.OrbitModule?.ForceUpdateModule();
+
+                    yield return null;
+                }
+
+                IssaPluginPlugin.Log.LogInfo("[AC130] Fly-in complete.");
+            }
+
+            if (_forceEnd)
+            {
+                session.Cleanup();
+                bridge.CmdEndAC130();
+                _isActive = false;
+                _forceEnd = false;
+                yield break;
+            }
+
+            // ============================================================
+            //  Phase 2: On-station — gunship view with firing controls
+            // ============================================================
+            session.BeginGunshipView();
+
             while (session.Elapsed < session.Duration && !_forceEnd)
             {
                 session.Elapsed += Time.deltaTime;
@@ -61,9 +113,6 @@ namespace IssaPlugin.Items
                 HandleFlight(keyboard, session);
                 HandleZoom(mouse, ref session.CurrentFov, session.OriginalFov);
 
-                // Use the FlyComp's current orbit angle for horizontal position
-                // but the TARGET altitude (not the lerped visual altitude) so the
-                // camera responds instantly to Q/E input instead of lagging.
                 float currentAngle = session.FlyComp != null
                     ? session.FlyComp.currentAngle
                     : session.Elapsed * session.BaseOrbitSpeed;
@@ -82,7 +131,6 @@ namespace IssaPlugin.Items
                 session.PivotGo.transform.position = gunshipPos;
                 session.OrbitModule?.ForceUpdateModule();
 
-                // Mouse-based aiming: raycast from camera through mouse cursor
                 Vector3 crosshairWorld = gunshipPos;
                 Vector3 aimDirection = Vector3.down;
 
@@ -112,12 +160,15 @@ namespace IssaPlugin.Items
                 yield return null;
             }
 
+            // ============================================================
+            //  Phase 3: Fly-out — restore camera, visual flies away on its own
+            // ============================================================
             session.Cleanup();
             bridge.CmdEndAC130();
             _isActive = false;
             _forceEnd = false;
 
-            IssaPluginPlugin.Log.LogInfo("[AC130] Local session ended.");
+            IssaPluginPlugin.Log.LogInfo("[AC130] Session ended, gunship flying out.");
         }
 
         // ----------------------------------------------------------------
