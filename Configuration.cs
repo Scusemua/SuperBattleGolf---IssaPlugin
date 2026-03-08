@@ -54,6 +54,9 @@ namespace IssaPlugin
         public static ConfigEntry<float> AC130AimYawMax { get; private set; }
         public static ConfigEntry<float> AC130FireCooldown { get; private set; }
         public static ConfigEntry<float> AC130RocketAngularJitter { get; private set; }
+        public static ConfigEntry<float> AC130BoostMultiplier { get; private set; }
+        public static ConfigEntry<float> AC130AltitudeOffsetMax { get; private set; }
+        public static ConfigEntry<float> AC130AltitudeAdjustSpeed { get; private set; }
 
         public static void Initialize(ConfigFile cfg)
         {
@@ -350,6 +353,27 @@ namespace IssaPlugin
                 "AC130Weight",
                 1f,
                 "Spawn weight for the AC130 in item boxes. Set to 0 to disable."
+            );
+
+            AC130BoostMultiplier = cfg.Bind(
+                "AC130",
+                "BoostMultiplier",
+                1.25f,
+                "Multiplier applied to orbit speed when holding Left Shift."
+            );
+
+            AC130AltitudeOffsetMax = cfg.Bind(
+                "AC130",
+                "AltitudeOffsetMax",
+                30f,
+                "Maximum units the player can raise or lower the gunship from its base altitude using Q/E."
+            );
+
+            AC130AltitudeAdjustSpeed = cfg.Bind(
+                "AC130",
+                "AltitudeAdjustSpeed",
+                10f,
+                "Units per second the gunship rises or descends when holding Q or E."
             );
 
             IssaPluginPlugin.Log.LogInfo("Configuration initialized.");

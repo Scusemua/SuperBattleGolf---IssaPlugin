@@ -207,6 +207,7 @@ namespace IssaPlugin.Items
                 addEntryMethod.Invoke(table, new object[] { "ITEM_100", "Baseball Bat" });
                 addEntryMethod.Invoke(table, new object[] { "ITEM_101", "Stealth Bomber" });
                 addEntryMethod.Invoke(table, new object[] { "ITEM_102", "Predator Missile" });
+                addEntryMethod.Invoke(table, new object[] { "ITEM_103", "AC130 Gunship" });
 
                 IssaPluginPlugin.Log.LogInfo(
                     "[ItemRegistry] Custom item names registered in string table."

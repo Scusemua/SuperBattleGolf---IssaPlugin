@@ -167,7 +167,7 @@ namespace IssaPlugin
             GUI.Label(new Rect(0, h - 75, w, 35), "AC-130 GUNSHIP", _titleStyle);
             GUI.Label(
                 new Rect(0, h - 42, w, 30),
-                "WASD: Aim   |   Space / Click: Fire",
+                "Shift: Speed Up   |   Q/E: Raise/Lower   |   Click: Shoot   |   Space: Exit/Cancel",
                 _instructionStyle
             );
         }
