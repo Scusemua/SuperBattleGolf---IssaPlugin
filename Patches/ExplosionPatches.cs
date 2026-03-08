@@ -1,5 +1,4 @@
-using System;
-using System.Linq;
+using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
 using IssaPlugin.Items;
@@ -7,120 +6,85 @@ using UnityEngine;
 
 namespace IssaPlugin.Patches
 {
-    // ================================================================
-    //  1. Temporarily scale RocketExplosionRange during ServerExplode
-    // ================================================================
-
+    /// <summary>
+    /// Adds bonus explosion effects (bigger VFX, extra knockback, extended radius)
+    /// for custom-item rockets that have a scale != 1 registered in ExplosionScaler.
+    ///
+    /// The normal game explosion runs first at its default radius and force.
+    /// The Postfix then layers on additional effects proportional to the scale.
+    /// </summary>
     [HarmonyPatch]
     static class ServerExplodeScalePatch
     {
         static MethodBase TargetMethod() =>
             AccessTools.Method(typeof(Rocket), "ServerExplode");
 
-        static readonly MethodInfo _rangeSetter =
-            AccessTools.PropertySetter(typeof(ItemSettings), "RocketExplosionRange");
-
-        static void Prefix(Rocket __instance, out float __state)
+        static void Postfix(Rocket __instance, Vector3 worldPosition)
         {
             float scale = ExplosionScaler.GetScale(__instance);
-            ExplosionScaler.ActiveScale = scale;
-
-            if (Mathf.Approximately(scale, 1f))
-            {
-                __state = -1f;
-                return;
-            }
-
-            float original = GameManager.ItemSettings.RocketExplosionRange;
-            __state = original;
-
-            if (_rangeSetter != null)
-            {
-                _rangeSetter.Invoke(GameManager.ItemSettings, new object[] { original * scale });
-            }
-            else
-            {
-                var backingField = AccessTools.Field(
-                    typeof(ItemSettings),
-                    "<RocketExplosionRange>k__BackingField"
-                );
-                backingField?.SetValue(GameManager.ItemSettings, original * scale);
-            }
-        }
-
-        static void Postfix(Rocket __instance, float __state)
-        {
-            if (__state >= 0f)
-            {
-                if (_rangeSetter != null)
-                    _rangeSetter.Invoke(GameManager.ItemSettings, new object[] { __state });
-                else
-                {
-                    var backingField = AccessTools.Field(
-                        typeof(ItemSettings),
-                        "<RocketExplosionRange>k__BackingField"
-                    );
-                    backingField?.SetValue(GameManager.ItemSettings, __state);
-                }
-            }
-
-            ExplosionScaler.ActiveScale = 1f;
             ExplosionScaler.Unregister(__instance);
-        }
-    }
 
-    // ================================================================
-    //  2. Scale VFX size for custom rocket explosions
-    //     Patches the static PlayPooledVfxLocalOnly overload that
-    //     OnExploded calls (8-parameter variant).
-    // ================================================================
-
-    [HarmonyPatch]
-    static class VfxExplosionScalePatch
-    {
-        static MethodBase TargetMethod()
-        {
-            return typeof(VfxManager)
-                .GetMethods(BindingFlags.Public | BindingFlags.Static)
-                .FirstOrDefault(m =>
-                    m.Name == "PlayPooledVfxLocalOnly"
-                    && m.GetParameters().Length == 8
-                    && m.GetParameters()[0].ParameterType == typeof(VfxType)
-                    && m.GetParameters()[3].ParameterType == typeof(Vector3)
-                );
-        }
-
-        static void Prefix(VfxType vfxType, ref Vector3 localScale)
-        {
-            if (vfxType != VfxType.RocketLauncherRocketExplosion)
-                return;
-
-            float scale = ExplosionScaler.ActiveScale;
-            if (Mathf.Approximately(scale, 1f))
-                return;
-
-            localScale = Vector3.one * scale;
-        }
-    }
-
-    // ================================================================
-    //  3. Scale knockback by adjusting the distance parameter
-    //     in Hittable.HitWithItem.  Closer distance = more knockback.
-    // ================================================================
-
-    [HarmonyPatch(typeof(Hittable), nameof(Hittable.HitWithItem))]
-    static class HitWithItemScalePatch
-    {
-        static void Prefix(ItemType itemType, ref float distance)
-        {
-            if (itemType != ItemType.RocketLauncher)
-                return;
-
-            float scale = ExplosionScaler.ActiveScale;
             if (scale <= 0f || Mathf.Approximately(scale, 1f))
                 return;
 
-            distance /= scale;
+            float baseRange = GameManager.ItemSettings.RocketExplosionRange;
+            float scaledRange = baseRange * scale;
+
+            IssaPluginPlugin.Log.LogInfo(
+                $"[Explosion] Custom rocket scale={scale:F2}, "
+                + $"baseRange={baseRange:F1}, scaledRange={scaledRange:F1}"
+            );
+
+            // --- Bonus VFX: spawn a second, larger explosion particle ---
+            if (scale > 1f)
+            {
+                VfxManager.PlayPooledVfxLocalOnly(
+                    VfxType.RocketLauncherRocketExplosion,
+                    worldPosition,
+                    Quaternion.identity,
+                    Vector3.one * scale
+                );
+
+                CameraModuleController.Shake(
+                    GameManager.CameraGameplaySettings.RocketExplosionScreenshakeSettings,
+                    worldPosition
+                );
+            }
+
+            // --- Bonus knockback + extended radius hits ---
+            if (scale > 1f)
+            {
+                int layerMask = GameManager.LayerSettings.RocketHittablesMask;
+                var colliders = Physics.OverlapSphere(
+                    worldPosition,
+                    scaledRange,
+                    layerMask,
+                    QueryTriggerInteraction.Ignore
+                );
+
+                float bonusForce = (scale - 1f) * 25f;
+                var processed = new HashSet<Rigidbody>();
+
+                foreach (var col in colliders)
+                {
+                    var rb = col.GetComponentInParent<Rigidbody>();
+                    if (rb != null && processed.Add(rb))
+                    {
+                        rb.AddExplosionForce(
+                            bonusForce,
+                            worldPosition,
+                            scaledRange,
+                            0.3f,
+                            ForceMode.VelocityChange
+                        );
+                    }
+                }
+
+                IssaPluginPlugin.Log.LogInfo(
+                    $"[Explosion] Bonus force={bonusForce:F1} applied to "
+                    + $"{processed.Count} rigidbodies within {scaledRange:F1}m"
+                );
+            }
         }
     }
 }

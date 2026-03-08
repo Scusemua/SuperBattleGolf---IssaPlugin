@@ -305,8 +305,12 @@ namespace IssaPlugin
                 byte v = (byte)Random.Range(0, 256);
                 _noisePixels[i] = new Color32(v, v, v, 255);
             }
-            _noiseTex.SetPixels32(_noisePixels);
-            _noiseTex.Apply(false, false);
+
+            if (_noiseTex != null)
+            {
+                _noiseTex.SetPixels32(_noisePixels);
+                _noiseTex.Apply(false, false);
+            }
         }
     }
 }

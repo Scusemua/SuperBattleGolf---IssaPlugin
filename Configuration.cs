@@ -373,8 +373,8 @@ namespace IssaPlugin
             AC130AltitudeOffsetMax = cfg.Bind(
                 "AC130",
                 "AltitudeOffsetMax",
-                30f,
-                "Maximum units the player can raise or lower the gunship from its base altitude using Q/E."
+                80f,
+                "Maximum units the player can raise the gunship from its base altitude using Q/E."
             );
 
             AC130AltitudeAdjustSpeed = cfg.Bind(
