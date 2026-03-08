@@ -207,10 +207,11 @@ namespace IssaPlugin.Items
                         0f
                     );
 
-                    SpawnRocket(inventory, gunshipPos, jitter * aimRotation);
+                    // aimRotation already points in the intended world-space fire direction,
+                    // so pass it straight through without re-baking a downward base rotation.
+                    SpawnRocketInDirection(inventory, gunshipPos, jitter * aimRotation);
 
                     IssaPluginPlugin.Log.LogInfo($"[AC130] Rocket fired toward {crosshairWorld}.");
-
                     cooldown = fireCooldown;
                 }
 
@@ -295,6 +296,38 @@ namespace IssaPlugin.Items
             orbitModule.SetPitch(savedPitch);
             orbitModule.SetYaw(savedYaw);
             orbitModule.ForceUpdateModule();
+        }
+
+        private static void SpawnRocketInDirection(
+            PlayerInventory inventory,
+            Vector3 position,
+            Quaternion worldRotation
+        )
+        {
+            if (!NetworkServer.active)
+                return;
+
+            _useIndex++;
+            var itemUseId = new ItemUseId(
+                inventory.PlayerInfo.PlayerId.Guid,
+                _useIndex,
+                ItemType.RocketLauncher
+            );
+
+            var rocket = Object.Instantiate(
+                GameManager.ItemSettings.RocketPrefab,
+                position,
+                worldRotation
+            );
+
+            if (rocket == null)
+            {
+                IssaPluginPlugin.Log.LogError("[AC130] Rocket did not instantiate.");
+                return;
+            }
+
+            rocket.ServerInitialize(inventory.PlayerInfo, null, itemUseId);
+            NetworkServer.Spawn(rocket.gameObject, (NetworkConnectionToClient)null);
         }
 
         private static void SpawnRocket(
