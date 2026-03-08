@@ -193,26 +193,34 @@ namespace IssaPlugin.Items
             float rocketInterval = Configuration.BomberRocketInterval.Value;
             float speed = Configuration.BomberSpeed.Value;
             float spread = Configuration.BomberSpread.Value;
+            float approachDist = Configuration.BomberApproachDistance.Value;
 
             float halfLength = stripLength / 2f;
-            Vector3 startPos = stripCenter - stripForward * halfLength;
-            Vector3 endPos = stripCenter + stripForward * halfLength;
-            startPos.y = stripCenter.y + altitude;
-            endPos.y = stripCenter.y + altitude;
-
-            Vector3 direction = (endPos - startPos).normalized;
-            float totalDistance = Vector3.Distance(startPos, endPos);
-
-            float rocketSpacing = totalDistance / (rocketCount + 1);
-            var rocketDropPoints = new List<float>(rocketCount);
-            for (int i = 1; i <= rocketCount; i++)
-                rocketDropPoints.Add(rocketSpacing * i);
-
+            Vector3 stripStart = stripCenter - stripForward * halfLength;
+            Vector3 stripEnd = stripCenter + stripForward * halfLength;
+            Vector3 direction = (stripEnd - stripStart).normalized;
+            float totalDistance = Vector3.Distance(stripStart, stripEnd);
             Vector3 perpendicular = Vector3.Cross(direction, Vector3.up).normalized;
+
+            // Extend the flight path beyond the strip in both directions.
+            Vector3 spawnPos = stripStart - direction * approachDist;
+            Vector3 exitPos = stripEnd + direction * approachDist;
+            spawnPos.y = stripCenter.y + altitude;
+            exitPos.y = stripCenter.y + altitude;
+
+            // Evenly space drop waypoints across the bombing strip only.
+            float rocketSpacing = totalDistance / (rocketCount + 1);
+            var dropWaypoints = new List<Vector3>(rocketCount);
+            for (int i = 1; i <= rocketCount; i++)
+            {
+                Vector3 wp = stripStart + direction * (rocketSpacing * i);
+                wp.y = stripCenter.y + altitude;
+                dropWaypoints.Add(wp);
+            }
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[Bomber] Run started: {rocketCount} rockets over {totalDistance:F0}m "
-                    + $"at altitude {altitude:F0}m"
+                    + $"at altitude {altitude:F0}m, approach {approachDist:F0}m"
             );
 
             GameObject bomberVisual = null;
@@ -221,11 +229,12 @@ namespace IssaPlugin.Items
                 IssaPluginPlugin.Log.LogInfo("[Bomber] Spawning bomber visual.");
                 bomberVisual = Object.Instantiate(
                     AssetLoader.BomberPrefab,
-                    startPos,
+                    spawnPos, // <-- far approach point
                     Quaternion.LookRotation(direction, Vector3.up)
                 );
+
                 var flyComp = bomberVisual.AddComponent<BomberFlyBehaviour>();
-                flyComp.destination = endPos;
+                flyComp.destination = exitPos; // <-- far exit point
                 flyComp.speed = speed;
             }
             else
@@ -235,33 +244,35 @@ namespace IssaPlugin.Items
                 );
             }
 
-            float distanceTravelled = 0f;
             int rocketsDropped = 0;
 
-            while (distanceTravelled < totalDistance && rocketsDropped < rocketCount)
+            while (rocketsDropped < rocketCount)
             {
-                float step = speed * Time.deltaTime;
-                distanceTravelled += step;
+                Vector3 bomberPos =
+                    bomberVisual != null
+                        ? bomberVisual.transform.position
+                        : dropWaypoints[rocketsDropped];
 
-                while (
-                    rocketsDropped < rocketCount
-                    && distanceTravelled >= rocketDropPoints[rocketsDropped]
-                )
+                float distToWaypoint = Vector3.Distance(bomberPos, dropWaypoints[rocketsDropped]);
+                float distToEnd = Vector3.Distance(bomberPos, exitPos);
+                bool pastWaypoint = distToWaypoint > distToEnd;
+
+                if (!pastWaypoint)
                 {
-                    Vector3 dropPos = bomberVisual.transform.position; // startPos + direction * rocketDropPoints[rocketsDropped];
-                    Vector3 offset = perpendicular * Random.Range(-spread, spread);
-
-                    SpawnRocket(inventory, dropPos + offset);
-                    rocketsDropped++;
-
-                    yield return new WaitForSeconds(rocketInterval);
+                    yield return null;
+                    continue;
                 }
 
-                yield return null;
+                Vector3 offset = perpendicular * Random.Range(-spread, spread);
+                SpawnRocket(inventory, bomberPos + offset);
+                rocketsDropped++;
+
+                yield return new WaitForSeconds(rocketInterval);
             }
 
-            if (bomberVisual != null)
-                Object.Destroy(bomberVisual);
+            // Let the bomber finish flying to the exit point before cleaning up.
+            while (bomberVisual != null)
+                yield return null;
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[Bomber] Run complete. {rocketsDropped} rockets dropped."

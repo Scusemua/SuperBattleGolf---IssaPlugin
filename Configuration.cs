@@ -25,6 +25,7 @@ namespace IssaPlugin
         public static ConfigEntry<float> BomberTargetMoveSpeed { get; private set; }
         public static ConfigEntry<float> BomberTargetRotateSpeed { get; private set; }
         public static ConfigEntry<float> BomberSpawnWeight { get; private set; }
+        public static ConfigEntry<float> BomberApproachDistance { get; private set; }
 
         // --- Predator Missile ---
         public static ConfigEntry<float> MissileAltitude { get; private set; }
@@ -72,6 +73,13 @@ namespace IssaPlugin
                 "Speed",
                 40f,
                 "Speed of the bombing run in units per second."
+            );
+
+            BomberApproachDistance = cfg.Bind(
+                "StealthBomber",
+                "ApproachDistance",
+                300f,
+                "How far away the bomber visual spawns from the targeting strip in units."
             );
 
             BomberRocketInterval = cfg.Bind(
