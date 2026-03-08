@@ -218,7 +218,7 @@ namespace IssaPlugin
                 _titleStyle = new GUIStyle(GUI.skin.label)
                 {
                     alignment = TextAnchor.MiddleCenter,
-                    fontSize = 22,
+                    fontSize = 32,
                     fontStyle = FontStyle.Bold,
                 };
                 _titleStyle.normal.textColor = new Color(1f, 0.5f, 0f);
@@ -229,7 +229,7 @@ namespace IssaPlugin
                 _instructionStyle = new GUIStyle(GUI.skin.label)
                 {
                     alignment = TextAnchor.MiddleCenter,
-                    fontSize = 15,
+                    fontSize = 20,
                     fontStyle = FontStyle.Bold,
                 };
                 _instructionStyle.normal.textColor = Color.white;
@@ -239,7 +239,7 @@ namespace IssaPlugin
             {
                 _cornerStyle = new GUIStyle(GUI.skin.label)
                 {
-                    fontSize = 18,
+                    fontSize = 24,
                     fontStyle = FontStyle.Bold,
                 };
                 _cornerStyle.normal.textColor = new Color(0f, 1f, 0.2f, 0.9f);
@@ -249,7 +249,7 @@ namespace IssaPlugin
             {
                 _timerStyle = new GUIStyle(GUI.skin.label)
                 {
-                    fontSize = 20,
+                    fontSize = 26,
                     fontStyle = FontStyle.Bold,
                     alignment = TextAnchor.MiddleRight,
                 };

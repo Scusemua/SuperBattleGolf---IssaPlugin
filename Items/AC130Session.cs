@@ -29,6 +29,7 @@ namespace IssaPlugin.Items
         public float AimPitch;
         public float Elapsed;
         public float Cooldown;
+        public float CurrentFov;
 
         // Scene objects
         public readonly Vector3 MapCentre;
@@ -39,6 +40,8 @@ namespace IssaPlugin.Items
         public readonly float SavedPitch;
         public readonly float SavedYaw;
         public readonly bool SavedDisablePhysics;
+
+        public readonly float OriginalFov;
 
         public AC130Session(PlayerInventory inventory, Vector3 mapCentre)
         {
@@ -76,9 +79,17 @@ namespace IssaPlugin.Items
                 OrbitModule.ForceUpdateModule();
             }
 
+            OriginalFov = Camera.main != null ? Camera.main.fieldOfView : 60f;
+            CurrentFov = OriginalFov;
+
             // Gunship
             float startAngle = 0f;
-            Vector3 startPos = AC130Helpers.OrbitPosition(mapCentre, startAngle, OrbitRadius, Altitude);
+            Vector3 startPos = AC130Helpers.OrbitPosition(
+                mapCentre,
+                startAngle,
+                OrbitRadius,
+                Altitude
+            );
             Vector3 startForward = AC130Helpers.OrbitTangent(startAngle);
 
             if (AssetLoader.AC130Prefab != null)
@@ -86,7 +97,8 @@ namespace IssaPlugin.Items
                 GunshipVisual = Object.Instantiate(
                     AssetLoader.AC130Prefab,
                     startPos,
-                    Quaternion.LookRotation(startForward, Vector3.up));
+                    Quaternion.LookRotation(startForward, Vector3.up)
+                );
 
                 FlyComp = GunshipVisual.AddComponent<AC130FlyBehaviour>();
                 FlyComp.mapCentre = mapCentre;
@@ -101,7 +113,8 @@ namespace IssaPlugin.Items
             }
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[AC130] Active for {Duration:F0}s, orbit radius {OrbitRadius:F0}m, altitude {Altitude:F0}m.");
+                $"[AC130] Active for {Duration:F0}s, orbit radius {OrbitRadius:F0}m, altitude {Altitude:F0}m."
+            );
         }
 
         public void Cleanup()
@@ -123,6 +136,9 @@ namespace IssaPlugin.Items
                 OrbitModule.SetYaw(SavedYaw);
                 OrbitModule.ForceUpdateModule();
             }
+
+            if (Camera.main != null)
+                Camera.main.fieldOfView = OriginalFov;
 
             InputManager.Controls.Gameplay.Enable();
         }

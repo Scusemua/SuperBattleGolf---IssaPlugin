@@ -58,6 +58,9 @@ namespace IssaPlugin
         public static ConfigEntry<float> AC130AltitudeOffsetMax { get; private set; }
         public static ConfigEntry<float> AC130AltitudeAdjustSpeed { get; private set; }
 
+        public static ConfigEntry<float> AC130ZoomFov { get; private set; }
+        public static ConfigEntry<float> AC130ZoomSpeed { get; private set; }
+
         public static void Initialize(ConfigFile cfg)
         {
             // --- Baseball Bat ---
@@ -374,6 +377,20 @@ namespace IssaPlugin
                 "AltitudeAdjustSpeed",
                 10f,
                 "Units per second the gunship rises or descends when holding Q or E."
+            );
+
+            AC130ZoomFov = cfg.Bind(
+                "AC130",
+                "ZoomFov",
+                20f,
+                "Field of view when right-click zooming in the AC130. Lower values zoom in more (default camera FOV is typically 60)."
+            );
+
+            AC130ZoomSpeed = cfg.Bind(
+                "AC130",
+                "ZoomSpeed",
+                8f,
+                "Speed at which the camera lerps to and from the zoomed FOV when right-clicking."
             );
 
             IssaPluginPlugin.Log.LogInfo("Configuration initialized.");

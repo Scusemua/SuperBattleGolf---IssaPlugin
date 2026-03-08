@@ -12,6 +12,8 @@ namespace IssaPlugin.Items
 
         private static bool _isActive;
 
+        private static int _useIndex;
+
         public static bool IsActive => _isActive;
         public static Vector3 GunshipPosition { get; private set; }
 
@@ -45,14 +47,18 @@ namespace IssaPlugin.Items
             _isActive = true;
 
             int equippedIndex = inventory.EquippedItemIndex;
-            SetCurrentItemUse(inventory, ItemUseType.Regular);
-            if (equippedIndex >= 0)
-                ItemHelper.DecrementAndRemove(inventory, equippedIndex);
-            SetCurrentItemUse(inventory, ItemUseType.None);
+
+            if (NetworkServer.active)
+            {
+                SetCurrentItemUse(inventory, ItemUseType.Regular);
+                if (equippedIndex >= 0)
+                    ItemHelper.DecrementAndRemove(inventory, equippedIndex);
+                SetCurrentItemUse(inventory, ItemUseType.None);
+            }
 
             yield return new WaitForSeconds(0.01f);
 
-            var session = new AC130Session(inventory, AC130Helpers.GetMapCentre(inventory));
+            var session = new AC130Session(inventory, GetMapCentre(inventory));
             yield return RunAC130Session(inventory, session);
 
             session.Cleanup();
@@ -79,6 +85,7 @@ namespace IssaPlugin.Items
 
                 HandleAC130Flight(keyboard, s);
                 HandleAC130Aim(keyboard, s);
+                HandleAC130Zoom(mouse, s);
 
                 Vector3 gunshipPos =
                     s.GunshipVisual != null
@@ -98,22 +105,20 @@ namespace IssaPlugin.Items
                 s.PivotGo.transform.position = gunshipPos;
                 s.OrbitModule?.ForceUpdateModule();
 
+                // In RunAC130Session, replace the aimRotation + crosshairWorld block with:
                 Quaternion aimRotation =
                     Quaternion.LookRotation(gunshipFacing, Vector3.up)
                     * Quaternion.Euler(s.AimPitch, s.AimYaw, 0f);
-                Vector3 crosshairWorld = AC130Helpers.ProjectAimToGround(
-                    gunshipPos,
-                    aimRotation * Vector3.forward
-                );
+                Vector3 aimDirection = aimRotation * Vector3.down; // aim DOWN, offset by pitch/yaw
+                Vector3 crosshairWorld = ProjectAimToGround(gunshipPos, aimDirection);
 
                 AC130Overlay.UpdateAimInfo(crosshairWorld, s.Elapsed, s.Duration);
-
                 HandleAC130Fire(
                     inventory,
                     mouse,
                     keyboard,
                     gunshipPos,
-                    aimRotation,
+                    aimDirection,
                     crosshairWorld,
                     s
                 );
@@ -122,6 +127,21 @@ namespace IssaPlugin.Items
             }
 
             IssaPluginPlugin.Log.LogInfo("[AC130] Run ended.");
+        }
+
+        private static void HandleAC130Zoom(Mouse mouse, AC130Session s)
+        {
+            if (mouse == null)
+                return;
+
+            float zoomFov = Configuration.AC130ZoomFov.Value;
+            float zoomSpeed = Configuration.AC130ZoomSpeed.Value;
+            float targetFov = mouse.rightButton.isPressed ? zoomFov : s.OriginalFov;
+
+            s.CurrentFov = Mathf.Lerp(s.CurrentFov, targetFov, zoomSpeed * Time.deltaTime);
+
+            if (Camera.main != null)
+                Camera.main.fieldOfView = s.CurrentFov;
         }
 
         private static void HandleAC130Flight(Keyboard keyboard, AC130Session s)
@@ -178,7 +198,7 @@ namespace IssaPlugin.Items
             Mouse mouse,
             Keyboard keyboard,
             Vector3 gunshipPos,
-            Quaternion aimRotation,
+            Vector3 aimDirection,
             Vector3 crosshairWorld,
             AC130Session s
         )
@@ -197,7 +217,9 @@ namespace IssaPlugin.Items
                 0f
             );
 
-            AC130Helpers.SpawnRocketInDirection(inventory, gunshipPos, jitter * aimRotation);
+            // Build rotation from the resolved world-space aim direction.
+            Quaternion fireRotation = Quaternion.LookRotation(aimDirection, Vector3.up);
+            SpawnRocketInDirection(inventory, gunshipPos, jitter * fireRotation);
             IssaPluginPlugin.Log.LogInfo($"[AC130] Rocket fired toward {crosshairWorld}.");
             s.Cooldown = s.FireCooldown;
         }
@@ -233,7 +255,7 @@ namespace IssaPlugin.Items
             float altitudeAdjustSpeed = Configuration.AC130AltitudeAdjustSpeed.Value;
 
             // Pivot is the map centre — the gunship orbits around it.
-            Vector3 mapCentre = AC130Helpers.GetMapCentre(inventory);
+            Vector3 mapCentre = GetMapCentre(inventory);
             float orbitRadius = Configuration.AC130OrbitRadius.Value;
             float altitude = Configuration.AC130Altitude.Value;
             float orbitSpeed = Configuration.AC130OrbitSpeed.Value; // degrees per second
@@ -394,7 +416,7 @@ namespace IssaPlugin.Items
                     * Quaternion.Euler(aimPitch, aimYaw, 0f);
                 Vector3 fireDirection = aimRotation * Vector3.forward;
 
-                Vector3 crosshairWorld = AC130Helpers.ProjectAimToGround(gunshipPos, fireDirection);
+                Vector3 crosshairWorld = ProjectAimToGround(gunshipPos, fireDirection);
                 AC130Overlay.UpdateAimInfo(crosshairWorld, elapsed, duration);
 
                 bool firePressed =
@@ -410,11 +432,7 @@ namespace IssaPlugin.Items
                         0f
                     );
 
-                    AC130Helpers.SpawnRocketInDirection(
-                        inventory,
-                        gunshipPos,
-                        jitter * aimRotation
-                    );
+                    SpawnRocketInDirection(inventory, gunshipPos, jitter * aimRotation);
                     IssaPluginPlugin.Log.LogInfo($"[AC130] Rocket fired toward {crosshairWorld}.");
                     cooldown = fireCooldown;
                 }
@@ -431,8 +449,114 @@ namespace IssaPlugin.Items
             Object.Destroy(pivotGo);
             _isActive = false;
 
-            AC130Helpers.RestoreCamera(orbitModule, savedPitch, savedYaw, savedDisablePhysics);
+            RestoreCamera(orbitModule, savedPitch, savedYaw, savedDisablePhysics);
             InputManager.Controls.Gameplay.Enable();
+        }
+
+        private static Vector3 ProjectAimToGround(Vector3 origin, Vector3 direction)
+        {
+            // Intersect the aim ray with y = 0 (sea-level ground plane).
+            if (Mathf.Abs(direction.y) < 0.001f)
+                return origin + direction * 500f;
+
+            float t = -origin.y / direction.y;
+            if (t < 0f)
+                return origin + direction * 500f;
+
+            return origin + direction * t;
+        }
+
+        private static void SpawnRocket(
+            PlayerInventory inventory,
+            Vector3 position,
+            Quaternion rotation
+        )
+        {
+            if (!NetworkServer.active)
+                return;
+
+            _useIndex++;
+            var itemUseId = new ItemUseId(
+                inventory.PlayerInfo.PlayerId.Guid,
+                _useIndex,
+                ItemType.RocketLauncher
+            );
+
+            var rocket = Object.Instantiate(
+                GameManager.ItemSettings.RocketPrefab,
+                position,
+                rotation
+            );
+
+            if (rocket == null)
+            {
+                IssaPluginPlugin.Log.LogError("[AC130] Rocket did not instantiate.");
+                return;
+            }
+
+            rocket.ServerInitialize(inventory.PlayerInfo, null, itemUseId);
+            NetworkServer.Spawn(rocket.gameObject, (NetworkConnectionToClient)null);
+        }
+
+        private static void SpawnRocketInDirection(
+            PlayerInventory inventory,
+            Vector3 position,
+            Quaternion worldRotation
+        )
+        {
+            if (!NetworkServer.active)
+                return;
+
+            _useIndex++;
+            var itemUseId = new ItemUseId(
+                inventory.PlayerInfo.PlayerId.Guid,
+                _useIndex,
+                ItemType.RocketLauncher
+            );
+
+            var rocket = Object.Instantiate(
+                GameManager.ItemSettings.RocketPrefab,
+                position,
+                worldRotation
+            );
+
+            if (rocket == null)
+            {
+                IssaPluginPlugin.Log.LogError("[AC130] Rocket did not instantiate.");
+                return;
+            }
+
+            rocket.ServerInitialize(inventory.PlayerInfo, null, itemUseId);
+            NetworkServer.Spawn(rocket.gameObject, (NetworkConnectionToClient)null);
+        }
+
+        private static void RestoreCamera(
+            OrbitCameraModule orbitModule,
+            float savedPitch,
+            float savedYaw,
+            bool savedDisablePhysics
+        )
+        {
+            if (orbitModule == null)
+                return;
+
+            var playerMovement = GameManager.LocalPlayerMovement;
+            if (playerMovement != null)
+                orbitModule.SetSubject(playerMovement.transform);
+
+            orbitModule.SetDistanceAddition(0f);
+            orbitModule.disablePhysics = savedDisablePhysics;
+            orbitModule.SetPitch(savedPitch);
+            orbitModule.SetYaw(savedYaw);
+            orbitModule.ForceUpdateModule();
+        }
+
+        private static Vector3 GetMapCentre(PlayerInventory inventory)
+        {
+            // Use the player's current position projected to ground as the
+            // orbit centre so the gunship always circles the action.
+            var pos = inventory.PlayerInfo.transform.position;
+            return new Vector3(pos.x, 0f, pos.z);
         }
     }
 }
