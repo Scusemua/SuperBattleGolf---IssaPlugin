@@ -95,8 +95,7 @@ namespace IssaPlugin.Items
 
                 AC130Overlay.UpdateAimInfo(crosshairWorld, session.Elapsed, session.Duration);
 
-                bool firePressed =
-                    mouse != null && mouse.leftButton.wasPressedThisFrame;
+                bool firePressed = mouse != null && mouse.leftButton.wasPressedThisFrame;
 
                 if (firePressed && session.Cooldown <= 0f)
                 {
