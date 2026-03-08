@@ -402,21 +402,21 @@ namespace IssaPlugin
             AC130ExplosionScale = cfg.Bind(
                 "Explosions",
                 "AC130Scale",
-                1.5f,
+                2.25f,
                 "Multiplier for AC130 rocket explosions. Affects blast radius, knockback, and VFX size."
             );
 
             PredatorMissileExplosionScale = cfg.Bind(
                 "Explosions",
                 "PredatorMissileScale",
-                2.0f,
+                3.0f,
                 "Multiplier for Predator Missile explosions. Affects blast radius, knockback, and VFX size."
             );
 
             StealthBomberExplosionScale = cfg.Bind(
                 "Explosions",
                 "StealthBomberScale",
-                0.7f,
+                1.5f,
                 "Multiplier for Stealth Bomber rocket explosions. Affects blast radius, knockback, and VFX size."
             );
 
