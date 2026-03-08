@@ -48,8 +48,8 @@ namespace IssaPlugin.Items
             BomberIcon = LoadSprite("Assets/bomber_icon.png");
             MissileIcon = LoadSprite("Assets/missile_icon.png");
 
-            BatModelPrefab = _bundle.LoadAsset<GameObject>("Assets/bat/baseball_bat.obj");
-            BomberPrefab = _bundle.LoadAsset<GameObject>("Assets/stealth_bomber.prefab");
+            BatModelPrefab = _bundle.LoadAsset<GameObject>("Assets/bat_model.prefab");
+            BomberPrefab = _bundle.LoadAsset<GameObject>("Assets/bomber_model.prefab");
             BomberTabletPrefab = _bundle.LoadAsset<GameObject>(
                 "Assets/stealth_bomber_tablet.prefab"
             );

@@ -81,7 +81,9 @@ namespace IssaPlugin.Items
 
                 orbitModule.SetSubject(pivotGo.transform);
                 orbitModule.SetPitch(88f);
-                orbitModule.SetDistanceAddition(Configuration.BomberTargetingAltitude.Value);
+                orbitModule.SetDistanceAddition(
+                    Configuration.BomberTargetingAltitude.Value * 1.10f
+                );
                 orbitModule.disablePhysics = true;
                 orbitModule.ForceUpdateModule();
             }
@@ -216,6 +218,7 @@ namespace IssaPlugin.Items
             GameObject bomberVisual = null;
             if (AssetLoader.BomberPrefab != null)
             {
+                IssaPluginPlugin.Log.LogInfo("[Bomber] Spawning bomber visual.");
                 bomberVisual = Object.Instantiate(
                     AssetLoader.BomberPrefab,
                     startPos,
@@ -224,6 +227,12 @@ namespace IssaPlugin.Items
                 var flyComp = bomberVisual.AddComponent<BomberFlyBehaviour>();
                 flyComp.destination = endPos;
                 flyComp.speed = speed;
+            }
+            else
+            {
+                IssaPluginPlugin.Log.LogInfo(
+                    "[Bomber] Cannot spawn bomber visual; cannot find prefab."
+                );
             }
 
             float distanceTravelled = 0f;
@@ -239,7 +248,7 @@ namespace IssaPlugin.Items
                     && distanceTravelled >= rocketDropPoints[rocketsDropped]
                 )
                 {
-                    Vector3 dropPos = startPos + direction * rocketDropPoints[rocketsDropped];
+                    Vector3 dropPos = bomberVisual.transform.position; // startPos + direction * rocketDropPoints[rocketsDropped];
                     Vector3 offset = perpendicular * Random.Range(-spread, spread);
 
                     SpawnRocket(inventory, dropPos + offset);
@@ -265,7 +274,9 @@ namespace IssaPlugin.Items
             var root = new GameObject("BomberTargetStrip");
             root.transform.position = new Vector3(center.x, center.y + 0.5f, center.z);
 
-            CreateStripPart(root.transform, "StripBody",
+            CreateStripPart(
+                root.transform,
+                "StripBody",
                 Vector3.zero,
                 new Vector3(width, 0.2f, length),
                 new Color(1f, 0.3f, 0f, 0.3f)
@@ -281,9 +292,7 @@ namespace IssaPlugin.Items
             float armLength = Mathf.Max(width * 0.6f, 4f);
             float halfSpread = width * 0.35f;
             float armThickness = Mathf.Max(width * 0.08f, 0.6f);
-            float actualLength = Mathf.Sqrt(
-                halfSpread * halfSpread + armLength * armLength
-            );
+            float actualLength = Mathf.Sqrt(halfSpread * halfSpread + armLength * armLength);
 
             var color = new Color(1f, 0.15f, 0.15f, 0.55f);
             float[] zPositions = { length * 0.15f, -length * 0.15f };
@@ -291,7 +300,9 @@ namespace IssaPlugin.Items
             foreach (float z in zPositions)
             {
                 Vector3 dirL = new Vector3(-halfSpread, 0f, armLength).normalized;
-                CreateStripPart(parent, "ChevronL",
+                CreateStripPart(
+                    parent,
+                    "ChevronL",
                     new Vector3(halfSpread * 0.5f, 0.15f, z),
                     new Vector3(armThickness, 0.25f, actualLength),
                     color,
@@ -299,7 +310,9 @@ namespace IssaPlugin.Items
                 );
 
                 Vector3 dirR = new Vector3(halfSpread, 0f, armLength).normalized;
-                CreateStripPart(parent, "ChevronR",
+                CreateStripPart(
+                    parent,
+                    "ChevronR",
                     new Vector3(-halfSpread * 0.5f, 0.15f, z),
                     new Vector3(armThickness, 0.25f, actualLength),
                     color,
