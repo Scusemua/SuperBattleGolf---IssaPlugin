@@ -16,8 +16,10 @@ namespace IssaPlugin
         private Material _greyscaleMat;
         private float _noiseTimer;
 
-        private const float ScanlineSpacing = 4f;
-        private const float NoiseUpdateRate = 0.05f;
+        private const float ScanlineSpacing = 3f;
+        private const float NoiseUpdateRate = 0.04f;
+        private const float VisualArtifactChance = 0.08f;
+        private const float FullWidthScanlineSurgeChance = 0.035f;
 
         private void Awake()
         {
@@ -30,7 +32,7 @@ namespace IssaPlugin
         // ----------------------------------------------------------------
         private void OnRenderImage(RenderTexture src, RenderTexture dest)
         {
-            if (!StealthBomberItem.IsTargeting)
+            if (!StealthBomberItem.IsTargeting && !PredatorMissileItem.IsSteering)
             {
                 Graphics.Blit(src, dest);
                 return;
@@ -53,7 +55,7 @@ namespace IssaPlugin
         // ----------------------------------------------------------------
         private void OnGUI()
         {
-            if (!StealthBomberItem.IsTargeting)
+            if (!StealthBomberItem.IsTargeting && !PredatorMissileItem.IsSteering)
                 return;
 
             float w = Screen.width;
@@ -81,6 +83,36 @@ namespace IssaPlugin
             GUI.DrawTexture(new Rect(0, 0, w, h), _noiseTex, ScaleMode.StretchToFill);
             GUI.color = Color.white;
 
+            // Horizontal glitch bands
+            if (Random.value < VisualArtifactChance) // ~8% chance per frame to show an artifact
+            {
+                int bandCount = Random.Range(1, 4);
+                for (int i = 0; i < bandCount; i++)
+                {
+                    float bandY = Random.Range(0f, h);
+                    float bandH = Random.Range(1f, 5f);
+                    float bandW = Random.Range(w * 0.2f, w * 0.85f);
+                    float bandX = Random.Range(0f, w - bandW);
+                    float intensity = Random.Range(0.04f, 0.18f);
+
+                    GUI.color = new Color(0.9f, 1f, 0.9f, intensity);
+                    GUI.DrawTexture(new Rect(bandX, bandY, bandW, bandH), Texture2D.whiteTexture);
+                }
+                GUI.color = Color.white;
+            }
+
+            // Occasional full-width bright scanline surge
+            if (Random.value < FullWidthScanlineSurgeChance)
+            {
+                float surgeY = Random.Range(0f, h);
+                GUI.color = new Color(0.8f, 1f, 0.8f, 0.12f);
+                GUI.DrawTexture(
+                    new Rect(0, surgeY, w, Random.Range(2f, 8f)),
+                    Texture2D.whiteTexture
+                );
+                GUI.color = Color.white;
+            }
+
             // Corner brackets  ┌  ┐  └  ┘
             float bSize = 60f;
             float bThick = 3f;
@@ -106,14 +138,24 @@ namespace IssaPlugin
             GUI.Label(new Rect(16, 34, 300, 24), "SYS: ARMED", _cornerStyle);
             GUI.Label(new Rect(16, 56, 300, 24), "MODE: TARGETING", _cornerStyle);
 
-            // Bottom bar
-            GUI.DrawTexture(new Rect(0, h - 80, w, 80), _bgTex);
-            GUI.Label(new Rect(0, h - 75, w, 35), "STEALTH BOMBER TARGETING", _titleStyle);
-            GUI.Label(
-                new Rect(0, h - 42, w, 30),
-                "WASD: Move   |   Q/E: Rotate   |   Click / Enter: Confirm   |   Space: Cancel",
-                _instructionStyle
-            );
+            if (StealthBomberItem.IsTargeting)
+            {
+                // Bottom bar
+                GUI.DrawTexture(new Rect(0, h - 80, w, 80), _bgTex);
+                GUI.Label(new Rect(0, h - 75, w, 35), "STEALTH BOMBER TARGETING", _titleStyle);
+                GUI.Label(
+                    new Rect(0, h - 42, w, 30),
+                    "WASD: Move   |   Q/E: Rotate   |   Click / Enter: Confirm   |   Space: Cancel",
+                    _instructionStyle
+                );
+            }
+            else if (PredatorMissileItem.IsSteering)
+            {
+                // Bottom bar
+                GUI.DrawTexture(new Rect(0, h - 80, w, 80), _bgTex);
+                GUI.Label(new Rect(0, h - 75, w, 35), "PREDATOR MISSILE TARGETING", _titleStyle);
+                GUI.Label(new Rect(0, h - 42, w, 30), "WASD: Move", _instructionStyle);
+            }
         }
 
         // ----------------------------------------------------------------
@@ -172,7 +214,7 @@ namespace IssaPlugin
                 _titleStyle = new GUIStyle(GUI.skin.label)
                 {
                     alignment = TextAnchor.MiddleCenter,
-                    fontSize = 22,
+                    fontSize = 26,
                     fontStyle = FontStyle.Bold,
                 };
                 _titleStyle.normal.textColor = new Color(1f, 0.5f, 0f);
@@ -183,7 +225,7 @@ namespace IssaPlugin
                 _instructionStyle = new GUIStyle(GUI.skin.label)
                 {
                     alignment = TextAnchor.MiddleCenter,
-                    fontSize = 15,
+                    fontSize = 18,
                     fontStyle = FontStyle.Bold,
                 };
                 _instructionStyle.normal.textColor = Color.white;
@@ -193,7 +235,7 @@ namespace IssaPlugin
             {
                 _cornerStyle = new GUIStyle(GUI.skin.label)
                 {
-                    fontSize = 13,
+                    fontSize = 20,
                     fontStyle = FontStyle.Bold,
                 };
                 _cornerStyle.normal.textColor = new Color(0f, 1f, 0.2f, 0.9f);

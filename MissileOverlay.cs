@@ -38,7 +38,7 @@ namespace IssaPlugin
 
         private void OnGUI()
         {
-            if (!PredatorMissileItem.IsSteering || !StealthBomberItem.IsTargeting)
+            if (!PredatorMissileItem.IsSteering && !StealthBomberItem.IsTargeting)
                 return;
 
             var cam = GameManager.Camera;
