@@ -1,6 +1,10 @@
 using System.IO;
 using System.Reflection;
+using HarmonyLib;
+using IssaPlugin.Items;
+using Mirror;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace IssaPlugin.Items
 {
@@ -63,6 +67,13 @@ namespace IssaPlugin.Items
                 "Assets/predator_missile_tablet.prefab"
             );
 
+            // In AssetLoader, after loading the AC130 prefab:
+            RegisterPrefab(AC130Prefab);
+            RegisterPrefab(BomberTabletPrefab);
+            RegisterPrefab(MissileTabletPrefab);
+            RegisterPrefab(BomberPrefab);
+            RegisterPrefab(BatModelPrefab);
+
             IssaPluginPlugin.Log.LogInfo(
                 $"[Assets] Bundle loaded. "
                     + $"Icons: bat={BatIcon != null}, bomber={BomberIcon != null}, missile={MissileIcon != null}. "
@@ -70,6 +81,18 @@ namespace IssaPlugin.Items
                     + $"bomberTablet={BomberTabletPrefab != null}, "
                     + $"missileTablet={MissileTabletPrefab != null}."
             );
+        }
+
+        private static void RegisterPrefab(GameObject prefab)
+        {
+            if (prefab != null)
+            {
+                // Ensure it has a NetworkIdentity, which Mirror requires for spawning.
+                if (prefab.GetComponent<NetworkIdentity>() == null)
+                    prefab.AddComponent<NetworkIdentity>();
+
+                NetworkClient.RegisterPrefab(prefab);
+            }
         }
 
         private static Sprite LoadSprite(string assetPath)

@@ -1,14 +1,19 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
 using IssaPlugin.Items;
+using Mirror;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace IssaPlugin.Patches
 {
     [HarmonyPatch]
     static class TryUseItemPatch
     {
+        private static readonly object _lock = new object(); // not strictly needed in Unity's single-threaded update loop, but signals intent
+
         static MethodBase TargetMethod() =>
             AccessTools.Method(typeof(PlayerInventory), "TryUseItem");
 
@@ -52,7 +57,18 @@ namespace IssaPlugin.Patches
                 IssaPluginPlugin.Log.LogInfo($"[Equipment] Using AC130 item.");
                 shouldEatInput = true;
                 __result = true;
-                __instance.StartCoroutine(AC130Item.AC130Routine(__instance));
+
+                // Only the server decides whether activation is permitted.
+                if (NetworkServer.active && !AC130Item.IsActive)
+                    __instance.StartCoroutine(AC130Item.AC130Routine(__instance));
+                // Local player starts the overlay/input coroutine regardless,
+                // but only if the server confirmed activation via IsActive becoming true.
+                else if (
+                    __instance.PlayerInfo.GetComponent<NetworkIdentity>()?.isLocalPlayer == true
+                    && AC130Item.IsActive
+                )
+                    __instance.StartCoroutine(AC130Item.AC130ClientRoutine(__instance));
+
                 return false;
             }
             return true;

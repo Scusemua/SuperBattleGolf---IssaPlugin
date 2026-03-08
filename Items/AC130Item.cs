@@ -16,6 +16,7 @@ namespace IssaPlugin.Items
 
         public static bool IsActive => _isActive;
         public static Vector3 GunshipPosition { get; private set; }
+        public static Vector3 GunshipFacing { get; private set; }
 
         public static void GiveAC130ToLocalPlayer()
         {
@@ -46,6 +47,8 @@ namespace IssaPlugin.Items
 
             _isActive = true;
 
+            AC130NetworkBridge.ServerSpawn(inventory);
+
             int equippedIndex = inventory.EquippedItemIndex;
 
             if (NetworkServer.active)
@@ -62,7 +65,81 @@ namespace IssaPlugin.Items
             yield return RunAC130Session(inventory, session);
 
             session.Cleanup();
+            AC130NetworkBridge.ServerDespawn();
             _isActive = false;
+        }
+
+        public static IEnumerator AC130ClientRoutine(PlayerInventory inventory)
+        {
+            // Handles local-only effects: overlay, FOV zoom, input forwarding.
+            InputManager.Controls.Gameplay.Disable();
+
+            OrbitCameraModule orbitModule = null;
+            CameraModuleController.TryGetOrbitModule(out orbitModule);
+
+            float savedPitch = orbitModule?.Pitch ?? 0f;
+            float savedYaw = orbitModule?.Yaw ?? 0f;
+            bool savedDisablePhysics = orbitModule?.disablePhysics ?? false;
+
+            float elapsed = 0f;
+            float duration = Configuration.AC130Duration.Value;
+            float aimYaw = 0f;
+            float aimPitch = Configuration.AC130AimPitchDefault.Value;
+            float originalFov = Camera.main != null ? Camera.main.fieldOfView : 60f;
+            float currentFov = originalFov;
+
+            while (elapsed < duration && _isActive)
+            {
+                elapsed += Time.deltaTime;
+
+                var keyboard = Keyboard.current;
+                var mouse = Mouse.current;
+
+                if (keyboard != null && keyboard[Key.Space].wasPressedThisFrame)
+                    break;
+
+                // These are local-only session objects so we reconstruct aim state here.
+                HandleAC130Aim(
+                    keyboard,
+                    ref aimYaw,
+                    ref aimPitch,
+                    Configuration.AC130AimYawSpeed.Value,
+                    Configuration.AC130AimPitchSpeed.Value,
+                    Configuration.AC130AimPitchMin.Value,
+                    Configuration.AC130AimPitchMax.Value,
+                    Configuration.AC130AimYawMax.Value
+                );
+
+                HandleAC130Zoom(mouse, ref currentFov, originalFov);
+
+                // Derive gunship position from orbit math using the shared static property.
+                Vector3 gunshipPos = GunshipPosition;
+                Vector3 gunshipFacing = GunshipFacing;
+
+                Quaternion aimRotation =
+                    Quaternion.LookRotation(gunshipFacing, Vector3.up)
+                    * Quaternion.Euler(aimPitch, aimYaw, 0f);
+                Vector3 aimDirection = aimRotation * Vector3.down;
+                Vector3 crosshair = ProjectAimToGround(gunshipPos, aimDirection);
+
+                AC130Overlay.UpdateAimInfo(crosshair, elapsed, duration);
+
+                // Send fire command to server via a Command rather than spawning directly.
+                bool firePressed =
+                    (keyboard != null && keyboard[Key.F].wasPressedThisFrame)
+                    || (mouse != null && mouse.leftButton.wasPressedThisFrame);
+
+                if (firePressed)
+                    AC130NetworkBridge.CmdRequestFire(inventory, gunshipPos, aimDirection);
+
+                yield return null;
+            }
+
+            if (Camera.main != null)
+                Camera.main.fieldOfView = originalFov;
+
+            RestoreCamera(orbitModule, savedPitch, savedYaw, savedDisablePhysics);
+            InputManager.Controls.Gameplay.Enable();
         }
 
         private static IEnumerator RunAC130Session(PlayerInventory inventory, AC130Session s)
@@ -84,8 +161,17 @@ namespace IssaPlugin.Items
                 }
 
                 HandleAC130Flight(keyboard, s);
-                HandleAC130Aim(keyboard, s);
-                HandleAC130Zoom(mouse, s);
+                HandleAC130Aim(
+                    keyboard,
+                    ref s.AimYaw,
+                    ref s.AimPitch,
+                    s.AimYawSpeed,
+                    s.AimPitchSpeed,
+                    s.AimPitchMin,
+                    s.AimPitchMax,
+                    s.AimYawMax
+                );
+                HandleAC130Zoom(mouse, ref s.CurrentFov, s.OriginalFov);
 
                 Vector3 gunshipPos =
                     s.GunshipVisual != null
@@ -102,6 +188,7 @@ namespace IssaPlugin.Items
                         : AC130Helpers.OrbitTangent(s.Elapsed * s.BaseOrbitSpeed);
 
                 GunshipPosition = gunshipPos;
+                GunshipFacing = gunshipFacing;
                 s.PivotGo.transform.position = gunshipPos;
                 s.OrbitModule?.ForceUpdateModule();
 
@@ -129,19 +216,23 @@ namespace IssaPlugin.Items
             IssaPluginPlugin.Log.LogInfo("[AC130] Run ended.");
         }
 
-        private static void HandleAC130Zoom(Mouse mouse, AC130Session s)
+        private static void HandleAC130Zoom(Mouse mouse, ref float currentFov, float originalFov)
         {
             if (mouse == null)
                 return;
 
-            float zoomFov = Configuration.AC130ZoomFov.Value;
-            float zoomSpeed = Configuration.AC130ZoomSpeed.Value;
-            float targetFov = mouse.rightButton.isPressed ? zoomFov : s.OriginalFov;
+            float targetFov = mouse.rightButton.isPressed
+                ? Configuration.AC130ZoomFov.Value
+                : originalFov;
 
-            s.CurrentFov = Mathf.Lerp(s.CurrentFov, targetFov, zoomSpeed * Time.deltaTime);
+            currentFov = Mathf.Lerp(
+                currentFov,
+                targetFov,
+                Configuration.AC130ZoomSpeed.Value * Time.deltaTime
+            );
 
             if (Camera.main != null)
-                Camera.main.fieldOfView = s.CurrentFov;
+                Camera.main.fieldOfView = currentFov;
         }
 
         private static void HandleAC130Flight(Keyboard keyboard, AC130Session s)
@@ -168,29 +259,30 @@ namespace IssaPlugin.Items
                 s.FlyComp.altitude = s.Altitude + s.AltitudeOffset;
         }
 
-        private static void HandleAC130Aim(Keyboard keyboard, AC130Session s)
+        private static void HandleAC130Aim(
+            Keyboard keyboard,
+            ref float aimYaw,
+            ref float aimPitch,
+            float yawSpeed,
+            float pitchSpeed,
+            float pitchMin,
+            float pitchMax,
+            float yawMax
+        )
         {
             if (keyboard == null)
                 return;
 
             if (keyboard[Key.A].isPressed || keyboard[Key.LeftArrow].isPressed)
-                s.AimYaw -= s.AimYawSpeed * Time.deltaTime;
+                aimYaw -= yawSpeed * Time.deltaTime;
             if (keyboard[Key.D].isPressed || keyboard[Key.RightArrow].isPressed)
-                s.AimYaw += s.AimYawSpeed * Time.deltaTime;
+                aimYaw += yawSpeed * Time.deltaTime;
             if (keyboard[Key.W].isPressed || keyboard[Key.UpArrow].isPressed)
-                s.AimPitch = Mathf.Clamp(
-                    s.AimPitch - s.AimPitchSpeed * Time.deltaTime,
-                    s.AimPitchMin,
-                    s.AimPitchMax
-                );
+                aimPitch = Mathf.Clamp(aimPitch - pitchSpeed * Time.deltaTime, pitchMin, pitchMax);
             if (keyboard[Key.S].isPressed || keyboard[Key.DownArrow].isPressed)
-                s.AimPitch = Mathf.Clamp(
-                    s.AimPitch + s.AimPitchSpeed * Time.deltaTime,
-                    s.AimPitchMin,
-                    s.AimPitchMax
-                );
+                aimPitch = Mathf.Clamp(aimPitch + pitchSpeed * Time.deltaTime, pitchMin, pitchMax);
 
-            s.AimYaw = Mathf.Clamp(s.AimYaw, -s.AimYawMax, s.AimYawMax);
+            aimYaw = Mathf.Clamp(aimYaw, -yawMax, yawMax);
         }
 
         private static void HandleAC130Fire(
@@ -222,235 +314,6 @@ namespace IssaPlugin.Items
             SpawnRocketInDirection(inventory, gunshipPos, jitter * fireRotation);
             IssaPluginPlugin.Log.LogInfo($"[AC130] Rocket fired toward {crosshairWorld}.");
             s.Cooldown = s.FireCooldown;
-        }
-
-        public static IEnumerator AC130RoutineOld(PlayerInventory inventory)
-        {
-            if (_isActive)
-                yield break;
-
-            _isActive = true;
-
-            int equippedIndex = inventory.EquippedItemIndex;
-            SetCurrentItemUse(inventory, ItemUseType.Regular);
-            if (equippedIndex >= 0)
-                ItemHelper.DecrementAndRemove(inventory, equippedIndex);
-            SetCurrentItemUse(inventory, ItemUseType.None);
-
-            yield return new WaitForSeconds(0.01f);
-
-            InputManager.Controls.Gameplay.Disable();
-
-            OrbitCameraModule orbitModule = null;
-            CameraModuleController.TryGetOrbitModule(out orbitModule);
-
-            float savedPitch = orbitModule?.Pitch ?? 0f;
-            float savedYaw = orbitModule?.Yaw ?? 0f;
-            bool savedDisablePhysics = false;
-
-            float baseOrbitSpeed = Configuration.AC130OrbitSpeed.Value;
-            float boostedOrbitSpeed = baseOrbitSpeed * Configuration.AC130BoostMultiplier.Value;
-            float altitudeOffset = 0f;
-            float altitudeOffsetMax = Configuration.AC130AltitudeOffsetMax.Value;
-            float altitudeAdjustSpeed = Configuration.AC130AltitudeAdjustSpeed.Value;
-
-            // Pivot is the map centre — the gunship orbits around it.
-            Vector3 mapCentre = GetMapCentre(inventory);
-            float orbitRadius = Configuration.AC130OrbitRadius.Value;
-            float altitude = Configuration.AC130Altitude.Value;
-            float orbitSpeed = Configuration.AC130OrbitSpeed.Value; // degrees per second
-            float duration = Configuration.AC130Duration.Value;
-
-            // Camera pivot follows the gunship.
-            var pivotGo = new GameObject("AC130Pivot");
-            pivotGo.transform.position = mapCentre;
-
-            if (orbitModule != null)
-            {
-                savedDisablePhysics = orbitModule.disablePhysics;
-                orbitModule.SetSubject(pivotGo.transform);
-                orbitModule.SetPitch(Configuration.AC130CameraPitch.Value);
-                orbitModule.SetDistanceAddition(Configuration.AC130CameraDistance.Value);
-                orbitModule.disablePhysics = true;
-                orbitModule.ForceUpdateModule();
-            }
-
-            // Spawn gunship visual.
-            float startAngle = 0f;
-            Vector3 startPos = AC130Helpers.OrbitPosition(
-                mapCentre,
-                startAngle,
-                orbitRadius,
-                altitude
-            );
-            Vector3 startForward = AC130Helpers.OrbitTangent(startAngle);
-
-            GameObject gunshipVisual = null;
-            AC130FlyBehaviour flyComp = null;
-
-            if (AssetLoader.AC130Prefab != null)
-            {
-                gunshipVisual = Object.Instantiate(
-                    AssetLoader.AC130Prefab,
-                    startPos,
-                    Quaternion.LookRotation(startForward, Vector3.up)
-                );
-
-                flyComp = gunshipVisual.AddComponent<AC130FlyBehaviour>();
-                flyComp.mapCentre = mapCentre;
-                flyComp.orbitRadius = orbitRadius;
-                flyComp.altitude = altitude;
-                flyComp.orbitSpeed = orbitSpeed;
-                flyComp.currentAngle = startAngle;
-            }
-            else
-            {
-                IssaPluginPlugin.Log.LogInfo("[AC130] No prefab found, running without visual.");
-            }
-
-            // Aim state.
-            float aimYaw = 0f; // relative to the gunship's current facing, in degrees
-            float aimPitch = Configuration.AC130AimPitchDefault.Value;
-
-            float aimYawSpeed = Configuration.AC130AimYawSpeed.Value;
-            float aimPitchSpeed = Configuration.AC130AimPitchSpeed.Value;
-            float aimPitchMin = Configuration.AC130AimPitchMin.Value;
-            float aimPitchMax = Configuration.AC130AimPitchMax.Value;
-
-            float elapsed = 0f;
-            float cooldown = 0f;
-            float fireCooldown = Configuration.AC130FireCooldown.Value;
-
-            IssaPluginPlugin.Log.LogInfo(
-                $"[AC130] Active for {duration:F0}s, orbit radius {orbitRadius:F0}m, altitude {altitude:F0}m."
-            );
-
-            while (elapsed < duration)
-            {
-                elapsed += Time.deltaTime;
-                cooldown -= Time.deltaTime;
-
-                var keyboard = Keyboard.current;
-                var mouse = Mouse.current;
-
-                // Early exit.
-                if (keyboard != null && keyboard[Key.Space].wasPressedThisFrame)
-                {
-                    IssaPluginPlugin.Log.LogInfo("[AC130] Player exited early.");
-                    break;
-                }
-
-                // Speed boost.
-                bool boosting = keyboard != null && keyboard[Key.LeftShift].isPressed;
-                if (flyComp != null)
-                    flyComp.orbitSpeed = boosting ? boostedOrbitSpeed : baseOrbitSpeed;
-
-                // Altitude adjustment.
-                if (keyboard != null)
-                {
-                    if (keyboard[Key.Q].isPressed)
-                        altitudeOffset -= altitudeAdjustSpeed * Time.deltaTime;
-                    if (keyboard[Key.E].isPressed)
-                        altitudeOffset += altitudeAdjustSpeed * Time.deltaTime;
-
-                    altitudeOffset = Mathf.Clamp(
-                        altitudeOffset,
-                        -altitudeOffsetMax,
-                        altitudeOffsetMax
-                    );
-
-                    if (flyComp != null)
-                        flyComp.altitude = altitude + altitudeOffset;
-                }
-
-                // Update gunship position from fly component.
-                Vector3 gunshipPos =
-                    gunshipVisual != null
-                        ? gunshipVisual.transform.position
-                        : AC130Helpers.OrbitPosition(
-                            mapCentre,
-                            elapsed * baseOrbitSpeed,
-                            orbitRadius,
-                            altitude + altitudeOffset
-                        );
-                Vector3 gunshipFacing =
-                    gunshipVisual != null
-                        ? gunshipVisual.transform.forward
-                        : AC130Helpers.OrbitTangent(elapsed * baseOrbitSpeed);
-
-                GunshipPosition = gunshipPos;
-
-                pivotGo.transform.position = gunshipPos;
-                if (orbitModule != null)
-                    orbitModule.ForceUpdateModule();
-
-                // Aim controls — Q/E are now consumed by altitude so removed from here.
-                if (keyboard != null)
-                {
-                    if (keyboard[Key.A].isPressed || keyboard[Key.LeftArrow].isPressed)
-                        aimYaw -= aimYawSpeed * Time.deltaTime;
-                    if (keyboard[Key.D].isPressed || keyboard[Key.RightArrow].isPressed)
-                        aimYaw += aimYawSpeed * Time.deltaTime;
-                    if (keyboard[Key.W].isPressed || keyboard[Key.UpArrow].isPressed)
-                        aimPitch = Mathf.Clamp(
-                            aimPitch - aimPitchSpeed * Time.deltaTime,
-                            aimPitchMin,
-                            aimPitchMax
-                        );
-                    if (keyboard[Key.S].isPressed || keyboard[Key.DownArrow].isPressed)
-                        aimPitch = Mathf.Clamp(
-                            aimPitch + aimPitchSpeed * Time.deltaTime,
-                            aimPitchMin,
-                            aimPitchMax
-                        );
-                }
-
-                aimYaw = Mathf.Clamp(
-                    aimYaw,
-                    -Configuration.AC130AimYawMax.Value,
-                    Configuration.AC130AimYawMax.Value
-                );
-
-                Quaternion aimRotation =
-                    Quaternion.LookRotation(gunshipFacing, Vector3.up)
-                    * Quaternion.Euler(aimPitch, aimYaw, 0f);
-                Vector3 fireDirection = aimRotation * Vector3.forward;
-
-                Vector3 crosshairWorld = ProjectAimToGround(gunshipPos, fireDirection);
-                AC130Overlay.UpdateAimInfo(crosshairWorld, elapsed, duration);
-
-                bool firePressed =
-                    (keyboard != null && keyboard[Key.F].wasPressedThisFrame)
-                    || (mouse != null && mouse.leftButton.wasPressedThisFrame);
-
-                if (firePressed && cooldown <= 0f)
-                {
-                    float angularJitter = Configuration.AC130RocketAngularJitter.Value;
-                    Quaternion jitter = Quaternion.Euler(
-                        Random.Range(-angularJitter, angularJitter),
-                        Random.Range(-angularJitter, angularJitter),
-                        0f
-                    );
-
-                    SpawnRocketInDirection(inventory, gunshipPos, jitter * aimRotation);
-                    IssaPluginPlugin.Log.LogInfo($"[AC130] Rocket fired toward {crosshairWorld}.");
-                    cooldown = fireCooldown;
-                }
-
-                yield return null;
-            }
-
-            // Cleanup.
-            IssaPluginPlugin.Log.LogInfo("[AC130] Time expired.");
-
-            if (gunshipVisual != null)
-                Object.Destroy(gunshipVisual);
-
-            Object.Destroy(pivotGo);
-            _isActive = false;
-
-            RestoreCamera(orbitModule, savedPitch, savedYaw, savedDisablePhysics);
-            InputManager.Controls.Gameplay.Enable();
         }
 
         private static Vector3 ProjectAimToGround(Vector3 origin, Vector3 direction)
@@ -498,7 +361,7 @@ namespace IssaPlugin.Items
             NetworkServer.Spawn(rocket.gameObject, (NetworkConnectionToClient)null);
         }
 
-        private static void SpawnRocketInDirection(
+        public static void SpawnRocketInDirection(
             PlayerInventory inventory,
             Vector3 position,
             Quaternion worldRotation
