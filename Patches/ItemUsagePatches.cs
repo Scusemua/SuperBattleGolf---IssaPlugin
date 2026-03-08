@@ -23,6 +23,7 @@ namespace IssaPlugin.Patches
 
             if (equipped == BatItem.BatItemType)
             {
+                IssaPluginPlugin.Log.LogInfo($"[Equipment] Using Baseball Bat item.");
                 shouldEatInput = false;
                 __result = false;
                 return false;
@@ -30,6 +31,7 @@ namespace IssaPlugin.Patches
 
             if (equipped == StealthBomberItem.BomberItemType)
             {
+                IssaPluginPlugin.Log.LogInfo($"[Equipment] Using Stealth Bomber item.");
                 shouldEatInput = true;
                 __result = true;
                 __instance.StartCoroutine(StealthBomberItem.BomberRunRoutine(__instance));
@@ -38,6 +40,7 @@ namespace IssaPlugin.Patches
 
             if (equipped == PredatorMissileItem.MissileItemType)
             {
+                IssaPluginPlugin.Log.LogInfo($"[Equipment] Using Predator Missile item.");
                 shouldEatInput = true;
                 __result = true;
                 __instance.StartCoroutine(PredatorMissileItem.MissileRoutine(__instance));
@@ -64,6 +67,7 @@ namespace IssaPlugin.Patches
             if (!ItemRegistry.IsCustomItem(equipped))
             {
                 ClearCustomModel(__instance);
+                ShowDefaultEquipment(rightSwitcher);
                 return;
             }
 
@@ -102,9 +106,10 @@ namespace IssaPlugin.Patches
                 IssaPluginPlugin.Log.LogInfo(
                     $"[Equipment] Custom model spawned for item {(int)equipped}."
                 );
-            }
 
-            HideDefaultEquipment(rightSwitcher);
+                IssaPluginPlugin.Log.LogInfo($"[Equipment] Hiding default equipment.");
+                HideDefaultEquipment(rightSwitcher);
+            }
         }
 
         private static void HideDefaultEquipment(EquipmentSwitcher switcher)
@@ -138,6 +143,17 @@ namespace IssaPlugin.Patches
             if (type == PredatorMissileItem.MissileItemType)
                 return AssetLoader.MissileTabletPrefab;
             return null;
+        }
+
+        private static void ShowDefaultEquipment(EquipmentSwitcher switcher)
+        {
+            if (switcher.CurrentEquipment == null)
+                return;
+
+            foreach (
+                var r in switcher.CurrentEquipment.gameObject.GetComponentsInChildren<Renderer>()
+            )
+                r.enabled = true;
         }
 
         private static void SetLayerRecursive(GameObject go, int layer)

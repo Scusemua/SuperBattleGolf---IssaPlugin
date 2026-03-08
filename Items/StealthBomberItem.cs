@@ -17,6 +17,18 @@ namespace IssaPlugin.Items
 
         public static bool IsTargeting => _isTargeting;
 
+        private class TargetingResult
+        {
+            public BombingStripInfo? Strip;
+        }
+
+        private struct BombingStripInfo
+        {
+            public Vector3 Center;
+            public Vector3 Forward;
+            public float Length;
+        }
+
         public static void GiveBomberToLocalPlayer()
         {
             ItemHelper.GiveItemToLocalPlayer(
@@ -46,44 +58,111 @@ namespace IssaPlugin.Items
 
             int equippedIndex = inventory.EquippedItemIndex;
 
-            // ============================================================
-            //  Phase 1 — Bird's-eye targeting
-            // ============================================================
+            var result = new TargetingResult();
+            var targeting = RunTargetingPhase(inventory, result);
+            yield return targeting;
+
+            if (result.Strip == null)
+            {
+                IssaPluginPlugin.Log.LogInfo("[Bomber] Targeting cancelled.");
+                yield break;
+            }
+
+            var bombing = RunBombingPhase(inventory, equippedIndex, result.Strip.Value);
+            yield return bombing;
+        }
+
+        private static void HandleTargetingMovement(
+            Keyboard keyboard,
+            OrbitCameraModule orbitModule,
+            float moveSpeed,
+            GameObject stripGo,
+            GameObject pivotGo
+        )
+        {
+            float inputX = 0f,
+                inputZ = 0f;
+
+            if (keyboard[Key.W].isPressed || keyboard[Key.UpArrow].isPressed)
+                inputZ += 1f;
+            if (keyboard[Key.S].isPressed || keyboard[Key.DownArrow].isPressed)
+                inputZ -= 1f;
+            if (keyboard[Key.A].isPressed || keyboard[Key.LeftArrow].isPressed)
+                inputX -= 1f;
+            if (keyboard[Key.D].isPressed || keyboard[Key.RightArrow].isPressed)
+                inputX += 1f;
+
+            if (inputX == 0f && inputZ == 0f)
+                return;
+
+            Vector3 camForward = Vector3.forward;
+            Vector3 camRight = Vector3.right;
+
+            if (orbitModule != null)
+            {
+                float yawRad = orbitModule.Yaw * Mathf.Deg2Rad;
+                camForward = new Vector3(Mathf.Sin(yawRad), 0f, Mathf.Cos(yawRad));
+                camRight = new Vector3(Mathf.Cos(yawRad), 0f, -Mathf.Sin(yawRad));
+            }
+
+            Vector3 worldMove =
+                (camRight * inputX + camForward * inputZ) * moveSpeed * Time.deltaTime;
+            stripGo.transform.position += worldMove;
+            pivotGo.transform.position = new Vector3(
+                stripGo.transform.position.x,
+                pivotGo.transform.position.y,
+                stripGo.transform.position.z
+            );
+        }
+
+        private static void HandleTargetingRotation(
+            Keyboard keyboard,
+            float rotateSpeed,
+            ref float stripAngle,
+            GameObject stripGo
+        )
+        {
+            if (keyboard[Key.Q].isPressed)
+                stripAngle -= rotateSpeed * Time.deltaTime;
+            if (keyboard[Key.E].isPressed)
+                stripAngle += rotateSpeed * Time.deltaTime;
+
+            stripGo.transform.rotation = Quaternion.Euler(0f, stripAngle, 0f);
+        }
+
+        private static IEnumerator RunTargetingPhase(
+            PlayerInventory inventory,
+            TargetingResult result
+        )
+        {
             _isTargeting = true;
             InputManager.Controls.Gameplay.Disable();
 
             OrbitCameraModule orbitModule = null;
             CameraModuleController.TryGetOrbitModule(out orbitModule);
 
-            float savedPitch = 0f;
-            float savedYaw = 0f;
-            if (orbitModule != null)
-            {
-                savedPitch = orbitModule.Pitch;
-                savedYaw = orbitModule.Yaw;
-            }
+            float savedPitch = orbitModule?.Pitch ?? 0f;
+            float savedYaw = orbitModule?.Yaw ?? 0f;
+            bool savedDisablePhysics = false;
 
             var playerPos = inventory.PlayerInfo.transform.position;
-
             var pivotGo = new GameObject("BomberTargetPivot");
             pivotGo.transform.position = playerPos;
 
             float stripLength = Configuration.BomberStripLength.Value;
             float stripWidth = Configuration.BomberSpread.Value * 2f;
             float stripAngle = 0f;
-
             var stripGo = CreateStripVisual(playerPos, stripWidth, stripLength);
 
-            bool savedDisablePhysics = false;
+            float currentDistanceAddition = 0;
+            float zoomSpeed = Configuration.BomberTargetingZoomSpeed.Value;
+
             if (orbitModule != null)
             {
                 savedDisablePhysics = orbitModule.disablePhysics;
-
                 orbitModule.SetSubject(pivotGo.transform);
                 orbitModule.SetPitch(88f);
-                orbitModule.SetDistanceAddition(
-                    Configuration.BomberTargetingAltitude.Value * 1.10f
-                );
+                orbitModule.SetDistanceAddition(currentDistanceAddition);
                 orbitModule.disablePhysics = true;
                 orbitModule.ForceUpdateModule();
             }
@@ -99,50 +178,27 @@ namespace IssaPlugin.Items
             {
                 var keyboard = Keyboard.current;
                 var mouse = Mouse.current;
+
                 if (keyboard == null)
                 {
                     yield return null;
                     continue;
                 }
 
-                float inputX = 0f;
-                float inputZ = 0f;
-                if (keyboard[Key.W].isPressed || keyboard[Key.UpArrow].isPressed)
-                    inputZ += 1f;
-                if (keyboard[Key.S].isPressed || keyboard[Key.DownArrow].isPressed)
-                    inputZ -= 1f;
-                if (keyboard[Key.A].isPressed || keyboard[Key.LeftArrow].isPressed)
-                    inputX -= 1f;
-                if (keyboard[Key.D].isPressed || keyboard[Key.RightArrow].isPressed)
-                    inputX += 1f;
+                HandleTargetingMovement(keyboard, orbitModule, moveSpeed, stripGo, pivotGo);
+                HandleTargetingRotation(keyboard, rotateSpeed, ref stripAngle, stripGo);
 
-                if (inputX != 0f || inputZ != 0f)
+                if (orbitModule != null && mouse != null)
                 {
-                    Vector3 camForward = Vector3.forward;
-                    Vector3 camRight = Vector3.right;
-                    if (orbitModule != null)
+                    float scroll = mouse.scroll.ReadValue().y;
+                    if (scroll != 0f)
                     {
-                        float yawRad = orbitModule.Yaw * Mathf.Deg2Rad;
-                        camForward = new Vector3(Mathf.Sin(yawRad), 0f, Mathf.Cos(yawRad));
-                        camRight = new Vector3(Mathf.Cos(yawRad), 0f, -Mathf.Sin(yawRad));
+                        float zoomStep = Mathf.Sign(scroll) * zoomSpeed;
+                        currentDistanceAddition -= zoomStep;
+                        currentDistanceAddition = Mathf.Clamp(currentDistanceAddition, 1f, 2000f);
+                        orbitModule.SetDistanceAddition(currentDistanceAddition);
                     }
-
-                    Vector3 worldMove =
-                        (camRight * inputX + camForward * inputZ) * moveSpeed * Time.deltaTime;
-                    stripGo.transform.position += worldMove;
-                    pivotGo.transform.position = new Vector3(
-                        stripGo.transform.position.x,
-                        pivotGo.transform.position.y,
-                        stripGo.transform.position.z
-                    );
                 }
-
-                if (keyboard[Key.Q].isPressed)
-                    stripAngle -= rotateSpeed * Time.deltaTime;
-                if (keyboard[Key.E].isPressed)
-                    stripAngle += rotateSpeed * Time.deltaTime;
-
-                stripGo.transform.rotation = Quaternion.Euler(0f, stripAngle, 0f);
 
                 if (
                     keyboard[Key.Enter].wasPressedThisFrame
@@ -151,7 +207,7 @@ namespace IssaPlugin.Items
                     confirmed = true;
 
                 if (
-                    keyboard[Key.Escape].wasPressedThisFrame
+                    keyboard[Key.Space].wasPressedThisFrame
                     || (mouse != null && mouse.rightButton.wasPressedThisFrame)
                 )
                     cancelled = true;
@@ -159,8 +215,13 @@ namespace IssaPlugin.Items
                 yield return null;
             }
 
-            Vector3 stripCenter = stripGo.transform.position;
-            Vector3 stripForward = stripGo.transform.forward;
+            if (confirmed)
+                result.Strip = new BombingStripInfo
+                {
+                    Center = stripGo.transform.position,
+                    Forward = stripGo.transform.forward,
+                    Length = stripLength,
+                };
 
             Object.Destroy(stripGo);
             Object.Destroy(pivotGo);
@@ -168,16 +229,14 @@ namespace IssaPlugin.Items
 
             RestoreCamera(orbitModule, savedPitch, savedYaw, savedDisablePhysics);
             InputManager.Controls.Gameplay.Enable();
+        }
 
-            if (cancelled)
-            {
-                IssaPluginPlugin.Log.LogInfo("[Bomber] Targeting cancelled.");
-                yield break;
-            }
-
-            // ============================================================
-            //  Phase 2 — Execute bombing run along the confirmed line
-            // ============================================================
+        private static IEnumerator RunBombingPhase(
+            PlayerInventory inventory,
+            int equippedIndex,
+            BombingStripInfo strip
+        )
+        {
             _isBombing = true;
 
             SetCurrentItemUse(inventory, ItemUseType.Regular);
@@ -189,95 +248,106 @@ namespace IssaPlugin.Items
             yield return new WaitForSeconds(Configuration.BomberWaitTime.Value);
 
             float altitude = Configuration.BomberAltitude.Value;
-            int rocketCount = Configuration.BomberRocketCount.Value;
             float rocketInterval = Configuration.BomberRocketInterval.Value;
             float speed = Configuration.BomberSpeed.Value;
             float spread = Configuration.BomberSpread.Value;
             float approachDist = Configuration.BomberApproachDistance.Value;
+            float waitTime = Configuration.BomberWaitTime.Value;
 
-            float halfLength = stripLength / 2f;
-            Vector3 stripStart = stripCenter - stripForward * halfLength;
-            Vector3 stripEnd = stripCenter + stripForward * halfLength;
+            float halfLength = strip.Length / 2f;
+            Vector3 stripStart = strip.Center - strip.Forward * halfLength;
+            Vector3 stripEnd = strip.Center + strip.Forward * halfLength;
             Vector3 direction = (stripEnd - stripStart).normalized;
-            float totalDistance = Vector3.Distance(stripStart, stripEnd);
             Vector3 perpendicular = Vector3.Cross(direction, Vector3.up).normalized;
 
-            // Extend the flight path beyond the strip in both directions.
             Vector3 spawnPos = stripStart - direction * approachDist;
             Vector3 exitPos = stripEnd + direction * approachDist;
-            spawnPos.y = stripCenter.y + altitude;
-            exitPos.y = stripCenter.y + altitude;
+            spawnPos.y = strip.Center.y + altitude;
+            exitPos.y = strip.Center.y + altitude;
 
-            // Evenly space drop waypoints across the bombing strip only.
-            float rocketSpacing = totalDistance / (rocketCount + 1);
-            var dropWaypoints = new List<Vector3>(rocketCount);
-            for (int i = 1; i <= rocketCount; i++)
-            {
-                Vector3 wp = stripStart + direction * (rocketSpacing * i);
-                wp.y = stripCenter.y + altitude;
-                dropWaypoints.Add(wp);
-            }
+            // The bomber should stop dropping rockets when it's waitTime seconds from the exit.
+            float exitBufferDist = speed * waitTime;
+            Vector3 dropEndPos = exitPos - direction * exitBufferDist;
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[Bomber] Run started: {rocketCount} rockets over {totalDistance:F0}m "
+                $"[Bomber] Run started: dropping rockets at interval {rocketInterval:F0} over {strip.Length:F0}m "
                     + $"at altitude {altitude:F0}m, approach {approachDist:F0}m"
             );
 
-            GameObject bomberVisual = null;
-            if (AssetLoader.BomberPrefab != null)
-            {
-                IssaPluginPlugin.Log.LogInfo("[Bomber] Spawning bomber visual.");
-                bomberVisual = Object.Instantiate(
-                    AssetLoader.BomberPrefab,
-                    spawnPos, // <-- far approach point
-                    Quaternion.LookRotation(direction, Vector3.up)
-                );
-
-                var flyComp = bomberVisual.AddComponent<BomberFlyBehaviour>();
-                flyComp.destination = exitPos; // <-- far exit point
-                flyComp.speed = speed;
-            }
-            else
-            {
-                IssaPluginPlugin.Log.LogInfo(
-                    "[Bomber] Cannot spawn bomber visual; cannot find prefab."
-                );
-            }
+            var bomberVisual = SpawnBomberVisual(spawnPos, exitPos, direction, speed);
 
             int rocketsDropped = 0;
+            bool droppingFinished = false;
 
-            while (rocketsDropped < rocketCount)
+            while (bomberVisual != null)
             {
-                Vector3 bomberPos =
-                    bomberVisual != null
-                        ? bomberVisual.transform.position
-                        : dropWaypoints[rocketsDropped];
-
-                float distToWaypoint = Vector3.Distance(bomberPos, dropWaypoints[rocketsDropped]);
-                float distToEnd = Vector3.Distance(bomberPos, exitPos);
-                bool pastWaypoint = distToWaypoint > distToEnd;
-
-                if (!pastWaypoint)
+                if (!droppingFinished)
                 {
-                    yield return null;
+                    Vector3 bomberPos = bomberVisual.transform.position;
+                    float distToDropEnd = Vector3.Distance(bomberPos, dropEndPos);
+                    float distToExit = Vector3.Distance(bomberPos, exitPos);
+                    bool pastDropEnd = distToDropEnd > distToExit;
+
+                    if (pastDropEnd)
+                    {
+                        droppingFinished = true;
+                    }
+                    else
+                    {
+                        Vector3 offset = perpendicular * Random.Range(-spread, spread);
+                        float angularJitter = Configuration.BomberRocketAngularJitter.Value;
+                        Quaternion jitter = Quaternion.Euler(
+                            Random.Range(-angularJitter, angularJitter),
+                            Random.Range(-angularJitter, angularJitter),
+                            0f
+                        );
+                        SpawnRocket(inventory, bomberPos + offset, jitter);
+                        // Vector3 offset = perpendicular * Random.Range(-spread, spread);
+                        // SpawnRocket(inventory, bomberPos + offset);
+                        rocketsDropped++;
+
+                        yield return new WaitForSeconds(rocketInterval);
+                    }
                     continue;
                 }
 
-                Vector3 offset = perpendicular * Random.Range(-spread, spread);
-                SpawnRocket(inventory, bomberPos + offset);
-                rocketsDropped++;
-
-                yield return new WaitForSeconds(rocketInterval);
-            }
-
-            // Let the bomber finish flying to the exit point before cleaning up.
-            while (bomberVisual != null)
                 yield return null;
+            }
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[Bomber] Run complete. {rocketsDropped} rockets dropped."
             );
             _isBombing = false;
+        }
+
+        private static GameObject SpawnBomberVisual(
+            Vector3 spawnPos,
+            Vector3 exitPos,
+            Vector3 direction,
+            float speed
+        )
+        {
+            if (AssetLoader.BomberPrefab == null)
+            {
+                IssaPluginPlugin.Log.LogInfo(
+                    "[Bomber] Cannot spawn bomber visual; cannot find prefab."
+                );
+                return null;
+            }
+
+            IssaPluginPlugin.Log.LogInfo("[Bomber] Spawning bomber visual.");
+
+            var go = Object.Instantiate(
+                AssetLoader.BomberPrefab,
+                spawnPos,
+                Quaternion.LookRotation(direction, Vector3.up)
+            );
+
+            var flyComp = go.AddComponent<BomberFlyBehaviour>();
+            flyComp.destination = exitPos;
+            flyComp.speed = speed;
+
+            return go;
         }
 
         private static GameObject CreateStripVisual(Vector3 center, float width, float length)
@@ -393,12 +463,16 @@ namespace IssaPlugin.Items
             orbitModule.ForceUpdateModule();
         }
 
-        private static void SpawnRocket(PlayerInventory inventory, Vector3 position)
+        private static void SpawnRocket(
+            PlayerInventory inventory,
+            Vector3 position,
+            Quaternion jitter
+        )
         {
             if (!NetworkServer.active)
                 return;
 
-            Quaternion rotation = Quaternion.LookRotation(Vector3.down, Vector3.forward);
+            Quaternion rotation = jitter * Quaternion.LookRotation(Vector3.down, Vector3.forward);
 
             _bomberUseIndex++;
             var itemUseId = new ItemUseId(

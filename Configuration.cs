@@ -15,13 +15,13 @@ namespace IssaPlugin
         public static ConfigEntry<float> BomberAltitude { get; private set; }
         public static ConfigEntry<float> BomberSpeed { get; private set; }
         public static ConfigEntry<float> BomberRocketInterval { get; private set; }
-        public static ConfigEntry<int> BomberRocketCount { get; private set; }
         public static ConfigEntry<float> BomberSpread { get; private set; }
         public static ConfigEntry<int> BomberUses { get; private set; }
         public static ConfigEntry<Key> BomberGiveKey { get; private set; }
         public static ConfigEntry<float> BomberWaitTime { get; private set; }
         public static ConfigEntry<float> BomberStripLength { get; private set; }
-        public static ConfigEntry<float> BomberTargetingAltitude { get; private set; }
+        public static ConfigEntry<float> BomberRocketAngularJitter { get; private set; }
+        public static ConfigEntry<float> BomberTargetingZoomSpeed { get; private set; }
         public static ConfigEntry<float> BomberTargetMoveSpeed { get; private set; }
         public static ConfigEntry<float> BomberTargetRotateSpeed { get; private set; }
         public static ConfigEntry<float> BomberSpawnWeight { get; private set; }
@@ -89,13 +89,6 @@ namespace IssaPlugin
                 "Seconds between each rocket drop during a bombing run."
             );
 
-            BomberRocketCount = cfg.Bind(
-                "StealthBomber",
-                "RocketCount",
-                12,
-                "Total number of rockets dropped per bombing run."
-            );
-
             BomberSpread = cfg.Bind(
                 "StealthBomber",
                 "Spread",
@@ -126,11 +119,18 @@ namespace IssaPlugin
                 "Length of the targeting strip in units."
             );
 
-            BomberTargetingAltitude = cfg.Bind(
+            BomberTargetingZoomSpeed = cfg.Bind(
                 "StealthBomber",
-                "TargetingAltitude",
-                120f,
-                "Extra camera distance (zoom out) during bird's-eye targeting."
+                "TargetingZoomSpeed",
+                0.05f,
+                "Speed at which the camera zooms in/out during bomber targeting."
+            );
+
+            BomberRocketAngularJitter = cfg.Bind(
+                "StealthBomber",
+                "RocketAngularJitter",
+                0.8f,
+                "Random angular jitter in degrees for each rocket's rotation."
             );
 
             BomberTargetMoveSpeed = cfg.Bind(

@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 2214269097
+CRC: 3474551774
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: eb782ce8ccf32ac5e9ad42f213a84493
+    Hash: 54aca72e87648747d0820a170ed1acad
   TypeTreeHash:
     serializedVersion: 2
     Hash: 40e071d76975daed3a62633cb3d327eb
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: a975136bc7f5cd812ce86067aac19f5e
+    Hash: cf4f75666a1b9f5d2919135c83970ed5
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -36,9 +36,10 @@ Assets:
 - Assets/bomber_model.prefab
 - Assets/missile_icon.png
 - Assets/predator_missile_tablet.prefab
+- Assets/bomber_tablet.prefab
 - Assets/bomber_icon.png
 - Assets/bat_icon.png
 - Assets/stealth_bomber_tablet.prefab
-- Assets/tablet.prefab
+- Assets/predator_tablet.prefab
 - Assets/bat_model.prefab
 Dependencies: []
