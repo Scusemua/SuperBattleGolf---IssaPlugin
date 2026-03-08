@@ -12,6 +12,8 @@ namespace IssaPlugin.Items
 
         public static GameObject BatModelPrefab { get; private set; }
         public static GameObject BomberPrefab { get; private set; }
+
+        public static GameObject AC130Prefab { get; private set; }
         public static GameObject BomberTabletPrefab { get; private set; }
         public static GameObject MissileTabletPrefab { get; private set; }
 
@@ -50,6 +52,7 @@ namespace IssaPlugin.Items
 
             BatModelPrefab = _bundle.LoadAsset<GameObject>("Assets/bat_model.prefab");
             BomberPrefab = _bundle.LoadAsset<GameObject>("Assets/bomber_model.prefab");
+            AC130Prefab = _bundle.LoadAsset<GameObject>("Assets/ac130_model.prefab");
             BomberTabletPrefab = _bundle.LoadAsset<GameObject>(
                 "Assets/stealth_bomber_tablet.prefab"
             );

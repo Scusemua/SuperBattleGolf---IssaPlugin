@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 4229471124
+CRC: 1070328462
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 8fa0da043d64c4656dae0cb375408a15
+    Hash: 3f964d0eb9ab124ec9fd6c180f8464e5
   TypeTreeHash:
     serializedVersion: 2
-    Hash: 40e071d76975daed3a62633cb3d327eb
+    Hash: bc4fd4ef1cc932bcdd3de43389c81b29
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 9367c956fd1fd56e1f889fd2165d97e6
+    Hash: b83f2c706ddcd99f7a83b6a15ec66298
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -29,11 +29,19 @@ ClassTypes:
   Script: {instanceID: 0}
 - Class: 48
   Script: {instanceID: 0}
+- Class: 83
+  Script: {instanceID: 0}
+- Class: 90
+  Script: {instanceID: 0}
+- Class: 95
+  Script: {instanceID: 0}
 - Class: 213
   Script: {instanceID: 0}
 SerializeReferenceClassIdentifiers: []
 Assets:
+- Assets/ac130_above.ogg
 - Assets/bomber_model.prefab
+- Assets/ac130_model.prefab
 - Assets/missile_icon.png
 - Assets/predator_missile_tablet.prefab
 - Assets/bomber_tablet.prefab

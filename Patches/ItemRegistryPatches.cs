@@ -132,6 +132,16 @@ namespace IssaPlugin.Patches
                     }
                 );
 
+            float ac130Weight = Configuration.AC130SpawnWeight.Value;
+            if (ac130Weight > 0f)
+                list.Add(
+                    new ItemPool.ItemSpawnChance
+                    {
+                        item = AC130Item.AC130ItemType,
+                        spawnChanceWeight = ac130Weight,
+                    }
+                );
+
             return list.ToArray();
         }
 

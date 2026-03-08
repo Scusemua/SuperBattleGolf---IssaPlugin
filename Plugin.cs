@@ -40,6 +40,7 @@ namespace IssaPlugin
 
             gameObject.AddComponent<MissileOverlay>();
             gameObject.AddComponent<BomberOverlay>();
+            gameObject.AddComponent<AC130Overlay>();
 
             Log.LogInfo("IssaPlugin by Scusemua has loaded.");
         }
@@ -78,6 +79,9 @@ namespace IssaPlugin
 
             if (keyboard[Configuration.MissileGiveKey.Value].wasPressedThisFrame)
                 PredatorMissileItem.GiveMissileToLocalPlayer();
+
+            if (keyboard[Configuration.AC130GiveKey.Value].wasPressedThisFrame)
+                AC130Item.GiveAC130ToLocalPlayer();
 
             if (keyboard[Key.F10].wasPressedThisFrame)
                 PredatorMissileItem.ToggleDebugDummies();

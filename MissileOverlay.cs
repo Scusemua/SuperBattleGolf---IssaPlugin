@@ -36,9 +36,12 @@ namespace IssaPlugin
             "George",
         };
 
+        private bool ShouldShowGUI() =>
+            StealthBomberItem.IsTargeting || PredatorMissileItem.IsSteering || AC130Item.IsActive;
+
         private void OnGUI()
         {
-            if (!PredatorMissileItem.IsSteering && !StealthBomberItem.IsTargeting)
+            if (!ShouldShowGUI())
                 return;
 
             var cam = GameManager.Camera;

@@ -3,62 +3,48 @@ using UnityEngine;
 
 namespace IssaPlugin
 {
-    public class BomberOverlay : MonoBehaviour
+    public class AC130Overlay : MonoBehaviour
     {
         private static Texture2D _bgTex;
         private static Texture2D _vignetteRingTex;
         private static Texture2D _scanlineTex;
         private static Texture2D _noiseTex;
+
         private GUIStyle _titleStyle;
         private GUIStyle _instructionStyle;
         private GUIStyle _cornerStyle;
+        private GUIStyle _timerStyle;
 
-        private Material _greyscaleMat;
         private float _noiseTimer;
+
+        private static Vector3 _crosshairWorld;
+        private static float _elapsed;
+        private static float _duration;
 
         private const float ScanlineSpacing = 3f;
         private const float NoiseUpdateRate = 0.04f;
-        private const float VisualArtifactChance = 0.08f;
-        private const float FullWidthScanlineSurgeChance = 0.035f;
 
-        private void Awake()
+        public static void UpdateAimInfo(Vector3 crosshairWorld, float elapsed, float duration)
         {
-            // Built-in Unity shader that lets us tint/recolour via Graphics.Blit.
-            _greyscaleMat = new Material(Shader.Find("Hidden/Internal-GUITextureClip"));
+            _crosshairWorld = crosshairWorld;
+            _elapsed = elapsed;
+            _duration = duration;
         }
 
-        private bool ShouldShowOverlay() =>
-            StealthBomberItem.IsTargeting || PredatorMissileItem.IsSteering;
-
-        // ----------------------------------------------------------------
-        //  Greyscale full-screen pass
-        // ----------------------------------------------------------------
         private void OnRenderImage(RenderTexture src, RenderTexture dest)
         {
-            if (!ShouldShowOverlay())
+            if (!AC130Item.IsActive)
             {
                 Graphics.Blit(src, dest);
                 return;
             }
 
-            // Sample luminance and write it back as RGB so the image goes grey.
-            RenderTexture grey = RenderTexture.GetTemporary(src.width, src.height);
-            for (int y = 0; y < src.height; y += 2) // every-other-row blit for cheap scanline
-                Graphics.Blit(src, grey);
-
-            // Desaturate by blitting through a grey-tinted material.
-            // (For a true greyscale you'd normally use a custom shader;
-            //  this dims colour channels enough to read as UAV footage.)
             Graphics.Blit(src, dest);
-            RenderTexture.ReleaseTemporary(grey);
         }
 
-        // ----------------------------------------------------------------
-        //  Overlay elements drawn on top of the greyscale pass
-        // ----------------------------------------------------------------
         private void OnGUI()
         {
-            if (!StealthBomberItem.IsTargeting && !PredatorMissileItem.IsSteering)
+            if (!AC130Item.IsActive)
                 return;
 
             float w = Screen.width;
@@ -71,11 +57,11 @@ namespace IssaPlugin
             GUI.color = new Color(0f, 0f, 0f, 0.18f);
             GUI.DrawTexture(new Rect(0, 0, w, h), _scanlineTex, ScaleMode.StretchToFill);
 
-            // Vignette ring
+            // Vignette
             GUI.color = Color.white;
             GUI.DrawTexture(new Rect(0, 0, w, h), _vignetteRingTex, ScaleMode.StretchToFill);
 
-            // Subtle random noise
+            // Noise
             _noiseTimer += Time.deltaTime;
             if (_noiseTimer >= NoiseUpdateRate)
             {
@@ -86,8 +72,8 @@ namespace IssaPlugin
             GUI.DrawTexture(new Rect(0, 0, w, h), _noiseTex, ScaleMode.StretchToFill);
             GUI.color = Color.white;
 
-            // Horizontal glitch bands
-            if (Random.value < VisualArtifactChance) // ~8% chance per frame to show an artifact
+            // Glitch bands
+            if (Random.value < 0.08f)
             {
                 int bandCount = Random.Range(1, 4);
                 for (int i = 0; i < bandCount; i++)
@@ -97,15 +83,13 @@ namespace IssaPlugin
                     float bandW = Random.Range(w * 0.2f, w * 0.85f);
                     float bandX = Random.Range(0f, w - bandW);
                     float intensity = Random.Range(0.04f, 0.18f);
-
                     GUI.color = new Color(0.9f, 1f, 0.9f, intensity);
                     GUI.DrawTexture(new Rect(bandX, bandY, bandW, bandH), Texture2D.whiteTexture);
                 }
                 GUI.color = Color.white;
             }
 
-            // Occasional full-width bright scanline surge
-            if (Random.value < FullWidthScanlineSurgeChance)
+            if (Random.value < 0.03f)
             {
                 float surgeY = Random.Range(0f, h);
                 GUI.color = new Color(0.8f, 1f, 0.8f, 0.12f);
@@ -116,60 +100,81 @@ namespace IssaPlugin
                 GUI.color = Color.white;
             }
 
-            // Corner brackets  ┌  ┐  └  ┘
-            float bSize = 60f;
-            float bThick = 3f;
+            // Corner brackets
+            float bSize = 60f,
+                bThick = 3f;
             DrawCornerBracket(0, 0, bSize, bThick, true, true);
             DrawCornerBracket(w - bSize, 0, bSize, bThick, false, true);
             DrawCornerBracket(0, h - bSize, bSize, bThick, true, false);
             DrawCornerBracket(w - bSize, h - bSize, bSize, bThick, false, false);
 
-            // Crosshair
-            float cLen = 20f,
-                cGap = 6f;
+            // Crosshair — larger than the bomber's, with a circle to suggest a gun reticle.
             float cx = w / 2f,
                 cy = h / 2f;
+            float cLen = 28f,
+                cGap = 10f,
+                cRadius = 22f;
             GUI.color = new Color(0f, 1f, 0.2f, 0.85f);
             GUI.DrawTexture(new Rect(cx - cLen - cGap, cy - 1f, cLen, 2f), Texture2D.whiteTexture);
             GUI.DrawTexture(new Rect(cx + cGap, cy - 1f, cLen, 2f), Texture2D.whiteTexture);
             GUI.DrawTexture(new Rect(cx - 1f, cy - cLen - cGap, 2f, cLen), Texture2D.whiteTexture);
             GUI.DrawTexture(new Rect(cx - 1f, cy + cGap, 2f, cLen), Texture2D.whiteTexture);
+            // Circle approximated with four arc-corners.
+            GUI.DrawTexture(
+                new Rect(cx - cRadius, cy - 1f, cRadius * 0.6f, 2f),
+                Texture2D.whiteTexture
+            );
+            GUI.DrawTexture(
+                new Rect(cx + cRadius * 0.4f, cy - 1f, cRadius * 0.6f, 2f),
+                Texture2D.whiteTexture
+            );
+            GUI.DrawTexture(
+                new Rect(cx - 1f, cy - cRadius, 2f, cRadius * 0.6f),
+                Texture2D.whiteTexture
+            );
+            GUI.DrawTexture(
+                new Rect(cx - 1f, cy + cRadius * 0.4f, 2f, cRadius * 0.6f),
+                Texture2D.whiteTexture
+            );
             GUI.color = Color.white;
 
-            // HUD text — top-left telemetry
-            GUI.Label(new Rect(16, 12, 300, 24), FormatTimestamp(), _cornerStyle);
+            // Top-left telemetry
+            float timeRemaining = Mathf.Max(0f, _duration - _elapsed);
+            GUI.Label(
+                new Rect(16, 12, 300, 24),
+                $"{System.DateTime.UtcNow:HH:mm:ss}Z",
+                _cornerStyle
+            );
             GUI.Label(new Rect(16, 34, 300, 24), "SYS: ARMED", _cornerStyle);
-            GUI.Label(new Rect(16, 56, 300, 24), "MODE: TARGETING", _cornerStyle);
+            GUI.Label(new Rect(16, 56, 300, 24), "MODE: GUNSHIP", _cornerStyle);
+            GUI.Label(
+                new Rect(16, 78, 400, 24),
+                $"TGT: ({_crosshairWorld.x:F0}, {_crosshairWorld.z:F0})",
+                _cornerStyle
+            );
 
-            if (StealthBomberItem.IsTargeting)
-            {
-                // Bottom bar
+            // Timer — top right, turns red in the last 10 seconds.
+            bool lowTime = timeRemaining <= 10f;
+            _timerStyle.normal.textColor = lowTime
+                ? new Color(1f, 0.2f, 0.2f)
+                : new Color(0f, 1f, 0.2f, 0.9f);
+            GUI.Label(new Rect(w - 220f, 12, 200, 30), $"TIME: {timeRemaining:F1}s", _timerStyle);
+
+            // Bottom bar
+            if (_bgTex != null)
                 GUI.DrawTexture(new Rect(0, h - 80, w, 80), _bgTex);
-                GUI.Label(new Rect(0, h - 75, w, 35), "STEALTH BOMBER TARGETING", _titleStyle);
-                GUI.Label(
-                    new Rect(0, h - 42, w, 30),
-                    "WASD: Move   |   Q/E: Rotate   |   Click / Enter: Confirm   |   Space: Cancel",
-                    _instructionStyle
-                );
-            }
-            else if (PredatorMissileItem.IsSteering)
-            {
-                // Bottom bar
-                GUI.DrawTexture(new Rect(0, h - 80, w, 80), _bgTex);
-                GUI.Label(new Rect(0, h - 75, w, 35), "PREDATOR MISSILE TARGETING", _titleStyle);
-                GUI.Label(new Rect(0, h - 42, w, 30), "WASD: Move", _instructionStyle);
-            }
+
+            GUI.Label(new Rect(0, h - 75, w, 35), "AC-130 GUNSHIP", _titleStyle);
+            GUI.Label(
+                new Rect(0, h - 42, w, 30),
+                "WASD: Aim   |   Space / Click: Fire",
+                _instructionStyle
+            );
         }
 
         // ----------------------------------------------------------------
-        //  Helpers
+        //  Shared helpers (same as BomberOverlay)
         // ----------------------------------------------------------------
-        private static string FormatTimestamp()
-        {
-            var t = System.DateTime.UtcNow;
-            return $"{t:HH:mm:ss}Z";
-        }
-
         private void DrawCornerBracket(
             float x,
             float y,
@@ -179,15 +184,11 @@ namespace IssaPlugin
             bool topSide
         )
         {
-            Color bracketColor = new Color(0f, 1f, 0.2f, 0.9f);
-            GUI.color = bracketColor;
-
+            GUI.color = new Color(0f, 1f, 0.2f, 0.9f);
             float hx = leftSide ? x : x + size - thick;
             GUI.DrawTexture(new Rect(hx, y, thick, size), Texture2D.whiteTexture);
-
             float hy = topSide ? y : y + size - thick;
             GUI.DrawTexture(new Rect(x, hy, size, thick), Texture2D.whiteTexture);
-
             GUI.color = Color.white;
         }
 
@@ -217,7 +218,7 @@ namespace IssaPlugin
                 _titleStyle = new GUIStyle(GUI.skin.label)
                 {
                     alignment = TextAnchor.MiddleCenter,
-                    fontSize = 26,
+                    fontSize = 22,
                     fontStyle = FontStyle.Bold,
                 };
                 _titleStyle.normal.textColor = new Color(1f, 0.5f, 0f);
@@ -228,7 +229,7 @@ namespace IssaPlugin
                 _instructionStyle = new GUIStyle(GUI.skin.label)
                 {
                     alignment = TextAnchor.MiddleCenter,
-                    fontSize = 18,
+                    fontSize = 15,
                     fontStyle = FontStyle.Bold,
                 };
                 _instructionStyle.normal.textColor = Color.white;
@@ -238,10 +239,21 @@ namespace IssaPlugin
             {
                 _cornerStyle = new GUIStyle(GUI.skin.label)
                 {
-                    fontSize = 20,
+                    fontSize = 18,
                     fontStyle = FontStyle.Bold,
                 };
                 _cornerStyle.normal.textColor = new Color(0f, 1f, 0.2f, 0.9f);
+            }
+
+            if (_timerStyle == null)
+            {
+                _timerStyle = new GUIStyle(GUI.skin.label)
+                {
+                    fontSize = 20,
+                    fontStyle = FontStyle.Bold,
+                    alignment = TextAnchor.MiddleRight,
+                };
+                _timerStyle.normal.textColor = new Color(0f, 1f, 0.2f, 0.9f);
             }
         }
 
@@ -251,17 +263,14 @@ namespace IssaPlugin
             float cx = w / 2f,
                 cy = h / 2f;
             float maxDist = Mathf.Sqrt(cx * cx + cy * cy);
-
             var pixels = new Color[w * h];
             for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
             {
-                for (int x = 0; x < w; x++)
-                {
-                    float dist = Mathf.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
-                    float t = Mathf.Clamp01(dist / maxDist);
-                    float alpha = Mathf.Pow(t, 1.8f) * 0.85f;
-                    pixels[y * w + x] = new Color(0f, 0f, 0f, alpha);
-                }
+                float dist = Mathf.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
+                float t = Mathf.Clamp01(dist / maxDist);
+                float alpha = Mathf.Pow(t, 1.8f) * 0.85f;
+                pixels[y * w + x] = new Color(0f, 0f, 0f, alpha);
             }
             tex.SetPixels(pixels);
             tex.Apply();

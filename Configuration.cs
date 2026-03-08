@@ -36,6 +36,25 @@ namespace IssaPlugin
         public static ConfigEntry<Key> MissileGiveKey { get; private set; }
         public static ConfigEntry<float> MissileSpawnWeight { get; private set; }
 
+        // --- AC130 ---
+        public static ConfigEntry<int> AC130Uses { get; private set; }
+        public static ConfigEntry<Key> AC130GiveKey { get; private set; }
+        public static ConfigEntry<float> AC130SpawnWeight { get; private set; }
+        public static ConfigEntry<float> AC130OrbitRadius { get; private set; }
+        public static ConfigEntry<float> AC130OrbitSpeed { get; private set; }
+        public static ConfigEntry<float> AC130Altitude { get; private set; }
+        public static ConfigEntry<float> AC130Duration { get; private set; }
+        public static ConfigEntry<float> AC130CameraPitch { get; private set; }
+        public static ConfigEntry<float> AC130CameraDistance { get; private set; }
+        public static ConfigEntry<float> AC130AimYawSpeed { get; private set; }
+        public static ConfigEntry<float> AC130AimPitchSpeed { get; private set; }
+        public static ConfigEntry<float> AC130AimPitchMin { get; private set; }
+        public static ConfigEntry<float> AC130AimPitchMax { get; private set; }
+        public static ConfigEntry<float> AC130AimPitchDefault { get; private set; }
+        public static ConfigEntry<float> AC130AimYawMax { get; private set; }
+        public static ConfigEntry<float> AC130FireCooldown { get; private set; }
+        public static ConfigEntry<float> AC130RocketAngularJitter { get; private set; }
+
         public static void Initialize(ConfigFile cfg)
         {
             // --- Baseball Bat ---
@@ -210,6 +229,127 @@ namespace IssaPlugin
                 "PredatorMissileWeight",
                 3f,
                 "Spawn weight for the predator missile in item boxes. Set to 0 to disable."
+            );
+
+            AC130SpawnWeight = cfg.Bind(
+                "ItemBoxSpawns",
+                "AC130Weight",
+                1f,
+                "Spawn weight for the AC130 in item boxes. Set to 0 to disable."
+            );
+
+            AC130Uses = cfg.Bind("AC130", "Uses", 1, "Number of AC130 uses per pickup.");
+
+            AC130GiveKey = cfg.Bind(
+                "AC130",
+                "GiveKey",
+                Key.F11,
+                "Key to press to add the AC130 to your inventory."
+            );
+
+            AC130OrbitRadius = cfg.Bind(
+                "AC130",
+                "OrbitRadius",
+                400f,
+                "Radius in units of the circle the gunship flies around the map centre."
+            );
+
+            AC130OrbitSpeed = cfg.Bind(
+                "AC130",
+                "OrbitSpeed",
+                12f,
+                "Degrees per second at which the gunship orbits the map centre."
+            );
+
+            AC130Altitude = cfg.Bind(
+                "AC130",
+                "Altitude",
+                120f,
+                "Height above the map centre the gunship flies at."
+            );
+
+            AC130Duration = cfg.Bind(
+                "AC130",
+                "Duration",
+                40f,
+                "How many seconds the AC130 remains active before leaving."
+            );
+
+            AC130CameraPitch = cfg.Bind(
+                "AC130",
+                "CameraPitch",
+                60f,
+                "Camera pitch angle in degrees during the AC130 (0 = horizontal, 90 = straight down)."
+            );
+
+            AC130CameraDistance = cfg.Bind(
+                "AC130",
+                "CameraDistance",
+                80f,
+                "Camera distance addition from the gunship pivot during the AC130."
+            );
+
+            AC130AimYawSpeed = cfg.Bind(
+                "AC130",
+                "AimYawSpeed",
+                60f,
+                "Degrees per second the aim sweeps left and right (A/D)."
+            );
+
+            AC130AimPitchSpeed = cfg.Bind(
+                "AC130",
+                "AimPitchSpeed",
+                30f,
+                "Degrees per second the aim tilts up and down (W/S)."
+            );
+
+            AC130AimPitchMin = cfg.Bind(
+                "AC130",
+                "AimPitchMin",
+                20f,
+                "Minimum barrel pitch in degrees (higher values point more toward the horizon)."
+            );
+
+            AC130AimPitchMax = cfg.Bind(
+                "AC130",
+                "AimPitchMax",
+                85f,
+                "Maximum barrel pitch in degrees (higher values point more straight down)."
+            );
+
+            AC130AimPitchDefault = cfg.Bind(
+                "AC130",
+                "AimPitchDefault",
+                60f,
+                "Starting barrel pitch when the AC130 activates."
+            );
+
+            AC130AimYawMax = cfg.Bind(
+                "AC130",
+                "AimYawMax",
+                70f,
+                "Maximum degrees the aim can sweep left or right from the gunship's forward direction."
+            );
+
+            AC130FireCooldown = cfg.Bind(
+                "AC130",
+                "FireCooldown",
+                0.8f,
+                "Minimum seconds between rocket fires."
+            );
+
+            AC130RocketAngularJitter = cfg.Bind(
+                "AC130",
+                "RocketAngularJitter",
+                0.5f,
+                "Random angular jitter in degrees applied to each rocket fired from the AC130."
+            );
+
+            AC130SpawnWeight = cfg.Bind(
+                "ItemBoxSpawns",
+                "AC130Weight",
+                1f,
+                "Spawn weight for the AC130 in item boxes. Set to 0 to disable."
             );
 
             IssaPluginPlugin.Log.LogInfo("Configuration initialized.");

@@ -31,7 +31,8 @@ namespace IssaPlugin.Items
         {
             return type == BatItem.BatItemType
                 || type == StealthBomberItem.BomberItemType
-                || type == PredatorMissileItem.MissileItemType;
+                || type == PredatorMissileItem.MissileItemType
+                || type == AC130Item.AC130ItemType;
         }
 
         public static int GetMaxUses(ItemType type)
@@ -42,6 +43,8 @@ namespace IssaPlugin.Items
                 return Configuration.BomberUses.Value;
             if (type == PredatorMissileItem.MissileItemType)
                 return Configuration.MissileUses.Value;
+            if (type == AC130Item.AC130ItemType)
+                return Configuration.AC130Uses.Value;
             return 1;
         }
 

@@ -47,6 +47,14 @@ namespace IssaPlugin.Patches
                 return false;
             }
 
+            if (equipped == AC130Item.AC130ItemType)
+            {
+                IssaPluginPlugin.Log.LogInfo($"[Equipment] Using AC130 item.");
+                shouldEatInput = true;
+                __result = true;
+                __instance.StartCoroutine(AC130Item.AC130Routine(__instance));
+                return false;
+            }
             return true;
         }
     }
