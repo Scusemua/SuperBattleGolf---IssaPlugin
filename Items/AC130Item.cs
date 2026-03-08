@@ -8,7 +8,7 @@ namespace IssaPlugin.Items
 {
     public static class AC130Item
     {
-        public static readonly ItemType AC130ItemType = (ItemType)102;
+        public static readonly ItemType AC130ItemType = (ItemType)103;
 
         private static bool _isActive;
         private static int _useIndex;

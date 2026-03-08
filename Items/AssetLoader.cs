@@ -10,6 +10,8 @@ namespace IssaPlugin.Items
         public static Sprite BomberIcon { get; private set; }
         public static Sprite MissileIcon { get; private set; }
 
+        public static Sprite AC130Icon { get; private set; }
+
         public static GameObject BatModelPrefab { get; private set; }
         public static GameObject BomberPrefab { get; private set; }
 
@@ -49,6 +51,7 @@ namespace IssaPlugin.Items
             BatIcon = LoadSprite("Assets/bat_icon.png");
             BomberIcon = LoadSprite("Assets/bomber_icon.png");
             MissileIcon = LoadSprite("Assets/missile_icon.png");
+            AC130Icon = LoadSprite("Assets/ac130_icon.png");
 
             BatModelPrefab = _bundle.LoadAsset<GameObject>("Assets/bat_model.prefab");
             BomberPrefab = _bundle.LoadAsset<GameObject>("Assets/bomber_model.prefab");

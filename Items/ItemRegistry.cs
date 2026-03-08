@@ -92,6 +92,7 @@ namespace IssaPlugin.Items
             var batData = GetOrCreateItemData(BatItem.BatItemType);
             var bomberData = GetOrCreateItemData(StealthBomberItem.BomberItemType);
             var missileData = GetOrCreateItemData(PredatorMissileItem.MissileItemType);
+            var ac130Data = GetOrCreateItemData(AC130Item.AC130ItemType);
 
             Sprite rocketFallbackIcon = null;
             if (
@@ -110,10 +111,12 @@ namespace IssaPlugin.Items
             IconProperty.SetValue(batData, AssetLoader.BatIcon ?? pistolFallbackIcon);
             IconProperty.SetValue(bomberData, AssetLoader.BomberIcon ?? rocketFallbackIcon);
             IconProperty.SetValue(missileData, AssetLoader.MissileIcon ?? rocketFallbackIcon);
+            IconProperty.SetValue(ac130Data, AssetLoader.AC130Icon ?? rocketFallbackIcon);
 
             dict[BatItem.BatItemType] = batData;
             dict[StealthBomberItem.BomberItemType] = bomberData;
             dict[PredatorMissileItem.MissileItemType] = missileData;
+            dict[AC130Item.AC130ItemType] = ac130Data;
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[ItemRegistry] Injected {CustomItemDataCache.Count} custom items."
