@@ -61,5 +61,29 @@ namespace IssaPlugin.Items
             DecrementMethod?.Invoke(inventory, new object[] { slotIndex });
             RemoveMethod?.Invoke(inventory, new object[] { slotIndex });
         }
+
+        private static readonly MethodInfo SetItemUseMethod = typeof(PlayerInventory).GetMethod(
+            "SetCurrentItemUse",
+            BindingFlags.NonPublic | BindingFlags.Instance
+        );
+
+        public static void SetCurrentItemUse(PlayerInventory inventory, ItemUseType type)
+        {
+            SetItemUseMethod?.Invoke(inventory, new object[] { type });
+        }
+
+        /// <summary>
+        /// Server-side convenience: wraps SetCurrentItemUse + DecrementAndRemove + SetCurrentItemUse.
+        /// </summary>
+        public static void ConsumeEquippedItem(PlayerInventory inventory)
+        {
+            int slot = inventory.EquippedItemIndex;
+            if (slot < 0)
+                return;
+
+            SetCurrentItemUse(inventory, ItemUseType.Regular);
+            DecrementAndRemove(inventory, slot);
+            SetCurrentItemUse(inventory, ItemUseType.None);
+        }
     }
 }

@@ -37,7 +37,7 @@ namespace IssaPlugin
         };
 
         private bool ShouldShowGUI() =>
-            StealthBomberItem.IsTargeting || PredatorMissileItem.IsSteering || AC130Item.IsActive;
+            StealthBomberItem.IsTargeting || MissileNetworkBridge.IsAnySteering || AC130Item.IsActive;
 
         private void OnGUI()
         {
@@ -74,9 +74,9 @@ namespace IssaPlugin
                 }
             }
 
-            for (int i = 0; i < PredatorMissileItem.DebugDummies.Count; i++)
+            for (int i = 0; i < DebugDummies.DebugDummiesList.Count; i++)
             {
-                var dummy = PredatorMissileItem.DebugDummies[i];
+                var dummy = DebugDummies.DebugDummiesList[i];
                 if (dummy == null)
                     continue;
                 DrawTargetBox(cam, dummy.transform.position + Vector3.up * 1f, screenH);

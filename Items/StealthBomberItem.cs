@@ -38,17 +38,9 @@ namespace IssaPlugin.Items
             );
         }
 
-        private static void SetCurrentItemUse(PlayerInventory inventory, ItemUseType itemUseType)
+        private static void SetCurrentItemUse(PlayerInventory inventory, ItemUseType type)
         {
-            var method = typeof(PlayerInventory).GetMethod(
-                "SetCurrentItemUse",
-                BindingFlags.NonPublic | BindingFlags.Instance
-            );
-
-            if (method != null)
-                method.Invoke(inventory, new object[] { itemUseType });
-            else
-                IssaPluginPlugin.Log.LogError("[Bomber] Could not find SetCurrentItemUse method.");
+            ItemHelper.SetCurrentItemUse(inventory, type);
         }
 
         public static IEnumerator BomberRunRoutine(PlayerInventory inventory)
@@ -255,7 +247,8 @@ namespace IssaPlugin.Items
         public static IEnumerator ServerBombingPhase(
             PlayerInventory inventory,
             int equippedIndex,
-            BombingStripInfo strip
+            BombingStripInfo strip,
+            BomberNetworkBridge bridge
         )
         {
             _isBombing = true;
@@ -286,30 +279,34 @@ namespace IssaPlugin.Items
             spawnPos.y = strip.Center.y + altitude;
             exitPos.y = strip.Center.y + altitude;
 
-            // The bomber should stop dropping rockets when it's waitTime seconds from the exit.
             float exitBufferDist = speed * waitTime;
-            Vector3 dropEndPos = exitPos - direction * exitBufferDist;
+            float dropEndDist = Vector3.Distance(spawnPos, exitPos) - exitBufferDist;
+            float totalDist = Vector3.Distance(spawnPos, exitPos);
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[Bomber] Run started: dropping rockets at interval {rocketInterval:F0} over {strip.Length:F0}m "
                     + $"at altitude {altitude:F0}m, approach {approachDist:F0}m"
             );
 
-            var bomberVisual = SpawnBomberVisual(spawnPos, exitPos, direction, speed);
+            bridge.RpcSpawnBomberVisual(spawnPos, exitPos, direction, speed);
 
+            float startTime = Time.time;
             int rocketsDropped = 0;
             bool droppingFinished = false;
 
-            while (bomberVisual != null)
+            while (true)
             {
+                float elapsed = Time.time - startTime;
+                float distanceTravelled = elapsed * speed;
+
+                if (distanceTravelled >= totalDist)
+                    break;
+
+                Vector3 bomberPos = spawnPos + direction * distanceTravelled;
+
                 if (!droppingFinished)
                 {
-                    Vector3 bomberPos = bomberVisual.transform.position;
-                    float distToDropEnd = Vector3.Distance(bomberPos, dropEndPos);
-                    float distToExit = Vector3.Distance(bomberPos, exitPos);
-                    bool pastDropEnd = distToDropEnd > distToExit;
-
-                    if (pastDropEnd)
+                    if (distanceTravelled >= dropEndDist)
                     {
                         droppingFinished = true;
                     }
@@ -323,13 +320,11 @@ namespace IssaPlugin.Items
                             0f
                         );
                         SpawnRocket(inventory, bomberPos + offset, jitter);
-                        // Vector3 offset = perpendicular * Random.Range(-spread, spread);
-                        // SpawnRocket(inventory, bomberPos + offset);
                         rocketsDropped++;
 
                         yield return new WaitForSeconds(rocketInterval);
+                        continue;
                     }
-                    continue;
                 }
 
                 yield return null;

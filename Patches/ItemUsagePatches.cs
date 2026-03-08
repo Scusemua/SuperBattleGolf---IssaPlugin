@@ -1,19 +1,15 @@
-using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
 using IssaPlugin.Items;
 using Mirror;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace IssaPlugin.Patches
 {
     [HarmonyPatch]
     static class TryUseItemPatch
     {
-        private static readonly object _lock = new object(); // not strictly needed in Unity's single-threaded update loop, but signals intent
-
         static MethodBase TargetMethod() =>
             AccessTools.Method(typeof(PlayerInventory), "TryUseItem");
 
@@ -28,7 +24,6 @@ namespace IssaPlugin.Patches
 
             if (equipped == BatItem.BatItemType)
             {
-                IssaPluginPlugin.Log.LogInfo($"[Equipment] Using Baseball Bat item.");
                 shouldEatInput = false;
                 __result = false;
                 return false;
@@ -36,7 +31,6 @@ namespace IssaPlugin.Patches
 
             if (equipped == StealthBomberItem.BomberItemType)
             {
-                IssaPluginPlugin.Log.LogInfo($"[Equipment] Using Stealth Bomber item.");
                 shouldEatInput = true;
                 __result = true;
                 __instance.StartCoroutine(StealthBomberItem.BomberRunRoutine(__instance));
@@ -45,32 +39,28 @@ namespace IssaPlugin.Patches
 
             if (equipped == PredatorMissileItem.MissileItemType)
             {
-                IssaPluginPlugin.Log.LogInfo($"[Equipment] Using Predator Missile item.");
                 shouldEatInput = true;
                 __result = true;
-                __instance.StartCoroutine(PredatorMissileItem.MissileRoutine(__instance));
+                var bridge = __instance.GetComponent<MissileNetworkBridge>();
+                if (bridge != null)
+                    bridge.CmdRequestMissile();
+                else
+                    IssaPluginPlugin.Log.LogError("[Missile] No MissileNetworkBridge on player.");
                 return false;
             }
 
             if (equipped == AC130Item.AC130ItemType)
             {
-                IssaPluginPlugin.Log.LogInfo($"[Equipment] Using AC130 item.");
                 shouldEatInput = true;
                 __result = true;
-
-                // Only the server decides whether activation is permitted.
-                if (NetworkServer.active && !AC130Item.IsActive)
-                    __instance.StartCoroutine(AC130Item.AC130Routine(__instance));
-                // Local player starts the overlay/input coroutine regardless,
-                // but only if the server confirmed activation via IsActive becoming true.
-                else if (
-                    __instance.PlayerInfo.GetComponent<NetworkIdentity>()?.isLocalPlayer == true
-                    && AC130Item.IsActive
-                )
-                    __instance.StartCoroutine(AC130Item.AC130ClientRoutine(__instance));
-
+                var bridge = __instance.GetComponent<AC130NetworkBridge>();
+                if (bridge != null)
+                    bridge.CmdStartAC130();
+                else
+                    IssaPluginPlugin.Log.LogError("[AC130] No AC130NetworkBridge on player.");
                 return false;
             }
+
             return true;
         }
     }
@@ -98,6 +88,7 @@ namespace IssaPlugin.Patches
             if (
                 equipped == StealthBomberItem.BomberItemType
                 || equipped == PredatorMissileItem.MissileItemType
+                || equipped == AC130Item.AC130ItemType
             )
             {
                 rightSwitcher.SetEquipment(EquipmentType.RocketLauncher);
@@ -131,7 +122,6 @@ namespace IssaPlugin.Patches
                     $"[Equipment] Custom model spawned for item {(int)equipped}."
                 );
 
-                IssaPluginPlugin.Log.LogInfo($"[Equipment] Hiding default equipment.");
                 HideDefaultEquipment(rightSwitcher);
             }
         }
@@ -165,6 +155,8 @@ namespace IssaPlugin.Patches
             if (type == StealthBomberItem.BomberItemType)
                 return AssetLoader.BomberTabletPrefab;
             if (type == PredatorMissileItem.MissileItemType)
+                return AssetLoader.MissileTabletPrefab;
+            if (type == AC130Item.AC130ItemType)
                 return AssetLoader.MissileTabletPrefab;
             return null;
         }
@@ -223,7 +215,7 @@ namespace IssaPlugin.Patches
     {
         static void Postfix(Rocket __instance)
         {
-            if (PredatorMissileItem.ActiveMissileRocket != __instance)
+            if (!PredatorMissileItem.ActiveMissileRockets.Contains(__instance))
                 return;
 
             var entity = __instance.GetComponent<Entity>();
@@ -245,7 +237,7 @@ namespace IssaPlugin.Patches
 
         static void Prefix(Rocket __instance)
         {
-            if (PredatorMissileItem.ActiveMissileRocket != __instance)
+            if (!PredatorMissileItem.ActiveMissileRockets.Contains(__instance))
                 return;
 
             DistanceField?.SetValue(__instance, 0f);

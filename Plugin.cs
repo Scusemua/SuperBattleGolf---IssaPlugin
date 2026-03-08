@@ -84,7 +84,7 @@ namespace IssaPlugin
                 AC130Item.GiveAC130ToLocalPlayer();
 
             if (keyboard[Key.F10].wasPressedThisFrame)
-                PredatorMissileItem.ToggleDebugDummies();
+                DebugDummies.ToggleDebugDummies();
         }
 
         private void OnMatchStateChanged(MatchState previousState, MatchState currentState)

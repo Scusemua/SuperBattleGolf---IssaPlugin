@@ -28,7 +28,7 @@ namespace IssaPlugin
         }
 
         private bool ShouldShowOverlay() =>
-            StealthBomberItem.IsTargeting || PredatorMissileItem.IsSteering;
+            StealthBomberItem.IsTargeting || MissileNetworkBridge.IsAnySteering;
 
         // ----------------------------------------------------------------
         //  Greyscale full-screen pass
@@ -58,7 +58,7 @@ namespace IssaPlugin
         // ----------------------------------------------------------------
         private void OnGUI()
         {
-            if (!StealthBomberItem.IsTargeting && !PredatorMissileItem.IsSteering)
+            if (!StealthBomberItem.IsTargeting && !MissileNetworkBridge.IsAnySteering)
                 return;
 
             float w = Screen.width;
@@ -152,7 +152,7 @@ namespace IssaPlugin
                     _instructionStyle
                 );
             }
-            else if (PredatorMissileItem.IsSteering)
+            else if (MissileNetworkBridge.IsAnySteering)
             {
                 // Bottom bar
                 GUI.DrawTexture(new Rect(0, h - 80, w, 80), _bgTex);
