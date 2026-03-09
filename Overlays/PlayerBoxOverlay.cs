@@ -37,29 +37,40 @@ namespace IssaPlugin.Overlays
             "George",
         };
 
-        /// Returns the AC130NetworkBridge for the local player, or null if
-        /// not available. Cached lazily since the local player object persists
-        /// for the lifetime of a match.
-        private AC130NetworkBridge _localBridge;
-        private AC130NetworkBridge LocalBridge
+        // Lazily cached references to the local player's bridges.
+        private AC130NetworkBridge _localAC130Bridge;
+        private MissileNetworkBridge _localMissileBridge;
+
+        private AC130NetworkBridge LocalAC130Bridge
         {
             get
             {
-                if (_localBridge != null)
-                    return _localBridge;
-
+                if (_localAC130Bridge != null)
+                    return _localAC130Bridge;
                 var movement = GameManager.LocalPlayerMovement;
                 if (movement != null)
-                    _localBridge = movement.GetComponent<AC130NetworkBridge>();
+                    _localAC130Bridge = movement.GetComponent<AC130NetworkBridge>();
+                return _localAC130Bridge;
+            }
+        }
 
-                return _localBridge;
+        private MissileNetworkBridge LocalMissileBridge
+        {
+            get
+            {
+                if (_localMissileBridge != null)
+                    return _localMissileBridge;
+                var movement = GameManager.LocalPlayerMovement;
+                if (movement != null)
+                    _localMissileBridge = movement.GetComponent<MissileNetworkBridge>();
+                return _localMissileBridge;
             }
         }
 
         private bool ShouldShowGUI() =>
             StealthBomberItem.IsTargeting
-            || MissileNetworkBridge.IsAnySteering
-            || LocalBridge?.LocalSessionActive == true;
+            || (LocalMissileBridge != null && LocalMissileBridge.IsSteering)
+            || (LocalAC130Bridge != null && LocalAC130Bridge.LocalSessionActive);
 
         private void OnGUI()
         {
@@ -71,10 +82,10 @@ namespace IssaPlugin.Overlays
             // Fall back to the game camera at all other times.
             // Both checks are against the local player's bridge instance so
             // other players' concurrent sessions don't affect this client.
-            var localBridge = LocalBridge;
+            var localAC130 = LocalAC130Bridge;
             var cam =
-                (localBridge != null && localBridge.LocalSessionActive)
-                    ? localBridge.LocalGunshipCamera ?? GameManager.Camera
+                (localAC130 != null && localAC130.LocalSessionActive)
+                    ? localAC130.LocalGunshipCamera ?? GameManager.Camera
                     : GameManager.Camera;
 
             if (cam == null)
@@ -167,7 +178,6 @@ namespace IssaPlugin.Overlays
             float x = screenPos.x - BoxWidth * 0.5f;
             float y = screenH - screenPos.y - BoxHeight * 0.5f;
 
-            // Position the label above the box with enough height to avoid clipping.
             GUI.Label(new Rect(x, y - 20f, BoxWidth * 4f, 24f), name);
         }
 

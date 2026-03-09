@@ -11,7 +11,9 @@ namespace IssaPlugin.Items
     {
         public static readonly ItemType BomberItemType = (ItemType)101;
 
-        private static bool _isBombing;
+        // _isTargeting is client-side and per-local-player, so static is fine —
+        // only one player's input is processed on any given client.
+        // _isBombing has been moved to BomberNetworkBridge as an instance field.
         private static bool _isTargeting;
         private static int _bomberUseIndex;
 
@@ -45,7 +47,7 @@ namespace IssaPlugin.Items
 
         public static IEnumerator BomberRunRoutine(PlayerInventory inventory)
         {
-            if (_isBombing || _isTargeting)
+            if (_isTargeting)
                 yield break;
 
             int equippedIndex = inventory.EquippedItemIndex;
@@ -244,15 +246,19 @@ namespace IssaPlugin.Items
             SpawnBomberVisual(spawnPos, exitPos, direction, speed);
         }
 
+        /// <summary>
+        /// Runs the server-side bombing phase.
+        /// <paramref name="onComplete"/> is invoked when the run finishes so
+        /// the calling bridge can clear its per-instance _isBombing flag.
+        /// </summary>
         public static IEnumerator ServerBombingPhase(
             PlayerInventory inventory,
             int equippedIndex,
             BombingStripInfo strip,
-            BomberNetworkBridge bridge
+            BomberNetworkBridge bridge,
+            System.Action onComplete
         )
         {
-            _isBombing = true;
-
             SetCurrentItemUse(inventory, ItemUseType.Regular);
             if (equippedIndex >= 0)
                 ItemHelper.DecrementAndRemove(inventory, equippedIndex);
@@ -312,11 +318,11 @@ namespace IssaPlugin.Items
                     }
                     else
                     {
-                        Vector3 offset = perpendicular * Random.Range(-spread, spread);
+                        Vector3 offset = perpendicular * UnityEngine.Random.Range(-spread, spread);
                         float angularJitter = Configuration.BomberRocketAngularJitter.Value;
                         Quaternion jitter = Quaternion.Euler(
-                            Random.Range(-angularJitter, angularJitter),
-                            Random.Range(-angularJitter, angularJitter),
+                            UnityEngine.Random.Range(-angularJitter, angularJitter),
+                            UnityEngine.Random.Range(-angularJitter, angularJitter),
                             0f
                         );
                         SpawnRocket(inventory, bomberPos + offset, jitter);
@@ -333,7 +339,8 @@ namespace IssaPlugin.Items
             IssaPluginPlugin.Log.LogInfo(
                 $"[Bomber] Run complete. {rocketsDropped} rockets dropped."
             );
-            _isBombing = false;
+
+            onComplete?.Invoke();
         }
 
         private static GameObject SpawnBomberVisual(
@@ -515,10 +522,8 @@ namespace IssaPlugin.Items
             ExplosionScaler.Register(rocket, Configuration.StealthBomberExplosionScale.Value);
         }
 
-        
         /// Attached to the bomber prefab instance so it flies smoothly
         /// from spawn to destination independent of the rocket-drop coroutine.
-        
         private class BomberFlyBehaviour : MonoBehaviour
         {
             public Vector3 destination;

@@ -12,10 +12,10 @@ namespace IssaPlugin.Items
         private Rocket _activeRocket;
         private bool _isSteering;
 
-        public bool IsSteering => _isSteering;
+        /// True on the server while this player's missile routine is running.
+        private bool _serverMissileActive;
 
-        /// Static accessor for overlays — true when the local player is steering a missile.
-        public static bool IsAnySteering { get; private set; }
+        public bool IsSteering => _isSteering;
 
         // ================================================================
         //  Client → Server
@@ -24,12 +24,24 @@ namespace IssaPlugin.Items
         [Command]
         public void CmdRequestMissile()
         {
+            // Per-instance guard — prevents this player stacking multiple
+            // missile routines without blocking other players.
+            if (_serverMissileActive)
+            {
+                IssaPluginPlugin.Log.LogWarning(
+                    "[Missile] Missile already active for this player."
+                );
+                return;
+            }
+
             var inventory = GetComponent<PlayerInventory>();
             if (inventory == null)
             {
                 IssaPluginPlugin.Log.LogError("[Missile] No PlayerInventory on bridge object.");
                 return;
             }
+
+            _serverMissileActive = true;
             StartCoroutine(PredatorMissileItem.ServerMissileRoutine(inventory, this));
         }
 
@@ -56,8 +68,10 @@ namespace IssaPlugin.Items
         //  Server → Client
         // ================================================================
 
+        /// <summary>
         /// Called by the server on the specific client who fired the missile.
         /// Passes the rocket's NetworkIdentity so the client can find it locally.
+        /// </summary>
         [TargetRpc]
         public void TargetBeginSteering(NetworkConnection target, NetworkIdentity rocketIdentity)
         {
@@ -73,20 +87,22 @@ namespace IssaPlugin.Items
             StartCoroutine(LocalSteeringCoroutine());
         }
 
+        /// <summary>
         /// Called by the server when the missile has exploded or timed out,
         /// to clean up client state even if the client didn't trigger it.
+        /// </summary>
         [TargetRpc]
         public void TargetEndSteering(NetworkConnection target)
         {
             _isSteering = false;
-            IsAnySteering = false;
             _activeRocket = null;
         }
 
-        /// Server calls this to clear its own reference after the routine ends.
+        /// <summary>Server calls this to clear its own references after the routine ends.</summary>
         public void ServerClearSteering()
         {
             _activeRocket = null;
+            _serverMissileActive = false;
         }
 
         // ================================================================
@@ -99,7 +115,6 @@ namespace IssaPlugin.Items
                 yield break;
 
             _isSteering = true;
-            IsAnySteering = true;
             InputManager.Controls.Gameplay.Disable();
 
             OrbitCameraModule orbitModule = null;
@@ -173,7 +188,6 @@ namespace IssaPlugin.Items
 
             InputManager.Controls.Gameplay.Enable();
             _isSteering = false;
-            IsAnySteering = false;
             _activeRocket = null;
 
             IssaPluginPlugin.Log.LogInfo("[Missile] Client steering ended.");

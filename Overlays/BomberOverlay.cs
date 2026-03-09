@@ -21,14 +21,30 @@ namespace IssaPlugin.Overlays
         private const float VisualArtifactChance = 0.08f;
         private const float FullWidthScanlineSurgeChance = 0.035f;
 
+        // Lazily cached reference to the local player's missile bridge.
+        private MissileNetworkBridge _localMissileBridge;
+        private MissileNetworkBridge LocalMissileBridge
+        {
+            get
+            {
+                if (_localMissileBridge != null)
+                    return _localMissileBridge;
+                var movement = GameManager.LocalPlayerMovement;
+                if (movement != null)
+                    _localMissileBridge = movement.GetComponent<MissileNetworkBridge>();
+                return _localMissileBridge;
+            }
+        }
+
+        private bool LocalIsSteering => LocalMissileBridge != null && LocalMissileBridge.IsSteering;
+
         private void Awake()
         {
             // Built-in Unity shader that lets us tint/recolour via Graphics.Blit.
             _greyscaleMat = new Material(Shader.Find("Hidden/Internal-GUITextureClip"));
         }
 
-        private bool ShouldShowOverlay() =>
-            StealthBomberItem.IsTargeting || MissileNetworkBridge.IsAnySteering;
+        private bool ShouldShowOverlay() => StealthBomberItem.IsTargeting || LocalIsSteering;
 
         // ----------------------------------------------------------------
         //  Greyscale full-screen pass
@@ -58,7 +74,7 @@ namespace IssaPlugin.Overlays
         // ----------------------------------------------------------------
         private void OnGUI()
         {
-            if (!StealthBomberItem.IsTargeting && !MissileNetworkBridge.IsAnySteering)
+            if (!StealthBomberItem.IsTargeting && !LocalIsSteering)
                 return;
 
             float w = Screen.width;
@@ -152,7 +168,7 @@ namespace IssaPlugin.Overlays
                     _instructionStyle
                 );
             }
-            else if (MissileNetworkBridge.IsAnySteering)
+            else if (LocalIsSteering)
             {
                 // Bottom bar
                 GUI.DrawTexture(new Rect(0, h - 80, w, 80), _bgTex);
