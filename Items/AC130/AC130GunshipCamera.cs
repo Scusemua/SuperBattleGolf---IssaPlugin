@@ -39,10 +39,10 @@ namespace IssaPlugin.Items
         // ----------------------------------------------------------------
 
         /// Peak angular kick in degrees (applied as a random offset).
-        public float shakePeakDegrees = 1.2f;
+        public float shakePeakDegrees = 1.4f;
 
         /// How quickly the shake decays to zero (higher = snappier).
-        public float shakeDecaySpeed = 8f;
+        public float shakeDecaySpeed = 6f;
 
         // ----------------------------------------------------------------
         //  Runtime state
