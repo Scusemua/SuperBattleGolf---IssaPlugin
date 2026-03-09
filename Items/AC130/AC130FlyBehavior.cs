@@ -6,7 +6,7 @@ namespace IssaPlugin.Items
     {
         FlyIn,
         Orbit,
-        FlyOut
+        FlyOut,
     }
 
     public class AC130FlyBehaviour : MonoBehaviour

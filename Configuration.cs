@@ -55,6 +55,11 @@ namespace IssaPlugin
         public static ConfigEntry<float> AC130ZoomSpeed { get; private set; }
         public static ConfigEntry<float> AC130ApproachDistance { get; private set; }
         public static ConfigEntry<float> AC130ApproachSpeed { get; private set; }
+        public static ConfigEntry<float> AC130BaseFov { get; private set; }
+
+        public static ConfigEntry<float> AC130YawLimit { get; private set; }
+        public static ConfigEntry<float> AC130PitchLimit { get; private set; }
+        public static ConfigEntry<float> AC130MouseSensitivity { get; private set; }
 
         // --- Explosion Scaling ---
         public static ConfigEntry<float> AC130ExplosionScale { get; private set; }
@@ -385,6 +390,41 @@ namespace IssaPlugin
                 "StealthBomberScale",
                 1.5f,
                 "Multiplier for Stealth Bomber rocket explosions. Affects blast radius, knockback, and VFX size."
+            );
+
+            AC130BaseFov = cfg.Bind(
+                "AC130",
+                "BaseFov",
+                60f,
+                "Base field of view for the AC130 camera."
+            );
+
+            AC130YawLimit = cfg.Bind(
+                "AC130",
+                "YawLimit",
+                40f,
+                "How many degrees left/right the player can pan from the map centre."
+            );
+
+            AC130PitchLimit = cfg.Bind(
+                "AC130",
+                "PitchLimit",
+                30f,
+                "How many degrees up/down the player can pan from the map centre."
+            );
+
+            AC130MouseSensitivity = cfg.Bind(
+                "AC130",
+                "MouseSensitivity",
+                0.15f,
+                "How sensitive the player's mouse is to panning the camera."
+            );
+
+            AC130YawLimit = cfg.Bind(
+                "AC130",
+                "YawLimit",
+                40f,
+                "How many degrees left/right the player can pan from the map centre."
             );
 
             IssaPluginPlugin.Log.LogInfo("Configuration initialized.");

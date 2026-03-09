@@ -37,17 +37,6 @@ namespace IssaPlugin.Items
             AC130NetworkBridge bridge
         )
         {
-            IssaPluginPlugin.Log.LogInfo($"[AC130] Camera.main is: {Camera.main?.name ?? "null"}");
-            IssaPluginPlugin.Log.LogInfo(
-                $"[AC130] Camera.main active: {Camera.main?.isActiveAndEnabled}"
-            );
-
-            // Also log all active cameras to find the right one:
-            foreach (var cam in Camera.allCameras)
-                IssaPluginPlugin.Log.LogInfo(
-                    $"[AC130] Active camera: {cam.name}, depth: {cam.depth}"
-                );
-
             _isActive = true;
             _forceEnd = false;
 
@@ -56,7 +45,7 @@ namespace IssaPlugin.Items
             var session = new AC130Session(inventory, GetMapCentre(inventory));
 
             // ============================================================
-            //  Phase 1: Fly-in — camera follows the visual as it approaches
+            //  Phase 1: Fly-in — OrbitModule follows the visual cinematically
             // ============================================================
             if (session.FlyComp != null)
             {
@@ -102,7 +91,7 @@ namespace IssaPlugin.Items
             }
 
             // ============================================================
-            //  Phase 2: On-station — gunship view with firing controls
+            //  Phase 2: On-station — gunship camera, mouse-look, firing
             // ============================================================
             session.BeginGunshipView();
 
@@ -122,6 +111,9 @@ namespace IssaPlugin.Items
 
                 HandleFlight(keyboard, session);
 
+                // Let the camera consume mouse delta and update its look offset.
+                session.GunshipCam?.UpdateLook();
+
                 float currentAngle =
                     session.FlyComp != null
                         ? session.FlyComp.currentAngle
@@ -134,35 +126,37 @@ namespace IssaPlugin.Items
                     session.Altitude + session.AltitudeOffset
                 );
 
-                Vector3 gunshipFacing = AC130Helpers.OrbitTangent(currentAngle);
-
                 GunshipPosition = gunshipPos;
-                GunshipFacing = gunshipFacing;
-
-                session.PivotGo.transform.position = new Vector3(
-                    gunshipPos.x,
-                    session.MapCentre.y,
-                    gunshipPos.z
-                );
-
-                session.OrbitModule?.SetDistanceAddition(
-                    session.Altitude + session.AltitudeOffset
-                );
-                session.OrbitModule?.ForceUpdateModule();
+                GunshipFacing = AC130Helpers.OrbitTangent(currentAngle);
 
                 HandleZoom(mouse, session);
 
+                // --------------------------------------------------------
+                //  Aim — crosshair is always screen centre, so we raycast
+                //  along the camera's forward vector rather than using
+                //  the mouse cursor position.
+                // --------------------------------------------------------
                 Vector3 crosshairWorld = gunshipPos;
                 Vector3 aimDirection = Vector3.down;
 
-                if (Camera.main != null && mouse != null)
+                var gunshipCam = session.GunshipCam?.Camera;
+                if (gunshipCam != null)
                 {
-                    Ray aimRay = Camera.main.ScreenPointToRay(mouse.position.ReadValue());
+                    Vector3 camPos = gunshipCam.transform.position;
+                    Vector3 camForward = gunshipCam.transform.forward;
 
-                    if (Physics.Raycast(aimRay, out RaycastHit hit, 5000f, GroundLayerMask))
+                    if (
+                        Physics.Raycast(
+                            camPos,
+                            camForward,
+                            out RaycastHit hit,
+                            5000f,
+                            GroundLayerMask
+                        )
+                    )
                         crosshairWorld = hit.point;
                     else
-                        crosshairWorld = ProjectAimToGround(aimRay.origin, aimRay.direction);
+                        crosshairWorld = ProjectAimToGround(camPos, camForward);
 
                     aimDirection = (crosshairWorld - gunshipPos).normalized;
                 }
@@ -182,7 +176,7 @@ namespace IssaPlugin.Items
             }
 
             // ============================================================
-            //  Phase 3: Fly-out — restore camera, visual flies away on its own
+            //  Phase 3: Fly-out
             // ============================================================
             session.Cleanup();
             bridge.CmdEndAC130();
@@ -198,20 +192,14 @@ namespace IssaPlugin.Items
 
         private static void HandleZoom(Mouse mouse, AC130Session session)
         {
-            if (mouse == null || session.OrbitModule == null)
+            if (mouse == null || session.GunshipCam == null)
                 return;
 
-            float targetOffset = mouse.rightButton.isPressed
-                ? Configuration.AC130ZoomFov.Value - session.GunshipBaseFov
-                : 0f;
+            float targetFov = mouse.rightButton.isPressed
+                ? Configuration.AC130ZoomFov.Value
+                : session.GunshipCam.baseFov;
 
-            session.CurrentFovOffset = Mathf.Lerp(
-                session.CurrentFovOffset,
-                targetOffset,
-                Configuration.AC130ZoomSpeed.Value * Time.deltaTime
-            );
-
-            session.OrbitModule.SetFovOffset(session.CurrentFovOffset);
+            session.GunshipCam.SetFov(targetFov, Configuration.AC130ZoomSpeed.Value);
         }
 
         private static void HandleFlight(Keyboard keyboard, AC130Session s)
@@ -239,7 +227,7 @@ namespace IssaPlugin.Items
         }
 
         // ----------------------------------------------------------------
-        //  Server-side rocket spawning (called from AC130NetworkBridge)
+        //  Server-side rocket spawning
         // ----------------------------------------------------------------
 
         public static void SpawnRocketInDirection(

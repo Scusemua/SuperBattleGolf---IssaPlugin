@@ -78,20 +78,6 @@ namespace IssaPlugin.Items
             RpcPlayAC130Sound();
         }
 
-        [ClientRpc(includeOwner = false)]
-        private void RpcPlayAC130Sound()
-        {
-            var clip = AssetLoader.AC130AboveClip;
-            if (clip == null)
-            {
-                IssaPluginPlugin.Log.LogWarning("[AC130] Audio clip not loaded.");
-                return;
-            }
-
-            AudioSource.PlayClipAtPoint(clip, Camera.main?.transform.position ?? Vector3.zero);
-            IssaPluginPlugin.Log.LogInfo("[AC130] Playing ac130_above sound.");
-        }
-
         // ================================================================
         //  Server → Client
         // ================================================================
@@ -106,6 +92,29 @@ namespace IssaPlugin.Items
         public void TargetEndAC130(NetworkConnection target)
         {
             AC130Item.ForceEndLocalSession();
+        }
+
+        [ClientRpc(includeOwner = true)]
+        private void RpcPlayAC130Sound()
+        {
+            var clip = AssetLoader.AC130AboveClip;
+            if (clip == null)
+            {
+                IssaPluginPlugin.Log.LogWarning("[AC130] Audio clip not loaded.");
+                return;
+            }
+
+            // PlayClipAtPoint creates a temporary AudioSource with 3D falloff,
+            // so it must be placed near the listener to be audible.
+            // Camera.main can be null or point to the gunship camera during a
+            // session, so use the local player's world position instead.
+            Vector3 soundPos =
+                GameManager.LocalPlayerMovement != null
+                    ? GameManager.LocalPlayerMovement.transform.position
+                    : Vector3.zero;
+
+            AudioSource.PlayClipAtPoint(clip, soundPos, 1.0f);
+            IssaPluginPlugin.Log.LogInfo("[AC130] Playing ac130_above sound.");
         }
 
         // ================================================================

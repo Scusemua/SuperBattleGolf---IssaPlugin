@@ -18,19 +18,19 @@ namespace IssaPlugin.Items
         public float AltitudeOffset;
         public float Elapsed;
         public float Cooldown;
-        public float CurrentFovOffset;
 
         // Scene objects
         public readonly Vector3 MapCentre;
         public readonly GameObject PivotGo;
         public readonly GameObject GunshipVisual;
         public readonly AC130FlyBehaviour FlyComp;
+        public readonly AC130GunshipCamera GunshipCam;
+
+        // Fly-in still uses OrbitModule (it's fine as a cinematic follow-cam).
         public readonly OrbitCameraModule OrbitModule;
         public readonly float SavedPitch;
         public readonly float SavedYaw;
         public readonly bool SavedDisablePhysics;
-
-        public float GunshipBaseFov;
 
         public AC130Session(PlayerInventory inventory, Vector3 mapCentre)
         {
@@ -44,6 +44,7 @@ namespace IssaPlugin.Items
             AltitudeOffsetMax = Configuration.AC130AltitudeOffsetMax.Value;
             AltitudeAdjustSpeed = Configuration.AC130AltitudeAdjustSpeed.Value;
 
+            // Save OrbitModule state so we can restore it during Cleanup.
             CameraModuleController.TryGetOrbitModule(out OrbitModule);
             SavedPitch = OrbitModule?.Pitch ?? 0f;
             SavedYaw = OrbitModule?.Yaw ?? 0f;
@@ -52,10 +53,15 @@ namespace IssaPlugin.Items
             PivotGo = new GameObject("AC130Pivot");
             PivotGo.transform.position = mapCentre;
 
-            // Gunship visual — spawn at the approach position, not the orbit start
+            // ----------------------------------------------------------------
+            //  Spawn the gunship visual at the approach position
+            // ----------------------------------------------------------------
             float startAngle = 0f;
             Vector3 orbitEntry = AC130Helpers.OrbitPosition(
-                mapCentre, startAngle, OrbitRadius, Altitude
+                mapCentre,
+                startAngle,
+                OrbitRadius,
+                Altitude
             );
             Vector3 approachDir = AC130Helpers.OrbitTangent(startAngle);
 
@@ -81,6 +87,16 @@ namespace IssaPlugin.Items
                 FlyComp.flyTarget = orbitEntry;
                 FlyComp.flySpeed = approachSpeed;
                 FlyComp.mode = AC130FlightMode.FlyIn;
+
+                // Add the gunship camera component to the same GameObject.
+                // The camera positions itself at the gunship transform and looks
+                // toward mapCentre — no altitude/radius/tilt needed here.
+                GunshipCam = GunshipVisual.AddComponent<AC130GunshipCamera>();
+                GunshipCam.mapCentre = mapCentre;
+                GunshipCam.baseFov = Configuration.AC130BaseFov.Value;
+                GunshipCam.yawLimit = Configuration.AC130YawLimit.Value;
+                GunshipCam.pitchLimit = Configuration.AC130PitchLimit.Value;
+                GunshipCam.mouseSensitivity = Configuration.AC130MouseSensitivity.Value;
             }
             else
             {
@@ -89,43 +105,87 @@ namespace IssaPlugin.Items
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[AC130] Spawned at approach distance {approachDist:F0}m, "
-                + $"flying in at {approachSpeed:F0} m/s."
+                    + $"flying in at {approachSpeed:F0} m/s."
             );
         }
 
         /// <summary>
-        /// Switches the camera to the gunship view. Called after fly-in completes.
+        /// Switches from the fly-in OrbitModule view to the dedicated gunship camera.
+        /// Called once, after the fly-in phase completes.
         /// </summary>
         public void BeginGunshipView()
         {
+            // Tear down the OrbitModule follow-cam used during fly-in.
             if (OrbitModule != null)
             {
-                OrbitModule.SetSubject(PivotGo.transform);
-                OrbitModule.SetPitch(Configuration.AC130CameraPitch.Value);
-                OrbitModule.SetDistanceAddition(Altitude);
                 OrbitModule.SetFovOffset(0f);
-                OrbitModule.disablePhysics = true;
-                OrbitModule.ForceUpdateModule();
+                OrbitModule.SetDistanceAddition(0f);
+                OrbitModule.disablePhysics = SavedDisablePhysics;
 
-                GunshipBaseFov = OrbitModule.FieldOfView;
+                var playerMovement = GameManager.LocalPlayerMovement;
+                if (playerMovement != null)
+                    OrbitModule.SetSubject(playerMovement.transform);
+
+                OrbitModule.SetPitch(SavedPitch);
+                OrbitModule.SetYaw(SavedYaw);
+                OrbitModule.ForceUpdateModule();
             }
+
+            // Hand off to the dedicated gunship camera.
+            if (GunshipCam != null)
+                GunshipCam.Activate();
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[AC130] Gunship on station. Active for {Duration:F0}s, "
-                + $"orbit radius {OrbitRadius:F0}m, altitude {Altitude:F0}m."
+                    + $"orbit radius {OrbitRadius:F0}m, altitude {Altitude:F0}m."
             );
         }
 
         /// <summary>
-        /// Triggers fly-out on the visual and restores the camera.
-        /// The visual auto-destroys itself once it's far enough away.
+        /// Restores the OrbitModule to the state it was in before the session.
+        /// Guarded by a flag so it is safe to call from both BeginGunshipView
+        /// and Cleanup without double-applying.
+        /// </summary>
+        private bool _orbitModuleRestored;
+
+        private void RestoreOrbitModule()
+        {
+            if (_orbitModuleRestored || OrbitModule == null)
+                return;
+
+            OrbitModule.SetFovOffset(0f);
+            OrbitModule.SetDistanceAddition(0f);
+            OrbitModule.disablePhysics = SavedDisablePhysics;
+
+            var playerMovement = GameManager.LocalPlayerMovement;
+            if (playerMovement != null)
+                OrbitModule.SetSubject(playerMovement.transform);
+
+            OrbitModule.SetPitch(SavedPitch);
+            OrbitModule.SetYaw(SavedYaw);
+            OrbitModule.ForceUpdateModule();
+
+            _orbitModuleRestored = true;
+        }
+
+        /// <summary>
+        /// Triggers fly-out on the visual, deactivates the gunship camera,
+        /// and restores normal input.
         /// </summary>
         public void Cleanup()
         {
+            // Restore the OrbitModule if we're exiting during fly-in (before
+            // BeginGunshipView had a chance to do it). The guard flag inside
+            // RestoreOrbitModule makes this a no-op if it already ran.
+            RestoreOrbitModule();
+            
+            // Deactivate the gunship camera — restores whatever cam was active before.
+            GunshipCam?.Deactivate();
+
             if (GunshipVisual != null && FlyComp != null)
             {
                 FlyComp.BeginFlyOut();
-                // Don't destroy — the FlyOut mode handles self-destruction
+                // AC130FlyBehaviour self-destructs the GameObject once far enough away.
             }
             else if (GunshipVisual != null)
             {
@@ -133,21 +193,6 @@ namespace IssaPlugin.Items
             }
 
             Object.Destroy(PivotGo);
-
-            var playerMovement = GameManager.LocalPlayerMovement;
-            if (OrbitModule != null)
-            {
-                OrbitModule.SetFovOffset(0f);
-                OrbitModule.SetDistanceAddition(0f);
-
-                if (playerMovement != null)
-                    OrbitModule.SetSubject(playerMovement.transform);
-
-                OrbitModule.disablePhysics = SavedDisablePhysics;
-                OrbitModule.SetPitch(SavedPitch);
-                OrbitModule.SetYaw(SavedYaw);
-                OrbitModule.ForceUpdateModule();
-            }
 
             InputManager.Controls.Gameplay.Enable();
         }
