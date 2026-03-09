@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using IssaPlugin.Items;
 using UnityEngine;
 
-namespace IssaPlugin
+namespace IssaPlugin.Overlays
 {
     public class PlayerBoxOverlay : MonoBehaviour
     {

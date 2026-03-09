@@ -25,6 +25,23 @@ namespace IssaPlugin
         private const float ScanlineSpacing = 3f;
         private const float NoiseUpdateRate = 0.1f;
 
+        // Lazily cached reference to the local player's bridge.
+        private AC130NetworkBridge _localBridge;
+        private AC130NetworkBridge LocalBridge
+        {
+            get
+            {
+                if (_localBridge != null)
+                    return _localBridge;
+
+                var movement = GameManager.LocalPlayerMovement;
+                if (movement != null)
+                    _localBridge = movement.GetComponent<AC130NetworkBridge>();
+
+                return _localBridge;
+            }
+        }
+
         public static void UpdateAimInfo(Vector3 crosshairWorld, float elapsed, float duration)
         {
             _crosshairWorld = crosshairWorld;
@@ -34,7 +51,8 @@ namespace IssaPlugin
 
         private void OnGUI()
         {
-            if (!AC130Item.IsActive)
+            // Only show the overlay when the local player's own session is active.
+            if (LocalBridge == null || !LocalBridge.LocalSessionActive)
                 return;
 
             float w = Screen.width;
@@ -166,7 +184,7 @@ namespace IssaPlugin
         }
 
         // ----------------------------------------------------------------
-        //  Shared helpers (same as BomberOverlay)
+        //  Shared helpers
         // ----------------------------------------------------------------
         private void DrawCornerBracket(
             float x,

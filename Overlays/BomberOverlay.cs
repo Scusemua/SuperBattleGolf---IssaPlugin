@@ -1,7 +1,7 @@
 using IssaPlugin.Items;
 using UnityEngine;
 
-namespace IssaPlugin
+namespace IssaPlugin.Overlays
 {
     public class BomberOverlay : MonoBehaviour
     {

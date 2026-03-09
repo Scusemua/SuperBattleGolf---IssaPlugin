@@ -2,6 +2,7 @@ using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
 using IssaPlugin.Items;
+using IssaPlugin.Overlays;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
