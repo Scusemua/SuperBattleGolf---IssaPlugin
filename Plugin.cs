@@ -38,7 +38,7 @@ namespace IssaPlugin
 
             CourseManager.MatchStateChanged += OnMatchStateChanged;
 
-            gameObject.AddComponent<MissileOverlay>();
+            gameObject.AddComponent<PlayerBoxOverlay>();
             gameObject.AddComponent<BomberOverlay>();
             gameObject.AddComponent<AC130Overlay>();
 

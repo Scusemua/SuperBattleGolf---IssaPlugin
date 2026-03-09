@@ -104,16 +104,19 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            // PlayClipAtPoint creates a temporary AudioSource with 3D falloff,
-            // so it must be placed near the listener to be audible.
-            // Camera.main can be null or point to the gunship camera during a
-            // session, so use the local player's world position instead.
-            Vector3 soundPos =
-                GameManager.LocalPlayerMovement != null
-                    ? GameManager.LocalPlayerMovement.transform.position
-                    : Vector3.zero;
+            // PlayClipAtPoint uses 3D spatial audio, so if the AudioListener is
+            // on a camera that is disabled (or moved far away) the clip is
+            // silenced by distance rolloff. Use a dedicated 2D AudioSource
+            // instead so the sound is always audible at full volume regardless
+            // of listener position.
+            var go = new GameObject("AC130_Sound");
+            var src = go.AddComponent<AudioSource>();
+            src.clip = clip;
+            src.spatialBlend = 0f; // 0 = fully 2D, no distance rolloff
+            src.volume = 1f;
+            src.Play();
 
-            AudioSource.PlayClipAtPoint(clip, soundPos, 1.0f);
+            Destroy(go, clip.length + 0.1f);
             IssaPluginPlugin.Log.LogInfo("[AC130] Playing ac130_above sound.");
         }
 

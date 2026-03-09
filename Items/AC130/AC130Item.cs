@@ -12,10 +12,17 @@ namespace IssaPlugin.Items
         private static bool _isActive;
         private static bool _forceEnd;
         private static int _useIndex;
+        private static Camera _gunshipCamera;
 
         public static bool IsActive => _isActive;
         public static Vector3 GunshipPosition { get; private set; }
         public static Vector3 GunshipFacing { get; private set; }
+
+        /// <summary>
+        /// The active gunship Camera during an AC130 session, or null otherwise.
+        /// Used by PlayerBoxOverlay so it can project world positions correctly.
+        /// </summary>
+        public static Camera GunshipCamera => _gunshipCamera;
 
         private static readonly int GroundLayerMask = LayerMask.GetMask("Default", "Terrain");
 
@@ -84,6 +91,7 @@ namespace IssaPlugin.Items
             if (_forceEnd)
             {
                 session.Cleanup();
+                _gunshipCamera = null;
                 bridge.CmdEndAC130();
                 _isActive = false;
                 _forceEnd = false;
@@ -94,6 +102,7 @@ namespace IssaPlugin.Items
             //  Phase 2: On-station — gunship camera, mouse-look, firing
             // ============================================================
             session.BeginGunshipView();
+            _gunshipCamera = session.GunshipCam?.Camera;
 
             while (session.Elapsed < session.Duration && !_forceEnd)
             {
@@ -179,6 +188,7 @@ namespace IssaPlugin.Items
             //  Phase 3: Fly-out
             // ============================================================
             session.Cleanup();
+            _gunshipCamera = null;
             bridge.CmdEndAC130();
             _isActive = false;
             _forceEnd = false;

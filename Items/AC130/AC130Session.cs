@@ -178,7 +178,7 @@ namespace IssaPlugin.Items
             // BeginGunshipView had a chance to do it). The guard flag inside
             // RestoreOrbitModule makes this a no-op if it already ran.
             RestoreOrbitModule();
-            
+
             // Deactivate the gunship camera — restores whatever cam was active before.
             GunshipCam?.Deactivate();
 

@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace IssaPlugin
 {
-    public class MissileOverlay : MonoBehaviour
+    public class PlayerBoxOverlay : MonoBehaviour
     {
         private static Texture2D _redTex;
         private const float BoxWidth = 40f;
@@ -37,14 +37,22 @@ namespace IssaPlugin
         };
 
         private bool ShouldShowGUI() =>
-            StealthBomberItem.IsTargeting || MissileNetworkBridge.IsAnySteering || AC130Item.IsActive;
+            StealthBomberItem.IsTargeting
+            || MissileNetworkBridge.IsAnySteering
+            || AC130Item.IsActive;
 
         private void OnGUI()
         {
             if (!ShouldShowGUI())
                 return;
 
-            var cam = GameManager.Camera;
+            // When the AC130 gunship camera is active, WorldToScreenPoint must
+            // use that camera — GameManager.Camera still points at the game's
+            // default camera and will project world positions incorrectly.
+            var cam = AC130Item.IsActive
+                ? AC130Item.GunshipCamera ?? GameManager.Camera
+                : GameManager.Camera;
+
             if (cam == null)
                 return;
 
