@@ -3,7 +3,6 @@ using UnityEngine.InputSystem;
 
 namespace IssaPlugin.Items
 {
-    /// <summary>
     /// Gunship camera that rides with the AC130 as it orbits the map.
     ///
     /// Default look direction is straight toward the map centre from the
@@ -11,27 +10,39 @@ namespace IssaPlugin.Items
     /// a clamped cone (yawLimit / pitchLimit degrees either side of centre).
     /// The crosshair is always at screen centre, so firing is a simple
     /// forward-raycast from the camera.
-    /// </summary>
+    ///
+    /// Call <see cref="TriggerFireShake"/> each time a rocket is fired to
+    /// produce a subtle recoil kick.
     public class AC130GunshipCamera : MonoBehaviour
     {
         // ----------------------------------------------------------------
         //  Setup — assigned by AC130Session before Activate()
         // ----------------------------------------------------------------
 
-        /// <summary>The point the gunship orbits around.</summary>
+        /// The point the gunship orbits around.
         public Vector3 mapCentre;
 
-        /// <summary>Base FOV when not zooming.</summary>
+        /// Base FOV when not zooming.
         public float baseFov = 60f;
 
-        /// <summary>How many degrees left/right the player can pan from centre.</summary>
+        /// How many degrees left/right the player can pan from centre.
         public float yawLimit = 40f;
 
-        /// <summary>How many degrees up/down the player can pan from centre.</summary>
+        /// How many degrees up/down the player can pan from centre.
         public float pitchLimit = 30f;
 
-        /// <summary>Mouse sensitivity (degrees per pixel).</summary>
+        /// Mouse sensitivity (degrees per pixel).
         public float mouseSensitivity = 0.15f;
+
+        // ----------------------------------------------------------------
+        //  Shake configuration
+        // ----------------------------------------------------------------
+
+        /// Peak angular kick in degrees (applied as a random offset).
+        public float shakePeakDegrees = 1.2f;
+
+        /// How quickly the shake decays to zero (higher = snappier).
+        public float shakeDecaySpeed = 8f;
 
         // ----------------------------------------------------------------
         //  Runtime state
@@ -40,12 +51,18 @@ namespace IssaPlugin.Items
         private Camera _previousCam;
         private bool _active;
 
-        /// <summary>
+        /// 
         /// Player's accumulated pan offset from the neutral (map-centre) direction,
         /// in degrees.  x = pitch offset (up/down), y = yaw offset (left/right).
         /// Reset to zero when Activate() is called.
-        /// </summary>
+        /// 
         private Vector2 _lookOffset;
+
+        /// 
+        /// Current shake rotation offset in degrees (x = pitch, y = yaw).
+        /// Decays to zero each frame; set to a random kick by TriggerFireShake.
+        /// 
+        private Vector2 _shakeOffset;
 
         // ----------------------------------------------------------------
         //  Unity lifecycle
@@ -79,6 +96,7 @@ namespace IssaPlugin.Items
                 return;
 
             _lookOffset = Vector2.zero;
+            _shakeOffset = Vector2.zero;
 
             _previousCam = Camera.main;
             if (_previousCam != null)
@@ -88,7 +106,6 @@ namespace IssaPlugin.Items
             _gunshipCam.enabled = true;
             _active = true;
 
-            // Snap to the correct orientation immediately.
             ApplyCameraTransform();
 
             IssaPluginPlugin.Log.LogInfo("[AC130] Gunship camera activated.");
@@ -109,10 +126,10 @@ namespace IssaPlugin.Items
             IssaPluginPlugin.Log.LogInfo("[AC130] Gunship camera deactivated.");
         }
 
-        /// <summary>
+        /// 
         /// Call every frame from the on-station loop to consume mouse delta
         /// and accumulate the look offset.
-        /// </summary>
+        /// 
         public void UpdateLook()
         {
             if (!_active)
@@ -124,7 +141,6 @@ namespace IssaPlugin.Items
 
             Vector2 delta = mouse.delta.ReadValue();
 
-            // delta.x → yaw (left/right), delta.y → pitch (inverted so up = up).
             _lookOffset.y += delta.x * mouseSensitivity;
             _lookOffset.x -= delta.y * mouseSensitivity;
 
@@ -132,9 +148,23 @@ namespace IssaPlugin.Items
             _lookOffset.y = Mathf.Clamp(_lookOffset.y, -yawLimit, yawLimit);
         }
 
-        /// <summary>
+        /// 
+        /// Triggers a small recoil shake. Call this each time a rocket fires.
+        /// The shake is purely rotational and decays smoothly — it does not
+        /// affect <see cref="_lookOffset"/> so the player's aim stays where
+        /// they left it once the shake settles.
+        /// 
+        public void TriggerFireShake()
+        {
+            // Kick the camera upward (negative pitch = tilt up) with a tiny
+            // random yaw wobble to feel less mechanical.
+            _shakeOffset.x = -shakePeakDegrees;
+            _shakeOffset.y = Random.Range(-shakePeakDegrees * 0.4f, shakePeakDegrees * 0.4f);
+        }
+
+        /// 
         /// Smoothly interpolates FOV toward <paramref name="targetFov"/>.
-        /// </summary>
+        /// 
         public void SetFov(float targetFov, float lerpSpeed)
         {
             if (_gunshipCam == null)
@@ -149,22 +179,23 @@ namespace IssaPlugin.Items
 
         public float FieldOfView => _gunshipCam != null ? _gunshipCam.fieldOfView : baseFov;
 
-        /// <summary>
-        /// The underlying Camera — use this for crosshair raycasts.
-        /// Screen-centre is always the aim point, so just fire a ray from
-        /// the camera's position along its forward vector instead of using
-        /// ScreenPointToRay with the mouse position.
-        /// </summary>
         public Camera Camera => _gunshipCam;
 
         // ----------------------------------------------------------------
-        //  Positioning — runs after AC130FlyBehaviour has moved the gunship
+        //  Positioning
         // ----------------------------------------------------------------
 
         private void LateUpdate()
         {
             if (!_active)
                 return;
+
+            // Decay the shake offset toward zero each frame.
+            _shakeOffset = Vector2.Lerp(
+                _shakeOffset,
+                Vector2.zero,
+                shakeDecaySpeed * Time.deltaTime
+            );
 
             ApplyCameraTransform();
         }
@@ -190,12 +221,13 @@ namespace IssaPlugin.Items
             Quaternion neutralRotation = Quaternion.LookRotation(toCenter.normalized, Vector3.up);
 
             // ----------------------------------------------------------------
-            //  Apply player's mouse-look offset on top of the neutral rotation.
-            //  Yaw rotates around world-up so left/right always feels horizontal.
-            //  Pitch rotates around the camera's local right axis.
+            //  Layer: player mouse-look offset.
+            //  Layer: shake offset (decays automatically, doesn't affect aim).
             // ----------------------------------------------------------------
-            Quaternion yawOffset = Quaternion.AngleAxis(_lookOffset.y, Vector3.up);
-            Quaternion pitchOffset = Quaternion.AngleAxis(_lookOffset.x, Vector3.right);
+            Vector2 totalOffset = _lookOffset + _shakeOffset;
+
+            Quaternion yawOffset = Quaternion.AngleAxis(totalOffset.y, Vector3.up);
+            Quaternion pitchOffset = Quaternion.AngleAxis(totalOffset.x, Vector3.right);
 
             _gunshipCam.transform.rotation = yawOffset * neutralRotation * pitchOffset;
         }

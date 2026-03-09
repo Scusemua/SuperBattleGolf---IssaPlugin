@@ -18,10 +18,8 @@ namespace IssaPlugin.Items
         public static Vector3 GunshipPosition { get; private set; }
         public static Vector3 GunshipFacing { get; private set; }
 
-        /// <summary>
         /// The active gunship Camera during an AC130 session, or null otherwise.
-        /// Used by PlayerBoxOverlay so it can project world positions correctly.
-        /// </summary>
+        /// Used by MissileOverlay so it can project world positions correctly.
         public static Camera GunshipCamera => _gunshipCamera;
 
         private static readonly int GroundLayerMask = LayerMask.GetMask("Default", "Terrain");
@@ -178,6 +176,7 @@ namespace IssaPlugin.Items
                 {
                     bridge.CmdFireAC130(gunshipPos, aimDirection);
                     session.Cooldown = session.FireCooldown;
+                    session.GunshipCam?.TriggerFireShake();
                     IssaPluginPlugin.Log.LogInfo($"[AC130] Rocket fired toward {crosshairWorld}.");
                 }
 

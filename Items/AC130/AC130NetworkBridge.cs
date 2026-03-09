@@ -4,10 +4,8 @@ using UnityEngine;
 
 namespace IssaPlugin.Items
 {
-    /// <summary>
     /// Attached to the player object via NetworkBridgePatches.
     /// Handles AC130 activation, fire Commands, and session lifecycle RPCs.
-    /// </summary>
     public class AC130NetworkBridge : NetworkBehaviour
     {
         private Coroutine _serverTimeout;

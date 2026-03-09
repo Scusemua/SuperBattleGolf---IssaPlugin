@@ -109,10 +109,8 @@ namespace IssaPlugin.Items
             );
         }
 
-        /// <summary>
         /// Switches from the fly-in OrbitModule view to the dedicated gunship camera.
         /// Called once, after the fly-in phase completes.
-        /// </summary>
         public void BeginGunshipView()
         {
             // Tear down the OrbitModule follow-cam used during fly-in.
@@ -141,11 +139,9 @@ namespace IssaPlugin.Items
             );
         }
 
-        /// <summary>
         /// Restores the OrbitModule to the state it was in before the session.
         /// Guarded by a flag so it is safe to call from both BeginGunshipView
         /// and Cleanup without double-applying.
-        /// </summary>
         private bool _orbitModuleRestored;
 
         private void RestoreOrbitModule()
@@ -168,10 +164,8 @@ namespace IssaPlugin.Items
             _orbitModuleRestored = true;
         }
 
-        /// <summary>
         /// Triggers fly-out on the visual, deactivates the gunship camera,
         /// and restores normal input.
-        /// </summary>
         public void Cleanup()
         {
             // Restore the OrbitModule if we're exiting during fly-in (before

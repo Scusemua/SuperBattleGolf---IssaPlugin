@@ -99,8 +99,9 @@ namespace IssaPlugin
             DrawCornerBracket(w - bSize, h - bSize, bSize, bThick, false, false);
 
             // Crosshair follows the mouse cursor
-            var mousePos = UnityEngine.InputSystem.Mouse.current?.position.ReadValue()
-                           ?? new Vector2(w / 2f, h / 2f);
+            var mousePos =
+                UnityEngine.InputSystem.Mouse.current?.position.ReadValue()
+                ?? new Vector2(w / 2f, h / 2f);
             float cx = mousePos.x;
             float cy = h - mousePos.y; // InputSystem Y is bottom-up, GUI Y is top-down
             float cLen = 28f,
