@@ -67,15 +67,21 @@ namespace IssaPlugin.Items
                 "Assets/predator_missile_tablet.prefab"
             );
 
-            AC130AboveClip = _bundle.LoadAsset<AudioClip>("Assets/ac130_above.ogg");
-            HomerunAudioClip = _bundle.LoadAsset<AudioClip>("Assets/homerun.ogg");
+            // AudioClips must be loaded by asset name without the file extension.
+            // Unity compiles audio into its own internal format at bundle-build
+            // time, so the original .ogg path is never valid at runtime.
+            AC130AboveClip = _bundle.LoadAsset<AudioClip>("ac130_above");
+            HomerunAudioClip = _bundle.LoadAsset<AudioClip>("homerun");
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[Assets] Bundle loaded. "
-                    + $"Icons: bat={BatIcon != null}, bomber={BomberIcon != null}, missile={MissileIcon != null}. "
+                    + $"Icons: bat={BatIcon != null}, bomber={BomberIcon != null}, "
+                    + $"missile={MissileIcon != null}, ac130={AC130Icon != null}. "
                     + $"Models: bat={BatModelPrefab != null}, bomber={BomberPrefab != null}, "
+                    + $"ac130={AC130Prefab != null}, "
                     + $"bomberTablet={BomberTabletPrefab != null}, "
-                    + $"missileTablet={MissileTabletPrefab != null}."
+                    + $"missileTablet={MissileTabletPrefab != null}. "
+                    + $"Audio: ac130Above={AC130AboveClip != null}, homerun={HomerunAudioClip != null}."
             );
         }
 

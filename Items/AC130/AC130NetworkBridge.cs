@@ -102,15 +102,10 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            // PlayClipAtPoint uses 3D spatial audio, so if the AudioListener is
-            // on a camera that is disabled (or moved far away) the clip is
-            // silenced by distance rolloff. Use a dedicated 2D AudioSource
-            // instead so the sound is always audible at full volume regardless
-            // of listener position.
             var go = new GameObject("AC130_Sound");
             var src = go.AddComponent<AudioSource>();
             src.clip = clip;
-            src.spatialBlend = 0f; // 0 = fully 2D, no distance rolloff
+            src.spatialBlend = 0f; // 2D — not affected by listener position
             src.volume = 1f;
             src.Play();
 
