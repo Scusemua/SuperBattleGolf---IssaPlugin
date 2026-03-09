@@ -19,6 +19,10 @@ namespace IssaPlugin.Items
         public static GameObject BomberTabletPrefab { get; private set; }
         public static GameObject MissileTabletPrefab { get; private set; }
 
+        public static AudioClip AC130AboveClip { get; private set; }
+
+        public static AudioClip HomerunAudioClip { get; private set; }
+
         public static bool IsLoaded => _bundle != null;
 
         private static AssetBundle _bundle;
@@ -62,6 +66,9 @@ namespace IssaPlugin.Items
             MissileTabletPrefab = _bundle.LoadAsset<GameObject>(
                 "Assets/predator_missile_tablet.prefab"
             );
+
+            AC130AboveClip = _bundle.LoadAsset<AudioClip>("Assets/ac130_above.ogg");
+            HomerunAudioClip = _bundle.LoadAsset<AudioClip>("Assets/homerun.ogg");
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[Assets] Bundle loaded. "

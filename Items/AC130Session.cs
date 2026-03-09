@@ -18,7 +18,7 @@ namespace IssaPlugin.Items
         public float AltitudeOffset;
         public float Elapsed;
         public float Cooldown;
-        public float CurrentFov;
+        public float CurrentFovOffset;
 
         // Scene objects
         public readonly Vector3 MapCentre;
@@ -30,7 +30,7 @@ namespace IssaPlugin.Items
         public readonly float SavedYaw;
         public readonly bool SavedDisablePhysics;
 
-        public readonly float OriginalFov;
+        public float GunshipBaseFov;
 
         public AC130Session(PlayerInventory inventory, Vector3 mapCentre)
         {
@@ -44,7 +44,6 @@ namespace IssaPlugin.Items
             AltitudeOffsetMax = Configuration.AC130AltitudeOffsetMax.Value;
             AltitudeAdjustSpeed = Configuration.AC130AltitudeAdjustSpeed.Value;
 
-            // Camera — save state but don't switch to gunship view yet
             CameraModuleController.TryGetOrbitModule(out OrbitModule);
             SavedPitch = OrbitModule?.Pitch ?? 0f;
             SavedYaw = OrbitModule?.Yaw ?? 0f;
@@ -52,9 +51,6 @@ namespace IssaPlugin.Items
 
             PivotGo = new GameObject("AC130Pivot");
             PivotGo.transform.position = mapCentre;
-
-            OriginalFov = Camera.main != null ? Camera.main.fieldOfView : 60f;
-            CurrentFov = OriginalFov;
 
             // Gunship visual — spawn at the approach position, not the orbit start
             float startAngle = 0f;
@@ -106,9 +102,12 @@ namespace IssaPlugin.Items
             {
                 OrbitModule.SetSubject(PivotGo.transform);
                 OrbitModule.SetPitch(Configuration.AC130CameraPitch.Value);
-                OrbitModule.SetDistanceAddition(Configuration.AC130CameraDistance.Value);
+                OrbitModule.SetDistanceAddition(Altitude);
+                OrbitModule.SetFovOffset(0f);
                 OrbitModule.disablePhysics = true;
                 OrbitModule.ForceUpdateModule();
+
+                GunshipBaseFov = OrbitModule.FieldOfView;
             }
 
             IssaPluginPlugin.Log.LogInfo(
@@ -138,18 +137,17 @@ namespace IssaPlugin.Items
             var playerMovement = GameManager.LocalPlayerMovement;
             if (OrbitModule != null)
             {
+                OrbitModule.SetFovOffset(0f);
+                OrbitModule.SetDistanceAddition(0f);
+
                 if (playerMovement != null)
                     OrbitModule.SetSubject(playerMovement.transform);
 
-                OrbitModule.SetDistanceAddition(0f);
                 OrbitModule.disablePhysics = SavedDisablePhysics;
                 OrbitModule.SetPitch(SavedPitch);
                 OrbitModule.SetYaw(SavedYaw);
                 OrbitModule.ForceUpdateModule();
             }
-
-            if (Camera.main != null)
-                Camera.main.fieldOfView = OriginalFov;
 
             InputManager.Controls.Gameplay.Enable();
         }

@@ -46,18 +46,11 @@ namespace IssaPlugin
         public static ConfigEntry<float> AC130Duration { get; private set; }
         public static ConfigEntry<float> AC130CameraPitch { get; private set; }
         public static ConfigEntry<float> AC130CameraDistance { get; private set; }
-        public static ConfigEntry<float> AC130AimYawSpeed { get; private set; }
-        public static ConfigEntry<float> AC130AimPitchSpeed { get; private set; }
-        public static ConfigEntry<float> AC130AimPitchMin { get; private set; }
-        public static ConfigEntry<float> AC130AimPitchMax { get; private set; }
-        public static ConfigEntry<float> AC130AimPitchDefault { get; private set; }
-        public static ConfigEntry<float> AC130AimYawMax { get; private set; }
         public static ConfigEntry<float> AC130FireCooldown { get; private set; }
         public static ConfigEntry<float> AC130RocketAngularJitter { get; private set; }
         public static ConfigEntry<float> AC130BoostMultiplier { get; private set; }
         public static ConfigEntry<float> AC130AltitudeOffsetMax { get; private set; }
         public static ConfigEntry<float> AC130AltitudeAdjustSpeed { get; private set; }
-
         public static ConfigEntry<float> AC130ZoomFov { get; private set; }
         public static ConfigEntry<float> AC130ZoomSpeed { get; private set; }
         public static ConfigEntry<float> AC130ApproachDistance { get; private set; }
@@ -291,7 +284,7 @@ namespace IssaPlugin
             AC130CameraPitch = cfg.Bind(
                 "AC130",
                 "CameraPitch",
-                60f,
+                80f,
                 "Camera pitch angle in degrees during the AC130 (0 = horizontal, 90 = straight down)."
             );
 
@@ -300,48 +293,6 @@ namespace IssaPlugin
                 "CameraDistance",
                 80f,
                 "Camera distance addition from the gunship pivot during the AC130."
-            );
-
-            AC130AimYawSpeed = cfg.Bind(
-                "AC130",
-                "AimYawSpeed",
-                60f,
-                "Degrees per second the aim sweeps left and right (A/D)."
-            );
-
-            AC130AimPitchSpeed = cfg.Bind(
-                "AC130",
-                "AimPitchSpeed",
-                30f,
-                "Degrees per second the aim tilts up and down (W/S)."
-            );
-
-            AC130AimPitchMin = cfg.Bind(
-                "AC130",
-                "AimPitchMin",
-                20f,
-                "Minimum barrel pitch in degrees (higher values point more toward the horizon)."
-            );
-
-            AC130AimPitchMax = cfg.Bind(
-                "AC130",
-                "AimPitchMax",
-                85f,
-                "Maximum barrel pitch in degrees (higher values point more straight down)."
-            );
-
-            AC130AimPitchDefault = cfg.Bind(
-                "AC130",
-                "AimPitchDefault",
-                60f,
-                "Starting barrel pitch when the AC130 activates."
-            );
-
-            AC130AimYawMax = cfg.Bind(
-                "AC130",
-                "AimYawMax",
-                70f,
-                "Maximum degrees the aim can sweep left or right from the gunship's forward direction."
             );
 
             AC130FireCooldown = cfg.Bind(

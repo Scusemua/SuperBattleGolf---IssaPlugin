@@ -37,6 +37,17 @@ namespace IssaPlugin.Items
             AC130NetworkBridge bridge
         )
         {
+            IssaPluginPlugin.Log.LogInfo($"[AC130] Camera.main is: {Camera.main?.name ?? "null"}");
+            IssaPluginPlugin.Log.LogInfo(
+                $"[AC130] Camera.main active: {Camera.main?.isActiveAndEnabled}"
+            );
+
+            // Also log all active cameras to find the right one:
+            foreach (var cam in Camera.allCameras)
+                IssaPluginPlugin.Log.LogInfo(
+                    $"[AC130] Active camera: {cam.name}, depth: {cam.depth}"
+                );
+
             _isActive = true;
             _forceEnd = false;
 
@@ -63,8 +74,7 @@ namespace IssaPlugin.Items
 
                 while (!session.FlyComp.HasArrived && !_forceEnd)
                 {
-                    if (Keyboard.current != null
-                        && Keyboard.current[Key.Space].wasPressedThisFrame)
+                    if (Keyboard.current != null && Keyboard.current[Key.Space].wasPressedThisFrame)
                     {
                         _forceEnd = true;
                         break;
@@ -111,11 +121,11 @@ namespace IssaPlugin.Items
                 }
 
                 HandleFlight(keyboard, session);
-                HandleZoom(mouse, ref session.CurrentFov, session.OriginalFov);
 
-                float currentAngle = session.FlyComp != null
-                    ? session.FlyComp.currentAngle
-                    : session.Elapsed * session.BaseOrbitSpeed;
+                float currentAngle =
+                    session.FlyComp != null
+                        ? session.FlyComp.currentAngle
+                        : session.Elapsed * session.BaseOrbitSpeed;
 
                 Vector3 gunshipPos = AC130Helpers.OrbitPosition(
                     session.MapCentre,
@@ -128,8 +138,19 @@ namespace IssaPlugin.Items
 
                 GunshipPosition = gunshipPos;
                 GunshipFacing = gunshipFacing;
-                session.PivotGo.transform.position = gunshipPos;
+
+                session.PivotGo.transform.position = new Vector3(
+                    gunshipPos.x,
+                    session.MapCentre.y,
+                    gunshipPos.z
+                );
+
+                session.OrbitModule?.SetDistanceAddition(
+                    session.Altitude + session.AltitudeOffset
+                );
                 session.OrbitModule?.ForceUpdateModule();
+
+                HandleZoom(mouse, session);
 
                 Vector3 crosshairWorld = gunshipPos;
                 Vector3 aimDirection = Vector3.down;
@@ -175,23 +196,22 @@ namespace IssaPlugin.Items
         //  Input handlers
         // ----------------------------------------------------------------
 
-        private static void HandleZoom(Mouse mouse, ref float currentFov, float originalFov)
+        private static void HandleZoom(Mouse mouse, AC130Session session)
         {
-            if (mouse == null)
+            if (mouse == null || session.OrbitModule == null)
                 return;
 
-            float targetFov = mouse.rightButton.isPressed
-                ? Configuration.AC130ZoomFov.Value
-                : originalFov;
+            float targetOffset = mouse.rightButton.isPressed
+                ? Configuration.AC130ZoomFov.Value - session.GunshipBaseFov
+                : 0f;
 
-            currentFov = Mathf.Lerp(
-                currentFov,
-                targetFov,
+            session.CurrentFovOffset = Mathf.Lerp(
+                session.CurrentFovOffset,
+                targetOffset,
                 Configuration.AC130ZoomSpeed.Value * Time.deltaTime
             );
 
-            if (Camera.main != null)
-                Camera.main.fieldOfView = currentFov;
+            session.OrbitModule.SetFovOffset(session.CurrentFovOffset);
         }
 
         private static void HandleFlight(Keyboard keyboard, AC130Session s)
@@ -274,8 +294,7 @@ namespace IssaPlugin.Items
 
         private static Vector3 GetMapCentre(PlayerInventory inventory)
         {
-            var pos = inventory.PlayerInfo.transform.position;
-            return new Vector3(pos.x, 0f, pos.z);
+            return inventory.PlayerInfo.transform.position;
         }
     }
 }

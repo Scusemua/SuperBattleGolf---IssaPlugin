@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 621876085
+CRC: 3620387650
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: cc1d6cd7d2d2d0e2b02bbd6070723cda
+    Hash: a62a3b2bb2696146d05a24cb7bd87c92
   TypeTreeHash:
     serializedVersion: 2
     Hash: bc4fd4ef1cc932bcdd3de43389c81b29
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 988293dcc1be92f679de6eae9e0cbc8c
+    Hash: 406916f62648e4fa7f0c89c9a21a9ae5
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -40,6 +40,7 @@ ClassTypes:
 SerializeReferenceClassIdentifiers: []
 Assets:
 - Assets/ac130_above.ogg
+- Assets/homerun.ogg
 - Assets/bomber_model.prefab
 - Assets/ac130_model.prefab
 - Assets/missile_icon.png

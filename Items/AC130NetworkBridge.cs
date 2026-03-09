@@ -38,7 +38,7 @@ namespace IssaPlugin.Items
 
             ItemHelper.ConsumeEquippedItem(inventory);
             AC130Item.SetActive(true);
-
+            RpcPlayAC130Sound();
             TargetBeginAC130(connectionToClient);
             _serverTimeout = StartCoroutine(ServerTimeoutRoutine());
 
@@ -70,6 +70,26 @@ namespace IssaPlugin.Items
 
             Quaternion fireRotation = Quaternion.LookRotation(aimDirection, Vector3.up);
             AC130Item.SpawnRocketInDirection(inventory, position, jitter * fireRotation);
+        }
+
+        [Command]
+        public void CmdPlayAC130Sound()
+        {
+            RpcPlayAC130Sound();
+        }
+
+        [ClientRpc(includeOwner = false)]
+        private void RpcPlayAC130Sound()
+        {
+            var clip = AssetLoader.AC130AboveClip;
+            if (clip == null)
+            {
+                IssaPluginPlugin.Log.LogWarning("[AC130] Audio clip not loaded.");
+                return;
+            }
+
+            AudioSource.PlayClipAtPoint(clip, Camera.main?.transform.position ?? Vector3.zero);
+            IssaPluginPlugin.Log.LogInfo("[AC130] Playing ac130_above sound.");
         }
 
         // ================================================================
