@@ -72,9 +72,7 @@ namespace IssaPlugin.Items
             SetItemUseMethod?.Invoke(inventory, new object[] { type });
         }
 
-        /// <summary>
         /// Server-side convenience: wraps SetCurrentItemUse + DecrementAndRemove + SetCurrentItemUse.
-        /// </summary>
         public static void ConsumeEquippedItem(PlayerInventory inventory)
         {
             int slot = inventory.EquippedItemIndex;

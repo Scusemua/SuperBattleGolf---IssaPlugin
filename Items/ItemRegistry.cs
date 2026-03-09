@@ -123,11 +123,9 @@ namespace IssaPlugin.Items
             );
         }
 
-        /// <summary>
         /// Adds entries to the Unity Localization "Data" StringTable at runtime
         /// so that custom item names resolve correctly everywhere.
         /// Must be called after the game is fully initialized (not during ScriptableObject.OnEnable).
-        /// </summary>
         public static void RegisterCustomItemNames()
         {
             try

@@ -6,18 +6,15 @@ using UnityEngine;
 
 namespace IssaPlugin.Patches
 {
-    /// <summary>
     /// Adds bonus explosion effects (bigger VFX, extra knockback, extended radius)
     /// for custom-item rockets that have a scale != 1 registered in ExplosionScaler.
     ///
     /// The normal game explosion runs first at its default radius and force.
     /// The Postfix then layers on additional effects proportional to the scale.
-    /// </summary>
     [HarmonyPatch]
     static class ServerExplodeScalePatch
     {
-        static MethodBase TargetMethod() =>
-            AccessTools.Method(typeof(Rocket), "ServerExplode");
+        static MethodBase TargetMethod() => AccessTools.Method(typeof(Rocket), "ServerExplode");
 
         static void Postfix(Rocket __instance, Vector3 worldPosition)
         {
@@ -32,7 +29,7 @@ namespace IssaPlugin.Patches
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[Explosion] Custom rocket scale={scale:F2}, "
-                + $"baseRange={baseRange:F1}, scaledRange={scaledRange:F1}"
+                    + $"baseRange={baseRange:F1}, scaledRange={scaledRange:F1}"
             );
 
             // --- Bonus VFX: spawn a second, larger explosion particle ---
@@ -82,7 +79,7 @@ namespace IssaPlugin.Patches
 
                 IssaPluginPlugin.Log.LogInfo(
                     $"[Explosion] Bonus force={bonusForce:F1} applied to "
-                    + $"{processed.Count} rigidbodies within {scaledRange:F1}m"
+                        + $"{processed.Count} rigidbodies within {scaledRange:F1}m"
                 );
             }
         }

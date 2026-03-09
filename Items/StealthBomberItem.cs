@@ -515,10 +515,10 @@ namespace IssaPlugin.Items
             ExplosionScaler.Register(rocket, Configuration.StealthBomberExplosionScale.Value);
         }
 
-        /// <summary>
+        
         /// Attached to the bomber prefab instance so it flies smoothly
         /// from spawn to destination independent of the rocket-drop coroutine.
-        /// </summary>
+        
         private class BomberFlyBehaviour : MonoBehaviour
         {
             public Vector3 destination;

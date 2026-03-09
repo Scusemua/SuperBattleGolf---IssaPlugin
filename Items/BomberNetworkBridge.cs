@@ -4,10 +4,8 @@ using UnityEngine;
 
 namespace IssaPlugin.Items
 {
-    /// <summary>
     /// Attached to the player object via NetworkBridgePatches.
     /// Handles bomber Command (client→server) and visual RPC (server→all clients).
-    /// </summary>
     public class BomberNetworkBridge : NetworkBehaviour
     {
         [Command]

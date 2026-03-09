@@ -22,10 +22,8 @@ namespace IssaPlugin.Items
             );
         }
 
-        /// <summary>
         /// Runs entirely on the server. Spawns the rocket, notifies the
         /// firing client to begin steering, then waits for impact or timeout.
-        /// </summary>
         public static IEnumerator ServerMissileRoutine(
             PlayerInventory inventory,
             MissileNetworkBridge bridge

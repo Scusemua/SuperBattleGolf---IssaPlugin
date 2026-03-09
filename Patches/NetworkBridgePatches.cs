@@ -5,11 +5,9 @@ using UnityEngine;
 
 namespace IssaPlugin.Patches
 {
-    /// <summary>
     /// Injects our NetworkBehaviour bridge components onto every player object
     /// before Mirror's NetworkIdentity.Awake() discovers them.
     /// Both server and client run this patch, so component indices stay in sync.
-    /// </summary>
     [HarmonyPatch(typeof(NetworkIdentity), "Awake")]
     static class AddBridgeComponentsPatch
     {
@@ -25,7 +23,9 @@ namespace IssaPlugin.Patches
             if (!__instance.GetComponent<AC130NetworkBridge>())
                 __instance.gameObject.AddComponent<AC130NetworkBridge>();
 
-            IssaPluginPlugin.Log.LogInfo("[Network] Bridge components injected onto player object.");
+            IssaPluginPlugin.Log.LogInfo(
+                "[Network] Bridge components injected onto player object."
+            );
         }
     }
 }
