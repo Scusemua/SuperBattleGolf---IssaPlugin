@@ -358,6 +358,11 @@ namespace IssaPlugin.Items
 
             InputManager.Controls.Gameplay.Disable();
 
+            // Always skip at least one frame before reading input, so that
+            // wasPressedThisFrame on any key used to activate the item doesn't
+            // immediately trigger the fly-in cancel / mayday checks below.
+            yield return null;
+
             // Wait for Mirror to finish syncing the spawned gunship to this client.
             // In host mode this is instant; over a real network it may take a few frames.
             if (gunshipIdentity != null)
@@ -368,10 +373,6 @@ namespace IssaPlugin.Items
                     waited += Time.deltaTime;
                     yield return null;
                 }
-            }
-            else
-            {
-                yield return null;
             }
 
             GameObject gunshipGo = gunshipIdentity != null ? gunshipIdentity.gameObject : null;
