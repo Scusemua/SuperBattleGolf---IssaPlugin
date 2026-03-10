@@ -61,6 +61,22 @@ namespace IssaPlugin
         public static ConfigEntry<float> AC130PitchLimit { get; private set; }
         public static ConfigEntry<float> AC130MouseSensitivity { get; private set; }
 
+        // --- AC130 Mayday ---
+        public static ConfigEntry<bool> AC130MaydayEnabled { get; private set; }
+        public static ConfigEntry<Key> AC130MaydayKey { get; private set; }
+        public static ConfigEntry<float> AC130MaydayDiveSteepRate { get; private set; }
+        public static ConfigEntry<float> AC130MaydayInitialDiveAngle { get; private set; }
+        public static ConfigEntry<float> AC130MaydayMaxDiveAngle { get; private set; }
+        public static ConfigEntry<float> AC130MaydayPullInfluence { get; private set; }
+        public static ConfigEntry<float> AC130MaydayRollSpeed { get; private set; }
+        public static ConfigEntry<float> AC130MaydaySpeed { get; private set; }
+        public static ConfigEntry<float> AC130MaydayDrift { get; private set; }
+        public static ConfigEntry<float> AC130MaydayCamYawLimit { get; private set; }
+        public static ConfigEntry<float> AC130MaydayCamPitchLimit { get; private set; }
+        public static ConfigEntry<float> AC130MaydayShakeBase { get; private set; }
+        public static ConfigEntry<float> AC130MaydayShakeMax { get; private set; }
+        public static ConfigEntry<float> AC130MaydayExplosionScale { get; private set; }
+
         // --- Explosion Scaling ---
         public static ConfigEntry<float> AC130ExplosionScale { get; private set; }
         public static ConfigEntry<float> PredatorMissileExplosionScale { get; private set; }
@@ -427,7 +443,104 @@ namespace IssaPlugin
                 "How many degrees left/right the player can pan from the map centre."
             );
 
-            IssaPluginPlugin.Log.LogInfo("Configuration initialized.");
+            // --- AC130 Mayday ---
+            AC130MaydayEnabled = cfg.Bind(
+                "AC130Mayday",
+                "Enabled",
+                true,
+                "Whether the manual mayday self-destruct hotkey is available."
+            );
+
+            AC130MaydayKey = cfg.Bind(
+                "AC130Mayday",
+                "Key",
+                Key.M,
+                "Hotkey to manually trigger mayday (self-destruct) while in an AC130 session."
+            );
+
+            AC130MaydayDiveSteepRate = cfg.Bind(
+                "AC130Mayday",
+                "DiveSteepRate",
+                8f,
+                "Degrees per second at which the dive pitch steepens toward vertical."
+            );
+
+            AC130MaydayInitialDiveAngle = cfg.Bind(
+                "AC130Mayday",
+                "InitialDiveAngle",
+                20f,
+                "Starting pitch angle (degrees below horizontal) when mayday begins."
+            );
+
+            AC130MaydayMaxDiveAngle = cfg.Bind(
+                "AC130Mayday",
+                "MaxDiveAngle",
+                85f,
+                "Maximum pitch angle (degrees below horizontal) the dive steepens to."
+            );
+
+            AC130MaydayPullInfluence = cfg.Bind(
+                "AC130Mayday",
+                "PullInfluence",
+                6f,
+                "Degrees per second of pitch influence the player has when holding W/S during mayday."
+            );
+
+            AC130MaydayRollSpeed = cfg.Bind(
+                "AC130Mayday",
+                "RollSpeed",
+                45f,
+                "Degrees per second the player can roll the gunship with A/D during mayday."
+            );
+
+            AC130MaydaySpeed = cfg.Bind(
+                "AC130Mayday",
+                "Speed",
+                80f,
+                "Forward speed of the gunship during the mayday dive in units per second."
+            );
+
+            AC130MaydayDrift = cfg.Bind(
+                "AC130Mayday",
+                "Drift",
+                3f,
+                "Maximum random lateral drift added to the dive direction per second."
+            );
+
+            AC130MaydayCamYawLimit = cfg.Bind(
+                "AC130Mayday",
+                "CamYawLimit",
+                25f,
+                "How many degrees left/right the player can look during mayday."
+            );
+
+            AC130MaydayCamPitchLimit = cfg.Bind(
+                "AC130Mayday",
+                "CamPitchLimit",
+                15f,
+                "How many degrees up/down the player can look during mayday."
+            );
+
+            AC130MaydayShakeBase = cfg.Bind(
+                "AC130Mayday",
+                "ShakeBase",
+                0.3f,
+                "Camera shake intensity at the start of the mayday dive."
+            );
+
+            AC130MaydayShakeMax = cfg.Bind(
+                "AC130Mayday",
+                "ShakeMax",
+                2.5f,
+                "Maximum camera shake intensity at the end of the dive."
+            );
+
+            AC130MaydayExplosionScale = cfg.Bind(
+                "AC130Mayday",
+                "ExplosionScale",
+                4.0f,
+                "Explosion scale multiplier for the mayday crash. Affects blast radius, knockback, and VFX size."
+            );
         }
     }
 }

@@ -24,12 +24,25 @@ namespace IssaPlugin.Items
 
         public bool HasArrived { get; private set; }
 
+        /// <summary>
+        /// Assigned by AC130NetworkBridge on the server so external
+        /// destruction can notify the bridge to trigger mayday.
+        /// Only meaningful on the server.
+        /// </summary>
+        public System.Action OnExternallyDestroyed { get; set; }
+
         private float _currentAltitude;
         private const float AltitudeSnapThreshold = 0.01f;
         private const float ArrivalThreshold = 5f;
         private const float FlyOutDestroyDistance = 2000f;
 
         private Vector3 _flyOutStart;
+
+        /// <summary>
+        /// Set to true by BeginFlyOut() so OnDestroy knows this was a
+        /// normal fly-out completion and should not trigger mayday.
+        /// </summary>
+        private bool _normalFlyOutComplete;
 
         private void Start()
         {
@@ -103,7 +116,10 @@ namespace IssaPlugin.Items
             transform.position += transform.forward * flySpeed * Time.deltaTime;
 
             if (Vector3.Distance(transform.position, _flyOutStart) > FlyOutDestroyDistance)
+            {
+                _normalFlyOutComplete = true;
                 Destroy(gameObject);
+            }
         }
 
         public void BeginFlyOut()
@@ -111,6 +127,16 @@ namespace IssaPlugin.Items
             mode = AC130FlightMode.FlyOut;
             _flyOutStart = transform.position;
             flySpeed = Configuration.AC130ApproachSpeed.Value;
+        }
+
+        private void OnDestroy()
+        {
+            // Only notify mayday if destruction was external (not a normal fly-out).
+            // We check _normalFlyOutComplete rather than mode == FlyOut so that
+            // a gunship shot down *during* fly-out also doesn't trigger mayday
+            // (fly-out = the session is already ending, player has their camera back).
+            if (!_normalFlyOutComplete && mode != AC130FlightMode.FlyOut)
+                OnExternallyDestroyed?.Invoke();
         }
     }
 }

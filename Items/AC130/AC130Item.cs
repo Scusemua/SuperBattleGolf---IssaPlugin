@@ -120,5 +120,25 @@ namespace IssaPlugin.Items
 
             return origin + direction * t;
         }
+
+        /// <summary>
+        /// Forces a server-side rocket to explode immediately in place.
+        /// Used by the mayday impact to deal area damage.
+        /// </summary>
+        public static void ServerExplodeRocket(Rocket rocket)
+        {
+            if (rocket == null)
+                return;
+
+            var explodeMethod = typeof(Rocket).GetMethod(
+                "ServerExplode",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance
+            );
+
+            if (explodeMethod != null)
+                explodeMethod.Invoke(rocket, new object[] { rocket.transform.position });
+            else
+                IssaPluginPlugin.Log.LogError("[AC130] Could not find ServerExplode method.");
+        }
     }
 }

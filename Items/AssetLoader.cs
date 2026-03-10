@@ -9,19 +9,46 @@ namespace IssaPlugin.Items
         public static Sprite BatIcon { get; private set; }
         public static Sprite BomberIcon { get; private set; }
         public static Sprite MissileIcon { get; private set; }
-
         public static Sprite AC130Icon { get; private set; }
 
         public static GameObject BatModelPrefab { get; private set; }
         public static GameObject BomberPrefab { get; private set; }
-
         public static GameObject AC130Prefab { get; private set; }
         public static GameObject BomberTabletPrefab { get; private set; }
         public static GameObject MissileTabletPrefab { get; private set; }
 
-        public static AudioClip AC130AboveClip { get; private set; }
+        // ----------------------------------------------------------------
+        //  AC130 Mayday — populate the asset bundle with these names.
+        //  All are optional: code guards null checks before instantiating.
+        // ----------------------------------------------------------------
 
+        /// Particle / VFX prefab parented to the gunship during the mayday dive.
+        public static GameObject AC130SmokePrefab { get; private set; }
+
+        /// Explosion VFX prefab spawned at the crash impact point.
+        public static GameObject AC130MaydayExplosionPrefab { get; private set; }
+
+        /// Secondary debris / dust VFX spawned at the crash site.
+        public static GameObject AC130ImpactVfxPrefab { get; private set; }
+
+        // ----------------------------------------------------------------
+        //  Audio
+        // ----------------------------------------------------------------
+        public static AudioClip AC130AboveClip { get; private set; }
         public static AudioClip HomerunAudioClip { get; private set; }
+
+        // --- AC130 Mayday assets (placeholders — add to bundle when ready) ---
+        /// Looping cockpit alarm that plays during the mayday dive.
+        public static AudioClip MaydayAlarmClip { get; private set; }
+
+        /// One-shot impact / explosion sound at crash site.
+        public static AudioClip MaydayImpactClip { get; private set; }
+
+        /// Smoke trail particle prefab — attached to the gunship during the dive.
+        public static GameObject MaydaySmokeTrailPrefab { get; private set; }
+
+        /// Impact explosion VFX prefab — spawned at the crash position.
+        public static GameObject MaydayExplosionVfxPrefab { get; private set; }
 
         public static bool IsLoaded => _bundle != null;
 
@@ -70,8 +97,15 @@ namespace IssaPlugin.Items
             // AudioClips must be loaded by asset name without the file extension.
             // Unity compiles audio into its own internal format at bundle-build
             // time, so the original .ogg path is never valid at runtime.
-            AC130AboveClip = _bundle.LoadAsset<AudioClip>("ac130_above");
-            HomerunAudioClip = _bundle.LoadAsset<AudioClip>("homerun");
+            AC130AboveClip = _bundle.LoadAsset<AudioClip>("ac130_above.ogg");
+            HomerunAudioClip = _bundle.LoadAsset<AudioClip>("homerun.ogg");
+
+            // Mayday assets — these will be null until the prefabs/clips are
+            // added to the asset bundle. All mayday code null-checks before use.
+            MaydayAlarmClip = _bundle.LoadAsset<AudioClip>("missile_locked.ogg");
+            MaydayImpactClip = _bundle.LoadAsset<AudioClip>("etfx_explosion_nuke.wav");
+            MaydaySmokeTrailPrefab = _bundle.LoadAsset<GameObject>("smoke_prefab.prefab");
+            MaydayExplosionVfxPrefab = _bundle.LoadAsset<GameObject>("NukeExplosionFire.prefab");
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[Assets] Bundle loaded. "
@@ -90,7 +124,6 @@ namespace IssaPlugin.Items
             var tex = _bundle.LoadAsset<Texture2D>(assetPath);
             if (tex == null)
                 return null;
-
             return Sprite.Create(
                 tex,
                 new Rect(0, 0, tex.width, tex.height),

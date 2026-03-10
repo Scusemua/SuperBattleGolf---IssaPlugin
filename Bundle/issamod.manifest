@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 3620387650
+CRC: 3334901992
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: a62a3b2bb2696146d05a24cb7bd87c92
+    Hash: c074f69f733138034de12f4d3ef197cd
   TypeTreeHash:
     serializedVersion: 2
-    Hash: bc4fd4ef1cc932bcdd3de43389c81b29
+    Hash: b66c5dc5802853bc78eb458d4e1860e6
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 406916f62648e4fa7f0c89c9a21a9ae5
+    Hash: 608846ba757cdbd12a57a4a524a3a703
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -29,11 +29,27 @@ ClassTypes:
   Script: {instanceID: 0}
 - Class: 48
   Script: {instanceID: 0}
+- Class: 54
+  Script: {instanceID: 0}
+- Class: 64
+  Script: {instanceID: 0}
+- Class: 82
+  Script: {instanceID: 0}
 - Class: 83
   Script: {instanceID: 0}
 - Class: 90
   Script: {instanceID: 0}
 - Class: 95
+  Script: {instanceID: 0}
+- Class: 108
+  Script: {instanceID: 0}
+- Class: 114
+  Script: {fileID: 11500000, guid: 2f54e17d705a2894d88787e24190ebfa, type: 3}
+- Class: 115
+  Script: {instanceID: 0}
+- Class: 198
+  Script: {instanceID: 0}
+- Class: 199
   Script: {instanceID: 0}
 - Class: 213
   Script: {instanceID: 0}
@@ -43,13 +59,24 @@ Assets:
 - Assets/homerun.ogg
 - Assets/bomber_model.prefab
 - Assets/ac130_model.prefab
+- Assets/etfx_explosion_nuke.wav
 - Assets/missile_icon.png
 - Assets/predator_missile_tablet.prefab
 - Assets/bomber_tablet.prefab
+- Assets/jet_plane_flyby.ogg
+- Assets/predator_missile_ready.ogg
 - Assets/bomber_icon.png
+- Assets/plane_falling.ogg
+- Assets/big_plane.ogg
+- Assets/WarningExclamation.prefab
 - Assets/bat_icon.png
+- Assets/smoke_prefab.prefab
+- Assets/ac130_impact_vfx.prefab
 - Assets/stealth_bomber_tablet.prefab
+- Assets/NukeExplosionFire.prefab
 - Assets/predator_tablet.prefab
 - Assets/ac130_icon.png
 - Assets/bat_model.prefab
+- Assets/missile_locked.ogg
+- Assets/NukeVerticalExplosionFire.prefab
 Dependencies: []
