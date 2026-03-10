@@ -198,7 +198,7 @@ namespace IssaPlugin.Items
             Vector3 horizontalDir = Vector3.Lerp(
                 new Vector3(transform.forward.x, 0f, transform.forward.z).normalized,
                 toCenter,
-                2f * Time.deltaTime
+                Configuration.AC130MaydayCenterBias.Value * Time.deltaTime
             );
             horizontalDir.Normalize();
 

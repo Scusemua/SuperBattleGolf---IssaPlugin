@@ -87,12 +87,8 @@ namespace IssaPlugin.Items
             BatModelPrefab = _bundle.LoadAsset<GameObject>("bat_model.prefab");
             BomberPrefab = _bundle.LoadAsset<GameObject>("bomber_model.prefab");
             AC130Prefab = _bundle.LoadAsset<GameObject>("ac130_model.prefab");
-            BomberTabletPrefab = _bundle.LoadAsset<GameObject>(
-                "stealth_bomber_tablet.prefab"
-            );
-            MissileTabletPrefab = _bundle.LoadAsset<GameObject>(
-                "predator_missile_tablet.prefab"
-            );
+            BomberTabletPrefab = _bundle.LoadAsset<GameObject>("stealth_bomber_tablet.prefab");
+            MissileTabletPrefab = _bundle.LoadAsset<GameObject>("predator_missile_tablet.prefab");
 
             // AudioClips must be loaded by asset name without the file extension.
             // Unity compiles audio into its own internal format at bundle-build

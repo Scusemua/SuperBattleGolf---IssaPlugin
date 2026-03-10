@@ -71,6 +71,7 @@ namespace IssaPlugin
         public static ConfigEntry<float> AC130MaydayRollSpeed { get; private set; }
         public static ConfigEntry<float> AC130MaydaySpeed { get; private set; }
         public static ConfigEntry<float> AC130MaydayDrift { get; private set; }
+        public static ConfigEntry<float> AC130MaydayCenterBias { get; private set; }
         public static ConfigEntry<float> AC130MaydayCamYawLimit { get; private set; }
         public static ConfigEntry<float> AC130MaydayCamPitchLimit { get; private set; }
         public static ConfigEntry<float> AC130MaydayShakeBase { get; private set; }
@@ -491,6 +492,14 @@ namespace IssaPlugin
                 "Drift",
                 3f,
                 "Maximum random lateral drift added to the dive direction per second."
+            );
+
+            AC130MaydayCenterBias = cfg.Bind(
+                "AC130Mayday",
+                "CenterBias",
+                0.4f,
+                "Lerp strength per second toward map centre during the dive. "
+                    + "Higher = tighter spiral, lower = nearly straight. Default 0.4."
             );
 
             AC130MaydayCamYawLimit = cfg.Bind(

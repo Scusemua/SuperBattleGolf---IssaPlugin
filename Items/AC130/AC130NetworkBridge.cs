@@ -82,9 +82,9 @@ namespace IssaPlugin.Items
                 if (keyboard[Key.S].isPressed || keyboard[Key.DownArrow].isPressed)
                     diveInfluence = 1f;
                 if (keyboard[Key.A].isPressed || keyboard[Key.LeftArrow].isPressed)
-                    rollInfluence = -1f;
-                if (keyboard[Key.D].isPressed || keyboard[Key.RightArrow].isPressed)
                     rollInfluence = 1f;
+                if (keyboard[Key.D].isPressed || keyboard[Key.RightArrow].isPressed)
+                    rollInfluence = -1f;
             }
 
             CmdSetMaydayInput(diveInfluence, rollInfluence);
@@ -417,7 +417,9 @@ namespace IssaPlugin.Items
                 while (!_forceEnd && !_maydayTriggered)
                 {
                     // Completion: authoritative (listen server) or time-based (remote client).
-                    if (hasFlyComp ? session.FlyComp.HasArrived : flyInElapsed >= estimatedFlyInTime)
+                    if (
+                        hasFlyComp ? session.FlyComp.HasArrived : flyInElapsed >= estimatedFlyInTime
+                    )
                         break;
 
                     if (Keyboard.current != null && Keyboard.current[Key.Space].wasPressedThisFrame)
@@ -430,7 +432,10 @@ namespace IssaPlugin.Items
                     CheckMaydayHotkey();
 
                     if (session.GunshipVisual != null)
-                        session.PivotGo.transform.position = session.GunshipVisual.transform.position;
+                        session.PivotGo.transform.position = session
+                            .GunshipVisual
+                            .transform
+                            .position;
                     session.OrbitModule?.ForceUpdateModule();
                     flyInElapsed += Time.deltaTime;
                     yield return null;
