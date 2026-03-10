@@ -79,19 +79,19 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            BatIcon = LoadSprite("Assets/bat_icon.png");
-            BomberIcon = LoadSprite("Assets/bomber_icon.png");
-            MissileIcon = LoadSprite("Assets/missile_icon.png");
-            AC130Icon = LoadSprite("Assets/ac130_icon.png");
+            BatIcon = LoadSprite("bat_icon.png");
+            BomberIcon = LoadSprite("bomber_icon.png");
+            MissileIcon = LoadSprite("missile_icon.png");
+            AC130Icon = LoadSprite("ac130_icon.png");
 
-            BatModelPrefab = _bundle.LoadAsset<GameObject>("Assets/bat_model.prefab");
-            BomberPrefab = _bundle.LoadAsset<GameObject>("Assets/bomber_model.prefab");
-            AC130Prefab = _bundle.LoadAsset<GameObject>("Assets/ac130_model.prefab");
+            BatModelPrefab = _bundle.LoadAsset<GameObject>("bat_model.prefab");
+            BomberPrefab = _bundle.LoadAsset<GameObject>("bomber_model.prefab");
+            AC130Prefab = _bundle.LoadAsset<GameObject>("ac130_model.prefab");
             BomberTabletPrefab = _bundle.LoadAsset<GameObject>(
-                "Assets/stealth_bomber_tablet.prefab"
+                "stealth_bomber_tablet.prefab"
             );
             MissileTabletPrefab = _bundle.LoadAsset<GameObject>(
-                "Assets/predator_missile_tablet.prefab"
+                "predator_missile_tablet.prefab"
             );
 
             // AudioClips must be loaded by asset name without the file extension.
