@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 3334901992
+CRC: 2488719464
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: c074f69f733138034de12f4d3ef197cd
+    Hash: fb726e8c0d42cce74296a28efca2d44c
   TypeTreeHash:
     serializedVersion: 2
-    Hash: b66c5dc5802853bc78eb458d4e1860e6
+    Hash: cb28c6959f441490eb5fc03b01447336
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 608846ba757cdbd12a57a4a524a3a703
+    Hash: e21ef3c6103828ba64385b27d62588d4
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -45,6 +45,10 @@ ClassTypes:
   Script: {instanceID: 0}
 - Class: 114
   Script: {fileID: 11500000, guid: 2f54e17d705a2894d88787e24190ebfa, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 9b91ecbcc199f4492b9a91e820070131, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 8ff3ba0becae47b8b9381191598957c8, type: 3}
 - Class: 115
   Script: {instanceID: 0}
 - Class: 198
@@ -55,28 +59,28 @@ ClassTypes:
   Script: {instanceID: 0}
 SerializeReferenceClassIdentifiers: []
 Assets:
-- Assets/ac130_above.ogg
-- Assets/homerun.ogg
-- Assets/bomber_model.prefab
-- Assets/ac130_model.prefab
-- Assets/etfx_explosion_nuke.wav
-- Assets/missile_icon.png
-- Assets/predator_missile_tablet.prefab
-- Assets/bomber_tablet.prefab
-- Assets/jet_plane_flyby.ogg
-- Assets/predator_missile_ready.ogg
-- Assets/bomber_icon.png
-- Assets/plane_falling.ogg
-- Assets/big_plane.ogg
-- Assets/WarningExclamation.prefab
-- Assets/bat_icon.png
-- Assets/smoke_prefab.prefab
-- Assets/ac130_impact_vfx.prefab
-- Assets/stealth_bomber_tablet.prefab
-- Assets/NukeExplosionFire.prefab
-- Assets/predator_tablet.prefab
-- Assets/ac130_icon.png
-- Assets/bat_model.prefab
-- Assets/missile_locked.ogg
-- Assets/NukeVerticalExplosionFire.prefab
+- Assets/Assets/ac130_above.ogg
+- Assets/Assets/homerun.ogg
+- Assets/Assets/bomber_model.prefab
+- Assets/Assets/ac130_model.prefab
+- Assets/Assets/etfx_explosion_nuke.wav
+- Assets/Assets/missile_icon.png
+- Assets/Assets/predator_missile_tablet.prefab
+- Assets/Assets/bomber_tablet.prefab
+- Assets/Assets/jet_plane_flyby.ogg
+- Assets/Assets/predator_missile_ready.ogg
+- Assets/Assets/bomber_icon.png
+- Assets/Assets/plane_falling.ogg
+- Assets/Assets/big_plane.ogg
+- Assets/Assets/WarningExclamation.prefab
+- Assets/Assets/bat_icon.png
+- Assets/Assets/smoke_prefab.prefab
+- Assets/Assets/ac130_impact_vfx.prefab
+- Assets/Assets/stealth_bomber_tablet.prefab
+- Assets/Assets/NukeExplosionFire.prefab
+- Assets/Assets/predator_tablet.prefab
+- Assets/Assets/ac130_icon.png
+- Assets/Assets/bat_model.prefab
+- Assets/Assets/missile_locked.ogg
+- Assets/Assets/NukeVerticalExplosionFire.prefab
 Dependencies: []
