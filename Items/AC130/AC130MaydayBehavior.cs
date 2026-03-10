@@ -32,6 +32,18 @@ namespace IssaPlugin.Items
         /// The server bridge subscribes to this to run explosion / cleanup.
         public System.Action OnImpact { get; set; }
 
+        /// <summary>
+        /// Set each frame by AC130NetworkBridge.CmdSetMaydayInput on the server.
+        /// -1 = pull up (reduce dive angle), +1 = push down (increase dive angle).
+        /// </summary>
+        public float ExternalDiveInfluence { get; set; }
+
+        /// <summary>
+        /// Set each frame by AC130NetworkBridge.CmdSetMaydayInput on the server.
+        /// -1 = roll left, +1 = roll right.
+        /// </summary>
+        public float ExternalRollInfluence { get; set; }
+
         // ----------------------------------------------------------------
         //  Dive state
         // ----------------------------------------------------------------
@@ -86,13 +98,21 @@ namespace IssaPlugin.Items
                 IssaPluginPlugin.Log.LogWarning("[Mayday] Smoke trail prefab not loaded.");
             }
 
-            // Cockpit camera — owning client only.
-            if (IsLocalPlayer)
-                SetupCockpitCamera();
+            // Cockpit camera and alarm are NOT initialised here.
+            // On a listen server this component is added by the server before
+            // IsLocalPlayer is set to true, so Start() runs with IsLocalPlayer=false.
+            // Call BeginAsLocalPlayer() explicitly from TargetBeginMayday instead.
+        }
 
-            // Mayday alarm — owning client only.
-            if (IsLocalPlayer)
-                PlayMaydayAlarm();
+        /// <summary>
+        /// Called on the owning client after IsLocalPlayer has been set to true.
+        /// Sets up the cockpit camera and plays the mayday alarm.
+        /// Must NOT be called from Start() — see comment there.
+        /// </summary>
+        public void BeginAsLocalPlayer()
+        {
+            SetupCockpitCamera();
+            PlayMaydayAlarm();
         }
 
         private void OnDestroy()
@@ -111,17 +131,31 @@ namespace IssaPlugin.Items
             if (_impacted)
                 return;
 
-            UpdateDive();
-
-            if (IsLocalPlayer)
-                UpdateCockpitLook();
-
-            ApplyCameraTransform();
-            UpdateCameraShake();
-
-            // Ground check — server triggers the impact.
+            // Server drives the authoritative physics and impact detection.
+            // Clients just follow via Mirror's NetworkTransform on the gunship.
             if (NetworkServer.active)
+            {
+                UpdateDive();
                 CheckImpact();
+            }
+
+            // Camera and shake update only on the owning client.
+            if (IsLocalPlayer)
+            {
+                // On a dedicated server the owning client never runs UpdateDive(), so
+                // _diveAngle stays at its initial value. Mirror it locally here purely
+                // to drive camera-shake intensity — this value is cosmetic only.
+                if (!NetworkServer.active)
+                {
+                    float steepRate = Configuration.AC130MaydayDiveSteepRate.Value;
+                    float maxAngle = Configuration.AC130MaydayMaxDiveAngle.Value;
+                    _diveAngle = Mathf.MoveTowards(_diveAngle, maxAngle, steepRate * Time.deltaTime);
+                }
+
+                UpdateCockpitLook();
+                UpdateCameraShake();
+                ApplyCameraTransform();
+            }
         }
 
         // ----------------------------------------------------------------
@@ -130,32 +164,25 @@ namespace IssaPlugin.Items
 
         private void UpdateDive()
         {
-            var keyboard = Keyboard.current;
-
             // Steepen the dive over time.
             float steepRate = Configuration.AC130MaydayDiveSteepRate.Value;
             float maxAngle = Configuration.AC130MaydayMaxDiveAngle.Value;
             _diveAngle = Mathf.MoveTowards(_diveAngle, maxAngle, steepRate * Time.deltaTime);
 
-            // Player pull influence (owning client sends no cmd — input is
-            // processed locally and only affects visual/local state; the
-            // server runs the same Update so physics stay in sync via
-            // Mirror's NetworkTransform on the gunship).
-            if (IsLocalPlayer && keyboard != null)
+            // Apply player input forwarded from the owning client via CmdSetMaydayInput.
+            // On a listen server the input arrives the same frame via the local connection;
+            // on a dedicated server the last received input is reused until the next packet.
+            if (ExternalDiveInfluence != 0f)
             {
                 float pull = Configuration.AC130MaydayPullInfluence.Value;
-                if (keyboard[Key.W].isPressed || keyboard[Key.UpArrow].isPressed)
-                    _diveAngle -= pull * Time.deltaTime;
-                if (keyboard[Key.S].isPressed || keyboard[Key.DownArrow].isPressed)
-                    _diveAngle += pull * Time.deltaTime;
-
+                _diveAngle += ExternalDiveInfluence * pull * Time.deltaTime;
                 _diveAngle = Mathf.Clamp(_diveAngle, 5f, maxAngle);
+            }
 
+            if (ExternalRollInfluence != 0f)
+            {
                 float rollSpeed = Configuration.AC130MaydayRollSpeed.Value;
-                if (keyboard[Key.A].isPressed || keyboard[Key.LeftArrow].isPressed)
-                    _rollAngle -= rollSpeed * Time.deltaTime;
-                if (keyboard[Key.D].isPressed || keyboard[Key.RightArrow].isPressed)
-                    _rollAngle += rollSpeed * Time.deltaTime;
+                _rollAngle += ExternalRollInfluence * rollSpeed * Time.deltaTime;
             }
 
             // Build forward direction: pitched down by _diveAngle, biased

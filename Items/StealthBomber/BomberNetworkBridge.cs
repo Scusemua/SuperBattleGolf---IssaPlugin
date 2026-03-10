@@ -33,6 +33,8 @@ namespace IssaPlugin.Items
                 return;
             }
 
+            _isBombing = true;
+
             StartCoroutine(
                 StealthBomberItem.ServerBombingPhase(
                     GetComponent<PlayerInventory>(),
@@ -47,8 +49,6 @@ namespace IssaPlugin.Items
                     () => _isBombing = false
                 )
             );
-
-            _isBombing = true;
         }
 
         [ClientRpc]

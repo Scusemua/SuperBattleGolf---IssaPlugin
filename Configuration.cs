@@ -330,13 +330,6 @@ namespace IssaPlugin
                 "Random angular jitter in degrees applied to each rocket fired from the AC130."
             );
 
-            AC130SpawnWeight = cfg.Bind(
-                "ItemBoxSpawns",
-                "AC130Weight",
-                1f,
-                "Spawn weight for the AC130 in item boxes. Set to 0 to disable."
-            );
-
             AC130BoostMultiplier = cfg.Bind(
                 "AC130",
                 "BoostMultiplier",
@@ -434,13 +427,6 @@ namespace IssaPlugin
                 "MouseSensitivity",
                 0.15f,
                 "How sensitive the player's mouse is to panning the camera."
-            );
-
-            AC130YawLimit = cfg.Bind(
-                "AC130",
-                "YawLimit",
-                40f,
-                "How many degrees left/right the player can pan from the map centre."
             );
 
             // --- AC130 Mayday ---

@@ -1,3 +1,4 @@
+using Mirror;
 using UnityEngine;
 
 namespace IssaPlugin.Items
@@ -53,6 +54,11 @@ namespace IssaPlugin.Items
 
         private void Update()
         {
+            // Position is authoritative on the server only.
+            // Clients follow via the NetworkTransform on the gunship.
+            if (!NetworkServer.active)
+                return;
+
             switch (mode)
             {
                 case AC130FlightMode.FlyIn:

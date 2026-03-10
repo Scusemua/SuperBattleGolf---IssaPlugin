@@ -34,6 +34,7 @@ namespace IssaPlugin.Items
         private Coroutine _serverTimeout;
         private bool _serverSessionActive;
         private GameObject _serverGunship;
+        private float _serverLastFireTime;
 
         // ================================================================
         //  Per-instance client state  (owning client only)
@@ -60,6 +61,33 @@ namespace IssaPlugin.Items
                 );
                 ForceServerCleanup();
             }
+        }
+
+        private void Update()
+        {
+            // Forward mayday input to the server every frame while the owning
+            // client is in an active mayday. This keeps server-side dive physics
+            // responsive to player input on both listen-server and dedicated-server.
+            if (!LocalMaydayActive || !isOwned)
+                return;
+
+            var keyboard = Keyboard.current;
+            float diveInfluence = 0f;
+            float rollInfluence = 0f;
+
+            if (keyboard != null)
+            {
+                if (keyboard[Key.W].isPressed || keyboard[Key.UpArrow].isPressed)
+                    diveInfluence = -1f;
+                if (keyboard[Key.S].isPressed || keyboard[Key.DownArrow].isPressed)
+                    diveInfluence = 1f;
+                if (keyboard[Key.A].isPressed || keyboard[Key.LeftArrow].isPressed)
+                    rollInfluence = -1f;
+                if (keyboard[Key.D].isPressed || keyboard[Key.RightArrow].isPressed)
+                    rollInfluence = 1f;
+            }
+
+            CmdSetMaydayInput(diveInfluence, rollInfluence);
         }
 
         // ================================================================
@@ -147,10 +175,16 @@ namespace IssaPlugin.Items
         }
 
         [Command]
-        public void CmdFireAC130(Vector3 position, Vector3 aimDirection)
+        public void CmdFireAC130(Vector3 aimDirection)
         {
-            if (!_serverSessionActive)
+            if (!_serverSessionActive || _serverGunship == null)
                 return;
+
+            // Server-side rate limit — the client enforces its own cooldown too,
+            // but this prevents a lagging or malicious client from over-firing.
+            if (Time.time - _serverLastFireTime < Configuration.AC130FireCooldown.Value)
+                return;
+            _serverLastFireTime = Time.time;
 
             var inventory = GetComponent<PlayerInventory>();
             if (inventory == null)
@@ -163,8 +197,14 @@ namespace IssaPlugin.Items
                 0f
             );
 
+            // Use the server's authoritative gunship position rather than the
+            // client-provided one, which may be a stale approximation.
             Quaternion fireRotation = Quaternion.LookRotation(aimDirection, Vector3.up);
-            AC130Item.SpawnRocketInDirection(inventory, position, jitter * fireRotation);
+            AC130Item.SpawnRocketInDirection(
+                inventory,
+                _serverGunship.transform.position,
+                jitter * fireRotation
+            );
         }
 
         [Command]
@@ -175,6 +215,27 @@ namespace IssaPlugin.Items
 
             IssaPluginPlugin.Log.LogInfo("[AC130] Manual mayday triggered by player.");
             ServerBeginMayday();
+        }
+
+        /// <summary>
+        /// Sent every frame by the owning client while LocalMaydayActive is true.
+        /// Forwards keyboard input so the server-side AC130MaydayBehaviour can apply
+        /// player pull and roll to the authoritative dive physics.
+        /// diveInfluence: -1 = pull up, +1 = push down.
+        /// rollInfluence: -1 = roll left, +1 = roll right.
+        /// </summary>
+        [Command]
+        public void CmdSetMaydayInput(float diveInfluence, float rollInfluence)
+        {
+            if (!_serverSessionActive || _serverGunship == null)
+                return;
+
+            var mayday = _serverGunship.GetComponent<AC130MaydayBehaviour>();
+            if (mayday == null)
+                return;
+
+            mayday.ExternalDiveInfluence = diveInfluence;
+            mayday.ExternalRollInfluence = rollInfluence;
         }
 
         // ================================================================
@@ -215,7 +276,12 @@ namespace IssaPlugin.Items
                 gunship.GetComponent<AC130MaydayBehaviour>()
                 ?? gunship.AddComponent<AC130MaydayBehaviour>();
             mayday.IsLocalPlayer = true;
-            mayday.MapCentre = gunship.GetComponent<AC130FlyBehaviour>()?.mapCentre ?? Vector3.zero;
+
+            // Explicitly initialise the cockpit camera and alarm now that IsLocalPlayer
+            // is true. This cannot be done in Start() because on a listen server the
+            // component is added by the server before this RPC runs, so Start() fires
+            // with IsLocalPlayer=false and skips the camera/alarm setup.
+            mayday.BeginAsLocalPlayer();
 
             LocalMaydayActive = true;
             AC130Overlay.SetMaydayActive(true);
@@ -292,17 +358,43 @@ namespace IssaPlugin.Items
 
             InputManager.Controls.Gameplay.Disable();
 
-            // Wait one frame for Mirror to finish syncing the spawned gunship
-            // to this client before we try to access its components.
-            yield return null;
+            // Wait for Mirror to finish syncing the spawned gunship to this client.
+            // In host mode this is instant; over a real network it may take a few frames.
+            if (gunshipIdentity != null)
+            {
+                float waited = 0f;
+                while (gunshipIdentity.gameObject == null && waited < 2f)
+                {
+                    waited += Time.deltaTime;
+                    yield return null;
+                }
+            }
+            else
+            {
+                yield return null;
+            }
 
             GameObject gunshipGo = gunshipIdentity != null ? gunshipIdentity.gameObject : null;
+            if (gunshipGo == null)
+                IssaPluginPlugin.Log.LogError(
+                    "[AC130] Gunship still null after waiting — camera will not activate."
+                );
+
             var session = new AC130Session(inventory, gunshipGo, mapCentre);
 
             // ============================================================
             //  Phase 1: Fly-in
+            //
+            //  On a listen server, FlyComp exists (same object instance) and
+            //  HasArrived is the authoritative completion signal.
+            //  On a remote client, FlyComp is null (the component is added at
+            //  runtime on the server and not synced to clients). We fall back to
+            //  a time estimate so the player still sees the fly-in cinematic.
             // ============================================================
-            if (session.FlyComp != null)
+            bool hasFlyComp = session.FlyComp != null;
+            bool hasGunshipVisual = session.GunshipVisual != null;
+
+            if (hasFlyComp || hasGunshipVisual)
             {
                 if (session.OrbitModule != null)
                 {
@@ -316,8 +408,17 @@ namespace IssaPlugin.Items
 
                 IssaPluginPlugin.Log.LogInfo("[AC130] Fly-in phase started.");
 
-                while (!session.FlyComp.HasArrived && !_forceEnd && !_maydayTriggered)
+                float estimatedFlyInTime =
+                    Configuration.AC130ApproachDistance.Value
+                    / Configuration.AC130ApproachSpeed.Value;
+                float flyInElapsed = 0f;
+
+                while (!_forceEnd && !_maydayTriggered)
                 {
+                    // Completion: authoritative (listen server) or time-based (remote client).
+                    if (hasFlyComp ? session.FlyComp.HasArrived : flyInElapsed >= estimatedFlyInTime)
+                        break;
+
                     if (Keyboard.current != null && Keyboard.current[Key.Space].wasPressedThisFrame)
                     {
                         IssaPluginPlugin.Log.LogInfo("[AC130] Fly-in cancelled by player.");
@@ -327,8 +428,10 @@ namespace IssaPlugin.Items
 
                     CheckMaydayHotkey();
 
-                    session.PivotGo.transform.position = session.GunshipVisual.transform.position;
+                    if (session.GunshipVisual != null)
+                        session.PivotGo.transform.position = session.GunshipVisual.transform.position;
                     session.OrbitModule?.ForceUpdateModule();
+                    flyInElapsed += Time.deltaTime;
                     yield return null;
                 }
 
@@ -423,7 +526,7 @@ namespace IssaPlugin.Items
                 bool firePressed = mouse != null && mouse.leftButton.wasPressedThisFrame;
                 if (firePressed && session.Cooldown <= 0f)
                 {
-                    CmdFireAC130(gunshipPos, aimDirection);
+                    CmdFireAC130(aimDirection);
                     session.Cooldown = session.FireCooldown;
                     session.GunshipCam?.TriggerFireShake();
                     IssaPluginPlugin.Log.LogInfo($"[AC130] Rocket fired toward {crosshairWorld}.");
@@ -510,6 +613,12 @@ namespace IssaPlugin.Items
                 Quaternion.LookRotation(approachDir, Vector3.up)
             );
 
+            // The prefab may not have a NetworkIdentity baked in.
+            // Adding one at runtime before NetworkServer.Spawn is valid
+            // and is the only option when we can't modify the bundle prefab.
+            if (go.GetComponent<NetworkIdentity>() == null)
+                go.AddComponent<NetworkIdentity>();
+
             var flyComp = go.AddComponent<AC130FlyBehaviour>();
             flyComp.mapCentre = mapCentre;
             flyComp.orbitRadius = orbitRadius;
@@ -586,35 +695,11 @@ namespace IssaPlugin.Items
         {
             IssaPluginPlugin.Log.LogInfo($"[Mayday] Impact at {impactPos}.");
 
-            if (AssetLoader.MaydayExplosionVfxPrefab != null)
-            {
-                var vfxGo = Object.Instantiate(
-                    AssetLoader.MaydayExplosionVfxPrefab,
-                    impactPos,
-                    Quaternion.identity
-                );
-                NetworkServer.Spawn(vfxGo);
-                Object.Destroy(vfxGo, 5f);
-            }
-            else
-            {
-                VfxManager.PlayPooledVfxLocalOnly(
-                    VfxType.RocketLauncherRocketExplosion,
-                    impactPos,
-                    Quaternion.identity,
-                    Vector3.one * Configuration.AC130MaydayExplosionScale.Value
-                );
-            }
-
-            CameraModuleController.Shake(
-                GameManager.CameraGameplaySettings.RocketExplosionScreenshakeSettings,
-                impactPos
-            );
+            // VFX, screen shake, and audio on all clients via RPC.
+            RpcPlayMaydayImpactVfx(impactPos);
 
             ServerSpawnImpactRocket(impactPos);
 
-            // Destroy the gunship — no persistent wreck for now.
-            // To add a wreck later: spawn a wreck prefab here before Destroy.
             if (_serverGunship != null)
             {
                 Object.Destroy(_serverGunship);
@@ -624,6 +709,36 @@ namespace IssaPlugin.Items
             _serverSessionActive = false;
             ReleaseGlobalLock();
             TargetEndMayday(connectionToClient);
+        }
+
+        [ClientRpc]
+        private void RpcPlayMaydayImpactVfx(Vector3 impactPos)
+        {
+            if (AssetLoader.MaydayExplosionVfxPrefab != null)
+            {
+                var vfxGo = Object.Instantiate(
+                    AssetLoader.MaydayExplosionVfxPrefab,
+                    impactPos,
+                    Quaternion.identity
+                );
+                Object.Destroy(vfxGo, 5f);
+            }
+            else
+            {
+                // Fallback: use the game's pooled VFX locally.
+                VfxManager.PlayPooledVfxLocalOnly(
+                    VfxType.RocketLauncherRocketExplosion,
+                    impactPos,
+                    Quaternion.identity,
+                    Vector3.one * Configuration.AC130MaydayExplosionScale.Value
+                );
+            }
+
+            // Screen shake on all clients, including those on a dedicated server.
+            CameraModuleController.Shake(
+                GameManager.CameraGameplaySettings.RocketExplosionScreenshakeSettings,
+                impactPos
+            );
         }
 
         private void ServerSpawnImpactRocket(Vector3 position)
