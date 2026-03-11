@@ -149,7 +149,11 @@ namespace IssaPlugin.Items
                 {
                     float steepRate = Configuration.AC130MaydayDiveSteepRate.Value;
                     float maxAngle = Configuration.AC130MaydayMaxDiveAngle.Value;
-                    _diveAngle = Mathf.MoveTowards(_diveAngle, maxAngle, steepRate * Time.deltaTime);
+                    _diveAngle = Mathf.MoveTowards(
+                        _diveAngle,
+                        maxAngle,
+                        steepRate * Time.deltaTime
+                    );
                 }
 
                 UpdateCockpitLook();
@@ -202,7 +206,17 @@ namespace IssaPlugin.Items
             );
             horizontalDir.Normalize();
 
-            // Add drift.
+            // Banking steers the aircraft: a rolled plane curves in the
+            // direction of the low wing (like a real banked turn).
+            // sin(rollAngle) gives a smooth response — 0 roll = straight,
+            // 90° roll = maximum turn rate, 180° roll = straight again.
+            float rollRad = _rollAngle * Mathf.Deg2Rad;
+            float yawDelta =
+                Mathf.Sin(rollRad) * Configuration.AC130MaydayRollTurnRate.Value * Time.deltaTime;
+            horizontalDir = Quaternion.AngleAxis(yawDelta, Vector3.up) * horizontalDir;
+            horizontalDir.Normalize();
+
+            // Add random drift.
             horizontalDir.x += _driftVelX * Time.deltaTime * 0.1f;
             horizontalDir.z += _driftVelZ * Time.deltaTime * 0.1f;
             horizontalDir.Normalize();

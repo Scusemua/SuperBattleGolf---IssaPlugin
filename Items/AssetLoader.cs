@@ -101,7 +101,9 @@ namespace IssaPlugin.Items
             MaydayAlarmClip = _bundle.LoadAsset<AudioClip>("missile_locked.ogg");
             MaydayImpactClip = _bundle.LoadAsset<AudioClip>("etfx_explosion_nuke.wav");
             MaydaySmokeTrailPrefab = _bundle.LoadAsset<GameObject>("smoke_prefab.prefab");
-            MaydayExplosionVfxPrefab = _bundle.LoadAsset<GameObject>("NukeExplosionFire.prefab");
+            MaydayExplosionVfxPrefab = _bundle.LoadAsset<GameObject>(
+                "NukeVerticalExplosionFire.prefab"
+            );
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[Assets] Bundle loaded. "

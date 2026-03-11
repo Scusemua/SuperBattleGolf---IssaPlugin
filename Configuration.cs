@@ -78,6 +78,15 @@ namespace IssaPlugin
         public static ConfigEntry<float> AC130MaydayShakeMax { get; private set; }
         public static ConfigEntry<float> AC130MaydayExplosionScale { get; private set; }
         public static ConfigEntry<float> AC130MaydayExplosionDuration { get; private set; }
+        public static ConfigEntry<float> AC130MaydayRollTurnRate { get; private set; }
+
+        // --- Freeze World ---
+        public static ConfigEntry<Key> FreezeGiveKey { get; private set; }
+        public static ConfigEntry<int> FreezeUses { get; private set; }
+        public static ConfigEntry<float> FreezeDuration { get; private set; }
+        public static ConfigEntry<float> FreezeFriction { get; private set; }
+        public static ConfigEntry<float> FreezeBounciness { get; private set; }
+        public static ConfigEntry<float> FreezeSpawnWeight { get; private set; }
 
         // --- Explosion Scaling ---
         public static ConfigEntry<float> AC130ExplosionScale { get; private set; }
@@ -381,6 +390,49 @@ namespace IssaPlugin
                 "Speed in units per second at which the AC130 flies in and out."
             );
 
+            // --- Freeze World ---
+            FreezeGiveKey = cfg.Bind(
+                "FreezeWorld",
+                "GiveKey",
+                Key.F12,
+                "Debug key to add the Freeze World item to your inventory."
+            );
+
+            FreezeUses = cfg.Bind(
+                "FreezeWorld",
+                "Uses",
+                1,
+                "Number of uses per Freeze World pickup."
+            );
+
+            FreezeDuration = cfg.Bind(
+                "FreezeWorld",
+                "Duration",
+                15f,
+                "Seconds the world stays frozen before physics and visuals are restored."
+            );
+
+            FreezeFriction = cfg.Bind(
+                "FreezeWorld",
+                "Friction",
+                0.02f,
+                "Surface friction applied to all physics contacts during a freeze (0 = frictionless)."
+            );
+
+            FreezeBounciness = cfg.Bind(
+                "FreezeWorld",
+                "Bounciness",
+                0.2f,
+                "Surface bounciness applied to all physics contacts during a freeze."
+            );
+
+            FreezeSpawnWeight = cfg.Bind(
+                "ItemBoxSpawns",
+                "FreezeWorldWeight",
+                2f,
+                "Spawn weight for the Freeze World item in item boxes. Set to 0 to disable."
+            );
+
             // --- Explosion Scaling ---
             AC130ExplosionScale = cfg.Bind(
                 "Explosions",
@@ -543,6 +595,14 @@ namespace IssaPlugin
                 "ExplosionDuration",
                 12f,
                 "How long (seconds) the crash explosion VFX lingers before being destroyed."
+            );
+
+            AC130MaydayRollTurnRate = cfg.Bind(
+                "AC130Mayday",
+                "RollTurnRate",
+                45f,
+                "Degrees per second of yaw the aircraft gains when fully banked (90° roll). "
+                    + "Controls how tightly rolling steers the plane left/right."
             );
         }
     }

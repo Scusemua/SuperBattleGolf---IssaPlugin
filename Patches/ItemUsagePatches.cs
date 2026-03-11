@@ -61,6 +61,18 @@ namespace IssaPlugin.Patches
                 return false;
             }
 
+            if (equipped == FreezeItem.FreezeItemType)
+            {
+                shouldEatInput = true;
+                __result = true;
+                var bridge = __instance.GetComponent<FreezeNetworkBridge>();
+                if (bridge != null)
+                    bridge.CmdActivateFreeze();
+                else
+                    IssaPluginPlugin.Log.LogError("[Freeze] No FreezeNetworkBridge on player.");
+                return false;
+            }
+
             return true;
         }
     }
@@ -89,6 +101,7 @@ namespace IssaPlugin.Patches
                 equipped == StealthBomberItem.BomberItemType
                 || equipped == PredatorMissileItem.MissileItemType
                 || equipped == AC130Item.AC130ItemType
+                || equipped == FreezeItem.FreezeItemType
             )
             {
                 rightSwitcher.SetEquipment(EquipmentType.RocketLauncher);

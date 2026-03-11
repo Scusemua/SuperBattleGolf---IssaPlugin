@@ -22,6 +22,8 @@ namespace IssaPlugin.Patches
                 __instance.gameObject.AddComponent<MissileNetworkBridge>();
             if (!__instance.GetComponent<AC130NetworkBridge>())
                 __instance.gameObject.AddComponent<AC130NetworkBridge>();
+            if (!__instance.GetComponent<FreezeNetworkBridge>())
+                __instance.gameObject.AddComponent<FreezeNetworkBridge>();
 
             IssaPluginPlugin.Log.LogInfo(
                 "[Network] Bridge components injected onto player object."

@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 1700065190
+CRC: 4123215007
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 0b6207a9906dbcfd68cc618944af528d
+    Hash: 4bfdce41f0926a15d3bb55bc5f0cacea
   TypeTreeHash:
     serializedVersion: 2
     Hash: 294481f2732624c51f311d29f741d4e4
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 8f7bfe640bfe017b8eff1b6fcb7c19c4
+    Hash: 32b76d5e91e54675ba5760310227ca8c
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -67,6 +67,7 @@ Assets:
 - Assets/Assets/bomber_tablet.prefab
 - Assets/Assets/jet_plane_flyby.ogg
 - Assets/Assets/predator_missile_ready.ogg
+- Assets/Assets/bomber_jet.prefab
 - Assets/Assets/bomber_icon.png
 - Assets/Assets/plane_falling.ogg
 - Assets/Assets/big_plane.ogg

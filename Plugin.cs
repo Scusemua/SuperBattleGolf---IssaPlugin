@@ -3,6 +3,7 @@ using BepInEx.Logging;
 using HarmonyLib;
 using IssaPlugin.Items;
 using IssaPlugin.Overlays;
+using IssaPlugin.Patches;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -42,11 +43,13 @@ namespace IssaPlugin
             gameObject.AddComponent<PlayerBoxOverlay>();
             gameObject.AddComponent<BomberOverlay>();
             gameObject.AddComponent<AC130Overlay>();
+            gameObject.AddComponent<FreezeOverlay>();
+            gameObject.AddComponent<FreezePhysicsHandler>();
 
             // This game uses FMOD for audio, which replaces Unity's AudioListener.
             // Without a Unity AudioListener in the scene, AudioSource.Play() is silent.
             // We add one here so our custom AudioClips (AC130, mayday alarm, etc.) are audible.
-            if (FindObjectOfType<AudioListener>() == null)
+            if (FindFirstObjectByType<AudioListener>() == null)
                 gameObject.AddComponent<AudioListener>();
 
             Log.LogInfo("IssaPlugin by Scusemua has loaded.");
@@ -89,6 +92,9 @@ namespace IssaPlugin
 
             if (keyboard[Configuration.AC130GiveKey.Value].wasPressedThisFrame)
                 AC130Item.GiveAC130ToLocalPlayer();
+
+            if (keyboard[Configuration.FreezeGiveKey.Value].wasPressedThisFrame)
+                FreezeItem.GiveFreezeToLocalPlayer();
 
             if (keyboard[Key.F10].wasPressedThisFrame)
                 DebugDummies.ToggleDebugDummies();
