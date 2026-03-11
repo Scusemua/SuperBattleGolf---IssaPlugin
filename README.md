@@ -40,3 +40,7 @@ IssaPlugin/
 └── Patches/
     └── InventoryPatches.cs # Harmony patches for inventory & animation
 ```
+
+# Credits
+
+"Snowball - Low resources" (https://skfb.ly/oyCyZ) by JanesBT is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
