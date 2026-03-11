@@ -77,6 +77,7 @@ namespace IssaPlugin
         public static ConfigEntry<float> AC130MaydayShakeBase { get; private set; }
         public static ConfigEntry<float> AC130MaydayShakeMax { get; private set; }
         public static ConfigEntry<float> AC130MaydayExplosionScale { get; private set; }
+        public static ConfigEntry<float> AC130MaydayExplosionDuration { get; private set; }
 
         // --- Explosion Scaling ---
         public static ConfigEntry<float> AC130ExplosionScale { get; private set; }
@@ -535,6 +536,13 @@ namespace IssaPlugin
                 "ExplosionScale",
                 4.0f,
                 "Explosion scale multiplier for the mayday crash. Affects blast radius, knockback, and VFX size."
+            );
+
+            AC130MaydayExplosionDuration = cfg.Bind(
+                "AC130Mayday",
+                "ExplosionDuration",
+                12f,
+                "How long (seconds) the crash explosion VFX lingers before being destroyed."
             );
         }
     }

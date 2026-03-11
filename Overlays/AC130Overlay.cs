@@ -58,7 +58,7 @@ namespace IssaPlugin
         {
             _maydayActive = active;
             if (active && !_glassCrackGenerated)
-                _glassCrackTex = GenerateGlassCrack(256, 256);
+                _glassCrackTex = GenerateGlassCrack(Screen.width, Screen.height);
         }
 
         // ----------------------------------------------------------------
@@ -446,10 +446,16 @@ namespace IssaPlugin
             int cy = Random.Range(h / 3, 2 * h / 3);
             int branches = Random.Range(3, 6);
 
+            // Length must be long enough to reach any screen corner from the impact point.
+            // The furthest corner is at most the full diagonal away.
+            int diagonal = Mathf.CeilToInt(Mathf.Sqrt(w * w + h * h));
+            int minLen = diagonal / 2;
+            int maxLen = diagonal;
+
             for (int b = 0; b < branches; b++)
             {
                 float angle = (360f / branches) * b + Random.Range(-25f, 25f);
-                DrawCrackLine(pixels, w, h, cx, cy, angle, Random.Range(60, 120), 3);
+                DrawCrackLine(pixels, w, h, cx, cy, angle, Random.Range(minLen, maxLen), 2);
             }
 
             tex.SetPixels32(pixels);
@@ -485,16 +491,13 @@ namespace IssaPlugin
                     break;
 
                 pixels[py * w + px] = new Color32(200, 210, 255, 220);
-                if (px + 1 < w)
-                    pixels[py * w + px + 1] = new Color32(200, 210, 255, 80);
-                if (py + 1 < h)
-                    pixels[(py + 1) * w + px] = new Color32(200, 210, 255, 80);
 
                 fx += stepX;
                 fy += stepY;
 
-                // Random sub-branch.
-                if (Random.value < 0.12f)
+                // Random sub-branch — probability scaled so each crack spawns
+                // roughly 2-3 sub-branches total regardless of its length.
+                if (Random.value < 3f / length)
                 {
                     float branchAngle = angle + Random.Range(-50f, 50f);
                     DrawCrackLine(
@@ -509,8 +512,8 @@ namespace IssaPlugin
                     );
                 }
 
-                // Slight drift.
-                angle += Random.Range(-3f, 3f);
+                // Slight drift — kept small so long cracks don't spiral back to center.
+                angle += Random.Range(-1f, 1f);
                 stepX = Mathf.Cos(angle * Mathf.Deg2Rad);
                 stepY = Mathf.Sin(angle * Mathf.Deg2Rad);
             }

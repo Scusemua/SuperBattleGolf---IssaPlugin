@@ -720,6 +720,8 @@ namespace IssaPlugin.Items
         [ClientRpc]
         private void RpcPlayMaydayImpactVfx(Vector3 impactPos)
         {
+            float duration = Configuration.AC130MaydayExplosionDuration.Value;
+
             if (AssetLoader.MaydayExplosionVfxPrefab != null)
             {
                 var vfxGo = Object.Instantiate(
@@ -727,7 +729,20 @@ namespace IssaPlugin.Items
                     impactPos,
                     Quaternion.identity
                 );
-                Object.Destroy(vfxGo, 5f);
+
+                // Fade out any lights in the prefab over the explosion duration.
+                // ETFXLightFade can't be bundled (scripts aren't asset-bundle-able),
+                // so we attach our own fader from the mod DLL instead.
+                // LightFader uses GetComponent<Light>() in Start(), so it must be
+                // added to the same GameObject as the Light, and life is set before
+                // Start() runs (AddComponent calls Awake immediately, Start is deferred).
+                // foreach (var light in vfxGo.GetComponentsInChildren<Light>())
+                // {
+                //     var fader = light.gameObject.AddComponent<LightFader>();
+                //     fader.life = duration;
+                // }
+
+                Object.Destroy(vfxGo, duration);
             }
             else
             {
@@ -738,6 +753,17 @@ namespace IssaPlugin.Items
                     Quaternion.identity,
                     Vector3.one * Configuration.AC130MaydayExplosionScale.Value
                 );
+            }
+
+            // Secondary lingering smoke/debris at the crash site (optional bundle asset).
+            if (AssetLoader.AC130ImpactVfxPrefab != null)
+            {
+                var smokeGo = Object.Instantiate(
+                    AssetLoader.AC130ImpactVfxPrefab,
+                    impactPos,
+                    Quaternion.identity
+                );
+                Object.Destroy(smokeGo, duration);
             }
 
             // Screen shake on all clients, including those on a dedicated server.
