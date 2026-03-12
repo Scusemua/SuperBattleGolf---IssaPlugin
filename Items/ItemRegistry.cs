@@ -116,7 +116,7 @@ namespace IssaPlugin.Items
             IconProperty.SetValue(bomberData, AssetLoader.BomberIcon ?? rocketFallbackIcon);
             IconProperty.SetValue(missileData, AssetLoader.MissileIcon ?? rocketFallbackIcon);
             IconProperty.SetValue(ac130Data, AssetLoader.AC130Icon ?? rocketFallbackIcon);
-            IconProperty.SetValue(freezeData, rocketFallbackIcon);
+            IconProperty.SetValue(freezeData, AssetLoader.FreezeIcon ?? rocketFallbackIcon);
 
             dict[BatItem.BatItemType] = batData;
             dict[StealthBomberItem.BomberItemType] = bomberData;

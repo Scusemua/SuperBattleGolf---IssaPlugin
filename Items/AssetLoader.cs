@@ -10,12 +10,14 @@ namespace IssaPlugin.Items
         public static Sprite BomberIcon { get; private set; }
         public static Sprite MissileIcon { get; private set; }
         public static Sprite AC130Icon { get; private set; }
+        public static Sprite FreezeIcon { get; private set; }
 
         public static GameObject BatModelPrefab { get; private set; }
         public static GameObject BomberPrefab { get; private set; }
         public static GameObject AC130Prefab { get; private set; }
         public static GameObject BomberTabletPrefab { get; private set; }
         public static GameObject MissileTabletPrefab { get; private set; }
+        public static GameObject FreezeModelPrefab { get; private set; }
 
         // ----------------------------------------------------------------
         //  AC130 Mayday — populate the asset bundle with these names.
@@ -83,12 +85,14 @@ namespace IssaPlugin.Items
             BomberIcon = LoadSprite("bomber_icon.png");
             MissileIcon = LoadSprite("missile_icon.png");
             AC130Icon = LoadSprite("ac130_icon.png");
+            FreezeIcon = LoadSprite("freeze_effect_icon.png");
 
             BatModelPrefab = _bundle.LoadAsset<GameObject>("bat_model.prefab");
             BomberPrefab = _bundle.LoadAsset<GameObject>("bomber_model.prefab");
             AC130Prefab = _bundle.LoadAsset<GameObject>("ac130_model.prefab");
             BomberTabletPrefab = _bundle.LoadAsset<GameObject>("stealth_bomber_tablet.prefab");
             MissileTabletPrefab = _bundle.LoadAsset<GameObject>("predator_missile_tablet.prefab");
+            FreezeModelPrefab = _bundle.LoadAsset<GameObject>("snowball.prefab");
 
             // AudioClips must be loaded by asset name without the file extension.
             // Unity compiles audio into its own internal format at bundle-build
@@ -108,11 +112,11 @@ namespace IssaPlugin.Items
             IssaPluginPlugin.Log.LogInfo(
                 $"[Assets] Bundle loaded. "
                     + $"Icons: bat={BatIcon != null}, bomber={BomberIcon != null}, "
-                    + $"missile={MissileIcon != null}, ac130={AC130Icon != null}. "
+                    + $"missile={MissileIcon != null}, ac130={AC130Icon != null}, freeze={FreezeIcon != null}. "
                     + $"Models: bat={BatModelPrefab != null}, bomber={BomberPrefab != null}, "
                     + $"ac130={AC130Prefab != null}, "
                     + $"bomberTablet={BomberTabletPrefab != null}, "
-                    + $"missileTablet={MissileTabletPrefab != null}. "
+                    + $"missileTablet={MissileTabletPrefab != null}, freeze={FreezeModelPrefab != null}. "
                     + $"Audio: ac130Above={AC130AboveClip != null}, homerun={HomerunAudioClip != null}."
             );
         }

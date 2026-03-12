@@ -171,6 +171,8 @@ namespace IssaPlugin.Patches
                 return AssetLoader.MissileTabletPrefab;
             if (type == AC130Item.AC130ItemType)
                 return AssetLoader.MissileTabletPrefab;
+            if (type == FreezeItem.FreezeItemType)
+                return AssetLoader.FreezeModelPrefab;
             return null;
         }
 
