@@ -818,7 +818,10 @@ namespace IssaPlugin.Items
             Destroy(_serverGunship.GetComponent<Hittable>());
 
             // Owning client gets the cockpit camera.
-            TargetBeginMayday(connectionToClient, gunshipIdentity);
+            if (_serverSessionActive)
+            {
+                TargetBeginMayday(connectionToClient, gunshipIdentity);
+            }
 
             // All other clients get smoke trail.
             RpcBeginMaydayVfx(gunshipIdentity);

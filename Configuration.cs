@@ -617,7 +617,7 @@ namespace IssaPlugin
             AC130HitsToMayday = cfg.Bind(
                 "AC130Mayday",
                 "HitsToMayday",
-                3,
+                1,
                 "Number of rocket hits required to force the gunship into mayday. "
                     + "Only counts hits during an active session. Set to 0 to disable."
             );

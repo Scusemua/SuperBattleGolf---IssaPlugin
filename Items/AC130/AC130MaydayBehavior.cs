@@ -74,7 +74,7 @@ namespace IssaPlugin.Items
         // ----------------------------------------------------------------
 
         private void Start()
-        {            
+        {
             _diveAngle = Configuration.AC130MaydayInitialDiveAngle.Value;
             _rollAngle = 0f;
 
@@ -126,7 +126,7 @@ namespace IssaPlugin.Items
                 Destroy(_smokeTrail);
         }
 
-        private void Update()
+        private void FixedUpdate()
         {
             if (_impacted)
                 return;
@@ -138,7 +138,10 @@ namespace IssaPlugin.Items
                 UpdateDive();
                 CheckImpact();
             }
+        }
 
+        private void Update()
+        {
             // Camera and shake update only on the owning client.
             if (IsLocalPlayer)
             {
