@@ -55,8 +55,6 @@ namespace IssaPlugin.Patches
             if (!BatActive)
                 return;
 
-            BatItem.PlayHomerunSound(__instance.transform.position);
-
             if (!__instance.AsEntity.HasRigidbody)
                 return;
 

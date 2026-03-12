@@ -249,8 +249,7 @@ namespace IssaPlugin.Items
         {
             // Allow flagging even after session ends (fly-out phase) as long
             // as the gunship GameObject still exists in the scene.
-            if (_serverGunship == null)
-                return;
+            if (_serverGunship == null) return;
             PendingGunshipHoming = true;
         }
 
@@ -387,8 +386,7 @@ namespace IssaPlugin.Items
         [ClientRpc(includeOwner = true)]
         private void RpcAddGunshipLockOnComponents(NetworkIdentity gunshipIdentity)
         {
-            if (gunshipIdentity == null)
-                return;
+            if (gunshipIdentity == null) return;
             AddGunshipLockOnComponents(gunshipIdentity.gameObject);
         }
 
@@ -755,8 +753,7 @@ namespace IssaPlugin.Items
             // Stop normal flight — mayday takes over movement.
             // Capture mapCentre BEFORE destroying the fly component.
             var flyComp = _serverGunship.GetComponent<AC130FlyBehaviour>();
-            Vector3 mapCentre =
-                flyComp != null ? flyComp.mapCentre : _serverGunship.transform.position;
+            Vector3 mapCentre = flyComp != null ? flyComp.mapCentre : _serverGunship.transform.position;
             if (flyComp != null)
             {
                 flyComp.OnExternallyDestroyed = null; // prevent re-entry

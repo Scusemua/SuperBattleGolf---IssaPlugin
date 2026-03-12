@@ -18,38 +18,27 @@ namespace IssaPlugin.Items
 
         private void OnCollisionEnter(Collision collision)
         {
+            IssaPluginPlugin.Log.LogInfo($"[AC130] OnCollisionEnter called.");
+        }
+
+        // The game's Rocket uses a trigger collider, so we receive OnTriggerEnter
+        // (not OnCollisionEnter) when it overlaps the gunship mesh collider.
+        private void OnTriggerEnter(Collider other)
+        {
+            IssaPluginPlugin.Log.LogInfo($"[AC130] OnTriggerEnter called.");
+
             if (!NetworkServer.active)
-            {
-                IssaPluginPlugin.Log.LogInfo(
-                    $"[AC130] NetworkServer inactive. Ignoring collision."
-                );
                 return;
-            }
 
             int hitsRequired = Configuration.AC130HitsToMayday.Value;
             if (hitsRequired <= 0)
-            {
-                IssaPluginPlugin.Log.LogInfo(
-                    $"[AC130] hitsRequired={hitsRequired} <= 0. Ignoring collision."
-                );
-                return; // 0 = disabled
-            }
+                return;
 
             if (_hitCount >= hitsRequired)
-            {
-                IssaPluginPlugin.Log.LogInfo(
-                    $"[AC130] _hitCount={_hitCount} >= hitsRequired={hitsRequired}. Ignoring collision."
-                );
-                return; // already triggered
-            }
-
-            if (collision.gameObject.GetComponent<Rocket>() == null)
-            {
-                IssaPluginPlugin.Log.LogInfo(
-                    $"[AC130] Whataever hit AC130 isn't a Rocket. Ignoring collision."
-                );
                 return;
-            }
+
+            if (other.GetComponentInParent<Rocket>() == null)
+                return;
 
             _hitCount++;
             IssaPluginPlugin.Log.LogInfo($"[AC130] Rocket impact {_hitCount}/{hitsRequired}.");

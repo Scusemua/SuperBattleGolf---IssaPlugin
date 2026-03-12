@@ -45,14 +45,17 @@ namespace IssaPlugin.Items
         /// </summary>
         private bool _normalFlyOutComplete;
 
+        private Rigidbody _rb;
+
         private void Start()
         {
+            _rb = GetComponent<Rigidbody>();
             _currentAltitude = altitude;
             if (mode == AC130FlightMode.FlyOut)
                 _flyOutStart = transform.position;
         }
 
-        private void Update()
+        private void FixedUpdate()
         {
             // Position is authoritative on the server only.
             // Clients follow via the NetworkTransform on the gunship.
@@ -75,15 +78,18 @@ namespace IssaPlugin.Items
 
         private void UpdateFlyIn()
         {
-            transform.position = Vector3.MoveTowards(
+            Vector3 nextPos = Vector3.MoveTowards(
                 transform.position,
                 flyTarget,
-                flySpeed * Time.deltaTime
+                flySpeed * Time.fixedDeltaTime
             );
 
             Vector3 dir = (flyTarget - transform.position).normalized;
-            if (dir != Vector3.zero)
-                transform.rotation = Quaternion.LookRotation(dir, Vector3.up);
+            Quaternion nextRot = dir != Vector3.zero
+                ? Quaternion.LookRotation(dir, Vector3.up)
+                : transform.rotation;
+
+            Move(nextPos, nextRot);
 
             if (Vector3.Distance(transform.position, flyTarget) < ArrivalThreshold)
             {
@@ -95,36 +101,58 @@ namespace IssaPlugin.Items
 
         private void UpdateOrbit()
         {
-            currentAngle += orbitSpeed * Time.deltaTime;
+            currentAngle += orbitSpeed * Time.fixedDeltaTime;
             _currentAltitude = Mathf.Lerp(
                 _currentAltitude,
                 altitude,
-                altitudeLerpSpeed * Time.deltaTime
+                altitudeLerpSpeed * Time.fixedDeltaTime
             );
 
             if (Mathf.Abs(_currentAltitude - altitude) < AltitudeSnapThreshold)
                 _currentAltitude = altitude;
 
             float rad = currentAngle * Mathf.Deg2Rad;
-            transform.position = new Vector3(
+            Vector3 nextPos = new Vector3(
                 mapCentre.x + Mathf.Cos(rad) * orbitRadius,
                 mapCentre.y + _currentAltitude,
                 mapCentre.z + Mathf.Sin(rad) * orbitRadius
             );
 
             Vector3 tangent = new Vector3(-Mathf.Sin(rad), 0f, Mathf.Cos(rad)).normalized;
-            if (tangent != Vector3.zero)
-                transform.rotation = Quaternion.LookRotation(tangent, Vector3.up);
+            Quaternion nextRot = tangent != Vector3.zero
+                ? Quaternion.LookRotation(tangent, Vector3.up)
+                : transform.rotation;
+
+            Move(nextPos, nextRot);
         }
 
         private void UpdateFlyOut()
         {
-            transform.position += transform.forward * flySpeed * Time.deltaTime;
+            Vector3 nextPos = transform.position + transform.forward * flySpeed * Time.fixedDeltaTime;
+            Move(nextPos, transform.rotation);
 
-            if (Vector3.Distance(transform.position, _flyOutStart) > FlyOutDestroyDistance)
+            if (Vector3.Distance(nextPos, _flyOutStart) > FlyOutDestroyDistance)
             {
                 _normalFlyOutComplete = true;
                 Destroy(gameObject);
+            }
+        }
+
+        /// <summary>
+        /// Moves the kinematic Rigidbody via MovePosition/MoveRotation so PhysX
+        /// sweeps the body between frames, enabling reliable collision detection.
+        /// Falls back to direct transform assignment if no Rigidbody is present.
+        /// </summary>
+        private void Move(Vector3 position, Quaternion rotation)
+        {
+            if (_rb != null)
+            {
+                _rb.MovePosition(position);
+                _rb.MoveRotation(rotation);
+            }
+            else
+            {
+                transform.SetPositionAndRotation(position, rotation);
             }
         }
 
