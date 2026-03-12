@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 4123215007
+CRC: 3686151514
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 4bfdce41f0926a15d3bb55bc5f0cacea
+    Hash: cb1c630b39dc0e452c5be477d3b0354b
   TypeTreeHash:
     serializedVersion: 2
     Hash: 294481f2732624c51f311d29f741d4e4
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 32b76d5e91e54675ba5760310227ca8c
+    Hash: baa0ed14c8864e2cd9f2f5b70c6209cc
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -59,6 +59,7 @@ SerializeReferenceClassIdentifiers: []
 Assets:
 - Assets/Assets/ac130_above.ogg
 - Assets/Assets/homerun.ogg
+- Assets/Assets/freeze_effect_icon.png
 - Assets/Assets/bomber_model.prefab
 - Assets/Assets/ac130_model.prefab
 - Assets/Assets/etfx_explosion_nuke.wav
@@ -82,4 +83,5 @@ Assets:
 - Assets/Assets/bat_model.prefab
 - Assets/Assets/missile_locked.ogg
 - Assets/Assets/NukeVerticalExplosionFire.prefab
+- Assets/Assets/snowball.obj
 Dependencies: []

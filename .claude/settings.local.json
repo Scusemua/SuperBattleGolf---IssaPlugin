@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(grep -r \"RuntimeManager\\\\|CreateInstance\\\\|EventInstance\" /g/Documents/SuperBattleGolfPlugin/DECOMPILED_SOURCE/GameAssembly/*.cs)"
+      "Bash(grep -r \"RuntimeManager\\\\|CreateInstance\\\\|EventInstance\" /g/Documents/SuperBattleGolfPlugin/DECOMPILED_SOURCE/GameAssembly/*.cs)",
+      "Bash(xargs grep:*)"
     ]
   }
 }

@@ -71,8 +71,8 @@ namespace IssaPlugin.Overlays
                     float dist = Mathf.Sqrt(dx * dx + dy * dy) / maxDist;
 
                     // Transparent center, opaque icy edges.
-                    // Power of 1.5 gives a gradual ramp that fills screen corners.
-                    float alpha = Mathf.Pow(Mathf.Clamp01(dist), 1.5f) * 0.75f;
+                    // Power of 1.85 gives a gradual ramp that fills screen corners.
+                    float alpha = Mathf.Pow(Mathf.Clamp01(dist), 1.85f) * 0.75f;
                     pixels[y * w + x] = new Color(0.8f, 0.92f, 1.0f, alpha);
                 }
             }

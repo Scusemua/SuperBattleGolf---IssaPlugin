@@ -27,6 +27,12 @@ namespace IssaPlugin.Items
         private static bool _globalSessionActive;
         private static AC130NetworkBridge _activeSessionBridge;
 
+        /// <summary>
+        /// Server-side reference to the active gunship GameObject.
+        /// Used by GunshipLockOnPatches to attach GunshipHomingBehaviour to rockets.
+        /// </summary>
+        public static GameObject ActiveGunship => _activeSessionBridge?._serverGunship;
+
         // ================================================================
         //  Per-instance server state
         // ================================================================
@@ -35,6 +41,12 @@ namespace IssaPlugin.Items
         private bool _serverSessionActive;
         private GameObject _serverGunship;
         private float _serverLastFireTime;
+
+        /// <summary>
+        /// Set by CmdPrepareGunshipRocket when the owning client has the gunship
+        /// locked on. Consumed by GunshipRocketHomingPatch when the next rocket spawns.
+        /// </summary>
+        public bool PendingGunshipHoming;
 
         // ================================================================
         //  Per-instance client state  (owning client only)
@@ -162,6 +174,7 @@ namespace IssaPlugin.Items
             var gunshipIdentity = gunshipGo.GetComponent<NetworkIdentity>();
 
             RpcPlayAC130Sound();
+            RpcAddGunshipLockOnComponents(gunshipIdentity);
             TargetBeginAC130(connectionToClient, gunshipIdentity, mapCentre);
             _serverTimeout = StartCoroutine(ServerTimeoutRoutine());
 
@@ -215,6 +228,17 @@ namespace IssaPlugin.Items
 
             IssaPluginPlugin.Log.LogInfo("[AC130] Manual mayday triggered by player.");
             ServerBeginMayday();
+        }
+
+        /// <summary>
+        /// Called by GunshipLockOnDetectionPatch while the player has the gunship
+        /// locked on. Flags the server so the next rocket that spawns homes toward it.
+        /// </summary>
+        [Command]
+        public void CmdPrepareGunshipRocket()
+        {
+            if (!_serverSessionActive || _serverGunship == null) return;
+            PendingGunshipHoming = true;
         }
 
         /// <summary>
@@ -340,6 +364,29 @@ namespace IssaPlugin.Items
             src.volume = 1f;
             src.Play();
             Destroy(go, clip.length + 0.1f);
+        }
+
+        /// <summary>
+        /// Runs on all clients after the gunship is spawned. Adds the lightweight
+        /// AC130GunshipMarker and LockOnTarget components so the game's lock-on
+        /// manager can track the gunship and our Harmony patches can identify it.
+        /// </summary>
+        [ClientRpc(includeOwner = true)]
+        private void RpcAddGunshipLockOnComponents(NetworkIdentity gunshipIdentity)
+        {
+            if (gunshipIdentity == null) return;
+            AddGunshipLockOnComponents(gunshipIdentity.gameObject);
+        }
+
+        private static void AddGunshipLockOnComponents(GameObject go)
+        {
+            if (go.GetComponent<AC130GunshipMarker>() == null)
+                go.AddComponent<AC130GunshipMarker>();
+
+            // LockOnTarget registers with LockOnTargetManager in its Awake so that
+            // PlayerGolfer.TryGetBestLockOnTarget iterates over the gunship.
+            if (go.GetComponent<LockOnTarget>() == null)
+                go.AddComponent<LockOnTarget>();
         }
 
         // ================================================================
@@ -636,6 +683,10 @@ namespace IssaPlugin.Items
             flyComp.mode = AC130FlightMode.FlyIn;
 
             NetworkServer.Spawn(go);
+
+            // Add lock-on components on the server immediately after spawn.
+            // RpcAddGunshipLockOnComponents will mirror this on all clients.
+            AddGunshipLockOnComponents(go);
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[AC130] Gunship spawned at approach distance {approachDist:F0}m."
