@@ -72,8 +72,8 @@ namespace IssaPlugin.Overlays
 
                     // Transparent center, opaque icy edges.
                     // Power of 1.4 spreads the effect further from the edges.
-                    float alpha = Mathf.Pow(Mathf.Clamp01(dist), 1.4f) * 0.9f;
-                    pixels[y * w + x] = new Color(0.2f, 0.55f, 1.0f, alpha);
+                    float alpha = Mathf.Pow(Mathf.Clamp01(dist), 0.5f) * 0.825f;
+                    pixels[y * w + x] = new Color(0.1f, 0.25f, 1.0f, alpha);
                 }
             }
 

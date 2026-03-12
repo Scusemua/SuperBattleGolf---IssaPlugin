@@ -125,17 +125,19 @@ namespace IssaPlugin.Patches
             if (bridge == null || !bridge.PendingGunshipHoming)
                 return;
 
-            var gunship = AC130NetworkBridge.ActiveGunship;
-            if (gunship == null)
+            // Find the gunship directly — ActiveGunship is null during fly-out
+            // because the session bridge is released, but the GameObject still exists.
+            var gunshipMarker = Object.FindFirstObjectByType<AC130GunshipMarker>();
+            if (gunshipMarker == null)
                 return;
 
             bridge.PendingGunshipHoming = false;
 
             var homing = __instance.gameObject.AddComponent<GunshipHomingBehaviour>();
-            homing.Target = gunship.transform;
+            homing.Target = gunshipMarker.transform;
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[GunshipLockOn] Rocket homing toward gunship at {gunship.transform.position}."
+                $"[GunshipLockOn] Rocket homing toward gunship at {gunshipMarker.transform.position}."
             );
         }
     }

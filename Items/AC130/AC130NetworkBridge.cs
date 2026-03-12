@@ -237,7 +237,9 @@ namespace IssaPlugin.Items
         [Command]
         public void CmdPrepareGunshipRocket()
         {
-            if (!_serverSessionActive || _serverGunship == null) return;
+            // Allow flagging even after session ends (fly-out phase) as long
+            // as the gunship GameObject still exists in the scene.
+            if (_serverGunship == null) return;
             PendingGunshipHoming = true;
         }
 
@@ -383,19 +385,22 @@ namespace IssaPlugin.Items
             if (go.GetComponent<AC130GunshipMarker>() == null)
                 go.AddComponent<AC130GunshipMarker>();
 
-            // LockOnTarget must be added BEFORE Entity so that Entity.Awake()
-            // finds and caches it via GetComponent<LockOnTarget>().
+            // Entity must be added BEFORE LockOnTarget so that LockOnTarget.Awake()
+            // can cache AsEntity = GetComponent<Entity>() as non-null.
+            // Without a non-null AsEntity, LockOnTargetUiManager crashes when it
+            // subscribes to WillBeDestroyedReferenced, and ShootRocketLauncherRoutine
+            // crashes reading AsEntity.AsHittable.
+            // (Entity.AsLockOnTarget will be null since LockOnTarget isn't added yet,
+            // but nothing in our code paths uses Entity.AsLockOnTarget on the gunship.)
+            if (go.GetComponent<Entity>() == null)
+                go.AddComponent<Entity>();
+
+            // LockOnTarget.Awake() caches AsEntity = GetComponent<Entity>() immediately,
+            // so Entity must exist first (see above).
             // LockOnTarget.Start() registers with LockOnTargetManager so the
             // game's TryGetBestLockOnTarget iterates over the gunship.
             if (go.GetComponent<LockOnTarget>() == null)
                 go.AddComponent<LockOnTarget>();
-
-            // Entity is needed so LockOnTargetUiManager can subscribe to
-            // WillBeDestroyedReferenced and so ShootRocketLauncherRoutine can
-            // safely read AsEntity.AsHittable (returns null → no vanilla homing,
-            // our server-side GunshipHomingBehaviour handles targeting instead).
-            if (go.GetComponent<Entity>() == null)
-                go.AddComponent<Entity>();
         }
 
         // ================================================================
