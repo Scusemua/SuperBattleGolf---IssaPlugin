@@ -7,7 +7,7 @@ namespace IssaPlugin
     {
         // --- Baseball Bat ---
         public static ConfigEntry<float> BaseballBatPowerMultiplier { get; private set; }
-        public static ConfigEntry<int> BaseballBatUses { get; private set; }
+        public static ConfigEntry<float> BaseballBatUses { get; private set; }
         public static ConfigEntry<Key> BaseballBatGiveKey { get; private set; }
         public static ConfigEntry<float> BaseballBatSpawnWeight { get; private set; }
 
@@ -16,7 +16,7 @@ namespace IssaPlugin
         public static ConfigEntry<float> BomberSpeed { get; private set; }
         public static ConfigEntry<float> BomberRocketInterval { get; private set; }
         public static ConfigEntry<float> BomberSpread { get; private set; }
-        public static ConfigEntry<int> BomberUses { get; private set; }
+        public static ConfigEntry<float> BomberUses { get; private set; }
         public static ConfigEntry<Key> BomberGiveKey { get; private set; }
         public static ConfigEntry<float> BomberWaitTime { get; private set; }
         public static ConfigEntry<float> BomberStripLength { get; private set; }
@@ -32,12 +32,12 @@ namespace IssaPlugin
         public static ConfigEntry<float> MissileFallSpeed { get; private set; }
         public static ConfigEntry<float> MissileSteerSpeed { get; private set; }
         public static ConfigEntry<float> MissileTimeout { get; private set; }
-        public static ConfigEntry<int> MissileUses { get; private set; }
+        public static ConfigEntry<float> MissileUses { get; private set; }
         public static ConfigEntry<Key> MissileGiveKey { get; private set; }
         public static ConfigEntry<float> MissileSpawnWeight { get; private set; }
 
         // --- AC130 ---
-        public static ConfigEntry<int> AC130Uses { get; private set; }
+        public static ConfigEntry<float> AC130Uses { get; private set; }
         public static ConfigEntry<Key> AC130GiveKey { get; private set; }
         public static ConfigEntry<float> AC130SpawnWeight { get; private set; }
         public static ConfigEntry<float> AC130OrbitRadius { get; private set; }
@@ -79,11 +79,11 @@ namespace IssaPlugin
         public static ConfigEntry<float> AC130MaydayExplosionScale { get; private set; }
         public static ConfigEntry<float> AC130MaydayExplosionDuration { get; private set; }
         public static ConfigEntry<float> AC130MaydayRollTurnRate { get; private set; }
-        public static ConfigEntry<int> AC130HitsToMayday { get; private set; }
+        public static ConfigEntry<float> AC130HitsToMayday { get; private set; }
 
         // --- Freeze World ---
         public static ConfigEntry<Key> FreezeGiveKey { get; private set; }
-        public static ConfigEntry<int> FreezeUses { get; private set; }
+        public static ConfigEntry<float> FreezeUses { get; private set; }
         public static ConfigEntry<float> FreezeDuration { get; private set; }
         public static ConfigEntry<float> FreezeFriction { get; private set; }
         public static ConfigEntry<float> FreezeBounciness { get; private set; }
@@ -108,7 +108,7 @@ namespace IssaPlugin
             BaseballBatUses = cfg.Bind(
                 "BaseballBat",
                 "Uses",
-                99,
+                99.0f,
                 "Number of swings before the bat is consumed. Set high for near-infinite use."
             );
 
@@ -155,7 +155,12 @@ namespace IssaPlugin
                 "Random lateral spread in units for each rocket's drop position."
             );
 
-            BomberUses = cfg.Bind("StealthBomber", "Uses", 1, "Number of bombing runs per pickup.");
+            BomberUses = cfg.Bind(
+                "StealthBomber",
+                "Uses",
+                1f,
+                "Number of bombing runs per pickup."
+            );
 
             BomberGiveKey = cfg.Bind(
                 "StealthBomber",
@@ -238,7 +243,7 @@ namespace IssaPlugin
             MissileUses = cfg.Bind(
                 "PredatorMissile",
                 "Uses",
-                1,
+                1f,
                 "Number of missile uses per pickup."
             );
 
@@ -278,7 +283,7 @@ namespace IssaPlugin
                 "Spawn weight for the AC130 in item boxes. Set to 0 to disable."
             );
 
-            AC130Uses = cfg.Bind("AC130", "Uses", 1, "Number of AC130 uses per pickup.");
+            AC130Uses = cfg.Bind("AC130", "Uses", 1f, "Number of AC130 uses per pickup.");
 
             AC130GiveKey = cfg.Bind(
                 "AC130",
@@ -403,7 +408,7 @@ namespace IssaPlugin
             FreezeUses = cfg.Bind(
                 "FreezeWorld",
                 "Uses",
-                1,
+                1f,
                 "Number of uses per Freeze World pickup."
             );
 
@@ -617,7 +622,7 @@ namespace IssaPlugin
             AC130HitsToMayday = cfg.Bind(
                 "AC130Mayday",
                 "HitsToMayday",
-                1,
+                1f,
                 "Number of rocket hits required to force the gunship into mayday. "
                     + "Only counts hits during an active session. Set to 0 to disable."
             );

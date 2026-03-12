@@ -13,7 +13,7 @@ namespace IssaPlugin.Items
         {
             ItemHelper.GiveItemToLocalPlayer(
                 BatItemType,
-                Configuration.BaseballBatUses.Value,
+                (int)Configuration.BaseballBatUses.Value,
                 "Bat"
             );
         }

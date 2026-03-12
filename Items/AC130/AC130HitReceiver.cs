@@ -30,7 +30,7 @@ namespace IssaPlugin.Items
             if (!NetworkServer.active)
                 return;
 
-            int hitsRequired = Configuration.AC130HitsToMayday.Value;
+            int hitsRequired = (int)Configuration.AC130HitsToMayday.Value;
             if (hitsRequired <= 0)
                 return;
 
@@ -68,7 +68,7 @@ namespace IssaPlugin.Items
             {
                 IssaPluginPlugin.Log.LogInfo("AC130 was hit by a rocket!");
 
-                int hitsRequired = Configuration.AC130HitsToMayday.Value;
+                int hitsRequired = (int)Configuration.AC130HitsToMayday.Value;
                 if (hitsRequired <= 0)
                 {
                     IssaPluginPlugin.Log.LogInfo($"hitsRequired={hitsRequired}; ignoring hit.");

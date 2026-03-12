@@ -35,7 +35,7 @@ namespace IssaPlugin.Items
         {
             ItemHelper.GiveItemToLocalPlayer(
                 BomberItemType,
-                Configuration.BomberUses.Value,
+                (int)Configuration.BomberUses.Value,
                 "Bomber"
             );
         }

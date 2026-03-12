@@ -39,15 +39,15 @@ namespace IssaPlugin.Items
         public static int GetMaxUses(ItemType type)
         {
             if (type == BatItem.BatItemType)
-                return Configuration.BaseballBatUses.Value;
+                return (int)Configuration.BaseballBatUses.Value;
             if (type == StealthBomberItem.BomberItemType)
-                return Configuration.BomberUses.Value;
+                return (int)Configuration.BomberUses.Value;
             if (type == PredatorMissileItem.MissileItemType)
-                return Configuration.MissileUses.Value;
+                return (int)Configuration.MissileUses.Value;
             if (type == AC130Item.AC130ItemType)
-                return Configuration.AC130Uses.Value;
+                return (int)Configuration.AC130Uses.Value;
             if (type == FreezeItem.FreezeItemType)
-                return Configuration.FreezeUses.Value;
+                return (int)Configuration.FreezeUses.Value;
             return 1;
         }
 

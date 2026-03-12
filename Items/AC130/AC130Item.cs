@@ -23,7 +23,7 @@ namespace IssaPlugin.Items
 
         public static void GiveAC130ToLocalPlayer()
         {
-            ItemHelper.GiveItemToLocalPlayer(AC130ItemType, Configuration.AC130Uses.Value, "AC130");
+            ItemHelper.GiveItemToLocalPlayer(AC130ItemType, (int)Configuration.AC130Uses.Value, "AC130");
         }
 
         // ----------------------------------------------------------------

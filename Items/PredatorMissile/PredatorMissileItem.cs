@@ -17,7 +17,7 @@ namespace IssaPlugin.Items
         {
             ItemHelper.GiveItemToLocalPlayer(
                 MissileItemType,
-                Configuration.MissileUses.Value,
+                (int)Configuration.MissileUses.Value,
                 "Missile"
             );
         }
