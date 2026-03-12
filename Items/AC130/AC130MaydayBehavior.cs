@@ -74,7 +74,7 @@ namespace IssaPlugin.Items
         // ----------------------------------------------------------------
 
         private void Start()
-        {
+        {            
             _diveAngle = Configuration.AC130MaydayInitialDiveAngle.Value;
             _rollAngle = 0f;
 

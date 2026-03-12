@@ -720,35 +720,36 @@ namespace IssaPlugin.Items
 
             ac130GameObj.SetActive(false);
 
-            var templateHittable = Object.FindFirstObjectByType<Hittable>();
+            // var templateHittable = Object.FindFirstObjectByType<Hittable>();
+
+            var templateHittable = Object
+                .FindFirstObjectByType<PlayerInventory>()
+                .GetComponent<Hittable>();
+
             var newHittable = ac130GameObj.AddComponent<Hittable>();
 
-            // Ensure newHittable has a valid SwingSettings instance
-            if (newHittable.SwingSettings == null)
-            {
-                // Create a new instance
-                newHittable.SwingSettings = ScriptableObject.CreateInstance<SwingSettings>();
-            }
+            var settingsField = typeof(Hittable).GetField(
+                "settings",
+                BindingFlags.Instance | BindingFlags.NonPublic
+            );
 
-            if (templateHittable != null)
+            var templateSettings = settingsField.GetValue(templateHittable) as UnityEngine.Object;
+
+            if (templateSettings == null)
             {
-                IssaPluginPlugin.Log.LogInfo("Copying SwingSettings from template hittable.");
-                IssaPluginPlugin.Log.LogInfo(
-                    $"templateHittable.SwingSettings={templateHittable.SwingSettings}"
+                IssaPluginPlugin.Log.LogError(
+                    "[AC130] Failed to retrieve template Hittable settings!"
                 );
-                IssaPluginPlugin.Log.LogInfo(
-                    $"newHittable.SwingSettings={newHittable.SwingSettings}"
-                );
-                CopyPrivateProperties(templateHittable.SwingSettings, newHittable.SwingSettings);
             }
             else
             {
-                IssaPluginPlugin.Log.LogInfo("[WARNING] Could not find template hittable.");
+                var clonedSettings = Object.Instantiate(templateSettings);
+                settingsField.SetValue(newHittable, clonedSettings);
             }
 
-            ac130GameObj.SetActive(true);
-
             newHittable.WasHitByItem += hitReceiver.OnAC130Hit;
+
+            ac130GameObj.SetActive(true);
 
             NetworkServer.Spawn(ac130GameObj);
 
@@ -776,7 +777,9 @@ namespace IssaPlugin.Items
                     + $"isOwned={isOwned}"
             );
 
-            if (!_serverSessionActive || _serverGunship == null)
+            if ( /* !_serverSessionActive || */
+                _serverGunship == null
+            )
             {
                 IssaPluginPlugin.Log.LogWarning(
                     $"[AC130] ServerBeginMayday guard hit — aborting. "
@@ -809,6 +812,10 @@ namespace IssaPlugin.Items
             maydayComp.IsLocalPlayer = false;
             maydayComp.MapCentre = mapCentre;
             maydayComp.OnImpact = () => ServerHandleMaydayImpact(_serverGunship.transform.position);
+
+            // Remove to avoid firing Hittable methods on collision.
+            // Could remove this if I can fix the NullPointerExceptions in Hittable::CmdHitWithItem...
+            Destroy(_serverGunship.GetComponent<Hittable>());
 
             // Owning client gets the cockpit camera.
             TargetBeginMayday(connectionToClient, gunshipIdentity);

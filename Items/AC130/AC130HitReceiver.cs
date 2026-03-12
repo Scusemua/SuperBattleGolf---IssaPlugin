@@ -59,6 +59,11 @@ namespace IssaPlugin.Items
             bool isReflected
         )
         {
+            if (attackerInventory == null)
+            {
+                IssaPluginPlugin.Log.LogWarning("AC130 hit with null attackerInventory");
+            }
+
             if (itemType == ItemType.RocketLauncher)
             {
                 IssaPluginPlugin.Log.LogInfo("AC130 was hit by a rocket!");

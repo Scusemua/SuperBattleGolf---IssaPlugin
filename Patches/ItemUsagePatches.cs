@@ -294,4 +294,19 @@ namespace IssaPlugin.Patches
             DistanceField?.SetValue(__instance, 0f);
         }
     }
+
+    [HarmonyPatch(typeof(Hittable), "CmdHitWithItem")]
+    class Patch_CmdHitWithItem
+    {
+        static bool Prefix(Hittable __instance)
+        {
+            if (__instance.GetComponent<AC130HitReceiver>() != null)
+            {
+                // AC130 should not use the network hit system
+                return false;
+            }
+
+            return true;
+        }
+    }
 }
