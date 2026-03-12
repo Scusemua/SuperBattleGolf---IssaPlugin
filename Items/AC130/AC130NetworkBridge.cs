@@ -724,7 +724,9 @@ namespace IssaPlugin.Items
             }
 
             // Stop normal flight — mayday takes over movement.
+            // Capture mapCentre BEFORE destroying the fly component.
             var flyComp = _serverGunship.GetComponent<AC130FlyBehaviour>();
+            Vector3 mapCentre = flyComp != null ? flyComp.mapCentre : _serverGunship.transform.position;
             if (flyComp != null)
             {
                 flyComp.OnExternallyDestroyed = null; // prevent re-entry
@@ -736,7 +738,7 @@ namespace IssaPlugin.Items
             // Add the authoritative mayday driver on the server.
             var maydayComp = _serverGunship.AddComponent<AC130MaydayBehaviour>();
             maydayComp.IsLocalPlayer = false;
-            maydayComp.MapCentre = _serverGunship.transform.position; // dive toward map centre
+            maydayComp.MapCentre = mapCentre;
             maydayComp.OnImpact = () => ServerHandleMaydayImpact(_serverGunship.transform.position);
 
             // Owning client gets the cockpit camera.

@@ -197,13 +197,15 @@ namespace IssaPlugin.Items
                 toCenter = transform.forward;
             toCenter.Normalize();
 
-            // Blend current forward with "toward centre" so it gradually
-            // curves that way without being a hard lock.
-            Vector3 horizontalDir = Vector3.Lerp(
-                new Vector3(transform.forward.x, 0f, transform.forward.z).normalized,
-                toCenter,
-                Configuration.AC130MaydayCenterBias.Value * Time.deltaTime
-            );
+            // Steer toward map centre at a fixed max turn rate (degrees/sec).
+            // SignedAngle gives the shortest rotation direction, so the plane
+            // always curves the correct way regardless of its current heading.
+            Vector3 horizontalDir =
+                new Vector3(transform.forward.x, 0f, transform.forward.z).normalized;
+            float angleToCenter = Vector3.SignedAngle(horizontalDir, toCenter, Vector3.up);
+            float maxTurn = Configuration.AC130MaydayCenterBias.Value * Time.deltaTime;
+            float yawCorrection = Mathf.Clamp(angleToCenter, -maxTurn, maxTurn);
+            horizontalDir = Quaternion.AngleAxis(yawCorrection, Vector3.up) * horizontalDir;
             horizontalDir.Normalize();
 
             // Banking steers the aircraft: a rolled plane curves in the

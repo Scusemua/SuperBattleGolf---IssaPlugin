@@ -41,8 +41,7 @@ namespace IssaPlugin.Patches
     [HarmonyPatch]
     static class GunshipLockOnIsValidPatch
     {
-        static MethodBase TargetMethod() =>
-            AccessTools.Method(typeof(LockOnTarget), "IsValid");
+        static MethodBase TargetMethod() => AccessTools.Method(typeof(LockOnTarget), "IsValid");
 
         static bool Prefix(LockOnTarget __instance, ref bool __result)
         {
@@ -74,14 +73,11 @@ namespace IssaPlugin.Patches
         static MethodBase TargetMethod() =>
             AccessTools.Method(typeof(PlayerGolfer), "TryGetBestLockOnTarget");
 
-        static void Postfix(
-            PlayerGolfer __instance,
-            bool __result,
-            LockOnTarget bestLockOnTarget
-        )
+        static void Postfix(PlayerGolfer __instance, bool __result, LockOnTarget bestLockOnTarget)
         {
             // Only run for the locally-owned player.
-            if (!__instance.isOwned) return;
+            if (!__instance.isOwned)
+                return;
 
             bool nowTargetingGunship =
                 __result
@@ -120,14 +116,18 @@ namespace IssaPlugin.Patches
     {
         static void Postfix(Rocket __instance, PlayerInfo launcher)
         {
-            if (!Mirror.NetworkServer.active) return;
-            if (launcher == null) return;
+            if (!Mirror.NetworkServer.active)
+                return;
+            if (launcher == null)
+                return;
 
-            var bridge = launcher.NetworkIdentity.GetComponent<AC130NetworkBridge>();
-            if (bridge == null || !bridge.PendingGunshipHoming) return;
+            var bridge = launcher.GetComponent<AC130NetworkBridge>();
+            if (bridge == null || !bridge.PendingGunshipHoming)
+                return;
 
             var gunship = AC130NetworkBridge.ActiveGunship;
-            if (gunship == null) return;
+            if (gunship == null)
+                return;
 
             bridge.PendingGunshipHoming = false;
 

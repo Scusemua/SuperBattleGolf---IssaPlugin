@@ -28,11 +28,14 @@ namespace IssaPlugin.Items
 
         private void FixedUpdate()
         {
-            if (!NetworkServer.active) return;
-            if (_rb == null || Target == null) return;
+            if (!NetworkServer.active)
+                return;
+            if (_rb == null || Target == null)
+                return;
 
             Vector3 toTarget = Target.position - _rb.worldCenterOfMass;
-            if (toTarget.sqrMagnitude < 0.01f) return;
+            if (toTarget.sqrMagnitude < 0.01f)
+                return;
 
             // Mirror the game's own homing: rotate the velocity vector toward the
             // target. Use the game's RocketMaxVelocityRotationPerSecond setting so
