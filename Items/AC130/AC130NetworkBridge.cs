@@ -223,10 +223,13 @@ namespace IssaPlugin.Items
 
             // Use the server's authoritative gunship position rather than the
             // client-provided one, which may be a stale approximation.
+            // Offset along the aim direction so the rocket spawns outside the
+            // gunship mesh — otherwise it immediately self-collides and explodes.
             Quaternion fireRotation = Quaternion.LookRotation(aimDirection, Vector3.up);
+            Vector3 spawnPos = _serverGunship.transform.position + aimDirection * 15f;
             AC130Item.SpawnRocketInDirection(
                 inventory,
-                _serverGunship.transform.position,
+                spawnPos,
                 jitter * fireRotation
             );
         }
