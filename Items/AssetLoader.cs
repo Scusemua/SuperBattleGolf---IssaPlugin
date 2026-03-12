@@ -48,6 +48,7 @@ namespace IssaPlugin.Items
 
         /// Smoke trail particle prefab — attached to the gunship during the dive.
         public static GameObject MaydaySmokeTrailPrefab { get; private set; }
+        public static GameObject MaydayFireTrailPrefab { get; private set; }
 
         /// Impact explosion VFX prefab — spawned at the crash position.
         public static GameObject MaydayExplosionVfxPrefab { get; private set; }
@@ -105,6 +106,7 @@ namespace IssaPlugin.Items
             MaydayAlarmClip = _bundle.LoadAsset<AudioClip>("missile_locked.ogg");
             MaydayImpactClip = _bundle.LoadAsset<AudioClip>("etfx_explosion_nuke.wav");
             MaydaySmokeTrailPrefab = _bundle.LoadAsset<GameObject>("smoke_prefab.prefab");
+            MaydayFireTrailPrefab = _bundle.LoadAsset<GameObject>("fire_torch_intense.prefab");
             MaydayExplosionVfxPrefab = _bundle.LoadAsset<GameObject>(
                 "NukeVerticalExplosionFire.prefab"
             );
@@ -117,7 +119,8 @@ namespace IssaPlugin.Items
                     + $"ac130={AC130Prefab != null}, "
                     + $"bomberTablet={BomberTabletPrefab != null}, "
                     + $"missileTablet={MissileTabletPrefab != null}, freeze={FreezeModelPrefab != null}. "
-                    + $"Audio: ac130Above={AC130AboveClip != null}, homerun={HomerunAudioClip != null}."
+                    + $"Audio: ac130Above={AC130AboveClip != null}, homerun={HomerunAudioClip != null}, "
+                    + $"smokeTrail={MaydaySmokeTrailPrefab != null}, fireTrail={MaydayFireTrailPrefab != null}."
             );
         }
 

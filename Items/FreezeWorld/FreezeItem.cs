@@ -11,7 +11,11 @@ namespace IssaPlugin.Items
 
         public static void GiveFreezeToLocalPlayer()
         {
-            ItemHelper.GiveItemToLocalPlayer(FreezeItemType, (int)Configuration.FreezeUses.Value, "Freeze");
+            ItemHelper.GiveItemToLocalPlayer(
+                FreezeItemType,
+                (int)Configuration.FreezeUses.Value,
+                "Freeze"
+            );
         }
     }
 }

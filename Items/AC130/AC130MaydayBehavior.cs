@@ -68,6 +68,7 @@ namespace IssaPlugin.Items
         // ----------------------------------------------------------------
 
         private GameObject _smokeTrail;
+        private GameObject _fireTrail;
 
         // ----------------------------------------------------------------
         //  Unity lifecycle
@@ -98,6 +99,21 @@ namespace IssaPlugin.Items
                 IssaPluginPlugin.Log.LogWarning("[Mayday] Smoke trail prefab not loaded.");
             }
 
+            // Smoke trail — all clients spawn it locally (purely visual).
+            if (AssetLoader.MaydayFireTrailPrefab != null)
+            {
+                _fireTrail = Instantiate(
+                    AssetLoader.MaydayFireTrailPrefab,
+                    transform.position,
+                    Quaternion.identity
+                );
+                _fireTrail.transform.SetParent(transform, worldPositionStays: true);
+            }
+            else
+            {
+                IssaPluginPlugin.Log.LogWarning("[Mayday] Fire trail prefab not loaded.");
+            }
+
             // Cockpit camera and alarm are NOT initialised here.
             // On a listen server this component is added by the server before
             // IsLocalPlayer is set to true, so Start() runs with IsLocalPlayer=false.
@@ -124,6 +140,9 @@ namespace IssaPlugin.Items
 
             if (_smokeTrail != null)
                 Destroy(_smokeTrail);
+
+            if (_fireTrail != null)
+                Destroy(_fireTrail);
         }
 
         private void FixedUpdate()
