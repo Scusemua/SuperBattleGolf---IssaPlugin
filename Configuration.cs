@@ -79,6 +79,7 @@ namespace IssaPlugin
         public static ConfigEntry<float> AC130MaydayExplosionScale { get; private set; }
         public static ConfigEntry<float> AC130MaydayExplosionDuration { get; private set; }
         public static ConfigEntry<float> AC130MaydayRollTurnRate { get; private set; }
+        public static ConfigEntry<int> AC130HitsToMayday { get; private set; }
 
         // --- Freeze World ---
         public static ConfigEntry<Key> FreezeGiveKey { get; private set; }
@@ -86,6 +87,7 @@ namespace IssaPlugin
         public static ConfigEntry<float> FreezeDuration { get; private set; }
         public static ConfigEntry<float> FreezeFriction { get; private set; }
         public static ConfigEntry<float> FreezeBounciness { get; private set; }
+        public static ConfigEntry<float> FreezeCartSidewaysStiffness { get; private set; }
         public static ConfigEntry<float> FreezeSpawnWeight { get; private set; }
 
         // --- Explosion Scaling ---
@@ -426,6 +428,13 @@ namespace IssaPlugin
                 "Surface bounciness applied to all physics contacts during a freeze."
             );
 
+            FreezeCartSidewaysStiffness = cfg.Bind(
+                "FreezeWorld",
+                "CartSidewaysStiffness",
+                0.15f,
+                "Sideways friction stiffness for golf cart wheel colliders while frozen (0 = no grip, 1 = normal). Lower values cause more drift."
+            );
+
             FreezeSpawnWeight = cfg.Bind(
                 "ItemBoxSpawns",
                 "FreezeWorldWeight",
@@ -603,6 +612,14 @@ namespace IssaPlugin
                 45f,
                 "Degrees per second of yaw the aircraft gains when fully banked (90° roll). "
                     + "Controls how tightly rolling steers the plane left/right."
+            );
+
+            AC130HitsToMayday = cfg.Bind(
+                "AC130Mayday",
+                "HitsToMayday",
+                3,
+                "Number of rocket hits required to force the gunship into mayday. "
+                    + "Only counts hits during an active session. Set to 0 to disable."
             );
         }
     }

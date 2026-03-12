@@ -22,6 +22,8 @@ namespace IssaPlugin.Patches
     {
         private PhysicsMaterial _iceMat;
         private readonly Dictionary<Collider, PhysicsMaterial> _originalMaterials = new();
+        private readonly Dictionary<Collider, PhysicsMaterial> _originalBallMaterials = new();
+        private readonly Dictionary<WheelCollider, (WheelFrictionCurve fwd, WheelFrictionCurve side)> _savedWheelFriction = new();
         private bool _freezeApplied;
 
         private static readonly int TerrainLayer = LayerMask.NameToLayer("Terrain");
@@ -82,8 +84,13 @@ namespace IssaPlugin.Patches
                 col.sharedMaterial = _iceMat;
             }
 
+            ApplyBallIce();
+            ApplyCartIce();
+
             IssaPluginPlugin.Log.LogInfo(
-                $"[Freeze] Ice material applied to {_originalMaterials.Count} ground collider(s)."
+                $"[Freeze] Ice material applied to {_originalMaterials.Count} ground collider(s), "
+                    + $"{_originalBallMaterials.Count} ball collider(s), "
+                    + $"{_savedWheelFriction.Count} wheel collider(s)."
             );
         }
 
@@ -96,7 +103,56 @@ namespace IssaPlugin.Patches
                     col.sharedMaterial = mat;
             }
             _originalMaterials.Clear();
-            IssaPluginPlugin.Log.LogInfo("[Freeze] Ground materials restored.");
+
+            RestoreBallMaterials();
+            RestoreWheelFriction();
+
+            IssaPluginPlugin.Log.LogInfo("[Freeze] Ground, ball, and cart physics restored.");
+        }
+
+        private void ApplyBallIce()
+        {
+            _originalBallMaterials.Clear();
+            foreach (var ball in FindObjectsByType<GolfBall>(FindObjectsSortMode.None))
+            {
+                var col = ball.Collider;
+                if (col == null) continue;
+                _originalBallMaterials[col] = col.sharedMaterial;
+                col.sharedMaterial = _iceMat;
+            }
+        }
+
+        private void RestoreBallMaterials()
+        {
+            foreach (var (col, mat) in _originalBallMaterials)
+                if (col != null) col.sharedMaterial = mat;
+            _originalBallMaterials.Clear();
+        }
+
+        private void ApplyCartIce()
+        {
+            _savedWheelFriction.Clear();
+            float sideStiffness = Configuration.FreezeCartSidewaysStiffness.Value;
+
+            foreach (var wc in FindObjectsByType<WheelCollider>(FindObjectsSortMode.None))
+            {
+                _savedWheelFriction[wc] = (wc.forwardFriction, wc.sidewaysFriction);
+
+                var side = wc.sidewaysFriction;
+                side.stiffness = sideStiffness;
+                wc.sidewaysFriction = side;
+            }
+        }
+
+        private void RestoreWheelFriction()
+        {
+            foreach (var (wc, (fwd, side)) in _savedWheelFriction)
+            {
+                if (wc == null) continue;
+                wc.forwardFriction = fwd;
+                wc.sidewaysFriction = side;
+            }
+            _savedWheelFriction.Clear();
         }
 
         private void OnContactModify(PhysicsScene scene, NativeArray<ModifiableContactPair> pairs)

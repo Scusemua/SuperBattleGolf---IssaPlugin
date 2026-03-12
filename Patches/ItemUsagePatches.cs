@@ -201,6 +201,42 @@ namespace IssaPlugin.Patches
         }
     }
 
+    /// <summary>
+    /// Blocks the golf swing charge when a non-bat custom item is equipped.
+    ///
+    /// The Swing input action has two independent paths:
+    ///   1. AddInputBuffer → UseItem() → TryUseItem() [our existing patch handles this]
+    ///   2. Swing.started → StartChargingSwing → TryStartChargingSwing (this path)
+    ///      Swing.canceled → FinishChargingSwing → ReleaseSwingCharge → fires swing
+    ///
+    /// Without this patch, path 2 fires a golf swing even though path 1 correctly
+    /// consumed the item. Blocking TryStartChargingSwing keeps IsChargingSwing false,
+    /// so ReleaseSwingChargeInternal's own CanReleaseSwingCharge guard is a no-op.
+    /// The bat is excluded because it intentionally uses the swing mechanic.
+    /// </summary>
+    [HarmonyPatch]
+    static class SwingChargePatch
+    {
+        static MethodBase TargetMethod() =>
+            AccessTools.Method(typeof(PlayerGolfer), "TryStartChargingSwing");
+
+        static bool Prefix(PlayerGolfer __instance, ref bool __result)
+        {
+            var inventory = __instance.GetComponent<PlayerInventory>();
+            if (inventory == null)
+                return true;
+
+            var equipped = inventory.GetEffectivelyEquippedItem(true);
+            if (ItemRegistry.IsCustomItem(equipped) && equipped != BatItem.BatItemType)
+            {
+                __result = false;
+                return false;
+            }
+
+            return true;
+        }
+    }
+
     [HarmonyPatch]
     static class DropItemPatch
     {

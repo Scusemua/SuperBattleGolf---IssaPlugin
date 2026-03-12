@@ -171,6 +171,16 @@ namespace IssaPlugin.Items
                 };
             }
 
+            // Wire up rocket-hit threshold callback.
+            var hitReceiver = gunshipGo.GetComponent<AC130HitReceiver>();
+            if (hitReceiver != null)
+            {
+                hitReceiver.OnHitsExceeded = () =>
+                {
+                    ServerBeginMayday();
+                };
+            }
+
             var gunshipIdentity = gunshipGo.GetComponent<NetworkIdentity>();
 
             RpcPlayAC130Sound();
@@ -239,7 +249,8 @@ namespace IssaPlugin.Items
         {
             // Allow flagging even after session ends (fly-out phase) as long
             // as the gunship GameObject still exists in the scene.
-            if (_serverGunship == null) return;
+            if (_serverGunship == null)
+                return;
             PendingGunshipHoming = true;
         }
 
@@ -376,7 +387,8 @@ namespace IssaPlugin.Items
         [ClientRpc(includeOwner = true)]
         private void RpcAddGunshipLockOnComponents(NetworkIdentity gunshipIdentity)
         {
-            if (gunshipIdentity == null) return;
+            if (gunshipIdentity == null)
+                return;
             AddGunshipLockOnComponents(gunshipIdentity.gameObject);
         }
 
@@ -696,6 +708,9 @@ namespace IssaPlugin.Items
             flyComp.flySpeed = approachSpeed;
             flyComp.mode = AC130FlightMode.FlyIn;
 
+            // Add hit receiver before spawning so it's ready from frame 0.
+            go.AddComponent<AC130HitReceiver>();
+
             NetworkServer.Spawn(go);
 
             // Add lock-on components on the server immediately after spawn.
@@ -740,7 +755,8 @@ namespace IssaPlugin.Items
             // Stop normal flight — mayday takes over movement.
             // Capture mapCentre BEFORE destroying the fly component.
             var flyComp = _serverGunship.GetComponent<AC130FlyBehaviour>();
-            Vector3 mapCentre = flyComp != null ? flyComp.mapCentre : _serverGunship.transform.position;
+            Vector3 mapCentre =
+                flyComp != null ? flyComp.mapCentre : _serverGunship.transform.position;
             if (flyComp != null)
             {
                 flyComp.OnExternallyDestroyed = null; // prevent re-entry
