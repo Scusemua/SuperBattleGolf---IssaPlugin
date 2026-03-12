@@ -383,10 +383,19 @@ namespace IssaPlugin.Items
             if (go.GetComponent<AC130GunshipMarker>() == null)
                 go.AddComponent<AC130GunshipMarker>();
 
-            // LockOnTarget registers with LockOnTargetManager in its Awake so that
-            // PlayerGolfer.TryGetBestLockOnTarget iterates over the gunship.
+            // LockOnTarget must be added BEFORE Entity so that Entity.Awake()
+            // finds and caches it via GetComponent<LockOnTarget>().
+            // LockOnTarget.Start() registers with LockOnTargetManager so the
+            // game's TryGetBestLockOnTarget iterates over the gunship.
             if (go.GetComponent<LockOnTarget>() == null)
                 go.AddComponent<LockOnTarget>();
+
+            // Entity is needed so LockOnTargetUiManager can subscribe to
+            // WillBeDestroyedReferenced and so ShootRocketLauncherRoutine can
+            // safely read AsEntity.AsHittable (returns null → no vanilla homing,
+            // our server-side GunshipHomingBehaviour handles targeting instead).
+            if (go.GetComponent<Entity>() == null)
+                go.AddComponent<Entity>();
         }
 
         // ================================================================

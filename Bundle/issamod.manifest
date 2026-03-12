@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 3686151514
+CRC: 2518239744
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: cb1c630b39dc0e452c5be477d3b0354b
+    Hash: fdf9294039ef8b92d2886c582eb4b4eb
   TypeTreeHash:
     serializedVersion: 2
     Hash: 294481f2732624c51f311d29f741d4e4
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: baa0ed14c8864e2cd9f2f5b70c6209cc
+    Hash: 52840a60498a1ff391e3cc6051d7cf81
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -82,6 +82,7 @@ Assets:
 - Assets/Assets/ac130_icon.png
 - Assets/Assets/bat_model.prefab
 - Assets/Assets/missile_locked.ogg
+- Assets/Assets/ice_shader.shader
 - Assets/Assets/NukeVerticalExplosionFire.prefab
 - Assets/Assets/snowball.obj
 Dependencies: []
