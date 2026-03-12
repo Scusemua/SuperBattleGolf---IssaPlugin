@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Reflection;
 using IssaPlugin.Overlays;
 using Mirror;
 using UnityEngine;
@@ -249,7 +250,8 @@ namespace IssaPlugin.Items
         {
             // Allow flagging even after session ends (fly-out phase) as long
             // as the gunship GameObject still exists in the scene.
-            if (_serverGunship == null) return;
+            if (_serverGunship == null)
+                return;
             PendingGunshipHoming = true;
         }
 
@@ -386,7 +388,8 @@ namespace IssaPlugin.Items
         [ClientRpc(includeOwner = true)]
         private void RpcAddGunshipLockOnComponents(NetworkIdentity gunshipIdentity)
         {
-            if (gunshipIdentity == null) return;
+            if (gunshipIdentity == null)
+                return;
             AddGunshipLockOnComponents(gunshipIdentity.gameObject);
         }
 
@@ -684,7 +687,7 @@ namespace IssaPlugin.Items
 
             Vector3 spawnPos = orbitEntry - approachDir * approachDist;
 
-            var go = Object.Instantiate(
+            var ac130GameObj = Object.Instantiate(
                 AssetLoader.AC130Prefab,
                 spawnPos,
                 Quaternion.LookRotation(approachDir, Vector3.up)
@@ -693,10 +696,13 @@ namespace IssaPlugin.Items
             // The prefab may not have a NetworkIdentity baked in.
             // Adding one at runtime before NetworkServer.Spawn is valid
             // and is the only option when we can't modify the bundle prefab.
-            if (go.GetComponent<NetworkIdentity>() == null)
-                go.AddComponent<NetworkIdentity>();
+            if (ac130GameObj.GetComponent<NetworkIdentity>() == null)
+                ac130GameObj.AddComponent<NetworkIdentity>();
 
-            var flyComp = go.AddComponent<AC130FlyBehaviour>();
+            // Add hit receiver before spawning so it's ready from frame 0.
+            var hitReceiver = ac130GameObj.AddComponent<AC130HitReceiver>();
+
+            var flyComp = ac130GameObj.AddComponent<AC130FlyBehaviour>();
             flyComp.mapCentre = mapCentre;
             flyComp.orbitRadius = orbitRadius;
             flyComp.altitude = altitude;
@@ -706,20 +712,55 @@ namespace IssaPlugin.Items
             flyComp.flySpeed = approachSpeed;
             flyComp.mode = AC130FlightMode.FlyIn;
 
-            // Add hit receiver before spawning so it's ready from frame 0.
-            go.AddComponent<AC130HitReceiver>();
+            // Required as Hittable.Awake() expects an Entity component.
+            if (ac130GameObj.GetComponent<Entity>() == null)
+                ac130GameObj.AddComponent<Entity>();
 
-            NetworkServer.Spawn(go);
+            // var hittable = ac130GameObj.AddComponent<Hittable>();
+
+            ac130GameObj.SetActive(false);
+
+            var templateHittable = Object.FindFirstObjectByType<Hittable>();
+            var newHittable = ac130GameObj.AddComponent<Hittable>();
+
+            // Ensure newHittable has a valid SwingSettings instance
+            if (newHittable.SwingSettings == null)
+            {
+                // Create a new instance
+                newHittable.SwingSettings = ScriptableObject.CreateInstance<SwingSettings>();
+            }
+
+            if (templateHittable != null)
+            {
+                IssaPluginPlugin.Log.LogInfo("Copying SwingSettings from template hittable.");
+                IssaPluginPlugin.Log.LogInfo(
+                    $"templateHittable.SwingSettings={templateHittable.SwingSettings}"
+                );
+                IssaPluginPlugin.Log.LogInfo(
+                    $"newHittable.SwingSettings={newHittable.SwingSettings}"
+                );
+                CopyPrivateProperties(templateHittable.SwingSettings, newHittable.SwingSettings);
+            }
+            else
+            {
+                IssaPluginPlugin.Log.LogInfo("[WARNING] Could not find template hittable.");
+            }
+
+            ac130GameObj.SetActive(true);
+
+            newHittable.WasHitByItem += hitReceiver.OnAC130Hit;
+
+            NetworkServer.Spawn(ac130GameObj);
 
             // Add lock-on components on the server immediately after spawn.
             // RpcAddGunshipLockOnComponents will mirror this on all clients.
-            AddGunshipLockOnComponents(go);
+            AddGunshipLockOnComponents(ac130GameObj);
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[AC130] Gunship spawned at approach distance {approachDist:F0}m."
             );
 
-            return go;
+            return ac130GameObj;
         }
 
         // ================================================================
@@ -753,7 +794,8 @@ namespace IssaPlugin.Items
             // Stop normal flight — mayday takes over movement.
             // Capture mapCentre BEFORE destroying the fly component.
             var flyComp = _serverGunship.GetComponent<AC130FlyBehaviour>();
-            Vector3 mapCentre = flyComp != null ? flyComp.mapCentre : _serverGunship.transform.position;
+            Vector3 mapCentre =
+                flyComp != null ? flyComp.mapCentre : _serverGunship.transform.position;
             if (flyComp != null)
             {
                 flyComp.OnExternallyDestroyed = null; // prevent re-entry
@@ -930,6 +972,28 @@ namespace IssaPlugin.Items
         {
             _globalSessionActive = false;
             _activeSessionBridge = null;
+        }
+
+        public static void CopyPrivateProperties<T>(T source, T target)
+        {
+            var type = typeof(T);
+            var properties = type.GetProperties(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic
+            );
+
+            foreach (var prop in properties)
+            {
+                // Only consider properties with a getter AND a setter (even private)
+                if (prop.CanRead && prop.CanWrite)
+                {
+                    var setter = prop.GetSetMethod(true); // true = include non-public setter
+                    if (setter != null)
+                    {
+                        var value = prop.GetValue(source);
+                        setter.Invoke(target, new object[] { value });
+                    }
+                }
+            }
         }
     }
 }
