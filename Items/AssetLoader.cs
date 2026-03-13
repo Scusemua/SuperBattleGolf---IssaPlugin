@@ -14,9 +14,11 @@ namespace IssaPlugin.Items
 
         public static GameObject BatModelPrefab { get; private set; }
         public static GameObject BomberPrefab { get; private set; }
+        public static GameObject BomberProxyPrefab { get; private set; }
         public static GameObject AC130Prefab { get; private set; }
         public static GameObject BomberTabletPrefab { get; private set; }
         public static GameObject MissileTabletPrefab { get; private set; }
+        public static GameObject Ac130TabletPrefab { get; private set; }
         public static GameObject FreezeModelPrefab { get; private set; }
 
         // ----------------------------------------------------------------
@@ -90,9 +92,11 @@ namespace IssaPlugin.Items
 
             BatModelPrefab = _bundle.LoadAsset<GameObject>("bat_model.prefab");
             BomberPrefab = _bundle.LoadAsset<GameObject>("bomber_model.prefab");
+            BomberProxyPrefab = _bundle.LoadAsset<GameObject>("bomber_proxy.prefab");
             AC130Prefab = _bundle.LoadAsset<GameObject>("ac130_model.prefab");
             BomberTabletPrefab = _bundle.LoadAsset<GameObject>("stealth_bomber_tablet.prefab");
             MissileTabletPrefab = _bundle.LoadAsset<GameObject>("predator_missile_tablet.prefab");
+            Ac130TabletPrefab = _bundle.LoadAsset<GameObject>("ac130_tablet.prefab");
             FreezeModelPrefab = _bundle.LoadAsset<GameObject>("snowball.prefab");
 
             // AudioClips must be loaded by asset name without the file extension.
@@ -116,9 +120,9 @@ namespace IssaPlugin.Items
                     + $"Icons: bat={BatIcon != null}, bomber={BomberIcon != null}, "
                     + $"missile={MissileIcon != null}, ac130={AC130Icon != null}, freeze={FreezeIcon != null}. "
                     + $"Models: bat={BatModelPrefab != null}, bomber={BomberPrefab != null}, "
-                    + $"ac130={AC130Prefab != null}, "
-                    + $"bomberTablet={BomberTabletPrefab != null}, "
-                    + $"missileTablet={MissileTabletPrefab != null}, freeze={FreezeModelPrefab != null}. "
+                    + $"ac130={AC130Prefab != null}, BomberPrefab={BomberPrefab != null},"
+                    + $"bomberTablet={BomberTabletPrefab != null}, ac130TabletPrefab={Ac130TabletPrefab != null}, "
+                    + $"missileTablet={MissileTabletPrefab != null}, freeze={FreezeModelPrefab != null}, "
                     + $"Audio: ac130Above={AC130AboveClip != null}, homerun={HomerunAudioClip != null}, "
                     + $"smokeTrail={MaydaySmokeTrailPrefab != null}, fireTrail={MaydayFireTrailPrefab != null}."
             );

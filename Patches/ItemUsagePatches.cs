@@ -170,7 +170,7 @@ namespace IssaPlugin.Patches
             if (type == PredatorMissileItem.MissileItemType)
                 return AssetLoader.MissileTabletPrefab;
             if (type == AC130Item.AC130ItemType)
-                return AssetLoader.MissileTabletPrefab;
+                return AssetLoader.Ac130TabletPrefab;
             if (type == FreezeItem.FreezeItemType)
                 return AssetLoader.FreezeModelPrefab;
             return null;

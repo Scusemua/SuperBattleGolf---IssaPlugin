@@ -19,6 +19,13 @@ namespace IssaPlugin.Items
 
         public static bool IsTargeting => _isTargeting;
 
+        /// <summary>
+        /// The local visual bomber GameObject spawned by LocalSpawnBomberVisual.
+        /// Set on all clients; used by BomberNetworkBridge.RpcBomberShotDown to
+        /// locate the visual and switch it to crash behaviour.
+        /// </summary>
+        public static GameObject ActiveBomberVisual { get; private set; }
+
         private class TargetingResult
         {
             public BombingStripInfo? Strip;
@@ -243,7 +250,7 @@ namespace IssaPlugin.Items
             float speed
         )
         {
-            SpawnBomberVisual(spawnPos, exitPos, direction, speed);
+            ActiveBomberVisual = SpawnBomberVisual(spawnPos, exitPos, direction, speed);
         }
 
         /// <summary>
@@ -294,6 +301,23 @@ namespace IssaPlugin.Items
                     + $"at altitude {altitude:F0}m, approach {approachDist:F0}m"
             );
 
+            // Spawn a server-side proxy that travels the same path as the visual
+            // bomber, giving the game's lock-on system a valid networked target.
+            bool proxyShotDown = false;
+            GameObject proxyGo = SpawnBomberProxy(
+                spawnPos,
+                direction,
+                speed,
+                totalDist,
+                () =>
+                {
+                    proxyShotDown = true;
+                    bridge.RpcBomberShotDown(direction);
+                }
+            );
+            if (proxyGo != null)
+                bridge.RpcAddBomberLockOnComponents(proxyGo.GetComponent<NetworkIdentity>());
+
             bridge.RpcSpawnBomberVisual(spawnPos, exitPos, direction, speed);
 
             float startTime = Time.time;
@@ -304,6 +328,10 @@ namespace IssaPlugin.Items
             {
                 float elapsed = Time.time - startTime;
                 float distanceTravelled = elapsed * speed;
+
+                // Abort early if the bomber was shot down.
+                if (proxyShotDown || proxyGo == null)
+                    break;
 
                 if (distanceTravelled >= totalDist)
                     break;
@@ -340,7 +368,38 @@ namespace IssaPlugin.Items
                 $"[Bomber] Run complete. {rocketsDropped} rockets dropped."
             );
 
+            // Clean up the proxy if it wasn't already destroyed by a hit.
+            if (proxyGo != null)
+                Object.Destroy(proxyGo);
+
             onComplete?.Invoke();
+        }
+
+        private static GameObject SpawnBomberProxy(
+            Vector3 spawnPos,
+            Vector3 direction,
+            float speed,
+            float totalDist,
+            System.Action onShotDown
+        )
+        {
+            var bomberProxyGo = Object.Instantiate(
+                AssetLoader.BomberProxyPrefab,
+                spawnPos,
+                Quaternion.LookRotation(direction, Vector3.up)
+            );
+
+            bomberProxyGo.AddComponent<Entity>(); // required by LockOnTarget.Awake on clients
+
+            var proxy = bomberProxyGo.AddComponent<BomberProxyBehaviour>();
+            proxy.SpawnPos = spawnPos;
+            proxy.Direction = direction;
+            proxy.Speed = speed;
+            proxy.TotalDist = totalDist;
+            proxy.OnShotDown = onShotDown;
+
+            NetworkServer.Spawn(bomberProxyGo);
+            return bomberProxyGo;
         }
 
         private static GameObject SpawnBomberVisual(
@@ -524,13 +583,18 @@ namespace IssaPlugin.Items
 
         /// Attached to the bomber prefab instance so it flies smoothly
         /// from spawn to destination independent of the rocket-drop coroutine.
-        private class BomberFlyBehaviour : MonoBehaviour
+        /// Promoted to internal so BomberNetworkBridge.RpcBomberShotDown can
+        /// disable it before attaching BomberCrashBehaviour.
+        internal class BomberFlyBehaviour : MonoBehaviour
         {
             public Vector3 destination;
             public float speed;
 
             private void Update()
             {
+                if (!enabled)
+                    return;
+
                 transform.position = Vector3.MoveTowards(
                     transform.position,
                     destination,
@@ -538,7 +602,10 @@ namespace IssaPlugin.Items
                 );
 
                 if (Vector3.Distance(transform.position, destination) < 0.5f)
+                {
+                    StealthBomberItem.ActiveBomberVisual = null;
                     Destroy(gameObject);
+                }
             }
         }
     }

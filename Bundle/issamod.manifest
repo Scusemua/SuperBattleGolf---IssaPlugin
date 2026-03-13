@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 3475773151
+CRC: 2814347044
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: c3dd57dfd179a618801c262f5d3983f0
+    Hash: aae4bb002830e558a395d9a58e21b596
   TypeTreeHash:
     serializedVersion: 2
-    Hash: f38d6a8ac30fb896d0cfe6e5206dbbfd
+    Hash: 327227f2969caf5f4db7e0f80f1d7110
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 1164638a01b57e7b72b1ab98aaf61916
+    Hash: 88d325a2f74a6731c30f33643372a16d
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -53,6 +53,8 @@ ClassTypes:
   Script: {instanceID: 0}
 - Class: 134
   Script: {instanceID: 0}
+- Class: 135
+  Script: {instanceID: 0}
 - Class: 198
   Script: {instanceID: 0}
 - Class: 199
@@ -69,9 +71,9 @@ Assets:
 - Assets/Assets/etfx_explosion_nuke.wav
 - Assets/Assets/smoke_prefab.prefab
 - Assets/Assets/missile_icon.png
-- Assets/Assets/predator_missile_tablet.prefab
 - Assets/Assets/lightning.prefab
-- Assets/Assets/bomber_tablet.prefab
+- Assets/Assets/bomber_proxy.prefab
+- Assets/Assets/stealth_bomber_tablet_model.prefab
 - Assets/Assets/jet_plane_flyby.ogg
 - Assets/Assets/predator_missile_ready.ogg
 - Assets/Assets/bomber_jet.prefab
@@ -85,10 +87,11 @@ Assets:
 - Assets/Assets/stealth_bomber_tablet.prefab
 - Assets/Assets/snowball.prefab
 - Assets/Assets/NukeExplosionFire.prefab
-- Assets/Assets/predator_tablet.prefab
+- Assets/Assets/predator_tablet_model.prefab
 - Assets/Assets/ac130_icon.png
-- Assets/Assets/bat_model.prefab
+- Assets/Assets/predator_tablet.prefab
 - Assets/Assets/missile_locked.ogg
 - Assets/Assets/ice_shader.shader
+- Assets/Assets/bat_model.prefab
 - Assets/Assets/NukeVerticalExplosionFire.prefab
 Dependencies: []

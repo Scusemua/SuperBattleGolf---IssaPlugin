@@ -26,6 +26,7 @@ namespace IssaPlugin
         public static ConfigEntry<float> BomberTargetRotateSpeed { get; private set; }
         public static ConfigEntry<float> BomberSpawnWeight { get; private set; }
         public static ConfigEntry<float> BomberApproachDistance { get; private set; }
+        public static ConfigEntry<int> BomberHitsToDestroy { get; private set; }
 
         // --- Predator Missile ---
         public static ConfigEntry<float> MissileAltitude { get; private set; }
@@ -209,6 +210,13 @@ namespace IssaPlugin
                 "TargetRotateSpeed",
                 90f,
                 "Rotation speed of the targeting strip in degrees per second (Q/E)."
+            );
+
+            BomberHitsToDestroy = cfg.Bind(
+                "StealthBomber",
+                "HitsToDestroy",
+                1,
+                "Rocket hits required to shoot down the bomber and cancel its run. Set to 0 to make it invincible."
             );
 
             // --- Predator Missile ---
