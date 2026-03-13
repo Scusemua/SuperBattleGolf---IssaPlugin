@@ -5,7 +5,7 @@ namespace IssaPlugin.Items
 {
     /// Attached to the local visual bomber GameObject on all clients when the
     /// bomber is shot down (via BomberNetworkBridge.RpcBomberShotDown).
-    public class BomberCrashBehaviour : MonoBehaviour
+    public class BomberCrashBehaviourOld : MonoBehaviour
     {
         private bool _impacted;
         private float _lifetime;
