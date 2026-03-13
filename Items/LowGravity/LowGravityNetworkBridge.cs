@@ -82,7 +82,7 @@ namespace IssaPlugin.Items
             RenderSettings.ambientLight = new Color(0.2f, 0.1f, 0.4f);
 
             LowGravityItem.IsActive = true;
-            LowGravityOverlay.Instance?.SetActive(true);
+            LowGravityOverlay.Instance?.SetActive(true, duration);
 
             IssaPluginPlugin.Log.LogInfo("[LowGravity] Client session started.");
         }

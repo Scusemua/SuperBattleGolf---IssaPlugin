@@ -3,7 +3,6 @@ using UnityEngine;
 
 namespace IssaPlugin.Patches
 {
-    /// <summary>
     /// Manages the global physics gravity change during a Low Gravity session.
     ///
     /// Physics.gravity is the single source of truth for:
@@ -14,7 +13,6 @@ namespace IssaPlugin.Patches
     ///
     /// Only the Y component is scaled; X and Z are preserved (typically zero).
     /// Added to the Plugin's persistent gameObject in Plugin.cs.
-    /// </summary>
     public class LowGravityHandler : MonoBehaviour
     {
         private bool _applied;
@@ -39,7 +37,7 @@ namespace IssaPlugin.Patches
             _applied = true;
             _savedGravity = Physics.gravity;
 
-            float scale = Configuration.LowGravityScale.Value;
+            float scale = Configuration.LowGravityScale.Value; 
             Physics.gravity = new Vector3(
                 _savedGravity.x,
                 _savedGravity.y * scale,

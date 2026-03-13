@@ -82,7 +82,7 @@ namespace IssaPlugin.Items
             RenderSettings.ambientLight = new Color(0.5f, 0.65f, 0.9f);
 
             FreezeItem.IsFrozen = true;
-            FreezeOverlay.Instance?.SetFrozen(true);
+            FreezeOverlay.Instance?.SetFrozen(true, duration);
 
             IssaPluginPlugin.Log.LogInfo("[Freeze] Client freeze started.");
         }
