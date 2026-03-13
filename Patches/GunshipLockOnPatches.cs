@@ -86,7 +86,11 @@ namespace IssaPlugin.Patches
         static MethodBase TargetMethod() =>
             AccessTools.Method(typeof(PlayerGolfer), "TryGetBestLockOnTarget");
 
-        static void Postfix(PlayerGolfer __instance, bool __result, LockOnTarget bestLockOnTarget)
+        static void Postfix(
+            PlayerGolfer __instance,
+            ref bool __result,
+            ref LockOnTarget bestLockOnTarget
+        )
         {
             // Only run for the locally-owned player.
             if (!__instance.isOwned)
@@ -101,6 +105,39 @@ namespace IssaPlugin.Patches
                 __result
                 && bestLockOnTarget != null
                 && bestLockOnTarget.GetComponent<BomberMarker>() != null;
+
+            // ---- Bomber fallback detection ----
+            // The proxy's BomberProxyBehaviour is server-only, so the client-side
+            // LockOnTarget may not register with LockOnTargetManager (the base game
+            // likely skips registration when Entity.AsHittable is null). Mirror the
+            // approach used by OrbitalLaserLockOnIndicatorPatch: find BomberMarker
+            // directly and inject it into the result so the lock-on indicator appears
+            // and CmdPrepareBomberRocket is called.
+            if (!nowTargetingBomber && !__result)
+            {
+                var bomberMarker = Object.FindFirstObjectByType<BomberMarker>();
+                if (bomberMarker != null)
+                {
+                    var lot = bomberMarker.GetComponent<LockOnTarget>();
+                    if (lot != null)
+                    {
+                        // Only lock on when the player is aiming toward the bomber.
+                        var cam = Camera.main;
+                        if (cam != null)
+                        {
+                            Vector3 toCraft = (
+                                bomberMarker.transform.position - cam.transform.position
+                            ).normalized;
+                            if (Vector3.Dot(toCraft, cam.transform.forward) > 0.7f)
+                            {
+                                __result = true;
+                                bestLockOnTarget = lot;
+                                nowTargetingBomber = true;
+                            }
+                        }
+                    }
+                }
+            }
 
             // ---- Gunship ----
             if (nowTargetingGunship && !_wasTargetingGunship)

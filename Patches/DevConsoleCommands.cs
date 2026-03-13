@@ -21,6 +21,7 @@ namespace IssaPlugin.Patches
             (new[] { "predatormissile", "missile" }, PredatorMissileItem.MissileItemType, 1),
             (new[] { "baseballbat", "bat" }, BatItem.BatItemType, 1),
             (new[] { "freezeworld", "freeze" }, FreezeItem.FreezeItemType, 1),
+            (new[] { "lowgravity", "gravity" }, LowGravityItem.LowGravityItemType, 1),
         };
 
         /// <summary>
@@ -78,7 +79,7 @@ namespace IssaPlugin.Patches
 
             UnityEngine.Debug.LogWarning(
                 $"[giveCustomItem] Unknown item \"{itemName}\". "
-                    + "Valid names: ac130, bomber, missile, bat, freeze (or an integer item-type ID)."
+                    + "Valid names: ac130, bomber, missile, bat, freeze, lowgravity (or an integer item-type ID)."
             );
         }
     }

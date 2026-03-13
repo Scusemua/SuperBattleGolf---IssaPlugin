@@ -44,3 +44,5 @@ IssaPlugin/
 # Credits
 
 "Snowball - Low resources" (https://skfb.ly/oyCyZ) by JanesBT is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
+
+"REMOTE" (https://skfb.ly/pAwPL) by Garshrir is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).

@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 1645899207
+CRC: 2823128883
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 501dd18ac79a461a2d0a9fd393398d14
+    Hash: cc14540a35f0a47b738d960ac09e5ec6
   TypeTreeHash:
     serializedVersion: 2
     Hash: 327227f2969caf5f4db7e0f80f1d7110
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 43d2bf853b42ff121539dc08395e2d1e
+    Hash: dd9c6c4cc7f0cabf3acafd2a8ea2a28d
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -74,14 +74,16 @@ Assets:
 - Assets/Assets/missile_icon.png
 - Assets/Assets/predator_missile_tablet_model.prefab
 - Assets/Assets/lightning.prefab
-- Assets/Assets/bomber_proxy.prefab
+- Assets/Assets/gravity_remote_icon.png
 - Assets/Assets/stealth_bomber_tablet_model.prefab
 - Assets/Assets/ac130_tablet.prefab
+- Assets/Assets/gravity_remote.prefab
 - Assets/Assets/jet_plane_flyby.ogg
 - Assets/Assets/predator_missile_ready.ogg
 - Assets/Assets/bomber_jet.prefab
 - Assets/Assets/bomber_icon.png
 - Assets/Assets/plane_falling.ogg
+- Assets/Assets/bomber_proxy.prefab
 - Assets/Assets/big_plane.ogg
 - Assets/Assets/WarningExclamation.prefab
 - Assets/Assets/ac130_tablet_model.prefab

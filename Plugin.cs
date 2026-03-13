@@ -44,6 +44,8 @@ namespace IssaPlugin
             gameObject.AddComponent<AC130Overlay>();
             gameObject.AddComponent<FreezeOverlay>();
             gameObject.AddComponent<FreezePhysicsHandler>();
+            gameObject.AddComponent<LowGravityOverlay>();
+            gameObject.AddComponent<LowGravityHandler>();
 
             Log.LogInfo("IssaPlugin by Scusemua has loaded.");
         }
@@ -82,6 +84,9 @@ namespace IssaPlugin
 
             if (keyboard[Configuration.FreezeGiveKey.Value].wasPressedThisFrame)
                 FreezeItem.GiveFreezeToLocalPlayer();
+
+            if (keyboard[Configuration.LowGravityGiveKey.Value].wasPressedThisFrame)
+                LowGravityItem.GiveLowGravityToLocalPlayer();
 
             if (keyboard[Key.F10].wasPressedThisFrame)
                 DebugDummies.ToggleDebugDummies();

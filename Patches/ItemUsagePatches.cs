@@ -73,6 +73,18 @@ namespace IssaPlugin.Patches
                 return false;
             }
 
+            if (equipped == LowGravityItem.LowGravityItemType)
+            {
+                shouldEatInput = true;
+                __result = true;
+                var bridge = __instance.GetComponent<LowGravityNetworkBridge>();
+                if (bridge != null)
+                    bridge.CmdActivateLowGravity();
+                else
+                    IssaPluginPlugin.Log.LogError("[LowGravity] No LowGravityNetworkBridge on player.");
+                return false;
+            }
+
             return true;
         }
     }
@@ -102,6 +114,7 @@ namespace IssaPlugin.Patches
                 || equipped == PredatorMissileItem.MissileItemType
                 || equipped == AC130Item.AC130ItemType
                 || equipped == FreezeItem.FreezeItemType
+                || equipped == LowGravityItem.LowGravityItemType
             )
             {
                 rightSwitcher.SetEquipment(EquipmentType.RocketLauncher);
@@ -173,6 +186,8 @@ namespace IssaPlugin.Patches
                 return AssetLoader.Ac130TabletPrefab;
             if (type == FreezeItem.FreezeItemType)
                 return AssetLoader.FreezeModelPrefab;
+            if (type == LowGravityItem.LowGravityItemType)
+                return AssetLoader.LowGravityModelPrefab;
             return null;
         }
 

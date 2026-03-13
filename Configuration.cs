@@ -95,6 +95,13 @@ namespace IssaPlugin
         public static ConfigEntry<float> FreezeCartSidewaysStiffness { get; private set; }
         public static ConfigEntry<float> FreezeSpawnWeight { get; private set; }
 
+        // --- Low Gravity ---
+        public static ConfigEntry<Key> LowGravityGiveKey { get; private set; }
+        public static ConfigEntry<float> LowGravityUses { get; private set; }
+        public static ConfigEntry<float> LowGravityDuration { get; private set; }
+        public static ConfigEntry<float> LowGravityScale { get; private set; }
+        public static ConfigEntry<float> LowGravitySpawnWeight { get; private set; }
+
         // --- Explosion Scaling ---
         public static ConfigEntry<float> AC130ExplosionScale { get; private set; }
         public static ConfigEntry<float> PredatorMissileExplosionScale { get; private set; }
@@ -658,6 +665,44 @@ namespace IssaPlugin
                 1f,
                 "Number of rocket hits required to force the gunship into mayday. "
                     + "Only counts hits during an active session. Set to 0 to disable."
+            );
+
+            // --- Low Gravity ---
+            LowGravityGiveKey = cfg.Bind(
+                "LowGravity",
+                "GiveKey",
+                Key.Numpad0,
+                "Debug key to add the Low Gravity item to your inventory."
+            );
+
+            LowGravityUses = cfg.Bind(
+                "LowGravity",
+                "Uses",
+                1f,
+                "Number of uses per Low Gravity pickup."
+            );
+
+            LowGravityDuration = cfg.Bind(
+                "LowGravity",
+                "Duration",
+                20f,
+                "Seconds the reduced gravity lasts before physics is restored."
+            );
+
+            LowGravityScale = cfg.Bind(
+                "LowGravity",
+                "GravityScale",
+                0.25f,
+                "Fraction of normal gravity applied during the effect (e.g. 0.25 = 25%). "
+                    + "Affects golf balls (Rigidbody) and player fall/jump height equally, "
+                    + "since PlayerMovement reads Physics.gravity directly."
+            );
+
+            LowGravitySpawnWeight = cfg.Bind(
+                "ItemBoxSpawns",
+                "LowGravityWeight",
+                2f,
+                "Spawn weight for the Low Gravity item in item boxes. Set to 0 to disable."
             );
         }
     }
