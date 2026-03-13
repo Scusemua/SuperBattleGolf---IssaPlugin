@@ -5,20 +5,12 @@ namespace IssaPlugin.Items
 {
     /// Attached to the local visual bomber GameObject on all clients when the
     /// bomber is shot down (via BomberNetworkBridge.RpcBomberShotDown).
-    ///
-    /// The Rigidbody is already live and moving when this is added — this
-    /// component only watches for ground impact (y <= 0) and triggers the
-    /// explosion. A safety timeout destroys the object if it never reaches y=0
-    /// (e.g. terrain is above sea level and the bomber hits a hillside).
     public class BomberCrashBehaviour : MonoBehaviour
     {
         private bool _impacted;
         private float _lifetime;
 
-        private float _speed;
-
         private const float MaxLifetime = 15f;
-
         private GameObject _smokeTrail;
         private GameObject _fireTrail;
 
@@ -26,8 +18,6 @@ namespace IssaPlugin.Items
 
         public void Start()
         {
-            _speed = Configuration.AC130MaydaySpeed.Value;
-
             // Smoke trail — all clients spawn it locally (purely visual).
             if (AssetLoader.MaydaySmokeTrailPrefab != null)
             {
@@ -74,6 +64,7 @@ namespace IssaPlugin.Items
         {
             if (Rigidbody == null)
             {
+                IssaPluginPlugin.Log.LogInfo($"[BomberCrash] Rigidbody is null.");
                 return false;
             }
 

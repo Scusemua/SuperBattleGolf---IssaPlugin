@@ -19,11 +19,9 @@ namespace IssaPlugin.Items
 
         public static bool IsTargeting => _isTargeting;
 
-        /// <summary>
         /// The local visual bomber GameObject spawned by LocalSpawnBomberVisual.
         /// Set on all clients; used by BomberNetworkBridge.RpcBomberShotDown to
         /// locate the visual and switch it to crash behaviour.
-        /// </summary>
         public static GameObject ActiveBomberVisual { get; private set; }
 
         private class TargetingResult
