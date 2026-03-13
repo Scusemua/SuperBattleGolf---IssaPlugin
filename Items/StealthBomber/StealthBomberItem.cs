@@ -396,7 +396,7 @@ namespace IssaPlugin.Items
             proxy.Direction = direction;
             proxy.Speed = speed;
             proxy.TotalDist = totalDist;
-            proxy.OnShotDown = onShotDown;
+            proxy.OnHitsExceeded = onShotDown;
 
             NetworkServer.Spawn(bomberProxyGo);
             return bomberProxyGo;

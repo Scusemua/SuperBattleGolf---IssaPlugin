@@ -90,47 +90,44 @@ namespace IssaPlugin.Items
             AC130Icon = LoadSprite("ac130_icon.png");
             FreezeIcon = LoadSprite("freeze_effect_icon.png");
 
-            BatModelPrefab = _bundle.LoadAsset<GameObject>("bat_model.prefab");
-            BomberPrefab = _bundle.LoadAsset<GameObject>("bomber_model.prefab");
-            BomberProxyPrefab = _bundle.LoadAsset<GameObject>("bomber_proxy.prefab");
-            AC130Prefab = _bundle.LoadAsset<GameObject>("ac130_model.prefab");
-            BomberTabletPrefab = _bundle.LoadAsset<GameObject>("stealth_bomber_tablet.prefab");
-            MissileTabletPrefab = _bundle.LoadAsset<GameObject>("predator_missile_tablet.prefab");
-            Ac130TabletPrefab = _bundle.LoadAsset<GameObject>("ac130_tablet.prefab");
-            FreezeModelPrefab = _bundle.LoadAsset<GameObject>("snowball.prefab");
+            BatModelPrefab = Load<GameObject>("bat_model.prefab");
+            BomberPrefab = Load<GameObject>("bomber_model.prefab");
+            BomberProxyPrefab = Load<GameObject>("bomber_proxy.prefab");
+            AC130Prefab = Load<GameObject>("ac130_model.prefab");
+            BomberTabletPrefab = Load<GameObject>("stealth_bomber_tablet.prefab");
+            MissileTabletPrefab = Load<GameObject>("predator_missile_tablet.prefab");
+            Ac130TabletPrefab = Load<GameObject>("ac130_tablet.prefab");
+            FreezeModelPrefab = Load<GameObject>("snowball.prefab");
 
             // AudioClips must be loaded by asset name without the file extension.
             // Unity compiles audio into its own internal format at bundle-build
             // time, so the original .ogg path is never valid at runtime.
-            AC130AboveClip = _bundle.LoadAsset<AudioClip>("ac130_above.ogg");
-            HomerunAudioClip = _bundle.LoadAsset<AudioClip>("homerun.ogg");
+            AC130AboveClip = Load<AudioClip>("ac130_above.ogg");
+            HomerunAudioClip = Load<AudioClip>("homerun.ogg");
 
-            // Mayday assets — these will be null until the prefabs/clips are
-            // added to the asset bundle. All mayday code null-checks before use.
-            MaydayAlarmClip = _bundle.LoadAsset<AudioClip>("missile_locked.ogg");
-            MaydayImpactClip = _bundle.LoadAsset<AudioClip>("etfx_explosion_nuke.wav");
-            MaydaySmokeTrailPrefab = _bundle.LoadAsset<GameObject>("smoke_prefab.prefab");
-            MaydayFireTrailPrefab = _bundle.LoadAsset<GameObject>("fire_torch_intense.prefab");
-            MaydayExplosionVfxPrefab = _bundle.LoadAsset<GameObject>(
-                "NukeVerticalExplosionFire.prefab"
-            );
+            // Mayday assets — optional until added to the bundle; all usage sites null-check.
+            MaydayAlarmClip = Load<AudioClip>("missile_locked.ogg");
+            MaydayImpactClip = Load<AudioClip>("etfx_explosion_nuke.wav");
+            MaydaySmokeTrailPrefab = Load<GameObject>("smoke_prefab.prefab");
+            MaydayFireTrailPrefab = Load<GameObject>("fire_torch_intense.prefab");
+            MaydayExplosionVfxPrefab = Load<GameObject>("NukeVerticalExplosionFire.prefab");
 
-            IssaPluginPlugin.Log.LogInfo(
-                $"[Assets] Bundle loaded. "
-                    + $"Icons: bat={BatIcon != null}, bomber={BomberIcon != null}, "
-                    + $"missile={MissileIcon != null}, ac130={AC130Icon != null}, freeze={FreezeIcon != null}. "
-                    + $"Models: bat={BatModelPrefab != null}, bomber={BomberPrefab != null}, "
-                    + $"ac130={AC130Prefab != null}, BomberPrefab={BomberPrefab != null},"
-                    + $"bomberTablet={BomberTabletPrefab != null}, ac130TabletPrefab={Ac130TabletPrefab != null}, "
-                    + $"missileTablet={MissileTabletPrefab != null}, freeze={FreezeModelPrefab != null}, "
-                    + $"Audio: ac130Above={AC130AboveClip != null}, homerun={HomerunAudioClip != null}, "
-                    + $"smokeTrail={MaydaySmokeTrailPrefab != null}, fireTrail={MaydayFireTrailPrefab != null}."
-            );
+            IssaPluginPlugin.Log.LogInfo("[Assets] Bundle loaded.");
         }
 
-        private static Sprite LoadSprite(string assetPath)
+        // Helper that warns on null.
+        private static T Load<T>(string name)
+            where T : UnityEngine.Object
         {
-            var tex = _bundle.LoadAsset<Texture2D>(assetPath);
+            var asset = _bundle.LoadAsset<T>(name);
+            if (asset == null)
+                IssaPluginPlugin.Log.LogWarning($"[Assets] Missing asset: {name}");
+            return asset;
+        }
+
+        private static Sprite LoadSprite(string name)
+        {
+            var tex = Load<Texture2D>(name);
             if (tex == null)
                 return null;
             return Sprite.Create(

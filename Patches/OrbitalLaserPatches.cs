@@ -37,11 +37,13 @@ namespace IssaPlugin.Patches
     // ====================================================================
     //  Patch 1: OrbitalLaserManager.GetTarget() — client-side postfix
     //
-    //  After the normal nearest-player search, check whether the AC130
-    //  gunship or stealth bomber is active and is closer to the hole than
-    //  the nearest player. If so, override the return value to
-    //  (null Hittable, aircraftPosition) so the laser fires in stationary
-    //  mode with the indicator tracking the aircraft's ground projection.
+    //  When an AC130 or stealth bomber is active, always override the return
+    //  value to (null Hittable, aircraftPosition) so the laser fires in
+    //  stationary mode tracking the aircraft's ground projection. Aircraft
+    //  always take priority over players — we don't compare distances because
+    //  the player is typically near the hole while the aircraft isn't, which
+    //  would cause the player to win the comparison even when an aircraft is
+    //  the intended target.
     //
     //  AC130GunshipMarker and BomberMarker are added on all clients via RPC,
     //  so FindFirstObjectByType works correctly on remote clients.
@@ -55,15 +57,12 @@ namespace IssaPlugin.Patches
 
         static void Postfix(ref Hittable __result, ref Vector3 fallbackPosition)
         {
+            // Aircraft always take priority over players — no distance comparison.
+            // (If we compared XZ distance to the hole the player would often win
+            // because they're near the hole while the AC130 is elsewhere.)
             Vector3 holePos = GolfHoleManager.MainHole.transform.position;
-
-            // Baseline: how far is the current best player target from the hole?
-            float bestDist =
-                __result != null
-                    ? OrbitalLaserAircraftHelpers.XZDist(fallbackPosition, holePos)
-                    : float.MaxValue;
-
             Transform bestAircraft = null;
+            float bestDist = float.MaxValue;
 
             // AC130 gunship — marker added on all clients via RpcAddGunshipLockOnComponents.
             var gunshipMarker = Object.FindFirstObjectByType<AC130GunshipMarker>();
@@ -142,13 +141,16 @@ namespace IssaPlugin.Patches
             var gunship = AC130NetworkBridge.ActiveGunship;
             if (gunship != null)
             {
-                float d = OrbitalLaserAircraftHelpers.XZDist(gunship.transform.position, fallbackWorldPosition);
+                float d = OrbitalLaserAircraftHelpers.XZDist(
+                    gunship.transform.position,
+                    fallbackWorldPosition
+                );
                 if (d < bestDist)
                 {
                     bestDist = d;
                     bestAircraft = gunship.transform;
                     var hitReceiver = gunship.GetComponent<AC130HitReceiver>();
-                    onHit = () => hitReceiver?.OnAC130Hit();
+                    onHit = () => hitReceiver?.OnHit();
                 }
             }
 
@@ -156,12 +158,15 @@ namespace IssaPlugin.Patches
             var proxy = Object.FindFirstObjectByType<BomberProxyBehaviour>();
             if (proxy != null)
             {
-                float d = OrbitalLaserAircraftHelpers.XZDist(proxy.transform.position, fallbackWorldPosition);
+                float d = OrbitalLaserAircraftHelpers.XZDist(
+                    proxy.transform.position,
+                    fallbackWorldPosition
+                );
                 if (d < bestDist)
                 {
                     bestDist = d;
                     bestAircraft = proxy.transform;
-                    onHit = () => proxy.TriggerShotDown();
+                    onHit = () => proxy.OnHit();
                 }
             }
 

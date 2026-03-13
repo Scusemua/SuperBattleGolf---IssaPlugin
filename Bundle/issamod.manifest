@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 2814347044
+CRC: 140723115
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: aae4bb002830e558a395d9a58e21b596
+    Hash: 126b3daad61443620d30a55b8c1782ff
   TypeTreeHash:
     serializedVersion: 2
     Hash: 327227f2969caf5f4db7e0f80f1d7110
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 88d325a2f74a6731c30f33643372a16d
+    Hash: f6512c094453b3705820eed23936223c
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -71,9 +71,11 @@ Assets:
 - Assets/Assets/etfx_explosion_nuke.wav
 - Assets/Assets/smoke_prefab.prefab
 - Assets/Assets/missile_icon.png
+- Assets/Assets/predator_missile_tablet_model.prefab
 - Assets/Assets/lightning.prefab
 - Assets/Assets/bomber_proxy.prefab
 - Assets/Assets/stealth_bomber_tablet_model.prefab
+- Assets/Assets/ac130_tablet.prefab
 - Assets/Assets/jet_plane_flyby.ogg
 - Assets/Assets/predator_missile_ready.ogg
 - Assets/Assets/bomber_jet.prefab
@@ -81,16 +83,16 @@ Assets:
 - Assets/Assets/plane_falling.ogg
 - Assets/Assets/big_plane.ogg
 - Assets/Assets/WarningExclamation.prefab
+- Assets/Assets/ac130_tablet_model.prefab
 - Assets/Assets/bat_icon.png
 - Assets/Assets/smoke_trail_prefab.prefab
 - Assets/Assets/ac130_impact_vfx.prefab
 - Assets/Assets/stealth_bomber_tablet.prefab
 - Assets/Assets/snowball.prefab
 - Assets/Assets/NukeExplosionFire.prefab
-- Assets/Assets/predator_tablet_model.prefab
-- Assets/Assets/ac130_icon.png
-- Assets/Assets/predator_tablet.prefab
 - Assets/Assets/missile_locked.ogg
+- Assets/Assets/ac130_icon.png
+- Assets/Assets/predator_missile_tablet.prefab
 - Assets/Assets/ice_shader.shader
 - Assets/Assets/bat_model.prefab
 - Assets/Assets/NukeVerticalExplosionFire.prefab

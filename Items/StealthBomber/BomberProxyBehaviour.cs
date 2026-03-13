@@ -1,32 +1,31 @@
+using IssaPlugin;
 using Mirror;
 using UnityEngine;
 
 namespace IssaPlugin.Items
 {
-    /// <summary>
     /// Attached to the server-spawned BomberProxy GameObject.
     /// Moves the proxy along the bomber's calculated flight path each frame
     /// (server-only; NetworkTransform syncs the position to all clients).
-    /// Counts rocket impacts via OnTriggerEnter and invokes OnShotDown when
+    /// Counts rocket impacts via OnTriggerEnter  and invokes OnHitsExceeded when
     /// the configured hit threshold is reached.
-    /// </summary>
-    public class BomberProxyBehaviour : MonoBehaviour
+    public class BomberProxyBehaviour : CustomHittable
     {
         public Vector3 SpawnPos;
         public Vector3 Direction;
         public float Speed;
         public float TotalDist;
 
-        /// <summary>Invoked on the server when the hit threshold is reached.</summary>
-        public System.Action OnShotDown;
-
         private float _startTime;
-        private int _hitCount;
         private bool _shotDown;
 
         private void Start()
         {
             _startTime = Time.time;
+
+            HitCount = 0;
+            HitsRequired = (int)Configuration.BomberHitsToDestroy.Value;
+            OnHit += OnStealthBomberHit;
         }
 
         private void Update()
@@ -46,40 +45,29 @@ namespace IssaPlugin.Items
         // The game's Rocket uses a trigger collider.
         // This proxy has a kinematic Rigidbody + isTrigger SphereCollider so
         // OnTriggerEnter fires here when a rocket overlaps it.
-        private void OnTriggerEnter(Collider other)
+        private void OnStealthBomberHit()
         {
+            IssaPluginPlugin.Log.LogInfo($"[BomberProxy] OnStealthBomberHit called.");
+
             if (!NetworkServer.active || _shotDown)
                 return;
 
-            if (other.GetComponentInParent<Rocket>() == null)
+            if (HitsRequired <= 0)
                 return;
 
-            _hitCount++;
-            int required = Configuration.BomberHitsToDestroy.Value;
-            IssaPluginPlugin.Log.LogInfo($"[BomberProxy] Rocket impact {_hitCount}/{required}.");
+            if (HitCount >= HitsRequired)
+                return;
 
-            if (_hitCount >= required)
+            HitCount++;
+            IssaPluginPlugin.Log.LogInfo($"[BomberProxy] Rocket impact {HitCount}/{HitsRequired}.");
+
+            if (HitCount >= HitsRequired)
             {
                 _shotDown = true;
-                IssaPluginPlugin.Log.LogInfo("[BomberProxy] Shot down — cancelling run.");
-                OnShotDown?.Invoke();
+                IssaPluginPlugin.Log.LogInfo("[BomberProxy] Shot down. Cancelling run.");
+                OnHitsExceeded?.Invoke();
                 Destroy(gameObject);
             }
-        }
-
-        /// <summary>
-        /// Triggers the full shot-down sequence externally (e.g. from the orbital laser patch).
-        /// Safe to call even if the hit threshold has not been reached via rockets.
-        /// </summary>
-        public void TriggerShotDown()
-        {
-            if (!NetworkServer.active || _shotDown)
-                return;
-
-            _shotDown = true;
-            IssaPluginPlugin.Log.LogInfo("[BomberProxy] Shot down by orbital laser.");
-            OnShotDown?.Invoke();
-            Destroy(gameObject);
         }
     }
 }

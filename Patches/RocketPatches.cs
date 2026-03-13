@@ -17,7 +17,15 @@ namespace IssaPlugin.Patches
                 var ac130HitReceiver = hit.GetComponentInParent<AC130HitReceiver>();
                 if (ac130HitReceiver != null)
                 {
-                    ac130HitReceiver.OnAC130Hit();
+                    ac130HitReceiver.OnHit();
+                    continue;
+                }
+
+                var stealthBomberItem = hit.GetComponentInParent<BomberProxyBehaviour>();
+                if (stealthBomberItem != null)
+                {
+                    stealthBomberItem.OnHit();
+                    continue;
                 }
             }
         }

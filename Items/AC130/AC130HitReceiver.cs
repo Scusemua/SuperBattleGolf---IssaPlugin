@@ -1,39 +1,39 @@
+using IssaPlugin;
 using Mirror;
 using UnityEngine;
 
 namespace IssaPlugin.Items
 {
-    /// <summary>
     /// Attached to the AC130 gunship server-side.
     /// Counts rocket impacts and invokes OnHitsExceeded when the configured
     /// threshold is reached, giving the session bridge a chance to trigger mayday.
     /// Only runs logic on the server; clients ignore collision events here.
-    /// </summary>
-    public class AC130HitReceiver : MonoBehaviour
+    public class AC130HitReceiver : CustomHittable
     {
-        /// <summary>Invoked on the server when hit count reaches the threshold.</summary>
-        public System.Action OnHitsExceeded;
-
-        private int _hitCount;
-
-        public void OnAC130Hit()
+        public void Awake()
         {
-            IssaPluginPlugin.Log.LogInfo($"[AC130] OnTriggerEnter called.");
+            HitCount = 0;
+            HitsRequired = (int)Configuration.AC130HitsToMayday.Value;
+            OnHit += OnAC130Hit;
+        }
+
+        private void OnAC130Hit()
+        {
+            IssaPluginPlugin.Log.LogInfo($"[AC130] OnAC130Hit called.");
 
             if (!NetworkServer.active)
                 return;
 
-            int hitsRequired = (int)Configuration.AC130HitsToMayday.Value;
-            if (hitsRequired <= 0)
+            if (HitsRequired <= 0)
                 return;
 
-            if (_hitCount >= hitsRequired)
+            if (HitCount >= HitsRequired)
                 return;
 
-            _hitCount++;
-            IssaPluginPlugin.Log.LogInfo($"[AC130] Rocket impact {_hitCount}/{hitsRequired}.");
+            HitCount++;
+            IssaPluginPlugin.Log.LogInfo($"[AC130] Rocket impact {HitCount}/{HitsRequired}.");
 
-            if (_hitCount >= hitsRequired)
+            if (HitCount >= HitsRequired)
             {
                 IssaPluginPlugin.Log.LogInfo("[AC130] Hit threshold reached — triggering mayday.");
                 OnHitsExceeded?.Invoke();
