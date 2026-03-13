@@ -16,14 +16,7 @@ namespace IssaPlugin.Items
 
         private int _hitCount;
 
-        private void OnCollisionEnter(Collision collision)
-        {
-            IssaPluginPlugin.Log.LogInfo($"[AC130] OnCollisionEnter called.");
-        }
-
-        // The game's Rocket uses a trigger collider, so we receive OnTriggerEnter
-        // (not OnCollisionEnter) when it overlaps the gunship mesh collider.
-        private void OnTriggerEnter(Collider other)
+        public void OnAC130Hit()
         {
             IssaPluginPlugin.Log.LogInfo($"[AC130] OnTriggerEnter called.");
 
@@ -37,9 +30,6 @@ namespace IssaPlugin.Items
             if (_hitCount >= hitsRequired)
                 return;
 
-            if (other.GetComponentInParent<Rocket>() == null)
-                return;
-
             _hitCount++;
             IssaPluginPlugin.Log.LogInfo($"[AC130] Rocket impact {_hitCount}/{hitsRequired}.");
 
@@ -47,56 +37,6 @@ namespace IssaPlugin.Items
             {
                 IssaPluginPlugin.Log.LogInfo("[AC130] Hit threshold reached — triggering mayday.");
                 OnHitsExceeded?.Invoke();
-            }
-        }
-
-        public void OnAC130Hit(
-            PlayerInventory attackerInventory,
-            ItemType itemType,
-            ItemUseId itemUseId,
-            Vector3 hitPoint,
-            float damage,
-            bool isReflected
-        )
-        {
-            if (attackerInventory == null)
-            {
-                IssaPluginPlugin.Log.LogWarning("AC130 hit with null attackerInventory");
-            }
-
-            if (itemType == ItemType.RocketLauncher)
-            {
-                IssaPluginPlugin.Log.LogInfo("AC130 was hit by a rocket!");
-
-                int hitsRequired = (int)Configuration.AC130HitsToMayday.Value;
-                if (hitsRequired <= 0)
-                {
-                    IssaPluginPlugin.Log.LogInfo($"hitsRequired={hitsRequired}; ignoring hit.");
-                    return;
-                }
-
-                if (_hitCount >= hitsRequired)
-                {
-                    IssaPluginPlugin.Log.LogInfo(
-                        $"hitsRequired={hitsRequired}, _hitCount={_hitCount}, _hitCount >= hitsRequired; ignoring hit."
-                    );
-                    return;
-                }
-
-                _hitCount++;
-                IssaPluginPlugin.Log.LogInfo($"[AC130] Rocket impact {_hitCount}/{hitsRequired}.");
-
-                if (_hitCount >= hitsRequired)
-                {
-                    IssaPluginPlugin.Log.LogInfo(
-                        "[AC130] Hit threshold reached — triggering mayday."
-                    );
-                    OnHitsExceeded?.Invoke();
-                }
-            }
-            else
-            {
-                IssaPluginPlugin.Log.LogInfo($"AC130 was hit by: {itemType}");
             }
         }
     }

@@ -719,38 +719,7 @@ namespace IssaPlugin.Items
             if (ac130GameObj.GetComponent<Entity>() == null)
                 ac130GameObj.AddComponent<Entity>();
 
-            // var hittable = ac130GameObj.AddComponent<Hittable>();
-
             ac130GameObj.SetActive(false);
-
-            // var templateHittable = Object.FindFirstObjectByType<Hittable>();
-
-            var templateHittable = Object
-                .FindFirstObjectByType<PlayerInventory>()
-                .GetComponent<Hittable>();
-
-            var newHittable = ac130GameObj.AddComponent<Hittable>();
-
-            var settingsField = typeof(Hittable).GetField(
-                "settings",
-                BindingFlags.Instance | BindingFlags.NonPublic
-            );
-
-            var templateSettings = settingsField.GetValue(templateHittable) as UnityEngine.Object;
-
-            if (templateSettings == null)
-            {
-                IssaPluginPlugin.Log.LogError(
-                    "[AC130] Failed to retrieve template Hittable settings!"
-                );
-            }
-            else
-            {
-                var clonedSettings = Object.Instantiate(templateSettings);
-                settingsField.SetValue(newHittable, clonedSettings);
-            }
-
-            newHittable.WasHitByItem += hitReceiver.OnAC130Hit;
 
             ac130GameObj.SetActive(true);
 
@@ -815,10 +784,6 @@ namespace IssaPlugin.Items
             maydayComp.IsLocalPlayer = false;
             maydayComp.MapCentre = mapCentre;
             maydayComp.OnImpact = () => ServerHandleMaydayImpact(_serverGunship.transform.position);
-
-            // Remove to avoid firing Hittable methods on collision.
-            // Could remove this if I can fix the NullPointerExceptions in Hittable::CmdHitWithItem...
-            Destroy(_serverGunship.GetComponent<Hittable>());
 
             // Owning client gets the cockpit camera.
             if (_serverSessionActive)
