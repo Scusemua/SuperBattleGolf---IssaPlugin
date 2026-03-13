@@ -202,23 +202,25 @@ namespace IssaPlugin.Patches
     }
 
     /// <summary>
-    /// Blocks the golf swing charge when a non-bat custom item is equipped.
+    /// Blocks the entire golf swing aim/charge/fire pipeline when a non-bat custom
+    /// item is equipped.
     ///
-    /// The Swing input action has two independent paths:
-    ///   1. AddInputBuffer → UseItem() → TryUseItem() [our existing patch handles this]
-    ///   2. Swing.started → StartChargingSwing → TryStartChargingSwing (this path)
-    ///      Swing.canceled → FinishChargingSwing → ReleaseSwingCharge → fires swing
+    /// Root cause: GetEffectivelyEquippedItemPatch returns ItemType.None for custom
+    /// items when ignoreEquipmentHiding=false (so the game's visual systems ignore
+    /// them). CanAimSwing() calls GetEffectivelyEquippedItem(false) and sees None,
+    /// believing no item is held — so it allows the swing-aim camera and power bar.
     ///
-    /// Without this patch, path 2 fires a golf swing even though path 1 correctly
-    /// consumed the item. Blocking TryStartChargingSwing keeps IsChargingSwing false,
-    /// so ReleaseSwingChargeInternal's own CanReleaseSwingCharge guard is a no-op.
+    /// Patching CanAimSwing() is the earliest intercept point. Returning false here
+    /// keeps IsAimingSwing false, which prevents TryStartChargingSwing from running
+    /// at all, which in turn keeps IsChargingSwing false so no swing fires.
+    ///
     /// The bat is excluded because it intentionally uses the swing mechanic.
     /// </summary>
     [HarmonyPatch]
-    static class SwingChargePatch
+    static class CanAimSwingPatch
     {
         static MethodBase TargetMethod() =>
-            AccessTools.Method(typeof(PlayerGolfer), "TryStartChargingSwing");
+            AccessTools.Method(typeof(PlayerGolfer), "CanAimSwing");
 
         static bool Prefix(PlayerGolfer __instance, ref bool __result)
         {

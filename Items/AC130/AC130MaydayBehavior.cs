@@ -58,6 +58,9 @@ namespace IssaPlugin.Items
         //  Cockpit camera (owning client only)
         // ----------------------------------------------------------------
 
+        /// <summary>The cockpit camera created by BeginAsLocalPlayer(). Null until then.</summary>
+        public Camera CockpitCamera => _cockpitCam;
+
         private Camera _cockpitCam;
         private Camera _previousCam;
         private Vector2 _lookOffset; // player mouse-look accumulation

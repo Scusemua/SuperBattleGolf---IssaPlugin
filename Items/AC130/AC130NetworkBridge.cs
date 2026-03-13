@@ -324,6 +324,9 @@ namespace IssaPlugin.Items
             // with IsLocalPlayer=false and skips the camera/alarm setup.
             mayday.BeginAsLocalPlayer();
 
+            // Make the cockpit camera available to overlays (e.g. PlayerBoxOverlay)
+            // so they can project world positions correctly during the mayday sequence.
+            LocalGunshipCamera = mayday.CockpitCamera;
             LocalMaydayActive = true;
             AC130Overlay.SetMaydayActive(true);
 
@@ -350,7 +353,7 @@ namespace IssaPlugin.Items
         public void TargetEndMayday(NetworkConnection target)
         {
             LocalMaydayActive = false;
-            LocalGunshipCamera = null;
+            LocalGunshipCamera = null;  // cockpit cam is also destroyed with the gunship
             LocalSessionActive = false;
             AC130Overlay.SetMaydayActive(false);
             InputManager.Controls.Gameplay.Enable();

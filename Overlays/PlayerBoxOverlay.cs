@@ -70,7 +70,7 @@ namespace IssaPlugin.Overlays
         private bool ShouldShowGUI() =>
             StealthBomberItem.IsTargeting
             || (LocalMissileBridge != null && LocalMissileBridge.IsSteering)
-            || (LocalAC130Bridge != null && LocalAC130Bridge.LocalSessionActive);
+            || (LocalAC130Bridge != null && (LocalAC130Bridge.LocalSessionActive || LocalAC130Bridge.LocalMaydayActive));
 
         private void OnGUI()
         {
