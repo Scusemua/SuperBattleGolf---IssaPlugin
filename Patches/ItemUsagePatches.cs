@@ -201,7 +201,6 @@ namespace IssaPlugin.Patches
         }
     }
 
-    /// <summary>
     /// Blocks the entire golf swing aim/charge/fire pipeline when a non-bat custom
     /// item is equipped.
     ///
@@ -215,12 +214,10 @@ namespace IssaPlugin.Patches
     /// at all, which in turn keeps IsChargingSwing false so no swing fires.
     ///
     /// The bat is excluded because it intentionally uses the swing mechanic.
-    /// </summary>
     [HarmonyPatch]
     static class CanAimSwingPatch
     {
-        static MethodBase TargetMethod() =>
-            AccessTools.Method(typeof(PlayerGolfer), "CanAimSwing");
+        static MethodBase TargetMethod() => AccessTools.Method(typeof(PlayerGolfer), "CanAimSwing");
 
         static bool Prefix(PlayerGolfer __instance, ref bool __result)
         {
@@ -297,18 +294,29 @@ namespace IssaPlugin.Patches
         }
     }
 
-    // [HarmonyPatch(typeof(Hittable), "CmdHitWithItem")]
-    // class Patch_CmdHitWithItem
-    // {
-    //     static bool Prefix(Hittable __instance)
-    //     {
-    //         if (__instance.GetComponent<AC130HitReceiver>() != null)
-    //         {
-    //             // AC130 should not use the network hit system
-    //             return false;
-    //         }
+    /// Redirects the animator integer parameter to OrbitalLaser when a non-bat
+    /// custom item is equipped. The animator state machine uses this integer to
+    /// transition to the correct upper-body pose (rocket-launcher-style hold).
+    [HarmonyPatch(typeof(PlayerAnimatorIo), "SetEquippedItem")]
+    static class PlayerAnimatorSetEquippedItemPatch
+    {
+        static void Prefix(ref ItemType equippedItem)
+        {
+            if (ItemRegistry.IsCustomItem(equippedItem) && equippedItem != BatItem.BatItemType)
+                equippedItem = ItemType.OrbitalLaser;
+        }
+    }
 
-    //         return true;
-    //     }
-    // }
+    /// Redirects the runtime animator controller lookup to OrbitalLaser when a
+    /// non-bat custom item is equipped. Without this, GameManager.AllItems fails
+    /// to find ItemData for our custom item types and logs an error.
+    [HarmonyPatch(typeof(PlayerAnimatorIo), "OnNetworkedEquippedItemChanged")]
+    static class PlayerAnimatorOnEquippedChangedPatch
+    {
+        static void Prefix(ref ItemType equippedItem)
+        {
+            if (ItemRegistry.IsCustomItem(equippedItem) && equippedItem != BatItem.BatItemType)
+                equippedItem = ItemType.OrbitalLaser;
+        }
+    }
 }
