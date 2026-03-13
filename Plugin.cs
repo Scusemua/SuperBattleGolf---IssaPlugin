@@ -45,12 +45,6 @@ namespace IssaPlugin
             gameObject.AddComponent<FreezeOverlay>();
             gameObject.AddComponent<FreezePhysicsHandler>();
 
-            // This game uses FMOD for audio, which replaces Unity's AudioListener.
-            // Without a Unity AudioListener in the scene, AudioSource.Play() is silent.
-            // We add one here so our custom AudioClips (AC130, mayday alarm, etc.) are audible.
-            if (FindFirstObjectByType<AudioListener>() == null)
-                gameObject.AddComponent<AudioListener>();
-
             Log.LogInfo("IssaPlugin by Scusemua has loaded.");
         }
 

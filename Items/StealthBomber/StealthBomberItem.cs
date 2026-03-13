@@ -22,7 +22,7 @@ namespace IssaPlugin.Items
         /// The local visual bomber GameObject spawned by LocalSpawnBomberVisual.
         /// Set on all clients; used by BomberNetworkBridge.RpcBomberShotDown to
         /// locate the visual and switch it to crash behaviour.
-        public static GameObject ActiveBomberVisual { get; private set; }
+        public static GameObject ActiveBomberVisual { get; set; }
 
         private class TargetingResult
         {
@@ -622,34 +622,6 @@ namespace IssaPlugin.Items
             NetworkServer.Spawn(rocket.gameObject, (NetworkConnectionToClient)null);
 
             ExplosionScaler.Register(rocket, Configuration.StealthBomberExplosionScale.Value);
-        }
-
-        /// Attached to the bomber prefab instance so it flies smoothly
-        /// from spawn to destination independent of the rocket-drop coroutine.
-        /// Promoted to internal so BomberNetworkBridge.RpcBomberShotDown can
-        /// disable it before attaching BomberCrashBehaviour.
-        internal class BomberFlyBehaviour : MonoBehaviour
-        {
-            public Vector3 destination;
-            public float speed;
-
-            private void Update()
-            {
-                if (!enabled)
-                    return;
-
-                transform.position = Vector3.MoveTowards(
-                    transform.position,
-                    destination,
-                    speed * Time.deltaTime
-                );
-
-                if (Vector3.Distance(transform.position, destination) < 0.5f)
-                {
-                    StealthBomberItem.ActiveBomberVisual = null;
-                    Destroy(gameObject);
-                }
-            }
         }
     }
 }

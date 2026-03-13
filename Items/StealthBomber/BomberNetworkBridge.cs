@@ -115,7 +115,7 @@ namespace IssaPlugin.Items
                 return;
 
             // Disable straight-flight so it no longer drives transform.position.
-            var fly = visual.GetComponent<StealthBomberItem.BomberFlyBehaviour>();
+            var fly = visual.GetComponent<BomberFlyBehaviour>();
             float flySpeed = fly != null ? fly.speed : crashSpeed;
             if (fly != null)
                 fly.enabled = false;
