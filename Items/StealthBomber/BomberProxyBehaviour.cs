@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using IssaPlugin;
 using Mirror;
 using UnityEngine;
@@ -22,6 +23,12 @@ namespace IssaPlugin.Items
 
         private float _startTime;
         private bool _shotDown;
+
+        public bool ShotDown
+        {
+            get => _shotDown;
+            private set => _shotDown = value;
+        }
 
         private void Awake()
         {

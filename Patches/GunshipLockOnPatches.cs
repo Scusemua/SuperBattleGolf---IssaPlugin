@@ -16,8 +16,7 @@ namespace IssaPlugin.Patches
     internal static class CustomLockOnHelper
     {
         public static bool IsCustomTarget(LockOnTarget t) =>
-            t.GetComponent<AC130GunshipMarker>() != null
-            || t.GetComponent<BomberMarker>() != null;
+            t.GetComponent<AC130GunshipMarker>() != null || t.GetComponent<BomberMarker>() != null;
     }
 
     // ====================================================================

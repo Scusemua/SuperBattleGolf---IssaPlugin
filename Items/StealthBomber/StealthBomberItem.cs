@@ -276,7 +276,6 @@ namespace IssaPlugin.Items
 
             float altitude = Configuration.BomberAltitude.Value;
             float rocketInterval = Configuration.BomberRocketInterval.Value;
-            float speed = Configuration.BomberSpeed.Value;
             float spread = Configuration.BomberSpread.Value;
             float approachDist = Configuration.BomberApproachDistance.Value;
             float waitTime = Configuration.BomberWaitTime.Value;
@@ -292,7 +291,7 @@ namespace IssaPlugin.Items
             spawnPos.y = strip.Center.y + altitude;
             exitPos.y = strip.Center.y + altitude;
 
-            float exitBufferDist = speed * waitTime;
+            float exitBufferDist = Configuration.BomberSpeed.Value * waitTime;
             float dropEndDist = Vector3.Distance(spawnPos, exitPos) - exitBufferDist;
             float totalDist = Vector3.Distance(spawnPos, exitPos);
 
@@ -308,35 +307,34 @@ namespace IssaPlugin.Items
             GameObject proxyGo = SpawnBomberProxy(
                 spawnPos,
                 direction,
-                speed,
+                Configuration.BomberSpeed.Value,
                 totalDist,
                 () =>
                 {
-                    proxyShotDown = true;
-
-                    // Compute a push direction from the rocket explosion outward
-                    // through the proxy center. Falls back to zero if unavailable.
-                    Vector3 rocketImpactDir = Vector3.zero;
-                    if (proxyBehaviour != null && proxyBehaviour.LastHitWorldPos != Vector3.zero)
-                    {
-                        rocketImpactDir = (
-                            proxyBehaviour.transform.position - proxyBehaviour.LastHitWorldPos
-                        ).normalized;
-                    }
-
-                    // Generate tumble torque on the server so all clients receive the
-                    // same value via the RPC rather than each rolling independently.
-                    Vector3 torqueImpulse =
-                        UnityEngine.Random.insideUnitSphere * Configuration.BomberCrashTorque.Value;
-
-                    bridge.RpcBomberShotDown(direction, speed, rocketImpactDir, torqueImpulse);
+                    OnShotDown(proxyBehaviour, bridge, direction);
                 }
             );
             proxyBehaviour = proxyGo?.GetComponent<BomberProxyBehaviour>();
             if (proxyGo != null)
-                bridge.RpcAddBomberLockOnComponents(proxyGo.GetComponent<NetworkIdentity>());
+            {
+                // Add lock-on components directly on the server game object first,
+                // mirroring the AC130 pattern (AddGunshipLockOnComponents at line 733).
+                // Entity is already added in SpawnBomberProxy.
+                if (proxyGo.GetComponent<BomberMarker>() == null)
+                    proxyGo.AddComponent<BomberMarker>();
+                if (proxyGo.GetComponent<LockOnTarget>() == null)
+                    proxyGo.AddComponent<LockOnTarget>();
 
-            bridge.RpcSpawnBomberVisual(spawnPos, exitPos, direction, speed);
+                // Also mirror on all clients via RPC.
+                bridge.RpcAddBomberLockOnComponents(proxyGo.GetComponent<NetworkIdentity>());
+            }
+
+            bridge.RpcSpawnBomberVisual(
+                spawnPos,
+                exitPos,
+                direction,
+                Configuration.BomberSpeed.Value
+            );
 
             float startTime = Time.time;
             int rocketsDropped = 0;
@@ -345,7 +343,7 @@ namespace IssaPlugin.Items
             while (true)
             {
                 float elapsed = Time.time - startTime;
-                float distanceTravelled = elapsed * speed;
+                float distanceTravelled = elapsed * Configuration.BomberSpeed.Value;
 
                 // Abort early if the bomber was shot down.
                 if (proxyShotDown || proxyGo == null)
@@ -391,6 +389,35 @@ namespace IssaPlugin.Items
                 Object.Destroy(proxyGo);
 
             onComplete?.Invoke();
+        }
+
+        private static void OnShotDown(
+            BomberProxyBehaviour proxyBehaviour,
+            BomberNetworkBridge bridge,
+            Vector3 direction
+        )
+        {
+            // Compute a push direction from the rocket explosion outward
+            // through the proxy center. Falls back to zero if unavailable.
+            Vector3 rocketImpactDir = Vector3.zero;
+            if (proxyBehaviour != null && proxyBehaviour.LastHitWorldPos != Vector3.zero)
+            {
+                rocketImpactDir = (
+                    proxyBehaviour.transform.position - proxyBehaviour.LastHitWorldPos
+                ).normalized;
+            }
+
+            // Generate tumble torque on the server so all clients receive the
+            // same value via the RPC rather than each rolling independently.
+            Vector3 torqueImpulse =
+                UnityEngine.Random.insideUnitSphere * Configuration.BomberCrashTorque.Value;
+
+            bridge.RpcBomberShotDown(
+                direction,
+                Configuration.BomberSpeed.Value,
+                rocketImpactDir,
+                torqueImpulse
+            );
         }
 
         private static GameObject SpawnBomberProxy(

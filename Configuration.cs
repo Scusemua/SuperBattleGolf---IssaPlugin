@@ -232,7 +232,7 @@ namespace IssaPlugin
 
             BomberCrashDownwardForce = cfg.Bind(
                 "StealthBomber",
-                "CrashImpactForce",
+                "CrashDownwardForce",
                 15f,
                 "Impulse force applied to the stealth bomber in the downward direction."
             );

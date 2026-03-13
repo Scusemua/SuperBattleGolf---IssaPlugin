@@ -19,11 +19,44 @@ namespace IssaPlugin.Items
 
         private const float MaxLifetime = 15f;
 
+        private GameObject _smokeTrail;
+        private GameObject _fireTrail;
+
         public Rigidbody Rigidbody { get; set; }
 
         public void Start()
         {
             _speed = Configuration.AC130MaydaySpeed.Value;
+
+            // Smoke trail — all clients spawn it locally (purely visual).
+            if (AssetLoader.MaydaySmokeTrailPrefab != null)
+            {
+                _smokeTrail = Instantiate(
+                    AssetLoader.MaydaySmokeTrailPrefab,
+                    transform.position,
+                    Quaternion.identity
+                );
+                _smokeTrail.transform.SetParent(transform, worldPositionStays: true);
+            }
+            else
+            {
+                IssaPluginPlugin.Log.LogWarning("[Mayday] Smoke trail prefab not loaded.");
+            }
+
+            // Smoke trail — all clients spawn it locally (purely visual).
+            if (AssetLoader.MaydayFireTrailPrefab != null)
+            {
+                _fireTrail = Instantiate(
+                    AssetLoader.MaydayFireTrailPrefab,
+                    transform.position,
+                    Quaternion.identity
+                );
+                _fireTrail.transform.SetParent(transform, worldPositionStays: true);
+            }
+            else
+            {
+                IssaPluginPlugin.Log.LogWarning("[Mayday] Fire trail prefab not loaded.");
+            }
         }
 
         private void FixedUpdate()
@@ -83,6 +116,15 @@ namespace IssaPlugin.Items
             );
 
             Destroy(gameObject);
+            Destroy(_smokeTrail);
+            Destroy(_fireTrail);
+        }
+
+        private void OnDestroy()
+        {
+            Destroy(gameObject);
+            Destroy(_smokeTrail);
+            Destroy(_fireTrail);
         }
     }
 }
