@@ -2,51 +2,28 @@ using UnityEngine;
 
 namespace IssaPlugin.Items
 {
-    /// <summary>
     /// Attached to the local visual bomber GameObject on all clients when the
     /// bomber is shot down (via BomberNetworkBridge.RpcBomberShotDown).
-    /// Drives a simple crash dive: steepens the pitch over time, moves forward
-    /// along the dive direction, then triggers an explosion on ground impact.
     ///
-    /// BomberFlyBehaviour is disabled before this is added so only one driver
-    /// moves the GameObject each frame.
-    /// </summary>
+    /// The Rigidbody is already live and moving when this is added — this
+    /// component only watches for ground impact (y <= 0) and triggers the
+    /// explosion. A safety timeout destroys the object if it never reaches y=0
+    /// (e.g. terrain is above sea level and the bomber hits a hillside).
     public class BomberCrashBehaviour : MonoBehaviour
     {
-        private float _diveAngle; // degrees below horizontal; grows each frame
         private bool _impacted;
+        private float _lifetime;
 
-        private const float SteepRate = 60f; // deg/sec
-        private const float MaxAngle = 80f;  // max dive angle
+        private const float MaxLifetime = 15f;
 
-        private void Update()
+        private void FixedUpdate()
         {
             if (_impacted)
                 return;
 
-            _diveAngle = Mathf.MoveTowards(_diveAngle, MaxAngle, SteepRate * Time.deltaTime);
+            _lifetime += Time.deltaTime;
 
-            float pitchRad = _diveAngle * Mathf.Deg2Rad;
-            Vector3 horizontal = new Vector3(
-                transform.forward.x,
-                0f,
-                transform.forward.z
-            ).normalized;
-
-            if (horizontal.sqrMagnitude < 0.001f)
-                horizontal = Vector3.forward;
-
-            Vector3 diveDir = new Vector3(
-                horizontal.x * Mathf.Cos(pitchRad),
-                -Mathf.Sin(pitchRad),
-                horizontal.z * Mathf.Cos(pitchRad)
-            ).normalized;
-
-            float speed = Configuration.BomberSpeed.Value;
-            transform.position += diveDir * speed * Time.deltaTime;
-            transform.rotation = Quaternion.LookRotation(diveDir, Vector3.up);
-
-            if (transform.position.y <= 0f)
+            if (transform.position.y <= 0f || _lifetime >= MaxLifetime)
                 Impact();
         }
 

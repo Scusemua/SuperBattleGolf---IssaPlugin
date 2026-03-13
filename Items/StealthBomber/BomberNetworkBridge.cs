@@ -95,26 +95,56 @@ namespace IssaPlugin.Items
 
         /// <summary>
         /// Fired on all clients when the bomber proxy is shot down.
-        /// Disables the straight-flight behaviour on the local visual bomber and
-        /// attaches BomberCrashBehaviour to trigger the crash dive.
+        /// Disables the straight-flight behaviour on the local visual bomber,
+        /// then hands control to the Rigidbody: applies forward momentum, a
+        /// rocket-impact impulse, and a tumble torque so the bomber falls
+        /// out of the sky under physics.
         /// </summary>
         [ClientRpc(includeOwner = true)]
-        public void RpcBomberShotDown(Vector3 crashDir)
+        public void RpcBomberShotDown(
+            Vector3 crashDir,
+            float crashSpeed,
+            Vector3 rocketImpactDir,
+            Vector3 torqueImpulse
+        )
         {
-            IssaPluginPlugin.Log.LogInfo("[Bomber] Bomber shot down — triggering crash visual.");
+            IssaPluginPlugin.Log.LogInfo("[Bomber] Bomber shot down — triggering physics crash.");
 
             var visual = StealthBomberItem.ActiveBomberVisual;
             if (visual == null)
                 return;
 
-            // Disable straight-flight so both behaviours don't fight over position.
+            // Disable straight-flight so it no longer drives transform.position.
             var fly = visual.GetComponent<StealthBomberItem.BomberFlyBehaviour>();
+            float flySpeed = fly != null ? fly.speed : crashSpeed;
             if (fly != null)
                 fly.enabled = false;
 
-            // Orient the visual in the crash direction before the dive takes over.
-            if (crashDir != Vector3.zero)
-                visual.transform.rotation = Quaternion.LookRotation(crashDir, Vector3.up);
+            // Disable all colliders to avoid the non-convex MeshCollider + non-kinematic
+            // Rigidbody error, and to prevent unexpected terrain/geometry interactions
+            // during the crash. Ground impact is detected by BomberCrashBehaviour.
+            foreach (var col in visual.GetComponents<Collider>())
+                col.enabled = false;
+
+            var rb = visual.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.isKinematic = false;
+                rb.useGravity = true;
+
+                // Preserve the bomber's forward momentum at flight speed.
+                rb.linearVelocity = crashDir * flySpeed;
+
+                // Apply outward blast force from the rocket explosion.
+                if (rocketImpactDir != Vector3.zero)
+                    rb.AddForce(
+                        rocketImpactDir * Configuration.BomberCrashImpactForce.Value,
+                        ForceMode.Impulse
+                    );
+
+                // Apply server-computed tumble torque (same value on all clients).
+                rb.AddTorque(torqueImpulse, ForceMode.Impulse);
+            }
 
             visual.AddComponent<BomberCrashBehaviour>();
         }

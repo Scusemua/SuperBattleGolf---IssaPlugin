@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Reflection;
 using HarmonyLib;
 using IssaPlugin.Items;
@@ -110,6 +111,84 @@ namespace IssaPlugin.Patches
     }
 
     // ====================================================================
+    //  Patch 1b: PlayerInventory — compiler-generated UpdateOrbitalLaserLockOnTarget
+    //
+    //  The base game's lock-on update calls GetTarget() and, when the result
+    //  is null, clears the indicator. Our GetTarget patch returns null for
+    //  aircraft targets, so no reticle would appear. This prefix intercepts
+    //  the method: when an aircraft with a LockOnTarget component is present
+    //  we feed it directly to SetLockOnTarget and skip the base method so the
+    //  standard lock-on reticle tracks the aircraft just like it would a player.
+    // ====================================================================
+
+    [HarmonyPatch]
+    static class OrbitalLaserLockOnIndicatorPatch
+    {
+        static MethodInfo TargetMethod() =>
+            typeof(PlayerInventory)
+                .GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
+                .FirstOrDefault(m => m.Name.Contains("UpdateOrbitalLaserLockOnTarget"));
+
+        private static readonly MethodInfo _setLockOnTarget =
+            AccessTools.Method(typeof(PlayerInventory), "SetLockOnTarget");
+
+        static bool Prefix(PlayerInventory __instance)
+        {
+            // Mirror the base method's early-exit when the item is being used.
+            if (__instance.IsUsingItemAtAll)
+                return true;
+
+            // Find the aircraft LockOnTarget closest to the hole.
+            Vector3 holePos = GolfHoleManager.MainHole.transform.position;
+            LockOnTarget bestLockOn = null;
+            float bestDist = float.MaxValue;
+
+            var gunshipMarker = Object.FindFirstObjectByType<AC130GunshipMarker>();
+            if (gunshipMarker != null)
+            {
+                var lot = gunshipMarker.GetComponent<LockOnTarget>();
+                if (lot != null)
+                {
+                    float d = OrbitalLaserAircraftHelpers.XZDist(
+                        gunshipMarker.transform.position,
+                        holePos
+                    );
+                    if (d < bestDist)
+                    {
+                        bestDist = d;
+                        bestLockOn = lot;
+                    }
+                }
+            }
+
+            var bomberMarker = Object.FindFirstObjectByType<BomberMarker>();
+            if (bomberMarker != null)
+            {
+                var lot = bomberMarker.GetComponent<LockOnTarget>();
+                if (lot != null)
+                {
+                    float d = OrbitalLaserAircraftHelpers.XZDist(
+                        bomberMarker.transform.position,
+                        holePos
+                    );
+                    if (d < bestDist)
+                    {
+                        bestDist = d;
+                        bestLockOn = lot;
+                    }
+                }
+            }
+
+            if (bestLockOn == null)
+                return true; // no aircraft — let base method run normally
+
+            // Point the lock-on reticle at the aircraft and skip the base method.
+            _setLockOnTarget.Invoke(__instance, new object[] { bestLockOn });
+            return false;
+        }
+    }
+
+    // ====================================================================
     //  Patch 2: OrbitalLaser.ServerActivate() — server-side postfix
     //
     //  When the laser activates with a null Hittable target and an active
@@ -181,6 +260,9 @@ namespace IssaPlugin.Patches
                 $"[OrbitalLaser] Aircraft tracker attached — {bestAircraft.name} "
                     + $"at {bestAircraft.position}."
             );
+
+            __instance.Networkstate = OrbitalLaserState.AnticipationFollow;
+            __instance.NetworktargetPosition = bestAircraft.position;
         }
     }
 

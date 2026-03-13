@@ -304,6 +304,7 @@ namespace IssaPlugin.Items
             // Spawn a server-side proxy that travels the same path as the visual
             // bomber, giving the game's lock-on system a valid networked target.
             bool proxyShotDown = false;
+            BomberProxyBehaviour proxyBehaviour = null;
             GameObject proxyGo = SpawnBomberProxy(
                 spawnPos,
                 direction,
@@ -312,9 +313,25 @@ namespace IssaPlugin.Items
                 () =>
                 {
                     proxyShotDown = true;
-                    bridge.RpcBomberShotDown(direction);
+
+                    // Compute a push direction from the rocket explosion outward
+                    // through the proxy center. Falls back to zero if unavailable.
+                    Vector3 rocketImpactDir = Vector3.zero;
+                    if (proxyBehaviour != null && proxyBehaviour.LastHitWorldPos != Vector3.zero)
+                    {
+                        rocketImpactDir = (proxyBehaviour.transform.position
+                            - proxyBehaviour.LastHitWorldPos).normalized;
+                    }
+
+                    // Generate tumble torque on the server so all clients receive the
+                    // same value via the RPC rather than each rolling independently.
+                    Vector3 torqueImpulse =
+                        UnityEngine.Random.insideUnitSphere * Configuration.BomberCrashTorque.Value;
+
+                    bridge.RpcBomberShotDown(direction, speed, rocketImpactDir, torqueImpulse);
                 }
             );
+            proxyBehaviour = proxyGo?.GetComponent<BomberProxyBehaviour>();
             if (proxyGo != null)
                 bridge.RpcAddBomberLockOnComponents(proxyGo.GetComponent<NetworkIdentity>());
 

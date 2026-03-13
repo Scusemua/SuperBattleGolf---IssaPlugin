@@ -21,10 +21,11 @@ namespace IssaPlugin.Patches
                     continue;
                 }
 
-                var stealthBomberItem = hit.GetComponentInParent<BomberProxyBehaviour>();
-                if (stealthBomberItem != null)
+                var stealthBomberProxy = hit.GetComponentInParent<BomberProxyBehaviour>();
+                if (stealthBomberProxy != null)
                 {
-                    stealthBomberItem.OnHit();
+                    stealthBomberProxy.LastHitWorldPos = worldPosition;
+                    stealthBomberProxy.OnHit();
                     continue;
                 }
             }

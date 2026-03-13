@@ -16,10 +16,24 @@ namespace IssaPlugin.Items
         public float Speed;
         public float TotalDist;
 
+        /// Set by the rocket patch to the world-space explosion position of the
+        /// killing rocket, so the shot-down RPC can compute an impact direction.
+        public Vector3 LastHitWorldPos;
+
         private float _startTime;
         private bool _shotDown;
 
+        private void Awake()
+        {
+            Init();
+        }
+
         private void Start()
+        {
+            Init();
+        }
+
+        private void Init()
         {
             _startTime = Time.time;
 
@@ -28,7 +42,7 @@ namespace IssaPlugin.Items
             OnHit += OnStealthBomberHit;
         }
 
-        private void Update()
+        private void FixedUpdate()
         {
             // Movement is authoritative on the server only.
             // Clients receive position updates via NetworkTransform.
