@@ -319,8 +319,9 @@ namespace IssaPlugin.Items
                     Vector3 rocketImpactDir = Vector3.zero;
                     if (proxyBehaviour != null && proxyBehaviour.LastHitWorldPos != Vector3.zero)
                     {
-                        rocketImpactDir = (proxyBehaviour.transform.position
-                            - proxyBehaviour.LastHitWorldPos).normalized;
+                        rocketImpactDir = (
+                            proxyBehaviour.transform.position - proxyBehaviour.LastHitWorldPos
+                        ).normalized;
                     }
 
                     // Generate tumble torque on the server so all clients receive the

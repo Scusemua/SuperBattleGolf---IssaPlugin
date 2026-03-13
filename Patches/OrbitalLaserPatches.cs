@@ -129,8 +129,10 @@ namespace IssaPlugin.Patches
                 .GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
                 .FirstOrDefault(m => m.Name.Contains("UpdateOrbitalLaserLockOnTarget"));
 
-        private static readonly MethodInfo _setLockOnTarget =
-            AccessTools.Method(typeof(PlayerInventory), "SetLockOnTarget");
+        private static readonly MethodInfo _setLockOnTarget = AccessTools.Method(
+            typeof(PlayerInventory),
+            "SetLockOnTarget"
+        );
 
         static bool Prefix(PlayerInventory __instance)
         {
@@ -203,32 +205,33 @@ namespace IssaPlugin.Patches
     [HarmonyPatch(typeof(OrbitalLaser), "ServerActivate")]
     static class OrbitalLaserServerActivatePatch
     {
-        // Generous proximity threshold to absorb network lag between the
-        // client's aircraft position and the server's authoritative position.
-        private const float MatchRadius = 100f;
-
         static void Postfix(OrbitalLaser __instance, Hittable target, Vector3 fallbackWorldPosition)
         {
             if (!NetworkServer.active || target != null)
                 return;
 
+            // Pick the aircraft closest to fallbackWorldPosition (the position the
+            // client reported when firing). We use FindFirstObjectByType here —
+            // not AC130NetworkBridge.ActiveGunship — because ActiveGunship becomes
+            // null once the session ends (fly-out), even though the gunship
+            // GameObject still exists and the laser should still track it.
             Transform bestAircraft = null;
             System.Action onHit = null;
-            float bestDist = MatchRadius;
+            float bestDist = float.MaxValue;
 
-            // AC130 gunship
-            var gunship = AC130NetworkBridge.ActiveGunship;
-            if (gunship != null)
+            // AC130 gunship — AC130GunshipMarker is added server-side in ServerSpawnGunship.
+            var gunshipMarker = Object.FindFirstObjectByType<AC130GunshipMarker>();
+            if (gunshipMarker != null)
             {
                 float d = OrbitalLaserAircraftHelpers.XZDist(
-                    gunship.transform.position,
+                    gunshipMarker.transform.position,
                     fallbackWorldPosition
                 );
                 if (d < bestDist)
                 {
                     bestDist = d;
-                    bestAircraft = gunship.transform;
-                    var hitReceiver = gunship.GetComponent<AC130HitReceiver>();
+                    bestAircraft = gunshipMarker.transform;
+                    var hitReceiver = gunshipMarker.GetComponent<AC130HitReceiver>();
                     onHit = () => hitReceiver?.OnHit();
                 }
             }
@@ -250,19 +253,26 @@ namespace IssaPlugin.Patches
             }
 
             if (bestAircraft == null)
+            {
+                IssaPluginPlugin.Log.LogWarning(
+                    "[OrbitalLaser] ServerActivate: target is null but no aircraft found on server."
+                );
                 return;
+            }
 
             var tracker = __instance.gameObject.AddComponent<OrbitalLaserAircraftTracker>();
             tracker.AircraftTransform = bestAircraft;
             tracker.OnHit = onHit;
 
-            IssaPluginPlugin.Log.LogInfo(
-                $"[OrbitalLaser] Aircraft tracker attached — {bestAircraft.name} "
-                    + $"at {bestAircraft.position}."
-            );
-
-            __instance.Networkstate = OrbitalLaserState.AnticipationFollow;
+            // Snap NetworktargetPosition to the server-authoritative aircraft position
+            // so the beam starts at the correct location even if there was slight
+            // client/server position drift during the activation delay.
             __instance.NetworktargetPosition = bestAircraft.position;
+
+            IssaPluginPlugin.Log.LogInfo(
+                $"[OrbitalLaser] Tracker attached to {bestAircraft.name} "
+                    + $"at {bestAircraft.position} (dist from client pos: {bestDist:F1}m)."
+            );
         }
     }
 

@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Reflection;
 using HarmonyLib;
 using IssaPlugin.Items;
@@ -18,7 +19,6 @@ namespace IssaPlugin.Patches
                 if (ac130HitReceiver != null)
                 {
                     ac130HitReceiver.OnHit();
-                    continue;
                 }
 
                 var stealthBomberProxy = hit.GetComponentInParent<BomberProxyBehaviour>();
@@ -26,9 +26,44 @@ namespace IssaPlugin.Patches
                 {
                     stealthBomberProxy.LastHitWorldPos = worldPosition;
                     stealthBomberProxy.OnHit();
-                    continue;
                 }
             }
         }
     }
+
+    // [HarmonyPatch]
+    // static class Patch_Rocket_CheckCollision
+    // {
+    //     static MethodInfo TargetMethod() =>
+    //         typeof(Rocket)
+    //             .GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
+    //             .FirstOrDefault(m => m.Name.Contains("CheckCollision"));
+
+    //     static bool Prefix(Rocket __instance, out Vector3 explosionPosition)
+    //     {
+    //         var hits = Physics.OverlapSphere(worldPosition, 5f);
+    //         bool collisionDetected = false;
+
+    //         foreach (var hit in hits)
+    //         {
+    //             var ac130HitReceiver = hit.GetComponentInParent<AC130HitReceiver>();
+    //             if (ac130HitReceiver != null)
+    //             {
+    //                 ac130HitReceiver.OnHit();
+    //                 collisionDetected = true;
+    //             }
+
+    //             var stealthBomberProxy = hit.GetComponentInParent<BomberProxyBehaviour>();
+    //             if (stealthBomberProxy != null)
+    //             {
+    //                 stealthBomberProxy.LastHitWorldPos = worldPosition;
+    //                 stealthBomberProxy.OnHit();
+    //                 collisionDetected = true;
+    //             }
+    //         }
+
+    //         // If we detected a collision, then just skip the real CheckCollision method.
+    //         return !collisionDetected;
+    //     }
+    // }
 }

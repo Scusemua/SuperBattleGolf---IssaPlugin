@@ -17,10 +17,6 @@ namespace IssaPlugin.Items
         // ItemUseId, so it's safe to remain static.
         private static int _useIndex;
 
-        /// Layer mask used for ground raycasts. Public so AC130NetworkBridge
-        /// can use it without duplicating the GetMask call.
-        public static readonly int GroundLayerMask = LayerMask.GetMask("Default", "Terrain");
-
         public static void GiveAC130ToLocalPlayer()
         {
             ItemHelper.GiveItemToLocalPlayer(

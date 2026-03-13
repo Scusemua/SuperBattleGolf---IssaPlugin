@@ -597,7 +597,7 @@ namespace IssaPlugin.Items
                             camForward,
                             out RaycastHit hit,
                             5000f,
-                            AC130Item.GroundLayerMask
+                            ItemHelper.GroundLayerMask
                         )
                     )
                         crosshairWorld = hit.point;

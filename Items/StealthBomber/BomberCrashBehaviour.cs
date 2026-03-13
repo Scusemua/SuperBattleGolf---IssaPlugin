@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace IssaPlugin.Items
 {
@@ -14,7 +15,16 @@ namespace IssaPlugin.Items
         private bool _impacted;
         private float _lifetime;
 
+        private float _speed;
+
         private const float MaxLifetime = 15f;
+
+        public Rigidbody Rigidbody { get; set; }
+
+        public void Start()
+        {
+            _speed = Configuration.AC130MaydaySpeed.Value;
+        }
 
         private void FixedUpdate()
         {
@@ -23,8 +33,32 @@ namespace IssaPlugin.Items
 
             _lifetime += Time.deltaTime;
 
-            if (transform.position.y <= 0f || _lifetime >= MaxLifetime)
+            if (CheckImpact())
                 Impact();
+        }
+
+        private bool CheckImpact()
+        {
+            if (Rigidbody == null)
+            {
+                return false;
+            }
+
+            float speed = Vector3.Magnitude(Rigidbody.linearVelocity);
+            float checkDist = speed * Time.deltaTime * 2f;
+
+            bool hitGround = transform.position.y <= 0f;
+            if (!hitGround)
+            {
+                hitGround = Physics.Raycast(
+                    transform.position,
+                    transform.forward,
+                    checkDist,
+                    ItemHelper.GroundLayerMask
+                );
+            }
+
+            return hitGround;
         }
 
         private void Impact()

@@ -104,7 +104,7 @@ namespace IssaPlugin.Items
         public void RpcBomberShotDown(
             Vector3 crashDir,
             float crashSpeed,
-            Vector3 rocketImpactDir,
+            Vector3 impactDir,
             Vector3 torqueImpulse
         )
         {
@@ -135,18 +135,22 @@ namespace IssaPlugin.Items
                 // Preserve the bomber's forward momentum at flight speed.
                 rb.linearVelocity = crashDir * flySpeed;
 
-                // Apply outward blast force from the rocket explosion.
-                if (rocketImpactDir != Vector3.zero)
+                // Apply outward blast force from the explosion.
+                if (impactDir != Vector3.zero)
                     rb.AddForce(
-                        rocketImpactDir * Configuration.BomberCrashImpactForce.Value,
+                        impactDir * Configuration.BomberCrashImpactForce.Value,
                         ForceMode.Impulse
                     );
+
+                // Apply a continuous downward force in the global space
+                rb.AddForce(Vector3.down * Configuration.BomberCrashDownwardForce.Value);
 
                 // Apply server-computed tumble torque (same value on all clients).
                 rb.AddTorque(torqueImpulse, ForceMode.Impulse);
             }
 
-            visual.AddComponent<BomberCrashBehaviour>();
+            var crashBehavior = visual.AddComponent<BomberCrashBehaviour>();
+            crashBehavior.Rigidbody = rb;
         }
 
         [ClientRpc]

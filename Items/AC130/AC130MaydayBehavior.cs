@@ -4,7 +4,6 @@ using UnityEngine.InputSystem;
 
 namespace IssaPlugin.Items
 {
-    /// <summary>
     /// Attached to the gunship GameObject when a mayday is triggered.
     /// Drives the dive physics, cockpit camera (owning client only),
     /// camera shake, and crash impact.
@@ -15,7 +14,6 @@ namespace IssaPlugin.Items
     ///   On the owning client, the cockpit camera is activated.
     ///   On impact, the server spawns the explosion, deals damage, then
     ///   Destroy()s the GameObject (which cleans up all clients via Mirror).
-    /// </summary>
     public class AC130MaydayBehaviour : MonoBehaviour
     {
         // ----------------------------------------------------------------
@@ -287,7 +285,7 @@ namespace IssaPlugin.Items
                     transform.position,
                     transform.forward,
                     checkDist,
-                    AC130Item.GroundLayerMask
+                    ItemHelper.GroundLayerMask
                 );
             }
 

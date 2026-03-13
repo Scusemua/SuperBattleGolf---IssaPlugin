@@ -1,10 +1,16 @@
 using System.Reflection;
 using Mirror;
+using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace IssaPlugin.Items
 {
     public static class ItemHelper
     {
+        /// Layer mask used for ground raycasts. Public so AC130NetworkBridge
+        /// can use it without duplicating the GetMask call.
+        public static readonly int GroundLayerMask = LayerMask.GetMask("Default", "Terrain");
+
         private static MethodInfo _cmdAddItemMethod;
 
         private static readonly MethodInfo DecrementMethod = typeof(PlayerInventory).GetMethod(
