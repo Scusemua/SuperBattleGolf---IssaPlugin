@@ -22,15 +22,16 @@ namespace IssaPlugin.Patches
             (new[] { "baseballbat", "bat" }, BatItem.BatItemType, 1),
             (new[] { "freezeworld", "freeze" }, FreezeItem.FreezeItemType, 1),
             (new[] { "lowgravity", "gravity" }, LowGravityItem.LowGravityItemType, 1),
+            (
+                new[] { "m200", "sniper", "sniper_rifle", "intervention" },
+                SniperRifleItem.SniperRifleItemType,
+                1
+            ),
         };
 
         /// <summary>
-        /// Console command: giveCustomItem &lt;name&gt;
+        /// Console command: giveCustomItem <name>
         /// Gives the named custom item to the local player.
-        ///
-        /// Accepted names (case-insensitive):
-        ///   ac130 | stealthbomber / bomber | predatormissile / missile |
-        ///   baseballbat / bat | freezeworld / freeze
         ///
         /// Also accepts an integer item-type ID, e.g. giveCustomItem 100.
         /// </summary>
@@ -79,7 +80,7 @@ namespace IssaPlugin.Patches
 
             UnityEngine.Debug.LogWarning(
                 $"[giveCustomItem] Unknown item \"{itemName}\". "
-                    + "Valid names: ac130, bomber, missile, bat, freeze, lowgravity (or an integer item-type ID)."
+                    + "Valid names: ac130, bomber, missile, bat, freeze, lowgravity, sniper (or an integer item-type ID)."
             );
         }
     }

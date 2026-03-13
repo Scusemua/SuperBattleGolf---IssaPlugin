@@ -102,6 +102,18 @@ namespace IssaPlugin
         public static ConfigEntry<float> LowGravityScale { get; private set; }
         public static ConfigEntry<float> LowGravitySpawnWeight { get; private set; }
 
+        // --- Sniper Rifle ---
+        public static ConfigEntry<Key> SniperRifleGiveKey { get; private set; }
+        public static ConfigEntry<float> SniperRifleUses { get; private set; }
+        public static ConfigEntry<float> SniperRifleSpawnWeight { get; private set; }
+        public static ConfigEntry<float> SniperRifleMaxAimingDistance { get; private set; }
+        public static ConfigEntry<float> SniperRifleMaxShotDistance { get; private set; }
+        public static ConfigEntry<float> SniperRifleScopedInaccuracy { get; private set; }
+        public static ConfigEntry<float> SniperRifleHipFireInaccuracy { get; private set; }
+        public static ConfigEntry<float> SniperRifleZoomFov { get; private set; }
+        public static ConfigEntry<float> SniperRifleZoomSpeed { get; private set; }
+        public static ConfigEntry<float> SniperRifleShotDuration { get; private set; }
+
         // --- Explosion Scaling ---
         public static ConfigEntry<float> AC130ExplosionScale { get; private set; }
         public static ConfigEntry<float> PredatorMissileExplosionScale { get; private set; }
@@ -703,6 +715,77 @@ namespace IssaPlugin
                 "LowGravityWeight",
                 2f,
                 "Spawn weight for the Low Gravity item in item boxes. Set to 0 to disable."
+            );
+
+            // --- Sniper Rifle ---
+            SniperRifleGiveKey = cfg.Bind(
+                "SniperRifle",
+                "GiveKey",
+                Key.Numpad1,
+                "Debug key to add the Sniper Rifle to your inventory."
+            );
+
+            SniperRifleUses = cfg.Bind(
+                "SniperRifle",
+                "Uses",
+                1f,
+                "Number of shots per Sniper Rifle pickup."
+            );
+
+            SniperRifleSpawnWeight = cfg.Bind(
+                "ItemBoxSpawns",
+                "SniperRifleWeight",
+                2f,
+                "Spawn weight for the Sniper Rifle in item boxes. Set to 0 to disable."
+            );
+
+            SniperRifleMaxAimingDistance = cfg.Bind(
+                "SniperRifle",
+                "MaxAimingDistance",
+                1000f,
+                "Maximum distance (units) the aim-point raycast travels when computing where the barrel points."
+            );
+
+            SniperRifleMaxShotDistance = cfg.Bind(
+                "SniperRifle",
+                "MaxShotDistance",
+                1000f,
+                "Maximum distance (units) the bullet raycast travels before missing."
+            );
+
+            SniperRifleScopedInaccuracy = cfg.Bind(
+                "SniperRifle",
+                "ScopedInaccuracy",
+                0.05f,
+                "Maximum random angular deviation (degrees) when firing while scoped. Lower = more precise."
+            );
+
+            SniperRifleHipFireInaccuracy = cfg.Bind(
+                "SniperRifle",
+                "HipFireInaccuracy",
+                3.0f,
+                "Maximum random angular deviation (degrees) when firing from the hip (not scoped)."
+            );
+
+            SniperRifleZoomFov = cfg.Bind(
+                "SniperRifle",
+                "ZoomFov",
+                15f,
+                "Camera field of view while the scope is active. Lower values zoom in more."
+            );
+
+            SniperRifleZoomSpeed = cfg.Bind(
+                "SniperRifle",
+                "ZoomSpeed",
+                10f,
+                "Speed at which the camera lerps to and from the scoped FOV."
+            );
+
+            SniperRifleShotDuration = cfg.Bind(
+                "SniperRifle",
+                "ShotDuration",
+                0.6f,
+                "Seconds the shot animation plays before the item use state resets."
             );
         }
     }

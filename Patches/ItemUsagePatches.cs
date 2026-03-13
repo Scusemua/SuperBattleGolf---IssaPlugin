@@ -81,7 +81,9 @@ namespace IssaPlugin.Patches
                 if (bridge != null)
                     bridge.CmdActivateLowGravity();
                 else
-                    IssaPluginPlugin.Log.LogError("[LowGravity] No LowGravityNetworkBridge on player.");
+                    IssaPluginPlugin.Log.LogError(
+                        "[LowGravity] No LowGravityNetworkBridge on player."
+                    );
                 return false;
             }
 
@@ -188,6 +190,8 @@ namespace IssaPlugin.Patches
                 return AssetLoader.FreezeModelPrefab;
             if (type == LowGravityItem.LowGravityItemType)
                 return AssetLoader.LowGravityModelPrefab;
+            if (type == SniperRifleItem.SniperRifleItemType)
+                return AssetLoader.SniperRiflePrefab;
             return null;
         }
 
@@ -317,8 +321,19 @@ namespace IssaPlugin.Patches
     {
         static void Prefix(ref ItemType equippedItem)
         {
-            if (ItemRegistry.IsCustomItem(equippedItem) && equippedItem != BatItem.BatItemType)
+            if (!ItemRegistry.IsCustomItem(equippedItem))
+            {
+                return;
+            }
+
+            if (equippedItem == SniperRifleItem.SniperRifleItemType)
+            {
+                equippedItem = ItemType.ElephantGun;
+            }
+            else if (equippedItem != BatItem.BatItemType)
+            {
                 equippedItem = ItemType.OrbitalLaser;
+            }
         }
     }
 
@@ -330,8 +345,19 @@ namespace IssaPlugin.Patches
     {
         static void Prefix(ref ItemType equippedItem)
         {
-            if (ItemRegistry.IsCustomItem(equippedItem) && equippedItem != BatItem.BatItemType)
+            if (!ItemRegistry.IsCustomItem(equippedItem))
+            {
+                return;
+            }
+
+            if (equippedItem == SniperRifleItem.SniperRifleItemType)
+            {
+                equippedItem = ItemType.ElephantGun;
+            }
+            else if (equippedItem != BatItem.BatItemType)
+            {
                 equippedItem = ItemType.OrbitalLaser;
+            }
         }
     }
 }

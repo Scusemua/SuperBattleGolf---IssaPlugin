@@ -34,7 +34,8 @@ namespace IssaPlugin.Items
                 || type == PredatorMissileItem.MissileItemType
                 || type == AC130Item.AC130ItemType
                 || type == FreezeItem.FreezeItemType
-                || type == LowGravityItem.LowGravityItemType;
+                || type == LowGravityItem.LowGravityItemType
+                || type == SniperRifleItem.SniperRifleItemType;
         }
 
         public static int GetMaxUses(ItemType type)
@@ -51,6 +52,8 @@ namespace IssaPlugin.Items
                 return (int)Configuration.FreezeUses.Value;
             if (type == LowGravityItem.LowGravityItemType)
                 return (int)Configuration.LowGravityUses.Value;
+            if (type == SniperRifleItem.SniperRifleItemType)
+                return (int)Configuration.SniperRifleUses.Value;
             return 1;
         }
 
@@ -101,6 +104,7 @@ namespace IssaPlugin.Items
             var ac130Data = GetOrCreateItemData(AC130Item.AC130ItemType);
             var freezeData = GetOrCreateItemData(FreezeItem.FreezeItemType);
             var lowGravityData = GetOrCreateItemData(LowGravityItem.LowGravityItemType);
+            var sniperRifleData = GetOrCreateItemData(SniperRifleItem.SniperRifleItemType);
 
             Sprite rocketFallbackIcon = null;
             if (
@@ -122,6 +126,10 @@ namespace IssaPlugin.Items
             IconProperty.SetValue(ac130Data, AssetLoader.AC130Icon ?? rocketFallbackIcon);
             IconProperty.SetValue(freezeData, AssetLoader.FreezeIcon ?? rocketFallbackIcon);
             IconProperty.SetValue(lowGravityData, AssetLoader.LowGravityIcon ?? rocketFallbackIcon);
+            IconProperty.SetValue(
+                sniperRifleData,
+                AssetLoader.SniperRifleIcon ?? pistolFallbackIcon
+            );
 
             dict[BatItem.BatItemType] = batData;
             dict[StealthBomberItem.BomberItemType] = bomberData;
@@ -129,6 +137,7 @@ namespace IssaPlugin.Items
             dict[AC130Item.AC130ItemType] = ac130Data;
             dict[FreezeItem.FreezeItemType] = freezeData;
             dict[LowGravityItem.LowGravityItemType] = lowGravityData;
+            dict[SniperRifleItem.SniperRifleItemType] = sniperRifleData;
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[ItemRegistry] Injected {CustomItemDataCache.Count} custom items."
@@ -220,6 +229,7 @@ namespace IssaPlugin.Items
                 addEntryMethod.Invoke(table, new object[] { "ITEM_103", "AC130 Gunship" });
                 addEntryMethod.Invoke(table, new object[] { "ITEM_104", "Freeze World" });
                 addEntryMethod.Invoke(table, new object[] { "ITEM_105", "Low Gravity" });
+                addEntryMethod.Invoke(table, new object[] { "ITEM_106", "M200 Intervention" });
 
                 IssaPluginPlugin.Log.LogInfo(
                     "[ItemRegistry] Custom item names registered in string table."

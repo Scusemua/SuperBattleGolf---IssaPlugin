@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 3330150864
+CRC: 3513821146
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: e73e37822ea380fb3dc45bf3ef0639d2
+    Hash: 5f82cd1058f7667704e499138ab3208b
   TypeTreeHash:
     serializedVersion: 2
     Hash: 327227f2969caf5f4db7e0f80f1d7110
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: db8cc11ef9bd4a5c51f151fde7eb1a82
+    Hash: 6509ff4fa5651ab1e490d7184766ee3d
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -65,29 +65,34 @@ SerializeReferenceClassIdentifiers: []
 Assets:
 - Assets/Assets/ac130_above.ogg
 - Assets/Assets/homerun.ogg
-- Assets/Assets/fire_torch_intense.prefab
+- Assets/Assets/sniper_rifle_icon.png
 - Assets/Assets/freeze_effect_icon.png
 - Assets/Assets/bomber_model.prefab
 - Assets/Assets/ac130_model.prefab
 - Assets/Assets/etfx_explosion_nuke.wav
 - Assets/Assets/smoke_prefab.prefab
+- Assets/Assets/Material.003.mat
+- Assets/Assets/fire_torch_intense.prefab
 - Assets/Assets/missile_icon.png
 - Assets/Assets/predator_missile_tablet_model.prefab
 - Assets/Assets/lightning.prefab
 - Assets/Assets/bomber_proxy.prefab
 - Assets/Assets/stealth_bomber_tablet_model.prefab
 - Assets/Assets/ac130_tablet.prefab
+- Assets/Assets/Material.001.mat
 - Assets/Assets/gravity_remote.prefab
 - Assets/Assets/jet_plane_flyby.ogg
 - Assets/Assets/predator_missile_ready.ogg
 - Assets/Assets/bomber_jet.prefab
 - Assets/Assets/bomber_icon.png
 - Assets/Assets/plane_falling.ogg
+- Assets/Assets/gravity_remote_model.fbx
 - Assets/Assets/big_plane.ogg
 - Assets/Assets/WarningExclamation.prefab
 - Assets/Assets/ac130_tablet_model.prefab
 - Assets/Assets/bat_icon.png
 - Assets/Assets/smoke_trail_prefab.prefab
+- Assets/Assets/Material.002.mat
 - Assets/Assets/ac130_impact_vfx.prefab
 - Assets/Assets/stealth_bomber_tablet.prefab
 - Assets/Assets/snowball.prefab
@@ -98,5 +103,6 @@ Assets:
 - Assets/Assets/ice_shader.shader
 - Assets/Assets/bat_model.prefab
 - Assets/Assets/NukeVerticalExplosionFire.prefab
+- Assets/Assets/intervention.prefab
 - Assets/Assets/gravity_remote_icon.png
 Dependencies: []

@@ -88,6 +88,9 @@ namespace IssaPlugin
             if (keyboard[Configuration.LowGravityGiveKey.Value].wasPressedThisFrame)
                 LowGravityItem.GiveLowGravityToLocalPlayer();
 
+            if (keyboard[Configuration.SniperRifleGiveKey.Value].wasPressedThisFrame)
+                SniperRifleItem.GiveSniperRifleToLocalPlayer();
+
             if (keyboard[Key.F10].wasPressedThisFrame)
                 DebugDummies.ToggleDebugDummies();
         }

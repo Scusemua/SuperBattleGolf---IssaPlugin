@@ -46,3 +46,5 @@ IssaPlugin/
 "Snowball - Low resources" (https://skfb.ly/oyCyZ) by JanesBT is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
 
 "REMOTE" (https://skfb.ly/pAwPL) by Garshrir is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
+
+"M200 Intervention (Low-poly)" (https://skfb.ly/prrWy) by GoldbergR is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).

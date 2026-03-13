@@ -13,6 +13,8 @@ namespace IssaPlugin.Items
         public static Sprite FreezeIcon { get; private set; }
         public static Sprite LowGravityIcon { get; private set; }
 
+        public static Sprite SniperRifleIcon { get; private set; }
+
         public static GameObject BatModelPrefab { get; private set; }
         public static GameObject BomberPrefab { get; private set; }
         public static GameObject BomberProxyPrefab { get; private set; }
@@ -22,6 +24,8 @@ namespace IssaPlugin.Items
         public static GameObject Ac130TabletPrefab { get; private set; }
         public static GameObject FreezeModelPrefab { get; private set; }
         public static GameObject LowGravityModelPrefab { get; private set; }
+
+        public static GameObject SniperRiflePrefab { get; private set; }
 
         // ----------------------------------------------------------------
         //  AC130 Mayday — populate the asset bundle with these names.
@@ -91,7 +95,8 @@ namespace IssaPlugin.Items
             MissileIcon = LoadSprite("missile_icon.png");
             AC130Icon = LoadSprite("ac130_icon.png");
             FreezeIcon = LoadSprite("freeze_effect_icon.png");
-            LowGravityIcon = LoadSprite("gravity_remote_icon.png"); // placeholder — add to bundle
+            LowGravityIcon = LoadSprite("gravity_remote_icon.png");
+            SniperRifleIcon = LoadSprite("sniper_rifle_icon.png");
 
             BatModelPrefab = Load<GameObject>("bat_model.prefab");
             BomberPrefab = Load<GameObject>("bomber_model.prefab");
@@ -101,7 +106,8 @@ namespace IssaPlugin.Items
             MissileTabletPrefab = Load<GameObject>("predator_missile_tablet.prefab");
             Ac130TabletPrefab = Load<GameObject>("ac130_tablet.prefab");
             FreezeModelPrefab = Load<GameObject>("snowball.prefab");
-            LowGravityModelPrefab = Load<GameObject>("gravity_remote.prefab"); // placeholder — add to bundle
+            LowGravityModelPrefab = Load<GameObject>("gravity_remote.prefab");
+            SniperRiflePrefab = Load<GameObject>("intervention.prefab");
 
             // AudioClips must be loaded by asset name without the file extension.
             // Unity compiles audio into its own internal format at bundle-build
