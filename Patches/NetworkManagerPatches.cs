@@ -368,6 +368,68 @@ namespace IssaPlugin.Patches
             {
                 NetworkClient.localPlayer?.GetComponent<AC130NetworkBridge>()?.ClientAC130Busy();
             });
+
+            // ── UFO Messages ─────────────────────────────────────────────────
+
+            // Client → Server
+            Writer<UFOStartMessage>.write = UFOMessageSerialization.WriteUFOStartMessage;
+            Reader<UFOStartMessage>.read = UFOMessageSerialization.ReadUFOStartMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<UFOStartMessage>(
+                    (conn, msg) =>
+                    {
+                        conn.identity?.GetComponent<UFONetworkBridge>()?.ServerStartUFO();
+                    }
+                );
+
+            Writer<UFOEndMessage>.write = UFOMessageSerialization.WriteUFOEndMessage;
+            Reader<UFOEndMessage>.read = UFOMessageSerialization.ReadUFOEndMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<UFOEndMessage>(
+                    (conn, msg) =>
+                    {
+                        conn.identity?.GetComponent<UFONetworkBridge>()?.ServerEndUFO();
+                    }
+                );
+
+            Writer<UFOMoveMessage>.write = UFOMessageSerialization.WriteUFOMoveMessage;
+            Reader<UFOMoveMessage>.read = UFOMessageSerialization.ReadUFOMoveMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<UFOMoveMessage>(
+                    (conn, msg) =>
+                    {
+                        conn.identity?.GetComponent<UFONetworkBridge>()
+                            ?.ServerMoveUFO(msg.WorldMoveDir);
+                    }
+                );
+
+            Writer<UFOFireLaserMessage>.write = UFOMessageSerialization.WriteUFOFireLaserMessage;
+            Reader<UFOFireLaserMessage>.read = UFOMessageSerialization.ReadUFOFireLaserMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<UFOFireLaserMessage>(
+                    (conn, msg) =>
+                    {
+                        conn.identity?.GetComponent<UFONetworkBridge>()?.ServerFireLaser();
+                    }
+                );
+
+            // Server → Client
+            Writer<UFOBeginClientMessage>.write =
+                UFOMessageSerialization.WriteUFOBeginClientMessage;
+            Reader<UFOBeginClientMessage>.read = UFOMessageSerialization.ReadUFOBeginClientMessage;
+            NetworkClient.RegisterHandler<UFOBeginClientMessage>(msg =>
+            {
+                NetworkClient
+                    .localPlayer?.GetComponent<UFONetworkBridge>()
+                    ?.ClientBeginUFO(msg.UFONetId);
+            });
+
+            Writer<UFOEndClientMessage>.write = UFOMessageSerialization.WriteUFOEndClientMessage;
+            Reader<UFOEndClientMessage>.read = UFOMessageSerialization.ReadUFOEndClientMessage;
+            NetworkClient.RegisterHandler<UFOEndClientMessage>(msg =>
+            {
+                NetworkClient.localPlayer?.GetComponent<UFONetworkBridge>()?.ClientEndUFO();
+            });
         }
 
         private static void RegisterHandlers() { }
@@ -375,6 +437,7 @@ namespace IssaPlugin.Patches
         private static void RegisterPrefabs()
         {
             RegisterPrefab(AssetLoader.DroppedCustomItemPrefab);
+            RegisterPrefab(AssetLoader.UFOPrefab);
             RegisterPrefab(AssetLoader.BatModelPrefab);
             RegisterPrefab(AssetLoader.BomberPrefab);
             RegisterPrefab(AssetLoader.BomberProxyPrefab);

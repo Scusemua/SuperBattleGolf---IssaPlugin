@@ -95,6 +95,18 @@ namespace IssaPlugin.Patches
                 return false;
             }
 
+            if (equipped == UFOItem.UFOItemType)
+            {
+                shouldEatInput = true;
+                __result = true;
+                var bridge = __instance.GetComponent<UFONetworkBridge>();
+                if (bridge != null)
+                    NetworkClient.Send(new UFOStartMessage());
+                else
+                    IssaPluginPlugin.Log.LogError("[UFO] No UFONetworkBridge on player.");
+                return false;
+            }
+
             return true;
         }
     }
@@ -137,6 +149,7 @@ namespace IssaPlugin.Patches
                 || equipped == AC130Item.AC130ItemType
                 || equipped == FreezeItem.FreezeItemType
                 || equipped == LowGravityItem.LowGravityItemType
+                || equipped == UFOItem.UFOItemType
             )
             {
                 rightSwitcher.SetEquipment(EquipmentType.RocketLauncher);
@@ -234,6 +247,8 @@ namespace IssaPlugin.Patches
                 return AssetLoader.LowGravityModelPrefab;
             if (type == SniperRifleItem.SniperRifleItemType)
                 return AssetLoader.SniperRiflePrefab;
+            if (type == UFOItem.UFOItemType)
+                return AssetLoader.UFOModelPrefab;
             return null;
         }
 

@@ -61,6 +61,29 @@ namespace IssaPlugin.Overlays
 
         // ── Per-frame logic ──────────────────────────────────────────────────
 
+        private void LateUpdate()
+        {
+            // Force the character root to face the camera's aim direction every frame
+            // while scoped. The movement system lerps toward camera facing on its own
+            // (IsAimingItem=true via the base game path), but without IsAimingSwing=true
+            // the lerp is slow enough that the player sees a constant CCW offset for the
+            // first several frames. LateUpdate runs after all Update() calls, so this
+            // wins the frame for rendering and networking without fighting the physics step.
+            if (!SniperRifleItem.IsScoped)
+                return;
+            var li = GameManager.LocalPlayerInfo;
+            if (li?.Movement == null)
+                return;
+            var cam = Camera.main;
+            if (cam == null)
+                return;
+            Vector3 fwd = cam.transform.forward;
+            fwd.y = 0f;
+            if (fwd.sqrMagnitude < 0.01f)
+                return;
+            li.Movement.transform.rotation = Quaternion.LookRotation(fwd.normalized);
+        }
+
         private void Update()
         {
             var localInfo = GameManager.LocalPlayerInfo;
@@ -74,7 +97,25 @@ namespace IssaPlugin.Overlays
 
             // Play the aim sound once on scope entry.
             if (sniperEquipped && wantsScope && !_prevScoped)
+            {
+                var rot = localInfo.Movement?.transform.eulerAngles ?? default;
+                var camRot = Camera.main?.transform.eulerAngles ?? default;
+                IssaPluginPlugin.Log.LogInfo(
+                    $"[Sniper] Scope ENTER — charYaw={rot.y:F1}  camYaw={camRot.y:F1}"
+                        + $"  IsAimingItem={localInfo.Inventory.IsAimingItem}"
+                        + $"  IsHoldingAimSwing={localInfo.Input?.IsHoldingAimSwing}"
+                );
                 localInfo.PlayerAudio.PlayGunAimForAllClients(ItemType.ElephantGun);
+            }
+
+            if (sniperEquipped && !wantsScope && _prevScoped)
+            {
+                var rot = localInfo.Movement?.transform.eulerAngles ?? default;
+                IssaPluginPlugin.Log.LogInfo(
+                    $"[Sniper] Scope EXIT — charYaw={rot.y:F1}"
+                        + $"  IsAimingItem={localInfo.Inventory.IsAimingItem}"
+                );
+            }
 
             _prevScoped = wantsScope;
 

@@ -117,6 +117,22 @@ namespace IssaPlugin
         public static ConfigEntry<float> SniperRifleMaxZoomFov        { get; private set; }
         public static ConfigEntry<float> SniperRifleScrollSensitivity { get; private set; }
 
+        // --- UFO ---
+        public static ConfigEntry<Key> UFOGiveKey { get; private set; }
+        public static ConfigEntry<float> UFOUses { get; private set; }
+        public static ConfigEntry<float> UFOSpawnWeight { get; private set; }
+        public static ConfigEntry<float> UFOSpeed { get; private set; }
+        public static ConfigEntry<float> UFOAltitude { get; private set; }
+        public static ConfigEntry<float> UFOTerrainFollowSpeed { get; private set; }
+        public static ConfigEntry<float> UFOTurnSpeed { get; private set; }
+        public static ConfigEntry<float> UFOCameraPitch { get; private set; }
+        public static ConfigEntry<float> UFOCameraDistance { get; private set; }
+        public static ConfigEntry<float> UFOMouseSensitivity { get; private set; }
+        public static ConfigEntry<float> UFODuration { get; private set; }
+        public static ConfigEntry<float> UFOLaserUses { get; private set; }
+        public static ConfigEntry<float> UFOLaserAnticipationDuration { get; private set; }
+        public static ConfigEntry<float> UFOLaserCooldown { get; private set; }
+
         // --- Explosion Scaling ---
         public static ConfigEntry<float> AC130ExplosionScale { get; private set; }
         public static ConfigEntry<float> PredatorMissileExplosionScale { get; private set; }
@@ -810,6 +826,100 @@ namespace IssaPlugin
                 "ScrollSensitivity",
                 5f,
                 "FOV units changed per scroll notch. Higher values zoom faster."
+            );
+
+            // --- UFO ---
+            UFOGiveKey = cfg.Bind(
+                "UFO",
+                "GiveKey",
+                Key.Numpad2,
+                "Debug key to add the UFO to your inventory."
+            );
+
+            UFOUses = cfg.Bind("UFO", "Uses", 1f, "Number of UFO uses per pickup.");
+
+            UFOSpawnWeight = cfg.Bind(
+                "ItemBoxSpawns",
+                "UFOWeight",
+                1f,
+                "Spawn weight for the UFO in item boxes. Set to 0 to disable."
+            );
+
+            UFOSpeed = cfg.Bind(
+                "UFO",
+                "Speed",
+                30f,
+                "Horizontal movement speed of the UFO in units per second."
+            );
+
+            UFOAltitude = cfg.Bind(
+                "UFO",
+                "Altitude",
+                20f,
+                "Height above terrain the UFO hovers at."
+            );
+
+            UFOTerrainFollowSpeed = cfg.Bind(
+                "UFO",
+                "TerrainFollowSpeed",
+                5f,
+                "How quickly the UFO adjusts its altitude to match terrain changes (lerp speed)."
+            );
+
+            UFOTurnSpeed = cfg.Bind(
+                "UFO",
+                "TurnSpeed",
+                8f,
+                "How quickly the UFO rotates to face the movement direction (Slerp speed)."
+            );
+
+            UFOCameraPitch = cfg.Bind(
+                "UFO",
+                "CameraPitch",
+                60f,
+                "Camera pitch angle in degrees during the UFO session (0 = horizontal, 90 = straight down)."
+            );
+
+            UFOCameraDistance = cfg.Bind(
+                "UFO",
+                "CameraDistance",
+                40f,
+                "Camera distance addition from the UFO during the session."
+            );
+
+            UFOMouseSensitivity = cfg.Bind(
+                "UFO",
+                "MouseSensitivity",
+                0.2f,
+                "Mouse X sensitivity for rotating the UFO orbit camera."
+            );
+
+            UFODuration = cfg.Bind(
+                "UFO",
+                "Duration",
+                30f,
+                "How many seconds the UFO session lasts before automatically ending."
+            );
+
+            UFOLaserUses = cfg.Bind(
+                "UFO",
+                "LaserUses",
+                3f,
+                "How many orbital laser strikes the player can fire during a UFO session."
+            );
+
+            UFOLaserAnticipationDuration = cfg.Bind(
+                "UFO",
+                "LaserAnticipationDuration",
+                1.5f,
+                "Seconds of anticipation before the orbital laser fires. The laser tracks the UFO during this window."
+            );
+
+            UFOLaserCooldown = cfg.Bind(
+                "UFO",
+                "LaserCooldown",
+                3f,
+                "Minimum seconds between orbital laser fires."
             );
         }
     }

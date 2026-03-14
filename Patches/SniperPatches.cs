@@ -41,7 +41,6 @@ namespace IssaPlugin.Patches
                 return;
             if (__instance.GetEffectivelyEquippedItem(true) == SniperRifleItem.SniperRifleItemType)
             {
-                IssaPluginPlugin.Log.LogInfo("[Sniper] GetEffectivelyEquippedItem(false) → overriding None→ElephantGun");
                 __result = ItemType.ElephantGun;
             }
         }
@@ -52,6 +51,7 @@ namespace IssaPlugin.Patches
     /// than UpdateIsAimingItem resets it after SniperGetEffectivelyEquippedItemPatch
     /// has already made the base game handle it correctly.
     ///
+    /// 
     /// In the normal path this Postfix is a no-op (currentlyAiming == shouldAim).
     /// </summary>
     [HarmonyPatch(typeof(PlayerInventory), "UpdateIsAimingItem")]
@@ -78,7 +78,9 @@ namespace IssaPlugin.Patches
             if (currentlyAiming == shouldAim)
                 return;
 
-            IssaPluginPlugin.Log.LogInfo($"[Sniper] Correcting IsAimingItem: {currentlyAiming}→{shouldAim}, calling InformIsAimingItemChanged");
+            IssaPluginPlugin.Log.LogInfo(
+                $"[Sniper] Correcting IsAimingItem: {currentlyAiming}→{shouldAim}, calling InformIsAimingItemChanged"
+            );
             __instance.PlayerInfo.SetIsAimingItem(shouldAim);
             __instance.PlayerInfo.Movement.InformIsAimingItemChanged();
         }

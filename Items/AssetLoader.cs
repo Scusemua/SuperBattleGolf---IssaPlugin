@@ -15,6 +15,7 @@ namespace IssaPlugin.Items
         public static Sprite LowGravityIcon { get; private set; }
 
         public static Sprite SniperRifleIcon { get; private set; }
+        public static Sprite UFOIcon { get; private set; }
 
         public static Texture2D SniperScopeTexture { get; private set; }
 
@@ -29,6 +30,8 @@ namespace IssaPlugin.Items
         public static GameObject LowGravityModelPrefab { get; private set; }
 
         public static GameObject SniperRiflePrefab { get; private set; }
+        public static GameObject UFOPrefab { get; private set; }
+        public static GameObject UFOModelPrefab { get; private set; }
 
         public static GameObject BloodSplatterPrefab { get; private set; }
 
@@ -108,6 +111,7 @@ namespace IssaPlugin.Items
             FreezeIcon = LoadSprite("freeze_effect_icon.png");
             LowGravityIcon = LoadSprite("gravity_remote_icon.png");
             SniperRifleIcon = LoadSprite("sniper_rifle_icon.png");
+            UFOIcon = LoadSprite("ufo_icon.png");
 
             SniperScopeTexture = LoadTexture2D("sniper_scope.png");
 
@@ -136,6 +140,14 @@ namespace IssaPlugin.Items
             SniperRiflePrefab = Load<GameObject>("intervention.prefab");
             BloodSplatterPrefab = Load<GameObject>("blood_splatter_critical.prefab");
 
+            UFOPrefab = Load<GameObject>("ufo.prefab");
+            EnsureNetworkIdentity(UFOPrefab, 0xF0000001u);
+            if (UFOPrefab != null)
+                UFOPrefab.AddComponent<UFOClientSetup>();
+            DisableRigidbody(UFOPrefab);
+
+            UFOModelPrefab = Load<GameObject>("ufo_tablet.prefab");
+
             // Set Kinematic to True and Use Gravity to False.
             // We'll toggle them to true if they're dropped.
             DisableRigidbody(BomberTabletPrefab);
@@ -144,6 +156,7 @@ namespace IssaPlugin.Items
             DisableRigidbody(FreezeModelPrefab);
             DisableRigidbody(LowGravityModelPrefab);
             DisableRigidbody(SniperRiflePrefab);
+            DisableRigidbody(UFOModelPrefab);
 
             // AudioClips must be loaded by asset name without the file extension.
             // Unity compiles audio into its own internal format at bundle-build
