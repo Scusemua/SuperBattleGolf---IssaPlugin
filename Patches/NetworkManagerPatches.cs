@@ -31,28 +31,114 @@ namespace IssaPlugin.Patches
         {
             if (_registered)
                 return;
-            _registered = true;
+
+            IssaPluginPlugin.Log.LogInfo(
+                "[NetworkManager] Registering custom prefabs and message handlers."
+            );
 
             // ── Prefab registration ──────────────────────────────────────────
-            RegisterPrefab(AssetLoader.DroppedCustomItemPrefab);
-            RegisterPrefab(AssetLoader.BomberProxyPrefab);
-            RegisterPrefab(AssetLoader.AC130Prefab);
+            RegisterPrefabs();
 
             // ── NetworkMessage handlers ──────────────────────────────────────
-            NetworkClient.RegisterHandler<FreezeBeginMessage>(FreezeNetworkBridge.HandleFreezeBegin);
+            RegisterNetworkMessages();
+
+            _registered = true;
+            IssaPluginPlugin.Log.LogInfo(
+                "[NetworkManager] Custom prefabs and message handlers registered."
+            );
+        }
+
+        private static void RegisterNetworkMessages()
+        {
+            // -------------------------------
+            // ---- FreezeEffect Messages ----
+            NetworkClient.RegisterHandler<FreezeBeginMessage>(
+                FreezeNetworkBridge.HandleFreezeBegin
+            );
+            Writer<FreezeBeginMessage>.write =
+                FreezeBeginMessageSerialization.WriteFreezeBeginMessage;
+            Reader<FreezeBeginMessage>.read =
+                FreezeBeginMessageSerialization.ReadFreezeBeginMessage;
+
             NetworkClient.RegisterHandler<FreezeEndMessage>(FreezeNetworkBridge.HandleFreezeEnd);
+            Writer<FreezeEndMessage>.write = FreezeEndMessageSerialization.WriteFreezeEndMessage;
+            Reader<FreezeEndMessage>.read = FreezeEndMessageSerialization.ReadFreezeEndMessage;
 
-            NetworkClient.RegisterHandler<LowGravityBeginMessage>(LowGravityNetworkBridge.HandleLowGravityBegin);
-            NetworkClient.RegisterHandler<LowGravityEndMessage>(LowGravityNetworkBridge.HandleLowGravityEnd);
+            // -----------------------------
+            // ---- LowGravity Messages ----
+            NetworkClient.RegisterHandler<LowGravityBeginMessage>(
+                LowGravityNetworkBridge.HandleLowGravityBegin
+            );
+            Writer<LowGravityBeginMessage>.write =
+                LowGravityBeginMessageSerialization.WriteLowGravityBeginMessage;
+            Reader<LowGravityBeginMessage>.read =
+                LowGravityBeginMessageSerialization.ReadLowGravityBeginMessage;
 
-            NetworkClient.RegisterHandler<BomberVisualSpawnMessage>(BomberNetworkBridge.HandleBomberVisualSpawn);
-            NetworkClient.RegisterHandler<BomberShotDownMessage>(BomberNetworkBridge.HandleBomberShotDown);
+            NetworkClient.RegisterHandler<LowGravityEndMessage>(
+                LowGravityNetworkBridge.HandleLowGravityEnd
+            );
+            Writer<LowGravityEndMessage>.write =
+                LowGravityEndMessageSerialization.WriteLowGravityEndMessage;
+            Reader<LowGravityEndMessage>.read =
+                LowGravityEndMessageSerialization.ReadLowGravityEndMessage;
 
+            // --------------------------------
+            // ---- StealthBomber Messages ----
+            NetworkClient.RegisterHandler<BomberVisualSpawnMessage>(
+                BomberNetworkBridge.HandleBomberVisualSpawn
+            );
+            Writer<BomberVisualSpawnMessage>.write =
+                BomberVisualSpawnMessageSerialization.WriteBomberVisualSpawnMessage;
+            Reader<BomberVisualSpawnMessage>.read =
+                BomberVisualSpawnMessageSerialization.ReadBomberVisualSpawnMessage;
+
+            NetworkClient.RegisterHandler<BomberShotDownMessage>(
+                BomberNetworkBridge.HandleBomberShotDown
+            );
+            Writer<BomberShotDownMessage>.write =
+                BomberShotDownMessageSerialization.WriteBomberShotDownMessage;
+            Reader<BomberShotDownMessage>.read =
+                BomberShotDownMessageSerialization.ReadBomberShotDownMessage;
+
+            // ------------------------
+            // ---- AC130 Messages ----
             NetworkClient.RegisterHandler<AC130SoundMessage>(AC130MessageHandlers.HandleAC130Sound);
-            NetworkClient.RegisterHandler<AC130MaydayVfxMessage>(AC130MessageHandlers.HandleAC130MaydayVfx);
-            NetworkClient.RegisterHandler<AC130MaydayImpactMessage>(AC130MessageHandlers.HandleAC130MaydayImpact);
+            Writer<AC130SoundMessage>.write = AC130SoundMessageSerialization.WriteAC130SoundMessage;
+            Reader<AC130SoundMessage>.read = AC130SoundMessageSerialization.ReadAC130SoundMessage;
 
-            IssaPluginPlugin.Log.LogInfo("[NetworkManager] Custom prefabs and message handlers registered.");
+            NetworkClient.RegisterHandler<AC130MaydayVfxMessage>(
+                AC130MessageHandlers.HandleAC130MaydayVfx
+            );
+            Writer<AC130MaydayVfxMessage>.write =
+                AC130MaydayVfxMessageSerialization.WriteAC130MaydayVfxMessage;
+            Reader<AC130MaydayVfxMessage>.read =
+                AC130MaydayVfxMessageSerialization.ReadAC130MaydayVfxMessage;
+
+            NetworkClient.RegisterHandler<AC130MaydayImpactMessage>(
+                AC130MessageHandlers.HandleAC130MaydayImpact
+            );
+            Writer<AC130MaydayImpactMessage>.write =
+                AC130MaydayImpactMessageSerialization.WriteAC130MaydayImpactMessage;
+            Reader<AC130MaydayImpactMessage>.read =
+                AC130MaydayImpactMessageSerialization.ReadAC130MaydayImpactMessage;
+        }
+
+        private static void RegisterHandlers() { }
+
+        private static void RegisterPrefabs()
+        {
+            RegisterPrefab(AssetLoader.DroppedCustomItemPrefab);
+            RegisterPrefab(AssetLoader.BatModelPrefab);
+            RegisterPrefab(AssetLoader.BomberPrefab);
+            RegisterPrefab(AssetLoader.BomberProxyPrefab);
+            RegisterPrefab(AssetLoader.AC130Prefab);
+            RegisterPrefab(AssetLoader.BomberTabletPrefab);
+            RegisterPrefab(AssetLoader.MissileTabletPrefab);
+            RegisterPrefab(AssetLoader.Ac130TabletPrefab);
+            RegisterPrefab(AssetLoader.FreezeModelPrefab);
+            RegisterPrefab(AssetLoader.LowGravityModelPrefab);
+            RegisterPrefab(AssetLoader.SniperRiflePrefab);
+            RegisterPrefab(AssetLoader.BloodSplatterPrefab);
         }
 
         private static void RegisterPrefab(GameObject prefab)
@@ -102,9 +188,9 @@ namespace IssaPlugin.Patches
 
             var go = new GameObject("AC130_Sound");
             var src = go.AddComponent<AudioSource>();
-            src.clip         = clip;
+            src.clip = clip;
             src.spatialBlend = 0f;
-            src.volume       = 1f;
+            src.volume = 1f;
             src.Play();
             Object.Destroy(go, clip.length + 0.1f);
         }

@@ -27,7 +27,7 @@ namespace IssaPlugin.Items
         private static Color _savedFogColor;
         private static float _savedFogDensity;
         private static Color _savedAmbientLight;
-        private static bool  _savedFog;
+        private static bool _savedFog;
 
         // ================================================================
         //  Client → Server
@@ -49,7 +49,9 @@ namespace IssaPlugin.Items
             var equipped = inventory.GetEffectivelyEquippedItem(true);
             if (equipped != FreezeItem.FreezeItemType)
             {
-                IssaPluginPlugin.Log.LogWarning("[Freeze] Player does not have Freeze item equipped.");
+                IssaPluginPlugin.Log.LogWarning(
+                    "[Freeze] Player does not have Freeze item equipped."
+                );
                 return;
             }
 
@@ -71,19 +73,21 @@ namespace IssaPlugin.Items
 
         public static void HandleFreezeBegin(FreezeBeginMessage msg)
         {
+            IssaPluginPlugin.Log.LogInfo($"[Freeze] HandleFreezeBegin called: msg={msg}");
+
             // Only save render state if not already frozen — repeated sessions would
             // otherwise overwrite the saved state with the already-modified fog values.
             if (!FreezeItem.IsFrozen)
             {
-                _savedFogColor    = RenderSettings.fogColor;
-                _savedFogDensity  = RenderSettings.fogDensity;
+                _savedFogColor = RenderSettings.fogColor;
+                _savedFogDensity = RenderSettings.fogDensity;
                 _savedAmbientLight = RenderSettings.ambientLight;
-                _savedFog         = RenderSettings.fog;
+                _savedFog = RenderSettings.fog;
             }
 
-            RenderSettings.fog         = true;
-            RenderSettings.fogColor    = new Color(0.7f, 0.85f, 1.0f, 1f);
-            RenderSettings.fogDensity  = 0.04f;
+            RenderSettings.fog = true;
+            RenderSettings.fogColor = new Color(0.7f, 0.85f, 1.0f, 1f);
+            RenderSettings.fogDensity = 0.04f;
             RenderSettings.ambientLight = new Color(0.5f, 0.65f, 0.9f);
 
             FreezeItem.IsFrozen = true;
@@ -94,10 +98,12 @@ namespace IssaPlugin.Items
 
         public static void HandleFreezeEnd(FreezeEndMessage msg)
         {
-            RenderSettings.fogColor    = _savedFogColor;
-            RenderSettings.fogDensity  = _savedFogDensity;
+            IssaPluginPlugin.Log.LogInfo($"[Freeze] HandleFreezeEnd called: msg={msg}");
+
+            RenderSettings.fogColor = _savedFogColor;
+            RenderSettings.fogDensity = _savedFogDensity;
             RenderSettings.ambientLight = _savedAmbientLight;
-            RenderSettings.fog         = _savedFog;
+            RenderSettings.fog = _savedFog;
 
             FreezeItem.IsFrozen = false;
             FreezeOverlay.Instance?.SetFrozen(false);
@@ -123,7 +129,9 @@ namespace IssaPlugin.Items
             {
                 NetworkServer.SendToAll(new FreezeEndMessage());
                 _globalSessionActive = false;
-                IssaPluginPlugin.Log.LogInfo("[Freeze] Session ended and global lock released on server stop.");
+                IssaPluginPlugin.Log.LogInfo(
+                    "[Freeze] Session ended and global lock released on server stop."
+                );
             }
         }
     }

@@ -117,6 +117,7 @@ namespace IssaPlugin.Items
             }
 
             BatModelPrefab = Load<GameObject>("bat_model.prefab");
+            DisableRigidbody(BatModelPrefab);
             BomberPrefab = Load<GameObject>("bomber_model.prefab");
             BomberProxyPrefab = Load<GameObject>("bomber_proxy.prefab");
             EnsureNetworkIdentity(BomberProxyPrefab, 0xB0AA0001u);
@@ -161,6 +162,8 @@ namespace IssaPlugin.Items
             if (DroppedCustomItemPrefab != null)
             {
                 DroppedCustomItemPrefab.SetActive(false);
+                // Force kinematic regardless of what the bundle has baked in.
+                DisableRigidbody(DroppedCustomItemPrefab);
                 // Make the pickup collider a trigger so it doesn't block player movement.
                 // Physics.OverlapBoxNonAlloc uses QueryTriggerInteraction.Collide, so
                 // triggers are still detected by PlayerInteractableTargeter.

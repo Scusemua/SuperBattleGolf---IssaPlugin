@@ -225,11 +225,7 @@ namespace IssaPlugin.Items
             // gunship mesh — otherwise it immediately self-collides and explodes.
             Quaternion fireRotation = Quaternion.LookRotation(aimDirection, Vector3.up);
             Vector3 spawnPos = _serverGunship.transform.position + aimDirection * 15f;
-            AC130Item.SpawnRocketInDirection(
-                inventory,
-                spawnPos,
-                jitter * fireRotation
-            );
+            AC130Item.SpawnRocketInDirection(inventory, spawnPos, jitter * fireRotation);
         }
 
         [Command]
@@ -335,7 +331,7 @@ namespace IssaPlugin.Items
         public void TargetEndMayday(NetworkConnection target)
         {
             LocalMaydayActive = false;
-            LocalGunshipCamera = null;  // cockpit cam is also destroyed with the gunship
+            LocalGunshipCamera = null; // cockpit cam is also destroyed with the gunship
             LocalSessionActive = false;
             AC130Overlay.SetMaydayActive(false);
             InputManager.Controls.Gameplay.Enable();
@@ -667,9 +663,7 @@ namespace IssaPlugin.Items
                     + $"isOwned={isOwned}"
             );
 
-            if ( /* !_serverSessionActive || */
-                _serverGunship == null
-            )
+            if (_serverGunship == null)
             {
                 IssaPluginPlugin.Log.LogWarning(
                     $"[AC130] ServerBeginMayday guard hit — aborting. "
@@ -710,7 +704,9 @@ namespace IssaPlugin.Items
             }
 
             // All other clients get smoke trail.
-            NetworkServer.SendToAll(new AC130MaydayVfxMessage { GunshipNetId = gunshipIdentity.netId });
+            NetworkServer.SendToAll(
+                new AC130MaydayVfxMessage { GunshipNetId = gunshipIdentity.netId }
+            );
 
             IssaPluginPlugin.Log.LogInfo("[AC130] Server mayday sequence started.");
         }
@@ -787,6 +783,7 @@ namespace IssaPlugin.Items
             _serverSessionActive = false;
             ReleaseGlobalLock();
             TargetEndAC130(connectionToClient);
+            NetworkServer.Destroy(_serverGunship);
             IssaPluginPlugin.Log.LogInfo("[AC130] Server session ended.");
         }
 
@@ -816,7 +813,9 @@ namespace IssaPlugin.Items
 
         public static void ForceReleaseGlobalLock()
         {
-            IssaPluginPlugin.Log.LogWarning("[AC130] ForceReleaseGlobalLock called — resetting session state.");
+            IssaPluginPlugin.Log.LogWarning(
+                "[AC130] ForceReleaseGlobalLock called — resetting session state."
+            );
             _globalSessionActive = false;
             _activeSessionBridge = null;
         }

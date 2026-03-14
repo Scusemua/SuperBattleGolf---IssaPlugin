@@ -27,7 +27,7 @@ namespace IssaPlugin.Items
         private static Color _savedFogColor;
         private static float _savedFogDensity;
         private static Color _savedAmbientLight;
-        private static bool  _savedFog;
+        private static bool _savedFog;
 
         // ================================================================
         //  Client → Server
@@ -49,7 +49,9 @@ namespace IssaPlugin.Items
             var equipped = inventory.GetEffectivelyEquippedItem(true);
             if (equipped != LowGravityItem.LowGravityItemType)
             {
-                IssaPluginPlugin.Log.LogWarning("[LowGravity] Player does not have Low Gravity item equipped.");
+                IssaPluginPlugin.Log.LogWarning(
+                    "[LowGravity] Player does not have Low Gravity item equipped."
+                );
                 return;
             }
 
@@ -71,19 +73,21 @@ namespace IssaPlugin.Items
 
         public static void HandleLowGravityBegin(LowGravityBeginMessage msg)
         {
+            IssaPluginPlugin.Log.LogInfo($"[LowGravity] HandleLowGravityBegin called: msg={msg}");
+
             // Only save render state if not already active — repeated sessions would
             // otherwise overwrite the saved state with the already-modified fog values.
             if (!LowGravityItem.IsActive)
             {
-                _savedFogColor     = RenderSettings.fogColor;
-                _savedFogDensity   = RenderSettings.fogDensity;
+                _savedFogColor = RenderSettings.fogColor;
+                _savedFogDensity = RenderSettings.fogDensity;
                 _savedAmbientLight = RenderSettings.ambientLight;
-                _savedFog          = RenderSettings.fog;
+                _savedFog = RenderSettings.fog;
             }
 
-            RenderSettings.fog          = true;
-            RenderSettings.fogColor     = new Color(0.05f, 0.02f, 0.15f, 1f);
-            RenderSettings.fogDensity   = 0.01f;
+            RenderSettings.fog = true;
+            RenderSettings.fogColor = new Color(0.05f, 0.02f, 0.15f, 1f);
+            RenderSettings.fogDensity = 0.01f;
             RenderSettings.ambientLight = new Color(0.2f, 0.1f, 0.4f);
 
             LowGravityItem.IsActive = true;
@@ -94,10 +98,12 @@ namespace IssaPlugin.Items
 
         public static void HandleLowGravityEnd(LowGravityEndMessage msg)
         {
-            RenderSettings.fogColor     = _savedFogColor;
-            RenderSettings.fogDensity   = _savedFogDensity;
+            IssaPluginPlugin.Log.LogInfo($"[LowGravity] HandleLowGravityEnd called: msg={msg}");
+
+            RenderSettings.fogColor = _savedFogColor;
+            RenderSettings.fogDensity = _savedFogDensity;
             RenderSettings.ambientLight = _savedAmbientLight;
-            RenderSettings.fog          = _savedFog;
+            RenderSettings.fog = _savedFog;
 
             LowGravityItem.IsActive = false;
             LowGravityOverlay.Instance?.SetActive(false);
@@ -123,7 +129,9 @@ namespace IssaPlugin.Items
             {
                 NetworkServer.SendToAll(new LowGravityEndMessage());
                 _globalSessionActive = false;
-                IssaPluginPlugin.Log.LogInfo("[LowGravity] Session ended and global lock released on server stop.");
+                IssaPluginPlugin.Log.LogInfo(
+                    "[LowGravity] Session ended and global lock released on server stop."
+                );
             }
         }
     }

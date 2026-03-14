@@ -33,7 +33,9 @@ namespace IssaPlugin.Items
         {
             if (_isBombing)
             {
-                IssaPluginPlugin.Log.LogWarning("[Bomber] Run already in progress for this player.");
+                IssaPluginPlugin.Log.LogWarning(
+                    "[Bomber] Run already in progress for this player."
+                );
                 return;
             }
 
@@ -69,26 +71,40 @@ namespace IssaPlugin.Items
         //  Server → all clients (via NetworkMessage, not [ClientRpc])
         // ================================================================
 
-        public void SendSpawnBomberVisual(Vector3 spawnPos, Vector3 exitPos, Vector3 direction, float speed)
+        public void SendSpawnBomberVisual(
+            Vector3 spawnPos,
+            Vector3 exitPos,
+            Vector3 direction,
+            float speed
+        )
         {
-            NetworkServer.SendToAll(new BomberVisualSpawnMessage
-            {
-                SpawnPos  = spawnPos,
-                ExitPos   = exitPos,
-                Direction = direction,
-                Speed     = speed,
-            });
+            NetworkServer.SendToAll(
+                new BomberVisualSpawnMessage
+                {
+                    SpawnPos = spawnPos,
+                    ExitPos = exitPos,
+                    Direction = direction,
+                    Speed = speed,
+                }
+            );
         }
 
-        public void SendBomberShotDown(Vector3 crashDir, float crashSpeed, Vector3 impactDir, Vector3 torqueImpulse)
+        public void SendBomberShotDown(
+            Vector3 crashDir,
+            float crashSpeed,
+            Vector3 impactDir,
+            Vector3 torqueImpulse
+        )
         {
-            NetworkServer.SendToAll(new BomberShotDownMessage
-            {
-                CrashDir     = crashDir,
-                CrashSpeed   = crashSpeed,
-                ImpactDir    = impactDir,
-                TorqueImpulse = torqueImpulse,
-            });
+            NetworkServer.SendToAll(
+                new BomberShotDownMessage
+                {
+                    CrashDir = crashDir,
+                    CrashSpeed = crashSpeed,
+                    ImpactDir = impactDir,
+                    TorqueImpulse = torqueImpulse,
+                }
+            );
         }
 
         // ================================================================
@@ -97,20 +113,31 @@ namespace IssaPlugin.Items
 
         public static void HandleBomberVisualSpawn(BomberVisualSpawnMessage msg)
         {
-            IssaPluginPlugin.Log.LogInfo("[Bomber] BomberVisualSpawnMessage received on client.");
-            StealthBomberItem.LocalSpawnBomberVisual(msg.SpawnPos, msg.ExitPos, msg.Direction, msg.Speed);
+            IssaPluginPlugin.Log.LogInfo(
+                $"[Bomber] BomberVisualSpawnMessage received on client. msg={msg}"
+            );
+            StealthBomberItem.LocalSpawnBomberVisual(
+                msg.SpawnPos,
+                msg.ExitPos,
+                msg.Direction,
+                msg.Speed
+            );
         }
 
         public static void HandleBomberShotDown(BomberShotDownMessage msg)
         {
-            IssaPluginPlugin.Log.LogInfo("[Bomber] BomberShotDownMessage received — triggering physics crash.");
+            IssaPluginPlugin.Log.LogInfo(
+                $"[Bomber] BomberShotDownMessage received: triggering physics crash. msg={msg}"
+            );
 
             var visual = StealthBomberItem.ActiveBomberVisual;
             if (visual == null)
             {
                 // BomberShotDownMessage arrived before BomberVisualSpawnMessage (UDP out-of-order).
                 // The crash physics are lost on this client; the visual will fly off and despawn naturally.
-                IssaPluginPlugin.Log.LogWarning("[Bomber] Shot-down message arrived before visual — crash physics skipped on this client.");
+                IssaPluginPlugin.Log.LogWarning(
+                    "[Bomber] Shot-down message arrived before visual — crash physics skipped on this client."
+                );
                 return;
             }
 
@@ -126,12 +153,15 @@ namespace IssaPlugin.Items
             if (rb != null)
             {
                 rb.isKinematic = false;
-                rb.useGravity  = true;
+                rb.useGravity = true;
 
                 rb.linearVelocity = msg.CrashDir * flySpeed;
 
                 if (msg.ImpactDir != Vector3.zero)
-                    rb.AddForce(msg.ImpactDir * Configuration.BomberCrashImpactForce.Value, ForceMode.Impulse);
+                    rb.AddForce(
+                        msg.ImpactDir * Configuration.BomberCrashImpactForce.Value,
+                        ForceMode.Impulse
+                    );
 
                 rb.AddForce(Vector3.down * Configuration.BomberCrashDownwardForce.Value);
                 rb.AddTorque(msg.TorqueImpulse, ForceMode.Impulse);

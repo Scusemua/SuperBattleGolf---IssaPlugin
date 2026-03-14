@@ -125,6 +125,12 @@ namespace IssaPlugin.Patches
                 rightSwitcher.SetEquipment(EquipmentType.ElephantGun);
                 __instance.PlayerInfo.LeftHandEquipmentSwitcher.SetEquipment(EquipmentType.None);
             }
+            else if (equipped == BatItem.BatItemType)
+            {
+                // Bat uses the golf-swing mechanic, so GolfClub gives the correct hand pose.
+                rightSwitcher.SetEquipment(EquipmentType.GolfClub);
+                __instance.PlayerInfo.LeftHandEquipmentSwitcher.SetEquipment(EquipmentType.None);
+            }
             else if (
                 equipped == StealthBomberItem.BomberItemType
                 || equipped == PredatorMissileItem.MissileItemType
@@ -137,38 +143,11 @@ namespace IssaPlugin.Patches
                 __instance.PlayerInfo.LeftHandEquipmentSwitcher.SetEquipment(EquipmentType.None);
             }
 
-            var prefab = GetPrefabForItem(equipped);
-            if (prefab == null)
-                return;
-
-            if (
-                !_states.TryGetValue(__instance, out var state)
-                || state.ItemType != equipped
-                || state.Model == null
-            )
-            {
-                ClearCustomModel(__instance);
-
-                var model = Object.Instantiate(prefab);
-                model.transform.SetParent(rightSwitcher.transform, false);
-                model.transform.localPosition = Vector3.zero;
-                model.transform.localRotation = Quaternion.identity;
-                model.transform.localScale = Vector3.one;
-                model.SetActive(true);
-
-                SetLayerRecursive(model, rightSwitcher.gameObject.layer); 
-
-                // foreach (var col in model.GetComponentsInChildren<Collider>())
-                //     col.enabled = false;
-
-                _states[__instance] = new CustomEquipState { Model = model, ItemType = equipped };
-
-                IssaPluginPlugin.Log.LogInfo(
-                    $"[Equipment] Custom model spawned for item {(int)equipped}."
-                );
-
-                HideDefaultEquipment(rightSwitcher);
-            }
+            // SetEquipment above fires OnEquipmentTypeChanged synchronously, which calls
+            // EnsureCustomModel via OnEquipmentTypeChangedPatch. Call it here too as a
+            // fallback — e.g. when two custom items share the same EquipmentType and the
+            // SyncVar value doesn't change so the hook doesn't fire again.
+            EnsureCustomModel(rightSwitcher, __instance, equipped);
         }
 
         private static void HideDefaultEquipment(EquipmentSwitcher switcher)
@@ -182,7 +161,7 @@ namespace IssaPlugin.Patches
                 r.enabled = false;
         }
 
-        private static void ClearCustomModel(PlayerInventory inventory)
+        internal static void ClearCustomModel(PlayerInventory inventory)
         {
             if (!_states.TryGetValue(inventory, out var state))
                 return;
@@ -191,6 +170,52 @@ namespace IssaPlugin.Patches
                 Object.Destroy(state.Model);
 
             _states.Remove(inventory);
+        }
+
+        /// Spawns or refreshes the custom visual model for <paramref name="equipped"/>.
+        /// Safe to call multiple times — the _states guard prevents double-spawning.
+        /// Called from both this Postfix (local player) and OnEquipmentTypeChangedPatch
+        /// (all players, including remote clients where UpdateEquipmentSwitchers never runs).
+        internal static void EnsureCustomModel(
+            EquipmentSwitcher rightSwitcher,
+            PlayerInventory inventory,
+            ItemType equipped
+        )
+        {
+            var prefab = GetPrefabForItem(equipped);
+            if (prefab == null)
+                return;
+
+            if (
+                !_states.TryGetValue(inventory, out var state)
+                || state.ItemType != equipped
+                || state.Model == null
+            )
+            {
+                ClearCustomModel(inventory);
+
+                var model = Object.Instantiate(prefab);
+                model.transform.SetParent(rightSwitcher.transform, false);
+                model.transform.localPosition = Vector3.zero;
+                model.transform.localRotation = Quaternion.identity;
+                model.transform.localScale = Vector3.one;
+                model.SetActive(true);
+
+                SetLayerRecursive(model, rightSwitcher.gameObject.layer);
+
+                // Disable all colliders on the held model — they have no gameplay purpose
+                // when held and can push the player through terrain/walls.
+                foreach (var col in model.GetComponentsInChildren<Collider>())
+                    col.enabled = false;
+
+                _states[inventory] = new CustomEquipState { Model = model, ItemType = equipped };
+
+                IssaPluginPlugin.Log.LogInfo(
+                    $"[Equipment] Custom model spawned for item {(int)equipped}."
+                );
+            }
+
+            HideDefaultEquipment(rightSwitcher);
         }
 
         private static GameObject GetPrefabForItem(ItemType type)
@@ -240,9 +265,16 @@ namespace IssaPlugin.Patches
         }
     }
 
-    /// On remote clients, Mirror's SyncVar hook (OnEquipmentTypeChanged) fires
-    /// AFTER UpdateEquipmentSwitchers, so the default equipment model gets shown
-    /// on top of our custom model. This patch hides it immediately after the hook runs.
+    /// Handles custom model spawning for ALL players (local and remote).
+    ///
+    /// UpdateEquipmentSwitchers — and therefore UpdateEquipmentSwitchersPatch — is only
+    /// ever called from local-player methods (SelectItem, DeselectItem, OnStartLocalPlayer,
+    /// etc.).  Remote players' equipment is driven exclusively by the NetworkequipmentType
+    /// SyncVar hook, so this is the only place that reliably fires for remote clients.
+    ///
+    /// For the local player this fires synchronously inside the SetEquipment call made by
+    /// UpdateEquipmentSwitchersPatch, so EnsureCustomModel runs first here; the subsequent
+    /// EnsureCustomModel call in the Postfix is then a no-op (model already in _states).
     [HarmonyPatch]
     static class OnEquipmentTypeChangedPatch
     {
@@ -251,24 +283,24 @@ namespace IssaPlugin.Patches
 
         static void Postfix(EquipmentSwitcher __instance)
         {
+            // Only handle the right-hand switcher — left hand never holds custom items.
             var playerInfo = __instance.GetComponentInParent<PlayerInfo>();
-            if (playerInfo == null)
+            if (playerInfo == null || __instance != playerInfo.RightHandEquipmentSwitcher)
                 return;
 
             var inventory = playerInfo.Inventory;
             if (inventory == null)
                 return;
 
-            if (!UpdateEquipmentSwitchersPatch.HasCustomModel(inventory))
+            var equipped = inventory.GetEffectivelyEquippedItem(true);
+            if (!ItemRegistry.IsCustomItem(equipped))
+            {
+                // Switched to a standard item — clear any stale custom model.
+                UpdateEquipmentSwitchersPatch.ClearCustomModel(inventory);
                 return;
+            }
 
-            if (__instance.CurrentEquipment == null)
-                return;
-
-            foreach (
-                var r in __instance.CurrentEquipment.gameObject.GetComponentsInChildren<Renderer>()
-            )
-                r.enabled = false;
+            UpdateEquipmentSwitchersPatch.EnsureCustomModel(__instance, inventory, equipped);
         }
     }
 

@@ -5,7 +5,8 @@
       "Bash(xargs grep:*)",
       "Bash(powershell -Command \"Add-Type -Path ''''Assembly/Mirror.dll''''; [Mirror.NetworkClient].GetMethods\\(\\) | Where-Object { $_ame -like ''''*Prefab*'''' -or $_ame -like ''''*Spawn*'''' } | Select-Object Name, { \\($_etParameters\\(\\) | ForEach-Object { $_arameterType.Name }\\) -join '''', '''' } | Format-List\")",
       "Bash(powershell -Command \"Add-Type -Path ''Assembly/Mirror.dll''; [Mirror.NetworkIdentity].GetFields\\([System.Reflection.BindingFlags]''NonPublic,Instance,Public''\\) | Where-Object { $_Name -like ''*asset*'' -or $_Name -like ''*Asset*'' } | Select-Object Name, FieldType\")",
-      "Bash(grep -rn \"RegisterPrefab\\\\|NetworkClient\\\\b\" g:/Documents/SuperBattleGolfPlugin/DECOMPILED_SOURCE/GameAssembly/ --include=*.cs)"
+      "Bash(grep -rn \"RegisterPrefab\\\\|NetworkClient\\\\b\" g:/Documents/SuperBattleGolfPlugin/DECOMPILED_SOURCE/GameAssembly/ --include=*.cs)",
+      "Bash(dotnet build:*)"
     ]
   }
 }
