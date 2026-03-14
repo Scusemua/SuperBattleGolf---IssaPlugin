@@ -1,4 +1,3 @@
-using System.Reflection;
 using IssaPlugin.Items;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -8,7 +7,7 @@ namespace IssaPlugin.Overlays
     /// <summary>
     /// Manages the sniper scope visuals for the local player:
     ///
-    ///   • Update() — tracks right-click (IsHoldingAimSwing) when the sniper is
+    ///   • Update() — tracks right-click (Mouse.rightButton) when the sniper is
     ///                equipped, sets SniperRifleItem.IsScoped, and lerps the main
     ///                camera FOV in/out.
     ///
@@ -16,17 +15,14 @@ namespace IssaPlugin.Overlays
     ///                leaving a circular opening in the centre, then draws crosshairs
     ///                and simple mil-dot marks.
     ///
+    /// Aim animation and movement speed are handled by SniperPatches.cs, which
+    /// corrects IsAimingItem after UpdateIsAimingItem runs.
+    ///
     /// Added to the Plugin's persistent gameObject in Plugin.cs.
     /// </summary>
     public class SniperScopeOverlay : MonoBehaviour
     {
         public static SniperScopeOverlay Instance { get; private set; }
-
-        // PlayerInventory.IsAimingItem { get; private set; } — has private setter.
-        private static readonly PropertyInfo IsAimingItemProp = typeof(PlayerInventory).GetProperty(
-            "IsAimingItem",
-            BindingFlags.Public | BindingFlags.Instance
-        );
 
         private OrbitCameraModule _orbitModule;
 
@@ -36,7 +32,7 @@ namespace IssaPlugin.Overlays
         private bool _fovSaved;
         private float _currentFovOffset;
 
-        // Previous scope state — used to fire enter/exit edge events.
+        // Previous scope state — used to fire the aim-sound edge event.
         private bool _prevScoped;
 
         // Current scroll-adjusted target FOV. Reset to ZoomFov when entering scope.
@@ -73,42 +69,12 @@ namespace IssaPlugin.Overlays
                 && localInfo.Inventory.GetEffectivelyEquippedItem(true)
                     == SniperRifleItem.SniperRifleItemType;
 
-            bool wantsScope = sniperEquipped && (localInfo?.Input?.IsHoldingAimSwing ?? false);
+            bool wantsScope = sniperEquipped && (Mouse.current?.rightButton.isPressed ?? false);
             SniperRifleItem.IsScoped = wantsScope;
 
-            // ── Aim animation — driven every frame ──────────────────────────
-            // UpdateIsAimingItem is edge-triggered (fires only when right-click
-            // changes state). If anything resets IsAimingItem after that single
-            // event, the character drops back to idle and never re-raises the
-            // gun while the button stays held. Writing the property every frame
-            // is the reliable fix. SniperPatches.cs blocks the game's own
-            // UpdateIsAimingItem from overriding us while the sniper is equipped.
-            if (sniperEquipped && localInfo?.Inventory != null)
-            {
-                IsAimingItemProp?.SetValue(localInfo.Inventory, wantsScope);
-                localInfo.AnimatorIo.SetIsAimingItem(wantsScope);
-
-                if (wantsScope && !_prevScoped)
-                {
-                    GameplayCameraManager.EnterSwingAimCamera();
-                    localInfo.PlayerAudio.PlayGunAimForAllClients(ItemType.ElephantGun);
-                    localInfo.SetIsAimingItem(true);
-                    localInfo.Movement.InformIsAimingItemChanged();
-                }
-                else if (!wantsScope && _prevScoped)
-                {
-                    GameplayCameraManager.ExitSwingAimCamera();
-                    localInfo.SetIsAimingItem(false);
-                    localInfo.Movement.InformIsAimingItemChanged();
-                }
-            }
-            else if (_prevScoped)
-            {
-                // Sniper was un-equipped while scope was held — clean up.
-                GameplayCameraManager.ExitSwingAimCamera();
-                localInfo?.SetIsAimingItem(false);
-                localInfo?.Movement.InformIsAimingItemChanged();
-            }
+            // Play the aim sound once on scope entry.
+            if (sniperEquipped && wantsScope && !_prevScoped)
+                localInfo.PlayerAudio.PlayGunAimForAllClients(ItemType.ElephantGun);
 
             _prevScoped = wantsScope;
 
@@ -132,8 +98,9 @@ namespace IssaPlugin.Overlays
                 if (scroll != 0f)
                 {
                     // One Windows scroll notch = 120 units; divide to get notch count.
-                    _targetZoomFov -= (scroll / 120f) * Configuration.SniperRifleScrollSensitivity.Value;
-                    _targetZoomFov  = Mathf.Clamp(
+                    _targetZoomFov -=
+                        (scroll / 120f) * Configuration.SniperRifleScrollSensitivity.Value;
+                    _targetZoomFov = Mathf.Clamp(
                         _targetZoomFov,
                         Configuration.SniperRifleMinZoomFov.Value,
                         Configuration.SniperRifleMaxZoomFov.Value
@@ -142,9 +109,7 @@ namespace IssaPlugin.Overlays
             }
 
             // targetOffset is negative to zoom in; 0 restores normal FOV.
-            float targetOffset = wantsScope
-                ? _targetZoomFov - _savedBaseFov
-                : 0f;
+            float targetOffset = wantsScope ? _targetZoomFov - _savedBaseFov : 0f;
 
             _currentFovOffset = Mathf.Lerp(
                 _currentFovOffset,
@@ -205,21 +170,6 @@ namespace IssaPlugin.Overlays
             _orbitModule?.SetFovOffset(0f);
             _fovSaved = false;
             SniperRifleItem.IsScoped = false;
-        }
-
-        void DrawCenterDot()
-        {
-            float size = 6f;
-
-            Rect rect = new Rect(
-                Screen.width / 2f - size / 2f,
-                Screen.height / 2f - size / 2f,
-                size,
-                size
-            );
-
-            GUI.color = Color.red;
-            GUI.DrawTexture(rect, Texture2D.whiteTexture);
         }
 
         void DrawScope()

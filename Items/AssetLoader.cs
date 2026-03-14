@@ -1,5 +1,6 @@
 using System.IO;
 using System.Reflection;
+using Mirror;
 using UnityEngine;
 
 namespace IssaPlugin.Items
@@ -28,6 +29,14 @@ namespace IssaPlugin.Items
         public static GameObject LowGravityModelPrefab { get; private set; }
 
         public static GameObject SniperRiflePrefab { get; private set; }
+
+        public static GameObject BloodSplatterPrefab { get; private set; }
+
+        /// Programmatically-built prefab for dropped custom items.
+        /// Root carries NetworkIdentity, NetworkTransform, Rigidbody, SphereCollider,
+        /// Entity, and DroppedCustomItem.  The visual child is added client-side in
+        /// DroppedCustomItem.OnStartClient() from the synced ItemType.
+        public static GameObject DroppedCustomItemPrefab { get; private set; }
 
         // ----------------------------------------------------------------
         //  AC130 Mayday — populate the asset bundle with these names.
@@ -110,13 +119,25 @@ namespace IssaPlugin.Items
             BatModelPrefab = Load<GameObject>("bat_model.prefab");
             BomberPrefab = Load<GameObject>("bomber_model.prefab");
             BomberProxyPrefab = Load<GameObject>("bomber_proxy.prefab");
+            EnsureNetworkIdentity(BomberProxyPrefab, 0xB0AA0001u);
             AC130Prefab = Load<GameObject>("ac130_model.prefab");
+            EnsureNetworkIdentity(AC130Prefab, 0xAC130001u);
             BomberTabletPrefab = Load<GameObject>("stealth_bomber_tablet.prefab");
             MissileTabletPrefab = Load<GameObject>("predator_missile_tablet.prefab");
             Ac130TabletPrefab = Load<GameObject>("ac130_tablet.prefab");
             FreezeModelPrefab = Load<GameObject>("snowball.prefab");
             LowGravityModelPrefab = Load<GameObject>("gravity_remote.prefab");
             SniperRiflePrefab = Load<GameObject>("intervention.prefab");
+            BloodSplatterPrefab = Load<GameObject>("blood_splatter_critical.prefab");
+
+            // Set Kinematic to True and Use Gravity to False.
+            // We'll toggle them to true if they're dropped.
+            DisableRigidbody(BomberTabletPrefab);
+            DisableRigidbody(MissileTabletPrefab);
+            DisableRigidbody(Ac130TabletPrefab);
+            DisableRigidbody(FreezeModelPrefab);
+            DisableRigidbody(LowGravityModelPrefab);
+            DisableRigidbody(SniperRiflePrefab);
 
             // AudioClips must be loaded by asset name without the file extension.
             // Unity compiles audio into its own internal format at bundle-build
@@ -131,7 +152,55 @@ namespace IssaPlugin.Items
             MaydayFireTrailPrefab = Load<GameObject>("fire_torch_intense.prefab");
             MaydayExplosionVfxPrefab = Load<GameObject>("NukeVerticalExplosionFire.prefab");
 
+            DroppedCustomItemPrefab = Load<GameObject>("DroppedCustomItem.prefab");
+            DroppedCustomItemPrefab.SetActive(false);
+            // Make the pickup collider a trigger so it doesn't block player movement.
+            // Physics.OverlapBoxNonAlloc uses QueryTriggerInteraction.Collide, so
+            // triggers are still detected by PlayerInteractableTargeter.
+            var dropCol = DroppedCustomItemPrefab.GetComponent<SphereCollider>();
+            if (dropCol != null)
+                dropCol.isTrigger = true;
+            DroppedCustomItemPrefab.AddComponent<Entity>();
+            DroppedCustomItemPrefab.AddComponent<DroppedCustomItem>();
+            GameObject.DontDestroyOnLoad(DroppedCustomItemPrefab);
+
             IssaPluginPlugin.Log.LogInfo("[Assets] Bundle loaded.");
+        }
+
+        /// Ensures a prefab has a NetworkIdentity with a stable assetId so Mirror
+        /// can spawn it on clients. If NetworkIdentity is already baked into the
+        /// asset bundle prefab its existing assetId is kept; otherwise a new one
+        /// is added and the stable uint is set via reflection.
+        private static void EnsureNetworkIdentity(GameObject prefab, uint stableAssetId)
+        {
+            if (prefab == null)
+                return;
+
+            var ni = prefab.GetComponent<NetworkIdentity>();
+            if (ni == null)
+            {
+                ni = prefab.AddComponent<NetworkIdentity>();
+
+                // assetId is set by the editor/weaver and is not publicly writable at
+                // runtime, so we reach it via reflection.
+                var field = typeof(NetworkIdentity).GetField(
+                    "assetId",
+                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance
+                );
+                field?.SetValue(ni, stableAssetId);
+
+                IssaPluginPlugin.Log.LogInfo(
+                    $"[Assets] Added NetworkIdentity to {prefab.name} with assetId={stableAssetId}."
+                );
+            }
+            else
+            {
+                IssaPluginPlugin.Log.LogInfo(
+                    $"[Assets] {prefab.name} already has NetworkIdentity (assetId={ni.assetId})."
+                );
+            }
+
+            GameObject.DontDestroyOnLoad(prefab);
         }
 
         // Helper that warns on null.
@@ -142,6 +211,16 @@ namespace IssaPlugin.Items
             if (asset == null)
                 IssaPluginPlugin.Log.LogWarning($"[Assets] Missing asset: {name}");
             return asset;
+        }
+
+        private static void DisableRigidbody(GameObject go)
+        {
+            var rb = go.GetComponent<Rigidbody>();
+            if (rb == null)
+                return;
+
+            rb.isKinematic = true;
+            rb.useGravity = false;
         }
 
         private static Sprite LoadSprite(string name)

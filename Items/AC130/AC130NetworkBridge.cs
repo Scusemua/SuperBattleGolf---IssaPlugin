@@ -699,11 +699,8 @@ namespace IssaPlugin.Items
                 Quaternion.LookRotation(approachDir, Vector3.up)
             );
 
-            // The prefab may not have a NetworkIdentity baked in.
-            // Adding one at runtime before NetworkServer.Spawn is valid
-            // and is the only option when we can't modify the bundle prefab.
-            if (ac130GameObj.GetComponent<NetworkIdentity>() == null)
-                ac130GameObj.AddComponent<NetworkIdentity>();
+            // NetworkIdentity (with stable assetId) and NetworkTransform are added to
+            // AC130Prefab once in AssetLoader.Load(), so all instances inherit them.
 
             // Add hit receiver before spawning so it's ready from frame 0.
             var hitReceiver = ac130GameObj.AddComponent<AC130HitReceiver>();

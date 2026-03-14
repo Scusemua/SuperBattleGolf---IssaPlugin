@@ -161,6 +161,7 @@ namespace IssaPlugin.Items
             float speed
         )
         {
+            IssaPluginPlugin.Log.LogInfo("[Bomber] RpcSpawnBomberVisual received on client.");
             StealthBomberItem.LocalSpawnBomberVisual(spawnPos, exitPos, direction, speed);
         }
     }

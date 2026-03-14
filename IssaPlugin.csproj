@@ -68,5 +68,11 @@
     <Reference Include="Unity.InputSystem.ForUI.dll">
       <HintPath>Assembly\Unity.InputSystem.ForUI.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.LocalizationModule">
+      <HintPath>Assembly\UnityEngine.LocalizationModule.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Localization">
+      <HintPath>Assembly\Unity.Localization.dll</HintPath>
+    </Reference>
   </ItemGroup>
 </Project>

@@ -158,6 +158,9 @@ namespace IssaPlugin.Patches
 
                 SetLayerRecursive(model, rightSwitcher.gameObject.layer);
 
+                // foreach (var col in model.GetComponentsInChildren<Collider>())
+                //     col.enabled = false;
+
                 _states[__instance] = new CustomEquipState { Model = model, ItemType = equipped };
 
                 IssaPluginPlugin.Log.LogInfo(
@@ -269,27 +272,91 @@ namespace IssaPlugin.Patches
         }
     }
 
+    /// Intercepts the server-side drop handler for custom items.
+    ///
+    /// The base game's UserCode_CmdDropItemAt removes the item from inventory and
+    /// then calls CourseManager.ServerSpawnItem, which fails for custom item types
+    /// (no entry in GameManager.AllItems with a valid Prefab).  We handle custom
+    /// items entirely: remove the slot ourselves, then spawn a DroppedCustomItem.
     [HarmonyPatch]
-    static class DropItemPatch
+    static class ServerDropCustomItemPatch
     {
+        private static readonly FieldInfo SlotsField = AccessTools.Field(
+            typeof(PlayerInventory),
+            "slots"
+        );
+
         private static readonly MethodInfo RemoveItemAtMethod = AccessTools.Method(
             typeof(PlayerInventory),
             "RemoveItemAt"
         );
 
-        static MethodBase TargetMethod() => AccessTools.Method(typeof(PlayerInventory), "DropItem");
+        static MethodBase TargetMethod() =>
+            AccessTools.Method(
+                typeof(PlayerInventory),
+                "UserCode_CmdDropItemAt__Int32__Vector3__Vector3__ItemUseId"
+            );
 
-        static bool Prefix(PlayerInventory __instance)
+        static bool Prefix(
+            PlayerInventory __instance,
+            int index,
+            Vector3 playerVelocity,
+            Vector3 playerLocalAngularVelocity,
+            ItemUseId itemUseId
+        )
         {
-            if (!ItemRegistry.IsCustomItem(__instance.GetEffectivelyEquippedItem(true)))
+            if (!NetworkServer.active)
                 return true;
 
-            int index = __instance.EquippedItemIndex;
-            if (index < 0)
+            var slots = (IList<InventorySlot>)SlotsField.GetValue(__instance);
+            if (index < 0 || index >= slots.Count)
+                return true;
+
+            var slot = slots[index];
+            if (!ItemRegistry.IsCustomItem(slot.itemType))
+                return true;
+
+            // Remove from inventory — mirrors the base game's first step.
+            RemoveItemAtMethod.Invoke(__instance, new object[] { index, false });
+
+            if (slot.remainingUses <= 0 || AssetLoader.DroppedCustomItemPrefab == null)
                 return false;
 
-            RemoveItemAtMethod.Invoke(__instance, new object[] { index, false });
-            return false;
+            // Drop position — same math as base game's UserCode_CmdDropItemAt.
+            var dropPos =
+                __instance.transform.position
+                + Vector3.up * GameManager.PlayerInventorySettings.DropItemVerticalOffset
+                + __instance.transform.right * GameManager.GolfSettings.SwingHitBoxLocalCenter.x;
+
+            var velocity = playerVelocity * 0.25f;
+            var angularVelocity =
+                velocity.sqrMagnitude > 0.001f
+                    ? Vector3.Cross(Vector3.up, velocity.normalized) * 3f
+                    : Vector3.zero;
+
+            var go = Object.Instantiate(
+                AssetLoader.DroppedCustomItemPrefab,
+                dropPos,
+                __instance.transform.rotation
+            );
+
+            go.layer = GameManager.LayerSettings.ItemsLayer;
+
+            var dropped = go.GetComponent<DroppedCustomItem>();
+            dropped.ItemType = slot.itemType;
+            dropped.RemainingUses = slot.remainingUses;
+
+            var rb = go.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.linearVelocity = velocity;
+                rb.angularVelocity = angularVelocity;
+            }
+
+            go.SetActive(true);
+            NetworkServer.Spawn(go);
+
+            return false; // skip base game (would log an error and return null)
         }
     }
 

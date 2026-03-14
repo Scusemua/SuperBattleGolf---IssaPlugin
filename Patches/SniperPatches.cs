@@ -1,27 +1,46 @@
+using System.Reflection;
 using HarmonyLib;
 using IssaPlugin.Items;
+using UnityEngine.InputSystem;
 
 namespace IssaPlugin.Patches
 {
     /// <summary>
-    /// Blocks PlayerInventory.UpdateIsAimingItem from running its built-in logic
-    /// while the sniper rifle is equipped.
+    /// Corrects IsAimingItem for the sniper rifle after UpdateIsAimingItem runs.
     ///
-    /// UpdateIsAimingItem's ShouldAim helper sees None for custom items (because
-    /// GetEffectivelyEquippedItem(false) returns None) and would always set
-    /// IsAimingItem = false, overriding the value SniperScopeOverlay.Update()
-    /// writes every frame.
+    /// UpdateIsAimingItem's ShouldAim helper always returns false for custom items
+    /// because GetEffectivelyEquippedItem(false) returns None. We cannot simply
+    /// block the method (the original Prefix approach) because that also loses
+    /// the InformIsAimingItemChanged() call that drives the movement speed and
+    /// the animator's aim pose — which is exactly why aiming never worked while
+    /// stationary.
+    ///
+    /// Instead we let the method run, then immediately correct the result using
+    /// raw right-click input.  If the value changed we re-invoke
+    /// InformIsAimingItemChanged() so the movement system picks up the fix.
     /// </summary>
     [HarmonyPatch(typeof(PlayerInventory), "UpdateIsAimingItem")]
     static class SniperUpdateIsAimingItemPatch
     {
-        static bool Prefix(PlayerInventory __instance)
+        private static readonly PropertyInfo IsAimingItemProp =
+            typeof(PlayerInventory).GetProperty(
+                "IsAimingItem",
+                BindingFlags.Public | BindingFlags.Instance
+            );
+
+        static void Postfix(PlayerInventory __instance)
         {
-            // Let the original run for all non-sniper items.
-            // For the sniper, SniperScopeOverlay.Update() drives IsAimingItem
-            // directly each frame — skip the game's override.
-            return __instance.GetEffectivelyEquippedItem(true)
-                != SniperRifleItem.SniperRifleItemType;
+            if (__instance.GetEffectivelyEquippedItem(true) != SniperRifleItem.SniperRifleItemType)
+                return;
+
+            bool shouldAim = Mouse.current?.rightButton.isPressed ?? false;
+            bool currentlyAiming = (bool)(IsAimingItemProp?.GetValue(__instance) ?? false);
+
+            if (currentlyAiming == shouldAim)
+                return;
+
+            IsAimingItemProp?.SetValue(__instance, shouldAim);
+            __instance.PlayerInfo.Movement.InformIsAimingItemChanged();
         }
     }
 }
