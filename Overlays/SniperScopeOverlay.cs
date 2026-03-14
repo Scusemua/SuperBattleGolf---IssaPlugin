@@ -74,14 +74,7 @@ namespace IssaPlugin.Overlays
 
             // Play the aim sound once on scope entry.
             if (sniperEquipped && wantsScope && !_prevScoped)
-            {
-                GameplayCameraManager.EnterSwingAimCamera();
                 localInfo.PlayerAudio.PlayGunAimForAllClients(ItemType.ElephantGun);
-            }
-            else if (sniperEquipped && !wantsScope && _prevScoped)
-            {
-                GameplayCameraManager.ExitSwingAimCamera();
-            }
 
             _prevScoped = wantsScope;
 

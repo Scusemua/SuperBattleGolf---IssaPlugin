@@ -79,9 +79,15 @@ namespace IssaPlugin.Items
         }
 
         /// Server-side convenience: wraps SetCurrentItemUse + DecrementAndRemove + SetCurrentItemUse.
+        ///
+        /// EquippedItemIndex is a client-local field and is not reliably set on the server
+        /// for remote-client player objects. When running server-side for a non-local-player
+        /// inventory, use NetworkedEquippedItemIndex instead (the synced value).
         public static void ConsumeEquippedItem(PlayerInventory inventory)
         {
-            int slot = inventory.EquippedItemIndex;
+            int slot = (!inventory.isLocalPlayer && NetworkServer.active)
+                ? inventory.PlayerInfo.NetworkedEquippedItemIndex
+                : inventory.EquippedItemIndex;
             if (slot < 0)
                 return;
 

@@ -161,6 +161,7 @@ namespace IssaPlugin.Items
             DroppedCustomItemPrefab = Load<GameObject>("DroppedCustomItem.prefab");
             if (DroppedCustomItemPrefab != null)
             {
+                EnsureNetworkIdentity(DroppedCustomItemPrefab, 0xD20D0001u);
                 DroppedCustomItemPrefab.SetActive(false);
                 // Force kinematic regardless of what the bundle has baked in.
                 DisableRigidbody(DroppedCustomItemPrefab);
@@ -179,29 +180,33 @@ namespace IssaPlugin.Items
         }
 
         /// Ensures a prefab has a NetworkIdentity with a stable assetId so Mirror
-        /// can spawn it on clients. If NetworkIdentity is already baked into the
-        /// asset bundle prefab its existing assetId is kept; otherwise a new one
-        /// is added and the stable uint is set via reflection.
+        /// can spawn it on clients. If the prefab has no NetworkIdentity one is added.
+        /// If the baked-in assetId is 0 (bundle built without Mirror's editor tool),
+        /// the stable uint is written via reflection so RegisterPrefab doesn't skip it.
         private static void EnsureNetworkIdentity(GameObject prefab, uint stableAssetId)
         {
             if (prefab == null)
                 return;
 
+            var assetIdField = typeof(NetworkIdentity).GetField(
+                "assetId",
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance
+            );
+
             var ni = prefab.GetComponent<NetworkIdentity>();
             if (ni == null)
             {
                 ni = prefab.AddComponent<NetworkIdentity>();
-
-                // assetId is set by the editor/weaver and is not publicly writable at
-                // runtime, so we reach it via reflection.
-                var field = typeof(NetworkIdentity).GetField(
-                    "assetId",
-                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance
-                );
-                field?.SetValue(ni, stableAssetId);
-
+                assetIdField?.SetValue(ni, stableAssetId);
                 IssaPluginPlugin.Log.LogInfo(
                     $"[Assets] Added NetworkIdentity to {prefab.name} with assetId={stableAssetId}."
+                );
+            }
+            else if (ni.assetId == 0)
+            {
+                assetIdField?.SetValue(ni, stableAssetId);
+                IssaPluginPlugin.Log.LogInfo(
+                    $"[Assets] {prefab.name} had assetId=0; set stable assetId={stableAssetId}."
                 );
             }
             else
