@@ -413,11 +413,34 @@ namespace IssaPlugin.Patches
             dropped.ItemType = slot.itemType;
             dropped.RemainingUses = slot.remainingUses;
 
+            // Spawn the visual model on the server so its colliders become part of
+            // the parent's compound Rigidbody — this gives the item real terrain
+            // collision. The model's own Rigidbody (if any) is destroyed so its
+            // colliders fold into the parent's compound shape instead of simulating
+            // independently. Clients add a visual-only copy in OnStartClient.
+            var modelPrefab = DroppedCustomItem.GetModelPrefabForType(slot.itemType);
+            if (modelPrefab != null)
+            {
+                var model = Object.Instantiate(modelPrefab);
+                model.transform.SetParent(go.transform, false);
+                model.transform.localPosition = Vector3.zero;
+                model.transform.localRotation = Quaternion.identity;
+                model.transform.localScale = Vector3.one;
+
+                var modelRb = model.GetComponent<Rigidbody>();
+                if (modelRb != null)
+                    Object.Destroy(modelRb);
+
+                model.SetActive(true);
+            }
+
             var rb = go.GetComponent<Rigidbody>();
             if (rb != null)
             {
                 rb.linearVelocity = velocity;
                 rb.angularVelocity = angularVelocity;
+                rb.isKinematic = false;
+                rb.useGravity = true;
             }
 
             go.SetActive(true);

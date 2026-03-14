@@ -6,41 +6,89 @@ namespace IssaPlugin.Items
 {
     /// Networked ground pickup for custom items.
     ///
-    /// The root GameObject carries NetworkIdentity, NetworkTransform, Rigidbody,
-    /// SphereCollider, Entity, and this component.  A visual child is instantiated
-    /// on every client in OnStartClient() based on the synced ItemType.
+    /// Root carries NetworkIdentity, NetworkTransform, Rigidbody, SphereCollider (trigger),
+    /// Entity, and this component.
     ///
-    /// PlayerInteractableTargeter discovers this automatically via the generic
-    /// GetComponentsInParent<IInteractable>() search — no extra patching needed.
+    /// PHYSICS: The visual model is instantiated as a child on the SERVER by
+    /// ServerDropCustomItemPatch. Its own Rigidbody is removed there so its colliders
+    /// become part of the parent's compound Rigidbody, giving the item real terrain
+    /// collision. Clients instantiate the model locally in OnStartClient with colliders
+    /// disabled — they only need visuals; NetworkTransform drives their position.
+    ///
+    /// IL WEAVING: BepInEx plugin DLLs are not processed by Mirror's IL weaver,
+    /// so [SyncVar] and [Command] decorators have no effect here. Instead:
+    ///   - ItemType and RemainingUses are serialised via manual Serialize/Deserialize overrides.
+    ///   - Pickup uses a NetworkMessage (DroppedItemPickupMessage) registered in NetworkManagerPatches.
     public class DroppedCustomItem : NetworkBehaviour, IInteractable
     {
-        [SyncVar]
+        // Not [SyncVar] — synced via overridden SerializeSyncVars / DeserializeSyncVars.
         public ItemType ItemType;
-
-        [SyncVar]
         public int RemainingUses;
 
         public Entity AsEntity { get; private set; }
         public bool IsInteractionEnabled => true;
 
+        // Localization key format matches RegisterCustomItemNames ("ITEM_100" etc.).
         public LocalizedString InteractString =>
-            LocalizationManager.GetLocalizedString(StringTable.Data, "ITEM_" + ItemType.ToString());
+            LocalizationManager.GetLocalizedString(StringTable.Data, "ITEM_" + (int)ItemType);
 
         private void Awake()
         {
             AsEntity = GetComponent<Entity>();
         }
 
-        /// Spawn the correct visual model as an inactive child, then activate it.
-        /// SyncVars are already populated when OnStartClient fires.
+        // Suppress Mirror's "NetworkBehaviour not weaved" warning — serialization is manual.
+        public override bool Weaved() => true;
+
+        /// Sends ItemType and RemainingUses to joining clients in the spawn message.
+        /// Values never change after spawn so we only handle the forceAll path.
+        protected override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+        {
+            base.SerializeSyncVars(writer, forceAll);
+            if (forceAll)
+            {
+                writer.WriteInt((int)ItemType);
+                writer.WriteInt(RemainingUses);
+            }
+            else
+            {
+                // Nothing is ever dirty after initial spawn.
+                writer.WriteVarULong(0UL);
+            }
+        }
+
+        protected override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+        {
+            base.DeserializeSyncVars(reader, initialState);
+            if (initialState)
+            {
+                ItemType = (ItemType)reader.ReadInt();
+                RemainingUses = reader.ReadInt();
+            }
+            else
+            {
+                reader.ReadVarULong(); // discard the always-zero dirty bits
+            }
+        }
+
+        /// On the HOST the model was already added server-side for physics; just ensure
+        /// the layer is set. On PURE CLIENTS add a visual-only copy with colliders disabled
+        /// and make the Rigidbody kinematic so it doesn't fight the NetworkTransform.
         public override void OnStartClient()
         {
-            // Mirror doesn't sync GameObject.layer, so the client instance starts on
-            // the prefab's default layer.  Set it to ItemsLayer so the
-            // PotentiallyInteractableMask physics query can find the trigger collider.
             gameObject.layer = GameManager.LayerSettings.ItemsLayer;
 
-            var prefab = GetModelPrefab();
+            if (isServer)
+                return; // model present from server-side spawn; RB stays non-kinematic
+
+            var rb = GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.isKinematic = true;
+                rb.useGravity = false;
+            }
+
+            var prefab = GetModelPrefabForType(ItemType);
             if (prefab == null)
                 return;
 
@@ -49,16 +97,25 @@ namespace IssaPlugin.Items
             model.transform.localPosition = Vector3.zero;
             model.transform.localRotation = Quaternion.identity;
             model.transform.localScale = Vector3.one;
+
+            // Colliders disabled — physics is server-authoritative; clients only need visuals.
+            foreach (var col in model.GetComponentsInChildren<Collider>())
+                col.enabled = false;
+
             model.SetActive(true);
         }
 
+        /// Called by PlayerInteractableTargeter on the local client.
+        /// Sends a NetworkMessage to the server instead of using [Command] (which
+        /// requires IL weaving that BepInEx plugins don't get).
         public void LocalPlayerInteract()
         {
-            CmdPickUp(GameManager.LocalPlayerInventory);
+            var ni = GetComponent<NetworkIdentity>();
+            NetworkClient.Send(new DroppedItemPickupMessage { DroppedItemNetId = ni.netId });
         }
 
-        [Command(requiresAuthority = false)]
-        private void CmdPickUp(PlayerInventory player, NetworkConnectionToClient sender = null)
+        /// Called by the server handler registered in NetworkManagerPatches.
+        public void ServerPickup(PlayerInventory player)
         {
             if (!player.HasSpaceForItem(out _))
                 return;
@@ -69,21 +126,21 @@ namespace IssaPlugin.Items
             NetworkServer.Destroy(gameObject);
         }
 
-        private GameObject GetModelPrefab()
+        public static GameObject GetModelPrefabForType(ItemType type)
         {
-            if (ItemType == BatItem.BatItemType)
+            if (type == BatItem.BatItemType)
                 return AssetLoader.BatModelPrefab;
-            if (ItemType == StealthBomberItem.BomberItemType)
+            if (type == StealthBomberItem.BomberItemType)
                 return AssetLoader.BomberTabletPrefab;
-            if (ItemType == PredatorMissileItem.MissileItemType)
+            if (type == PredatorMissileItem.MissileItemType)
                 return AssetLoader.MissileTabletPrefab;
-            if (ItemType == AC130Item.AC130ItemType)
+            if (type == AC130Item.AC130ItemType)
                 return AssetLoader.Ac130TabletPrefab;
-            if (ItemType == FreezeItem.FreezeItemType)
+            if (type == FreezeItem.FreezeItemType)
                 return AssetLoader.FreezeModelPrefab;
-            if (ItemType == LowGravityItem.LowGravityItemType)
+            if (type == LowGravityItem.LowGravityItemType)
                 return AssetLoader.LowGravityModelPrefab;
-            if (ItemType == SniperRifleItem.SniperRifleItemType)
+            if (type == SniperRifleItem.SniperRifleItemType)
                 return AssetLoader.SniperRiflePrefab;
             return null;
         }

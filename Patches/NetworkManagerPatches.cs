@@ -121,6 +121,19 @@ namespace IssaPlugin.Patches
                 AC130MaydayImpactMessageSerialization.WriteAC130MaydayImpactMessage;
             Reader<AC130MaydayImpactMessage>.read =
                 AC130MaydayImpactMessageSerialization.ReadAC130MaydayImpactMessage;
+
+            // --------------------------------
+            // ---- DroppedItem Messages ----
+            Writer<DroppedItemPickupMessage>.write =
+                DroppedItemPickupMessageSerialization.WriteDroppedItemPickupMessage;
+            Reader<DroppedItemPickupMessage>.read =
+                DroppedItemPickupMessageSerialization.ReadDroppedItemPickupMessage;
+
+            // Client → Server: register on the server only.
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<DroppedItemPickupMessage>(
+                    DroppedItemMessageHandlers.HandleDroppedItemPickup
+                );
         }
 
         private static void RegisterHandlers() { }
@@ -253,6 +266,27 @@ namespace IssaPlugin.Patches
                 GameManager.CameraGameplaySettings.RocketExplosionScreenshakeSettings,
                 msg.ImpactPos
             );
+        }
+    }
+
+    /// DroppedItem NetworkMessage handlers — kept in a separate (non-patch) class so
+    /// the Harmony analyser does not misidentify the 'msg' parameters as patch parameters.
+    static class DroppedItemMessageHandlers
+    {
+        internal static void HandleDroppedItemPickup(
+            NetworkConnectionToClient conn,
+            DroppedItemPickupMessage msg
+        )
+        {
+            if (!NetworkServer.spawned.TryGetValue(msg.DroppedItemNetId, out var ni) || ni == null)
+                return;
+
+            var item = ni.gameObject.GetComponent<DroppedCustomItem>();
+            var inventory = conn.identity?.GetComponent<PlayerInventory>();
+            if (item == null || inventory == null)
+                return;
+
+            item.ServerPickup(inventory);
         }
     }
 }
