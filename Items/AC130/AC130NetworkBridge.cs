@@ -245,9 +245,9 @@ namespace IssaPlugin.Items
         [Command]
         public void CmdPrepareGunshipRocket()
         {
-            // Allow flagging even after session ends (fly-out phase) as long
-            // as the gunship GameObject still exists in the scene.
-            if (_serverGunship == null)
+            // Use the global static so ANY player can flag homing, not just the
+            // AC130 owner (whose _serverGunship is non-null only on their own bridge).
+            if (ActiveGunship == null)
                 return;
             PendingGunshipHoming = true;
         }
@@ -783,8 +783,29 @@ namespace IssaPlugin.Items
             _serverSessionActive = false;
             ReleaseGlobalLock();
             TargetEndAC130(connectionToClient);
-            NetworkServer.Destroy(_serverGunship);
-            IssaPluginPlugin.Log.LogInfo("[AC130] Server session ended.");
+
+            // Begin fly-out instead of immediately destroying the gunship.
+            // AC130FlyBehaviour.UpdateFlyOut() will call Object.Destroy once it
+            // travels FlyOutDestroyDistance — Mirror propagates that to all clients.
+            // Clear the destruction callback first so the normal fly-out doesn't
+            // accidentally trigger a mayday.
+            var flyComp = _serverGunship != null
+                ? _serverGunship.GetComponent<AC130FlyBehaviour>()
+                : null;
+
+            if (flyComp != null)
+            {
+                flyComp.OnExternallyDestroyed = null;
+                flyComp.BeginFlyOut();
+            }
+            else if (_serverGunship != null)
+            {
+                // No fly component (prefab not loaded or already removed) — fall back.
+                NetworkServer.Destroy(_serverGunship);
+            }
+
+            _serverGunship = null;
+            IssaPluginPlugin.Log.LogInfo("[AC130] Server session ended — gunship flying out.");
         }
 
         private void ForceServerCleanup()
