@@ -2,13 +2,11 @@ using UnityEngine;
 
 namespace IssaPlugin
 {
-    /// <summary>
     /// Fades a Light's intensity from its initial value to zero over a given
     /// duration, then destroys the GameObject it is attached to.
     ///
     /// Added at runtime via AddComponent — the class lives in the mod DLL so it
     /// does not need to be present in the asset bundle.
-    /// </summary>
     public class LightFader : MonoBehaviour
     {
         public enum OnLifeEnd

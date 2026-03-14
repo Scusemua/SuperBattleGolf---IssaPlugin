@@ -1,5 +1,7 @@
+using System.Reflection;
 using IssaPlugin.Items;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace IssaPlugin.Overlays
 {
@@ -20,10 +22,25 @@ namespace IssaPlugin.Overlays
     {
         public static SniperScopeOverlay Instance { get; private set; }
 
-        // Saved FOV so we can restore it when un-scoping.
-        private float _savedFov;
+        // PlayerInventory.IsAimingItem { get; private set; } — has private setter.
+        private static readonly PropertyInfo IsAimingItemProp = typeof(PlayerInventory).GetProperty(
+            "IsAimingItem",
+            BindingFlags.Public | BindingFlags.Instance
+        );
+
+        private OrbitCameraModule _orbitModule;
+
+        // Orbit module FOV at the moment we entered scope (before any zoom offset).
+        // Used to compute the negative offset that hits the absolute target FOV.
+        private float _savedBaseFov;
         private bool _fovSaved;
-        private float _currentFov = 60f;
+        private float _currentFovOffset;
+
+        // Previous scope state — used to fire enter/exit edge events.
+        private bool _prevScoped;
+
+        // Current scroll-adjusted target FOV. Reset to ZoomFov when entering scope.
+        private float _targetZoomFov;
 
         // Solid white 1×1 texture — tinted via GUI.color for all drawing.
         private Texture2D _solidTex;
@@ -59,33 +76,87 @@ namespace IssaPlugin.Overlays
             bool wantsScope = sniperEquipped && (localInfo?.Input?.IsHoldingAimSwing ?? false);
             SniperRifleItem.IsScoped = wantsScope;
 
-            var cam = GameManager.Camera;
-            if (cam == null)
-                return;
-
-            // Capture the current FOV the first time we scope in.
-            if (wantsScope && !_fovSaved)
+            // ── Aim animation — driven every frame ──────────────────────────
+            // UpdateIsAimingItem is edge-triggered (fires only when right-click
+            // changes state). If anything resets IsAimingItem after that single
+            // event, the character drops back to idle and never re-raises the
+            // gun while the button stays held. Writing the property every frame
+            // is the reliable fix. SniperPatches.cs blocks the game's own
+            // UpdateIsAimingItem from overriding us while the sniper is equipped.
+            if (sniperEquipped && localInfo?.Inventory != null)
             {
-                _savedFov = cam.fieldOfView;
-                _currentFov = _savedFov;
-                _fovSaved = true;
+                IsAimingItemProp?.SetValue(localInfo.Inventory, wantsScope);
+                localInfo.AnimatorIo.SetIsAimingItem(wantsScope);
+
+                if (wantsScope && !_prevScoped)
+                {
+                    GameplayCameraManager.EnterSwingAimCamera();
+                    localInfo.PlayerAudio.PlayGunAimForAllClients(ItemType.ElephantGun);
+                    localInfo.SetIsAimingItem(true);
+                    localInfo.Movement.InformIsAimingItemChanged();
+                }
+                else if (!wantsScope && _prevScoped)
+                {
+                    GameplayCameraManager.ExitSwingAimCamera();
+                    localInfo.SetIsAimingItem(false);
+                    localInfo.Movement.InformIsAimingItemChanged();
+                }
+            }
+            else if (_prevScoped)
+            {
+                // Sniper was un-equipped while scope was held — clean up.
+                GameplayCameraManager.ExitSwingAimCamera();
+                localInfo?.SetIsAimingItem(false);
+                localInfo?.Movement.InformIsAimingItemChanged();
             }
 
-            float targetFov = wantsScope
-                ? Configuration.SniperRifleZoomFov.Value
-                : (_fovSaved ? _savedFov : cam.fieldOfView);
+            _prevScoped = wantsScope;
 
-            _currentFov = Mathf.Lerp(
-                _currentFov,
-                targetFov,
+            if (_orbitModule == null)
+                CameraModuleController.TryGetOrbitModule(out _orbitModule);
+            if (_orbitModule == null)
+                return;
+
+            // Capture the base FOV the first time we scope in, and reset zoom to default.
+            if (wantsScope && !_fovSaved)
+            {
+                _savedBaseFov  = _orbitModule.FieldOfView;
+                _targetZoomFov = Configuration.SniperRifleZoomFov.Value;
+                _fovSaved      = true;
+            }
+
+            // While scoped, let the scroll wheel nudge _targetZoomFov within [min, max].
+            if (wantsScope)
+            {
+                float scroll = Mouse.current?.scroll.ReadValue().y ?? 0f;
+                if (scroll != 0f)
+                {
+                    // One Windows scroll notch = 120 units; divide to get notch count.
+                    _targetZoomFov -= (scroll / 120f) * Configuration.SniperRifleScrollSensitivity.Value;
+                    _targetZoomFov  = Mathf.Clamp(
+                        _targetZoomFov,
+                        Configuration.SniperRifleMinZoomFov.Value,
+                        Configuration.SniperRifleMaxZoomFov.Value
+                    );
+                }
+            }
+
+            // targetOffset is negative to zoom in; 0 restores normal FOV.
+            float targetOffset = wantsScope
+                ? _targetZoomFov - _savedBaseFov
+                : 0f;
+
+            _currentFovOffset = Mathf.Lerp(
+                _currentFovOffset,
+                targetOffset,
                 Time.deltaTime * Configuration.SniperRifleZoomSpeed.Value
             );
-            cam.fieldOfView = _currentFov;
+            _orbitModule.SetFovOffset(_currentFovOffset);
 
-            // Once we've fully returned to the saved FOV, stop overriding.
-            if (!wantsScope && _fovSaved && Mathf.Abs(_currentFov - _savedFov) < 0.05f)
+            // Once we've fully unzoomed, stop overriding.
+            if (!wantsScope && _fovSaved && Mathf.Abs(_currentFovOffset) < 0.05f)
             {
-                cam.fieldOfView = _savedFov;
+                _orbitModule.SetFovOffset(0f);
                 _fovSaved = false;
             }
         }
@@ -131,9 +202,7 @@ namespace IssaPlugin.Overlays
         {
             if (!_fovSaved)
                 return;
-            var cam = GameManager.Camera;
-            if (cam != null)
-                cam.fieldOfView = _savedFov;
+            _orbitModule?.SetFovOffset(0f);
             _fovSaved = false;
             SniperRifleItem.IsScoped = false;
         }
@@ -186,23 +255,23 @@ namespace IssaPlugin.Overlays
             DrawRect(cx - radius, cy + radius, radius * 2f, sh - (cy + radius), Color.black);
 
             // Crosshairs
-            float gap   = radius * 0.06f;
-            float arm   = radius * 0.30f;
+            float gap = radius * 0.06f;
+            float arm = radius * 0.30f;
             float thick = Mathf.Max(2f, sw / 600f);
 
             DrawHLine(cx - gap - arm, cy, arm, thick + 2f, Color.black);
-            DrawHLine(cx + gap,       cy, arm, thick + 2f, Color.black);
+            DrawHLine(cx + gap, cy, arm, thick + 2f, Color.black);
             DrawVLine(cx, cy - gap - arm, arm, thick + 2f, Color.black);
-            DrawVLine(cx, cy + gap,       arm, thick + 2f, Color.black);
+            DrawVLine(cx, cy + gap, arm, thick + 2f, Color.black);
 
             DrawHLine(cx - gap - arm, cy, arm, thick, Color.white);
-            DrawHLine(cx + gap,       cy, arm, thick, Color.white);
+            DrawHLine(cx + gap, cy, arm, thick, Color.white);
             DrawVLine(cx, cy - gap - arm, arm, thick, Color.white);
-            DrawVLine(cx, cy + gap,       arm, thick, Color.white);
+            DrawVLine(cx, cy + gap, arm, thick, Color.white);
 
             // Mil-dots
             float dotDist = gap + arm * 0.5f;
-            float dotR    = thick * 1.5f;
+            float dotR = thick * 1.5f;
             DrawDot(cx - dotDist, cy, dotR);
             DrawDot(cx + dotDist, cy, dotR);
             DrawDot(cx, cy - dotDist, dotR);

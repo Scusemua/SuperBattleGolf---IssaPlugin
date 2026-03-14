@@ -110,9 +110,12 @@ namespace IssaPlugin
         public static ConfigEntry<float> SniperRifleMaxShotDistance { get; private set; }
         public static ConfigEntry<float> SniperRifleScopedInaccuracy { get; private set; }
         public static ConfigEntry<float> SniperRifleHipFireInaccuracy { get; private set; }
-        public static ConfigEntry<float> SniperRifleZoomFov { get; private set; }
-        public static ConfigEntry<float> SniperRifleZoomSpeed { get; private set; }
-        public static ConfigEntry<float> SniperRifleShotDuration { get; private set; }
+        public static ConfigEntry<float> SniperRifleZoomFov           { get; private set; }
+        public static ConfigEntry<float> SniperRifleZoomSpeed         { get; private set; }
+        public static ConfigEntry<float> SniperRifleShotDuration      { get; private set; }
+        public static ConfigEntry<float> SniperRifleMinZoomFov        { get; private set; }
+        public static ConfigEntry<float> SniperRifleMaxZoomFov        { get; private set; }
+        public static ConfigEntry<float> SniperRifleScrollSensitivity { get; private set; }
 
         // --- Explosion Scaling ---
         public static ConfigEntry<float> AC130ExplosionScale { get; private set; }
@@ -786,6 +789,27 @@ namespace IssaPlugin
                 "ShotDuration",
                 0.6f,
                 "Seconds the shot animation plays before the item use state resets."
+            );
+
+            SniperRifleMinZoomFov = cfg.Bind(
+                "SniperRifle",
+                "MinZoomFov",
+                5f,
+                "Minimum FOV reachable by scrolling in (maximum zoom). Lower = more zoomed."
+            );
+
+            SniperRifleMaxZoomFov = cfg.Bind(
+                "SniperRifle",
+                "MaxZoomFov",
+                40f,
+                "Maximum FOV reachable by scrolling out (minimum zoom). Must be above MinZoomFov."
+            );
+
+            SniperRifleScrollSensitivity = cfg.Bind(
+                "SniperRifle",
+                "ScrollSensitivity",
+                5f,
+                "FOV units changed per scroll notch. Higher values zoom faster."
             );
         }
     }

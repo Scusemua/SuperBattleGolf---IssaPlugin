@@ -100,7 +100,7 @@ namespace IssaPlugin.Items
             LowGravityIcon = LoadSprite("gravity_remote_icon.png");
             SniperRifleIcon = LoadSprite("sniper_rifle_icon.png");
 
-            SniperScopeTexture = LoadTexture2D("sniper_scope_overlay.png");
+            SniperScopeTexture = LoadTexture2D("sniper_scope.png");
 
             if (SniperScopeTexture == null)
             {

@@ -259,11 +259,7 @@ namespace IssaPlugin.Patches
                 return true;
 
             var equipped = inventory.GetEffectivelyEquippedItem(true);
-            if (
-                ItemRegistry.IsCustomItem(equipped)
-                && equipped != BatItem.BatItemType
-                && equipped != SniperRifleItem.SniperRifleItemType
-            )
+            if (ItemRegistry.IsCustomItem(equipped) && equipped != BatItem.BatItemType)
             {
                 __result = false;
                 return false;
