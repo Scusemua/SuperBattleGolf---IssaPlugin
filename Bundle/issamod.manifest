@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 1751620398
+CRC: 2697325825
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 5b6bf4ccae4558be3fc1e089840c8971
+    Hash: c79aadd8f3dadbd4b95085f29fc8dd94
   TypeTreeHash:
     serializedVersion: 2
-    Hash: 327227f2969caf5f4db7e0f80f1d7110
+    Hash: 4df07e2435cdf2005e096ba5ed1cb470
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 04ead7875de30fe3a6cad0d6885cc2a7
+    Hash: 3ad4c2207feaae69e049c617caf1e15b
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -33,6 +33,8 @@ ClassTypes:
   Script: {instanceID: 0}
 - Class: 64
   Script: {instanceID: 0}
+- Class: 65
+  Script: {instanceID: 0}
 - Class: 82
   Script: {instanceID: 0}
 - Class: 83
@@ -47,6 +49,8 @@ ClassTypes:
   Script: {fileID: 11500000, guid: 2f54e17d705a2894d88787e24190ebfa, type: 3}
 - Class: 114
   Script: {fileID: 11500000, guid: 9b91ecbcc199f4492b9a91e820070131, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: cb803efbe62c34d7baece46c9ffebad9, type: 3}
 - Class: 114
   Script: {fileID: 11500000, guid: 8ff3ba0becae47b8b9381191598957c8, type: 3}
 - Class: 115
@@ -81,9 +85,10 @@ Assets:
 - Assets/Assets/bomber_jet.prefab
 - Assets/Assets/gravity_remote_model.fbx
 - Assets/Assets/gravity_remote.prefab
-- Assets/Assets/big_plane.ogg
+- Assets/Assets/ufo.prefab
 - Assets/Assets/WarningExclamation.prefab
 - Assets/Assets/bat_icon.png
+- Assets/Assets/big_plane.ogg
 - Assets/Assets/Dark 1.mat
 - Assets/Assets/Dark 2.mat
 - Assets/Assets/missile_locked.ogg
@@ -92,6 +97,7 @@ Assets:
 - Assets/Assets/gravity_remote_icon.png
 - Assets/Assets/sniper_rifle_icon.png
 - Assets/Assets/freeze_effect_icon.png
+- Assets/Assets/DroppedCustomItem.prefab
 - Assets/Assets/bomber_model.prefab
 - Assets/Assets/etfx_explosion_nuke.wav
 - Assets/Assets/smoke_prefab.prefab
@@ -110,6 +116,8 @@ Assets:
 - Assets/Assets/ac130_icon.png
 - Assets/Assets/predator_missile_tablet.prefab
 - Assets/Assets/ice_shader.shader
+- Assets/Assets/ufo_model.prefab
+- Assets/Assets/blood_splatter_critical.prefab
 - Assets/Assets/NukeVerticalExplosionFire.prefab
 - Assets/Assets/Glass.mat
 Dependencies: []
