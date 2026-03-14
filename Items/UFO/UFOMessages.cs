@@ -80,7 +80,7 @@ namespace IssaPlugin.Items
         public static void WriteUFOEndClientMessage(NetworkWriter w, UFOEndClientMessage m) { }
 
         public static UFOEndClientMessage ReadUFOEndClientMessage(NetworkReader r) =>
-            new UFOEndClientMessage();
+            new UFOEndClientMessage { };
 
         public static void WriteUFOShotDownMessage(NetworkWriter writer, UFOShotDownMessage msg)
         {

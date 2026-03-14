@@ -428,14 +428,17 @@ namespace IssaPlugin.Patches
             Reader<UFOEndClientMessage>.read = UFOMessageSerialization.ReadUFOEndClientMessage;
             NetworkClient.RegisterHandler<UFOEndClientMessage>(msg =>
             {
-                NetworkClient.localPlayer?.GetComponent<UFONetworkBridge>()?.ClientEndUFO();
+                NetworkClient.localPlayer?.GetComponent<UFONetworkBridge>()?.ClientEndUFO(false);
             });
 
             Writer<UFOShotDownMessage>.write = UFOMessageSerialization.WriteUFOShotDownMessage;
             Reader<UFOShotDownMessage>.read = UFOMessageSerialization.ReadUFOShotDownMessage;
             NetworkClient.RegisterHandler<UFOShotDownMessage>(msg =>
             {
-                NetworkClient.localPlayer?.GetComponent<UFONetworkBridge>()?.HandleUFOShotDown(msg);
+                IssaPluginPlugin.Log.LogWarning(
+                    $"[NetworkManager] Client received UFOShotDownMessage."
+                );
+                NetworkClient.localPlayer?.GetComponent<UFONetworkBridge>()?.ClientEndUFO(true);
             });
         }
 

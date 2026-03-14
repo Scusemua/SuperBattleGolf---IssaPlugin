@@ -8,6 +8,8 @@ namespace IssaPlugin.Items
         /// the velocity-direction raycast can read the current linear velocity.
         public Rigidbody Rigidbody;
 
+        public UFONetworkBridge UFONetworkBridge;
+
         private bool _impacted;
         private float _lifetime;
 
@@ -80,6 +82,7 @@ namespace IssaPlugin.Items
                 transform.position
             );
 
+            UFONetworkBridge.ServerEndUFO();
             Destroy(gameObject);
         }
     }

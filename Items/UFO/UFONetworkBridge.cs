@@ -41,6 +41,8 @@ namespace IssaPlugin.Items
         public bool LocalSessionActive { get; private set; }
         private bool _forceEnd;
 
+        private bool _shotDown;
+
         // ================================================================
         //  Mirror lifecycle
         // ================================================================
@@ -105,8 +107,9 @@ namespace IssaPlugin.Items
             }
 
             // Wire up rocket-hit threshold callback.
-            hitReceiver.OnHitsExceeded = () => {
-                // ServerBeginMayday();
+            hitReceiver.OnHitsExceeded = () =>
+            {
+                ServerUFOShotDown();
             };
 
             NetworkServer.Spawn(ufoGo);
@@ -161,6 +164,28 @@ namespace IssaPlugin.Items
             StartCoroutine(LaserAnticipationCoroutine());
         }
 
+        public void ServerUFOShotDown()
+        {
+            IssaPluginPlugin.Log.LogInfo("[UFO] Server UFO Shot Down sequence started.");
+
+            NetworkServer.SendToAll(new UFOShotDownMessage { });
+
+            foreach (var col in _serverUFO.GetComponents<Collider>())
+                col.enabled = false;
+
+            var rb = _serverUFO.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.isKinematic = false;
+                rb.useGravity = true;
+                rb.AddForce(Vector3.down * Configuration.UFOCrashDownwardForce.Value);
+            }
+
+            var crashBehaviour = _serverUFO.AddComponent<UFOCrashBehaviour>();
+            crashBehaviour.Rigidbody = rb;
+            crashBehaviour.UFONetworkBridge = this;
+        }
+
         // ================================================================
         //  Server → Client  (called by message handlers registered in
         //  NetworkManagerPatches)
@@ -171,40 +196,10 @@ namespace IssaPlugin.Items
             StartCoroutine(RunLocalSession(ufoNetId));
         }
 
-        public void ClientEndUFO()
+        public void ClientEndUFO(bool shotDown)
         {
             _forceEnd = true;
-        }
-
-        public void HandleUFOShotDown(UFOShotDownMessage msg)
-        {
-            IssaPluginPlugin.Log.LogInfo(
-                $"[UFO] UFOShotDownMessage received: triggering physics crash. msg={msg}"
-            );
-
-            foreach (var col in _serverUFO.GetComponents<Collider>())
-                col.enabled = false;
-
-            var rb = _serverUFO.GetComponent<Rigidbody>();
-            if (rb != null)
-            {
-                rb.isKinematic = false;
-                rb.useGravity = true;
-
-                rb.linearVelocity = msg.CrashDir * 2;
-
-                if (msg.ImpactDir != Vector3.zero)
-                    rb.AddForce(
-                        msg.ImpactDir * Configuration.UFOCrashImpactForce.Value,
-                        ForceMode.Impulse
-                    );
-
-                rb.AddForce(Vector3.down * Configuration.UFOCrashDownwardForce.Value);
-                rb.AddTorque(msg.TorqueImpulse, ForceMode.Impulse);
-            }
-
-            var crashBehavior = _serverUFO.AddComponent<UFOCrashBehaviour>();
-            crashBehavior.Rigidbody = rb;
+            _shotDown = shotDown;
         }
 
         // ================================================================
@@ -447,8 +442,12 @@ namespace IssaPlugin.Items
 
             // ── Session end ───────────────────────────────────────────────────
             // Stop the UFO before the server destroys it.
-            NetworkClient.Send(new UFOMoveMessage { WorldMoveDir = Vector3.zero });
-            NetworkClient.Send(new UFOEndMessage());
+            // If we were shot down, then the server will handle things.
+            if (!_shotDown)
+            {
+                NetworkClient.Send(new UFOMoveMessage { WorldMoveDir = Vector3.zero });
+                NetworkClient.Send(new UFOEndMessage());
+            }
 
             UFOOverlay.SetActive(false, 0);
 
