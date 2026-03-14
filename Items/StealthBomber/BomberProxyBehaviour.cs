@@ -32,18 +32,7 @@ namespace IssaPlugin.Items
 
         private void Awake()
         {
-            Init();
-        }
-
-        private void Start()
-        {
-            Init();
-        }
-
-        private void Init()
-        {
             _startTime = Time.time;
-
             HitCount = 0;
             HitsRequired = (int)Configuration.BomberHitsToDestroy.Value;
             OnHit += OnStealthBomberHit;

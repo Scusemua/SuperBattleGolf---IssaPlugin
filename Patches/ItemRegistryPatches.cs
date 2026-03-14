@@ -19,19 +19,6 @@ namespace IssaPlugin.Patches
     }
 
     [HarmonyPatch]
-    static class SetEquippedItemPatch
-    {
-        static MethodBase TargetMethod() =>
-            AccessTools.Method(typeof(PlayerAnimatorIo), "SetEquippedItem");
-
-        static void Prefix(ref ItemType equippedItem)
-        {
-            if (ItemRegistry.IsCustomItem(equippedItem))
-                equippedItem = ItemType.None;
-        }
-    }
-
-    [HarmonyPatch]
     static class ServerTryAddItemPatch
     {
         static MethodBase TargetMethod() =>

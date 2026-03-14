@@ -1,4 +1,3 @@
-using System.Collections;
 using Mirror;
 using UnityEngine;
 
@@ -108,11 +107,16 @@ namespace IssaPlugin.Items
 
             var visual = StealthBomberItem.ActiveBomberVisual;
             if (visual == null)
+            {
+                // BomberShotDownMessage arrived before BomberVisualSpawnMessage (UDP out-of-order).
+                // The crash physics are lost on this client; the visual will fly off and despawn naturally.
+                IssaPluginPlugin.Log.LogWarning("[Bomber] Shot-down message arrived before visual — crash physics skipped on this client.");
                 return;
+            }
 
             var fly = visual.GetComponent<BomberFlyBehaviour>();
             float flySpeed = fly != null ? fly.speed : msg.CrashSpeed;
-            if (fly != null)
+            if (fly)
                 fly.enabled = false;
 
             foreach (var col in visual.GetComponents<Collider>())

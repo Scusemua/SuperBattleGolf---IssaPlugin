@@ -22,11 +22,17 @@ namespace IssaPlugin.Patches
     [HarmonyPatch]
     static class NetworkManagerRegisterPrefabsPatch
     {
+        private static bool _registered;
+
         static System.Reflection.MethodBase TargetMethod() =>
             AccessTools.Method(typeof(BNetworkManager), "OnStartClient");
 
         static void Postfix()
         {
+            if (_registered)
+                return;
+            _registered = true;
+
             // ── Prefab registration ──────────────────────────────────────────
             RegisterPrefab(AssetLoader.DroppedCustomItemPrefab);
             RegisterPrefab(AssetLoader.BomberProxyPrefab);
@@ -99,8 +105,12 @@ namespace IssaPlugin.Patches
 
         private static void HandleAC130MaydayVfx(AC130MaydayVfxMessage msg)
         {
-            // Skip for the owning client — TargetBeginAC130 handles the cockpit path.
+            // Skip for the owning client — TargetBeginMayday handles the cockpit path.
             // All other clients get the external smoke/fire mayday behaviour here.
+            var localBridge = NetworkClient.localPlayer?.GetComponent<AC130NetworkBridge>();
+            if (localBridge != null && localBridge.LocalSessionActive)
+                return;
+
             if (!NetworkClient.spawned.TryGetValue(msg.GunshipNetId, out var ni) || ni == null)
                 return;
 

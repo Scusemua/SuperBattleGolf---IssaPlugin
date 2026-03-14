@@ -158,16 +158,19 @@ namespace IssaPlugin.Items
             MaydayExplosionVfxPrefab = Load<GameObject>("NukeVerticalExplosionFire.prefab");
 
             DroppedCustomItemPrefab = Load<GameObject>("DroppedCustomItem.prefab");
-            DroppedCustomItemPrefab.SetActive(false);
-            // Make the pickup collider a trigger so it doesn't block player movement.
-            // Physics.OverlapBoxNonAlloc uses QueryTriggerInteraction.Collide, so
-            // triggers are still detected by PlayerInteractableTargeter.
-            var dropCol = DroppedCustomItemPrefab.GetComponent<SphereCollider>();
-            if (dropCol != null)
-                dropCol.isTrigger = true;
-            DroppedCustomItemPrefab.AddComponent<Entity>();
-            DroppedCustomItemPrefab.AddComponent<DroppedCustomItem>();
-            GameObject.DontDestroyOnLoad(DroppedCustomItemPrefab);
+            if (DroppedCustomItemPrefab != null)
+            {
+                DroppedCustomItemPrefab.SetActive(false);
+                // Make the pickup collider a trigger so it doesn't block player movement.
+                // Physics.OverlapBoxNonAlloc uses QueryTriggerInteraction.Collide, so
+                // triggers are still detected by PlayerInteractableTargeter.
+                var dropCol = DroppedCustomItemPrefab.GetComponent<SphereCollider>();
+                if (dropCol)
+                    dropCol.isTrigger = true;
+                DroppedCustomItemPrefab.AddComponent<Entity>();
+                DroppedCustomItemPrefab.AddComponent<DroppedCustomItem>();
+                GameObject.DontDestroyOnLoad(DroppedCustomItemPrefab);
+            }
 
             IssaPluginPlugin.Log.LogInfo("[Assets] Bundle loaded.");
         }

@@ -71,10 +71,15 @@ namespace IssaPlugin.Items
 
         public static void HandleFreezeBegin(FreezeBeginMessage msg)
         {
-            _savedFogColor    = RenderSettings.fogColor;
-            _savedFogDensity  = RenderSettings.fogDensity;
-            _savedAmbientLight = RenderSettings.ambientLight;
-            _savedFog         = RenderSettings.fog;
+            // Only save render state if not already frozen — repeated sessions would
+            // otherwise overwrite the saved state with the already-modified fog values.
+            if (!FreezeItem.IsFrozen)
+            {
+                _savedFogColor    = RenderSettings.fogColor;
+                _savedFogDensity  = RenderSettings.fogDensity;
+                _savedAmbientLight = RenderSettings.ambientLight;
+                _savedFog         = RenderSettings.fog;
+            }
 
             RenderSettings.fog         = true;
             RenderSettings.fogColor    = new Color(0.7f, 0.85f, 1.0f, 1f);
@@ -116,8 +121,9 @@ namespace IssaPlugin.Items
         {
             if (_globalSessionActive)
             {
+                NetworkServer.SendToAll(new FreezeEndMessage());
                 _globalSessionActive = false;
-                IssaPluginPlugin.Log.LogInfo("[Freeze] Global lock released on server stop.");
+                IssaPluginPlugin.Log.LogInfo("[Freeze] Session ended and global lock released on server stop.");
             }
         }
     }

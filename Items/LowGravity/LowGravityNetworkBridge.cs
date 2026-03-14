@@ -71,10 +71,15 @@ namespace IssaPlugin.Items
 
         public static void HandleLowGravityBegin(LowGravityBeginMessage msg)
         {
-            _savedFogColor     = RenderSettings.fogColor;
-            _savedFogDensity   = RenderSettings.fogDensity;
-            _savedAmbientLight = RenderSettings.ambientLight;
-            _savedFog          = RenderSettings.fog;
+            // Only save render state if not already active — repeated sessions would
+            // otherwise overwrite the saved state with the already-modified fog values.
+            if (!LowGravityItem.IsActive)
+            {
+                _savedFogColor     = RenderSettings.fogColor;
+                _savedFogDensity   = RenderSettings.fogDensity;
+                _savedAmbientLight = RenderSettings.ambientLight;
+                _savedFog          = RenderSettings.fog;
+            }
 
             RenderSettings.fog          = true;
             RenderSettings.fogColor     = new Color(0.05f, 0.02f, 0.15f, 1f);
@@ -116,8 +121,9 @@ namespace IssaPlugin.Items
         {
             if (_globalSessionActive)
             {
+                NetworkServer.SendToAll(new LowGravityEndMessage());
                 _globalSessionActive = false;
-                IssaPluginPlugin.Log.LogInfo("[LowGravity] Global lock released on server stop.");
+                IssaPluginPlugin.Log.LogInfo("[LowGravity] Session ended and global lock released on server stop.");
             }
         }
     }

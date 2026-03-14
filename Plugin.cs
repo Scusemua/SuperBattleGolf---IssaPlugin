@@ -62,10 +62,7 @@ namespace IssaPlugin
         private void Update()
         {
             if (!_itemNamesRegistered)
-            {
-                ItemRegistry.RegisterCustomItemNames();
-                _itemNamesRegistered = true;
-            }
+                _itemNamesRegistered = ItemRegistry.RegisterCustomItemNames();
 
             var keyboard = Keyboard.current;
             if (keyboard == null)

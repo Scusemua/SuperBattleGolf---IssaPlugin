@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Reflection;
 using IssaPlugin.Overlays;
 using Mirror;
 using UnityEngine;
@@ -627,10 +626,12 @@ namespace IssaPlugin.Items
                 Quaternion.LookRotation(approachDir, Vector3.up)
             );
 
-            // NetworkIdentity (with stable assetId) and NetworkTransform are added to
-            // AC130Prefab once in AssetLoader.Load(), so all instances inherit them.
+            // NetworkIdentity (with stable assetId) is baked into AC130Prefab in AssetLoader.
+            // AC130ClientSetup.Awake() (on the prefab) already adds Entity, LockOnTarget,
+            // and AC130GunshipMarker during Instantiate — add runtime-only components after.
 
-            // Add hit receiver before spawning so it's ready from frame 0.
+            // AC130HitReceiver (CustomHittable) needs Entity in its Awake;
+            // Entity was already added by AC130ClientSetup.Awake() during Instantiate above.
             var hitReceiver = ac130GameObj.AddComponent<AC130HitReceiver>();
 
             var flyComp = ac130GameObj.AddComponent<AC130FlyBehaviour>();
@@ -643,14 +644,7 @@ namespace IssaPlugin.Items
             flyComp.flySpeed = approachSpeed;
             flyComp.mode = AC130FlightMode.FlyIn;
 
-            // Required as Hittable.Awake() expects an Entity component.
-            if (ac130GameObj.GetComponent<Entity>() == null)
-                ac130GameObj.AddComponent<Entity>();
-
-            ac130GameObj.SetActive(false);
-
-            ac130GameObj.SetActive(true);
-
+            // Spawn AFTER all setup so Start() fires post-Spawn, not pre-Spawn.
             NetworkServer.Spawn(ac130GameObj);
 
             IssaPluginPlugin.Log.LogInfo(
@@ -820,26 +814,11 @@ namespace IssaPlugin.Items
             _activeSessionBridge = null;
         }
 
-        public static void CopyPrivateProperties<T>(T source, T target)
+        public static void ForceReleaseGlobalLock()
         {
-            var type = typeof(T);
-            var properties = type.GetProperties(
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic
-            );
-
-            foreach (var prop in properties)
-            {
-                // Only consider properties with a getter AND a setter (even private)
-                if (prop.CanRead && prop.CanWrite)
-                {
-                    var setter = prop.GetSetMethod(true); // true = include non-public setter
-                    if (setter != null)
-                    {
-                        var value = prop.GetValue(source);
-                        setter.Invoke(target, new object[] { value });
-                    }
-                }
-            }
+            IssaPluginPlugin.Log.LogWarning("[AC130] ForceReleaseGlobalLock called — resetting session state.");
+            _globalSessionActive = false;
+            _activeSessionBridge = null;
         }
     }
 }

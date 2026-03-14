@@ -147,7 +147,9 @@ namespace IssaPlugin.Items
         /// Adds entries to the Unity Localization "Data" StringTable at runtime
         /// so that custom item names resolve correctly everywhere.
         /// Must be called after the game is fully initialized (not during ScriptableObject.OnEnable).
-        public static void RegisterCustomItemNames()
+        /// Returns true if names were registered successfully, false if the localization
+        /// table wasn't ready yet (caller should retry next frame).
+        public static bool RegisterCustomItemNames()
         {
             try
             {
@@ -165,7 +167,7 @@ namespace IssaPlugin.Items
                     IssaPluginPlugin.Log.LogWarning(
                         "[ItemRegistry] Unity.Localization assembly not found."
                     );
-                    return;
+                    return false;
                 }
 
                 var locSettingsType = locAsm.GetType(
@@ -177,7 +179,7 @@ namespace IssaPlugin.Items
                 );
                 var stringDb = stringDbProp.GetValue(null);
                 if (stringDb == null)
-                    return;
+                    return false;
 
                 var tableRefType = locAsm.GetType("UnityEngine.Localization.Tables.TableReference");
                 var implicitOp = tableRefType.GetMethod(
@@ -206,22 +208,22 @@ namespace IssaPlugin.Items
                     }
                 }
                 if (getTableMethod == null)
-                    return;
+                    return false;
 
                 var table = getTableMethod.Invoke(stringDb, new[] { tableRef, null });
                 if (table == null)
                 {
                     IssaPluginPlugin.Log.LogWarning(
-                        "[ItemRegistry] Data string table not loaded yet."
+                        "[ItemRegistry] Data string table not loaded yet — will retry."
                     );
-                    return;
+                    return false;
                 }
 
                 var addEntryMethod = table
                     .GetType()
                     .GetMethod("AddEntry", new[] { typeof(string), typeof(string) });
                 if (addEntryMethod == null)
-                    return;
+                    return false;
 
                 addEntryMethod.Invoke(table, new object[] { "ITEM_100", "Baseball Bat" });
                 addEntryMethod.Invoke(table, new object[] { "ITEM_101", "Stealth Bomber" });
@@ -234,12 +236,14 @@ namespace IssaPlugin.Items
                 IssaPluginPlugin.Log.LogInfo(
                     "[ItemRegistry] Custom item names registered in string table."
                 );
+                return true;
             }
             catch (Exception e)
             {
                 IssaPluginPlugin.Log.LogWarning(
                     $"[ItemRegistry] Failed to register item names: {e.Message}"
                 );
+                return false;
             }
         }
 
