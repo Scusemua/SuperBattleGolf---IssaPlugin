@@ -31,39 +31,20 @@ namespace IssaPlugin.Patches
         }
     }
 
-    // [HarmonyPatch]
-    // static class Patch_Rocket_CheckCollision
-    // {
-    //     static MethodInfo TargetMethod() =>
-    //         typeof(Rocket)
-    //             .GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
-    //             .FirstOrDefault(m => m.Name.Contains("CheckCollision"));
+    [HarmonyPatch(typeof(Rocket), "OnFixedBUpdate")]
+    static class RocketFixedBUpdatePatch
+    {
+        private static readonly FieldInfo DistanceField = AccessTools.Field(
+            typeof(Rocket),
+            "distanceTravelled"
+        );
 
-    //     static bool Prefix(Rocket __instance, out Vector3 explosionPosition)
-    //     {
-    //         var hits = Physics.OverlapSphere(worldPosition, 5f);
-    //         bool collisionDetected = false;
+        static void Prefix(Rocket __instance)
+        {
+            if (!PredatorMissileItem.ActiveMissileRockets.Contains(__instance))
+                return;
 
-    //         foreach (var hit in hits)
-    //         {
-    //             var ac130HitReceiver = hit.GetComponentInParent<AC130HitReceiver>();
-    //             if (ac130HitReceiver != null)
-    //             {
-    //                 ac130HitReceiver.OnHit();
-    //                 collisionDetected = true;
-    //             }
-
-    //             var stealthBomberProxy = hit.GetComponentInParent<BomberProxyBehaviour>();
-    //             if (stealthBomberProxy != null)
-    //             {
-    //                 stealthBomberProxy.LastHitWorldPos = worldPosition;
-    //                 stealthBomberProxy.OnHit();
-    //                 collisionDetected = true;
-    //             }
-    //         }
-
-    //         // If we detected a collision, then just skip the real CheckCollision method.
-    //         return !collisionDetected;
-    //     }
-    // }
+            DistanceField?.SetValue(__instance, 0f);
+        }
+    }
 }

@@ -15,6 +15,8 @@ namespace IssaPlugin.Items
 
         public static Sprite SniperRifleIcon { get; private set; }
 
+        public static Texture2D SniperScopeTexture { get; private set; }
+
         public static GameObject BatModelPrefab { get; private set; }
         public static GameObject BomberPrefab { get; private set; }
         public static GameObject BomberProxyPrefab { get; private set; }
@@ -98,6 +100,13 @@ namespace IssaPlugin.Items
             LowGravityIcon = LoadSprite("gravity_remote_icon.png");
             SniperRifleIcon = LoadSprite("sniper_rifle_icon.png");
 
+            SniperScopeTexture = LoadTexture2D("sniper_scope_overlay.png");
+
+            if (SniperScopeTexture == null)
+            {
+                IssaPluginPlugin.Log.LogError("[Assets] Failed to load sniper scope texture.");
+            }
+
             BatModelPrefab = Load<GameObject>("bat_model.prefab");
             BomberPrefab = Load<GameObject>("bomber_model.prefab");
             BomberProxyPrefab = Load<GameObject>("bomber_proxy.prefab");
@@ -145,6 +154,11 @@ namespace IssaPlugin.Items
                 new Rect(0, 0, tex.width, tex.height),
                 new Vector2(0.5f, 0.5f)
             );
+        }
+
+        private static Texture2D LoadTexture2D(string name)
+        {
+            return Load<Texture2D>(name);
         }
 
         public static void Unload()

@@ -97,67 +97,7 @@ namespace IssaPlugin.Overlays
             if (!SniperRifleItem.IsScoped || _solidTex == null)
                 return;
 
-            float sw = Screen.width;
-            float sh = Screen.height;
-            float cx = sw * 0.5f;
-            float cy = sh * 0.5f;
-            float radius = sh * 0.45f; // scope circle fills most of screen height
-
-            // ── Four black curtain panels (leave a square gap around the circle) ──
-            DrawRect(0f, 0f, cx - radius, sh, Color.black); // left
-            DrawRect(cx + radius, 0f, sw - (cx + radius), sh, Color.black); // right
-            DrawRect(cx - radius, 0f, radius * 2f, cy - radius, Color.black); // top
-            DrawRect(cx - radius, cy + radius, radius * 2f, sh - (cy + radius), Color.black); // bottom
-
-            // ── Thin dark vignette border at the circle edge ──────────────────
-            float border = radius * 0.05f;
-            // re-draw a slightly larger version of each curtain to soften the hard edge
-            var oldColor = GUI.color;
-            GUI.color = new Color(0f, 0f, 0f, 0.5f);
-            GUI.DrawTexture(
-                new Rect(
-                    cx - radius - border,
-                    cy - radius - border,
-                    (radius + border) * 2f,
-                    border * 2f
-                ),
-                _solidTex
-            );
-            GUI.DrawTexture(
-                new Rect(
-                    cx - radius - border,
-                    cy + radius - border,
-                    (radius + border) * 2f,
-                    border * 2f
-                ),
-                _solidTex
-            );
-            GUI.color = oldColor;
-
-            // ── Crosshairs ────────────────────────────────────────────────────
-            float gap = radius * 0.06f; // gap around centre point
-            float arm = radius * 0.30f; // arm length
-            float thick = Mathf.Max(2f, sw / 600f);
-
-            // Black outline (thicker)
-            DrawHLine(cx - gap - arm, cy, arm, thick + 2f, Color.black);
-            DrawHLine(cx + gap, cy, arm, thick + 2f, Color.black);
-            DrawVLine(cx, cy - gap - arm, arm, thick + 2f, Color.black);
-            DrawVLine(cx, cy + gap, arm, thick + 2f, Color.black);
-
-            // White inner lines
-            DrawHLine(cx - gap - arm, cy, arm, thick, Color.white);
-            DrawHLine(cx + gap, cy, arm, thick, Color.white);
-            DrawVLine(cx, cy - gap - arm, arm, thick, Color.white);
-            DrawVLine(cx, cy + gap, arm, thick, Color.white);
-
-            // ── Mil-dots ──────────────────────────────────────────────────────
-            float dotDist = gap + arm * 0.5f;
-            float dotR = thick * 1.5f;
-            DrawDot(cx - dotDist, cy, dotR);
-            DrawDot(cx + dotDist, cy, dotR);
-            DrawDot(cx, cy - dotDist, dotR);
-            DrawDot(cx, cy + dotDist, dotR);
+            DrawScope();
         }
 
         // ── Drawing primitives ────────────────────────────────────────────────
@@ -196,6 +136,77 @@ namespace IssaPlugin.Overlays
                 cam.fieldOfView = _savedFov;
             _fovSaved = false;
             SniperRifleItem.IsScoped = false;
+        }
+
+        void DrawCenterDot()
+        {
+            float size = 6f;
+
+            Rect rect = new Rect(
+                Screen.width / 2f - size / 2f,
+                Screen.height / 2f - size / 2f,
+                size,
+                size
+            );
+
+            GUI.color = Color.red;
+            GUI.DrawTexture(rect, Texture2D.whiteTexture);
+        }
+
+        void DrawScope()
+        {
+            // If a scope texture was loaded from the bundle, draw it centred.
+            // Otherwise fall back to the procedural curtains + crosshairs.
+            if (AssetLoader.SniperScopeTexture != null)
+            {
+                float scopeSize = Mathf.Min(Screen.width, Screen.height) * 0.8f;
+                GUI.DrawTexture(
+                    new Rect(
+                        Screen.width / 2f - scopeSize / 2f,
+                        Screen.height / 2f - scopeSize / 2f,
+                        scopeSize,
+                        scopeSize
+                    ),
+                    AssetLoader.SniperScopeTexture
+                );
+                return;
+            }
+
+            // ── Procedural fallback ─────────────────────────────────────────
+            float sw = Screen.width;
+            float sh = Screen.height;
+            float cx = sw * 0.5f;
+            float cy = sh * 0.5f;
+            float radius = sh * 0.45f;
+
+            // Four black curtain panels leave a circular opening.
+            DrawRect(0f, 0f, cx - radius, sh, Color.black);
+            DrawRect(cx + radius, 0f, sw - (cx + radius), sh, Color.black);
+            DrawRect(cx - radius, 0f, radius * 2f, cy - radius, Color.black);
+            DrawRect(cx - radius, cy + radius, radius * 2f, sh - (cy + radius), Color.black);
+
+            // Crosshairs
+            float gap   = radius * 0.06f;
+            float arm   = radius * 0.30f;
+            float thick = Mathf.Max(2f, sw / 600f);
+
+            DrawHLine(cx - gap - arm, cy, arm, thick + 2f, Color.black);
+            DrawHLine(cx + gap,       cy, arm, thick + 2f, Color.black);
+            DrawVLine(cx, cy - gap - arm, arm, thick + 2f, Color.black);
+            DrawVLine(cx, cy + gap,       arm, thick + 2f, Color.black);
+
+            DrawHLine(cx - gap - arm, cy, arm, thick, Color.white);
+            DrawHLine(cx + gap,       cy, arm, thick, Color.white);
+            DrawVLine(cx, cy - gap - arm, arm, thick, Color.white);
+            DrawVLine(cx, cy + gap,       arm, thick, Color.white);
+
+            // Mil-dots
+            float dotDist = gap + arm * 0.5f;
+            float dotR    = thick * 1.5f;
+            DrawDot(cx - dotDist, cy, dotR);
+            DrawDot(cx + dotDist, cy, dotR);
+            DrawDot(cx, cy - dotDist, dotR);
+            DrawDot(cx, cy + dotDist, dotR);
         }
     }
 }

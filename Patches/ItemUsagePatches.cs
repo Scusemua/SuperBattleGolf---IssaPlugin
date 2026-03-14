@@ -87,6 +87,14 @@ namespace IssaPlugin.Patches
                 return false;
             }
 
+            if (equipped == SniperRifleItem.SniperRifleItemType)
+            {
+                shouldEatInput = true;
+                __result = true;
+                __instance.StartCoroutine(SniperRifleItem.ShootRoutine(__instance));
+                return false;
+            }
+
             return true;
         }
     }
@@ -111,7 +119,13 @@ namespace IssaPlugin.Patches
                 return;
             }
 
-            if (
+            if (equipped == SniperRifleItem.SniperRifleItemType)
+            {
+                // ElephantGun pose — sniper holds the rifle two-handed like the elephant gun.
+                rightSwitcher.SetEquipment(EquipmentType.ElephantGun);
+                __instance.PlayerInfo.LeftHandEquipmentSwitcher.SetEquipment(EquipmentType.None);
+            }
+            else if (
                 equipped == StealthBomberItem.BomberItemType
                 || equipped == PredatorMissileItem.MissileItemType
                 || equipped == AC130Item.AC130ItemType
@@ -245,7 +259,11 @@ namespace IssaPlugin.Patches
                 return true;
 
             var equipped = inventory.GetEffectivelyEquippedItem(true);
-            if (ItemRegistry.IsCustomItem(equipped) && equipped != BatItem.BatItemType)
+            if (
+                ItemRegistry.IsCustomItem(equipped)
+                && equipped != BatItem.BatItemType
+                && equipped != SniperRifleItem.SniperRifleItemType
+            )
             {
                 __result = false;
                 return false;
@@ -293,23 +311,6 @@ namespace IssaPlugin.Patches
                 entity.Rigidbody.linearVelocity =
                     Vector3.down * Configuration.MissileFallSpeed.Value;
             }
-        }
-    }
-
-    [HarmonyPatch(typeof(Rocket), "OnFixedBUpdate")]
-    static class RocketFixedBUpdatePatch
-    {
-        private static readonly FieldInfo DistanceField = AccessTools.Field(
-            typeof(Rocket),
-            "distanceTravelled"
-        );
-
-        static void Prefix(Rocket __instance)
-        {
-            if (!PredatorMissileItem.ActiveMissileRockets.Contains(__instance))
-                return;
-
-            DistanceField?.SetValue(__instance, 0f);
         }
     }
 

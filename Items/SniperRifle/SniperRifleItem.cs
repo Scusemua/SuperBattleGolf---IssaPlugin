@@ -1,7 +1,5 @@
 using System.Collections;
 using System.Reflection;
-using HarmonyLib;
-using IssaPlugin.Overlays;
 using UnityEngine;
 
 namespace IssaPlugin.Items

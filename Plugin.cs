@@ -46,6 +46,7 @@ namespace IssaPlugin
             gameObject.AddComponent<FreezePhysicsHandler>();
             gameObject.AddComponent<LowGravityOverlay>();
             gameObject.AddComponent<LowGravityHandler>();
+            gameObject.AddComponent<SniperScopeOverlay>();
 
             Log.LogInfo("IssaPlugin by Scusemua has loaded.");
         }
