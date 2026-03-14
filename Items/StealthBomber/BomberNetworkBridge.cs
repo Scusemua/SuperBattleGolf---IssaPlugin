@@ -23,8 +23,7 @@ namespace IssaPlugin.Items
         /// </summary>
         public bool PendingBomberHoming;
 
-        [Command]
-        public void CmdRequestBombingRun(
+        public void ServerRequestBombingRun(
             Vector3 center,
             Vector3 forward,
             float length,
@@ -61,8 +60,7 @@ namespace IssaPlugin.Items
         /// Called by the lock-on detection patch while the local player has the bomber
         /// proxy locked on. Sets PendingBomberHoming so the next rocket homes toward it.
         /// </summary>
-        [Command]
-        public void CmdPrepareBomberRocket()
+        public void ServerPrepareBomberRocket()
         {
             PendingBomberHoming = true;
         }

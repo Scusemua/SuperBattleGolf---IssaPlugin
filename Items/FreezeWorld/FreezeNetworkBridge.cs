@@ -33,8 +33,7 @@ namespace IssaPlugin.Items
         //  Client → Server
         // ================================================================
 
-        [Command]
-        public void CmdActivateFreeze()
+        public void ServerActivateFreeze()
         {
             if (_globalSessionActive)
             {

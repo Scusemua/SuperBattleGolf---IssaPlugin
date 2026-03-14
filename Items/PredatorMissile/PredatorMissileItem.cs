@@ -73,7 +73,9 @@ namespace IssaPlugin.Items
 
             // Tell the firing client to start steering
             var rocketIdentity = rocket.GetComponent<NetworkIdentity>();
-            bridge.TargetBeginSteering(bridge.connectionToClient, rocketIdentity);
+            bridge.connectionToClient.Send(
+                new MissileBeginSteeringMessage { RocketNetId = rocketIdentity.netId }
+            );
 
             // Wait for rocket to die or timeout
             float elapsed = 0f;
@@ -90,7 +92,7 @@ namespace IssaPlugin.Items
                 ServerExplode(rocket);
 
             ActiveMissileRockets.Remove(rocket);
-            bridge.TargetEndSteering(bridge.connectionToClient);
+            bridge.connectionToClient.Send(new MissileEndSteeringMessage());
             bridge.ServerClearSteering();
             IssaPluginPlugin.Log.LogInfo("[Missile] Server routine complete.");
         }

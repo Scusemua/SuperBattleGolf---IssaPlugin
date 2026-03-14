@@ -37,4 +37,19 @@ namespace IssaPlugin.Items
             return new FreezeEndMessage { };
         }
     }
+
+    public struct FreezeActivateMessage : NetworkMessage { }
+
+    public static class FreezeActivateMessageSerialization
+    {
+        public static void WriteFreezeActivateMessage(
+            NetworkWriter writer,
+            FreezeActivateMessage msg
+        ) { }
+
+        public static FreezeActivateMessage ReadFreezeActivateMessage(NetworkReader reader)
+        {
+            return new FreezeActivateMessage();
+        }
+    }
 }

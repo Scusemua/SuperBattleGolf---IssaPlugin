@@ -99,15 +99,20 @@ namespace IssaPlugin.Items
                     rollInfluence = -1f;
             }
 
-            CmdSetMaydayInput(diveInfluence, rollInfluence);
+            NetworkClient.Send(
+                new AC130MaydayInputMessage
+                {
+                    DiveInfluence = diveInfluence,
+                    RollInfluence = rollInfluence,
+                }
+            );
         }
 
         // ================================================================
         //  Client → Server
         // ================================================================
 
-        [Command]
-        public void CmdStartAC130()
+        public void ServerStartAC130()
         {
             if (_serverSessionActive)
             {
@@ -120,7 +125,7 @@ namespace IssaPlugin.Items
                 IssaPluginPlugin.Log.LogWarning(
                     "[AC130] Another player's AC130 is already active."
                 );
-                TargetAC130Busy(connectionToClient);
+                connectionToClient.Send(new AC130BusyMessage());
                 return;
             }
 
@@ -184,20 +189,24 @@ namespace IssaPlugin.Items
             var gunshipIdentity = gunshipGo.GetComponent<NetworkIdentity>();
 
             NetworkServer.SendToAll(new AC130SoundMessage());
-            TargetBeginAC130(connectionToClient, gunshipIdentity, mapCentre);
+            connectionToClient.Send(
+                new AC130BeginClientMessage
+                {
+                    GunshipNetId = gunshipIdentity.netId,
+                    MapCentre = mapCentre,
+                }
+            );
             _serverTimeout = StartCoroutine(ServerTimeoutRoutine());
 
             IssaPluginPlugin.Log.LogInfo("[AC130] Server session started.");
         }
 
-        [Command]
-        public void CmdEndAC130()
+        public void ServerEndAC130()
         {
             EndServerSession();
         }
 
-        [Command]
-        public void CmdFireAC130(Vector3 aimDirection)
+        public void ServerFireAC130(Vector3 aimDirection)
         {
             if (!_serverSessionActive || _serverGunship == null)
                 return;
@@ -228,8 +237,7 @@ namespace IssaPlugin.Items
             AC130Item.SpawnRocketInDirection(inventory, spawnPos, jitter * fireRotation);
         }
 
-        [Command]
-        public void CmdTriggerMayday()
+        public void ServerTriggerMayday()
         {
             if (!_serverSessionActive)
                 return;
@@ -242,8 +250,7 @@ namespace IssaPlugin.Items
         /// Called by GunshipLockOnDetectionPatch while the player has the gunship
         /// locked on. Flags the server so the next rocket that spawns homes toward it.
         /// </summary>
-        [Command]
-        public void CmdPrepareGunshipRocket()
+        public void ServerPrepareGunshipRocket()
         {
             // Use the global static so ANY player can flag homing, not just the
             // AC130 owner (whose _serverGunship is non-null only on their own bridge).
@@ -259,8 +266,7 @@ namespace IssaPlugin.Items
         /// diveInfluence: -1 = pull up, +1 = push down.
         /// rollInfluence: -1 = roll left, +1 = roll right.
         /// </summary>
-        [Command]
-        public void CmdSetMaydayInput(float diveInfluence, float rollInfluence)
+        public void ServerSetMaydayInput(float diveInfluence, float rollInfluence)
         {
             if (!_serverSessionActive || _serverGunship == null)
                 return;
@@ -277,36 +283,29 @@ namespace IssaPlugin.Items
         //  Server → Client
         // ================================================================
 
-        [TargetRpc]
-        public void TargetBeginAC130(
-            NetworkConnection target,
-            NetworkIdentity gunshipIdentity,
-            Vector3 mapCentre
-        )
+        public void ClientBeginAC130(uint gunshipNetId, Vector3 mapCentre)
         {
             StartCoroutine(
-                RunLocalSession(GetComponent<PlayerInventory>(), gunshipIdentity, mapCentre)
+                RunLocalSession(GetComponent<PlayerInventory>(), gunshipNetId, mapCentre)
             );
         }
 
-        [TargetRpc]
-        public void TargetEndAC130(NetworkConnection target)
+        public void ClientEndAC130()
         {
             _forceEnd = true;
         }
 
-        [TargetRpc]
-        public void TargetBeginMayday(NetworkConnection target, NetworkIdentity gunshipIdentity)
+        public void ClientBeginMayday(uint gunshipNetId)
         {
-            if (gunshipIdentity == null)
+            if (!NetworkClient.spawned.TryGetValue(gunshipNetId, out var ni) || ni == null)
             {
-                IssaPluginPlugin.Log.LogError("[Mayday] gunshipIdentity is null on client.");
+                IssaPluginPlugin.Log.LogError("[Mayday] gunshipIdentity not found in spawned.");
                 return;
             }
 
             _maydayTriggered = true;
 
-            var gunship = gunshipIdentity.gameObject;
+            var gunship = ni.gameObject;
             var mayday =
                 gunship.GetComponent<AC130MaydayBehaviour>()
                 ?? gunship.AddComponent<AC130MaydayBehaviour>();
@@ -327,8 +326,7 @@ namespace IssaPlugin.Items
             IssaPluginPlugin.Log.LogInfo("[Mayday] Cockpit cinematic started on owning client.");
         }
 
-        [TargetRpc]
-        public void TargetEndMayday(NetworkConnection target)
+        public void ClientEndMayday()
         {
             LocalMaydayActive = false;
             LocalGunshipCamera = null; // cockpit cam is also destroyed with the gunship
@@ -338,8 +336,7 @@ namespace IssaPlugin.Items
             IssaPluginPlugin.Log.LogInfo("[Mayday] Client mayday ended.");
         }
 
-        [TargetRpc]
-        private void TargetAC130Busy(NetworkConnection target)
+        public void ClientAC130Busy()
         {
             IssaPluginPlugin.Log.LogInfo("[AC130] AC130 is already in use by another player.");
             // TODO: surface a HUD notification to the player.
@@ -351,7 +348,7 @@ namespace IssaPlugin.Items
 
         private IEnumerator RunLocalSession(
             PlayerInventory inventory,
-            NetworkIdentity gunshipIdentity,
+            uint gunshipNetId,
             Vector3 mapCentre
         )
         {
@@ -368,21 +365,20 @@ namespace IssaPlugin.Items
 
             // Wait for Mirror to finish syncing the spawned gunship to this client.
             // In host mode this is instant; over a real network it may take a few frames.
-            if (gunshipIdentity != null)
+            float waited = 0f;
+            NetworkIdentity gunshipIdentity = null;
+            while (
+                !NetworkClient.spawned.TryGetValue(gunshipNetId, out gunshipIdentity) && waited < 2f
+            )
             {
-                float waited = 0f;
-                while (gunshipIdentity.gameObject == null && waited < 2f)
-                {
-                    waited += Time.deltaTime;
-                    yield return null;
-                }
+                waited += Time.deltaTime;
+                yield return null;
             }
-
-            GameObject gunshipGo = gunshipIdentity != null ? gunshipIdentity.gameObject : null;
-            if (gunshipGo == null)
+            if (gunshipIdentity == null)
                 IssaPluginPlugin.Log.LogError(
                     "[AC130] Gunship still null after waiting — camera will not activate."
                 );
+            GameObject gunshipGo = gunshipIdentity?.gameObject;
 
             var session = new AC130Session(inventory, gunshipGo, mapCentre);
 
@@ -453,7 +449,7 @@ namespace IssaPlugin.Items
                 session.Cleanup();
                 LocalGunshipCamera = null;
                 LocalSessionActive = false;
-                CmdEndAC130();
+                NetworkClient.Send(new AC130EndMessage());
                 yield break;
             }
 
@@ -535,7 +531,7 @@ namespace IssaPlugin.Items
                 bool firePressed = mouse != null && mouse.leftButton.wasPressedThisFrame;
                 if (firePressed && session.Cooldown <= 0f)
                 {
-                    CmdFireAC130(aimDirection);
+                    NetworkClient.Send(new AC130FireMessage { AimDirection = aimDirection });
                     session.Cooldown = session.FireCooldown;
                     session.GunshipCam?.TriggerFireShake();
                     IssaPluginPlugin.Log.LogInfo($"[AC130] Rocket fired toward {crosshairWorld}.");
@@ -559,7 +555,7 @@ namespace IssaPlugin.Items
             session.Cleanup();
             LocalGunshipCamera = null;
             LocalSessionActive = false;
-            CmdEndAC130();
+            NetworkClient.Send(new AC130EndMessage());
 
             IssaPluginPlugin.Log.LogInfo("[AC130] Session ended, gunship flying out.");
         }
@@ -576,7 +572,7 @@ namespace IssaPlugin.Items
             if (keyboard[Configuration.AC130MaydayKey.Value].wasPressedThisFrame)
             {
                 IssaPluginPlugin.Log.LogInfo("[AC130] Manual mayday hotkey pressed.");
-                CmdTriggerMayday();
+                NetworkClient.Send(new AC130TriggerMaydayMessage());
             }
         }
 
@@ -700,7 +696,9 @@ namespace IssaPlugin.Items
             // Owning client gets the cockpit camera.
             if (_serverSessionActive)
             {
-                TargetBeginMayday(connectionToClient, gunshipIdentity);
+                connectionToClient.Send(
+                    new AC130BeginMaydayClientMessage { GunshipNetId = gunshipIdentity.netId }
+                );
             }
 
             // All other clients get smoke trail.
@@ -728,7 +726,7 @@ namespace IssaPlugin.Items
 
             _serverSessionActive = false;
             ReleaseGlobalLock();
-            TargetEndMayday(connectionToClient);
+            connectionToClient.Send(new AC130EndMaydayClientMessage());
         }
 
         private void ServerSpawnImpactRocket(Vector3 position)
@@ -782,16 +780,15 @@ namespace IssaPlugin.Items
 
             _serverSessionActive = false;
             ReleaseGlobalLock();
-            TargetEndAC130(connectionToClient);
+            connectionToClient.Send(new AC130EndClientMessage());
 
             // Begin fly-out instead of immediately destroying the gunship.
             // AC130FlyBehaviour.UpdateFlyOut() will call Object.Destroy once it
             // travels FlyOutDestroyDistance — Mirror propagates that to all clients.
             // Clear the destruction callback first so the normal fly-out doesn't
             // accidentally trigger a mayday.
-            var flyComp = _serverGunship != null
-                ? _serverGunship.GetComponent<AC130FlyBehaviour>()
-                : null;
+            var flyComp =
+                _serverGunship != null ? _serverGunship.GetComponent<AC130FlyBehaviour>() : null;
 
             if (flyComp != null)
             {

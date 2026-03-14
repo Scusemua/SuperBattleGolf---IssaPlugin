@@ -43,7 +43,7 @@ namespace IssaPlugin.Patches
                 __result = true;
                 var bridge = __instance.GetComponent<MissileNetworkBridge>();
                 if (bridge != null)
-                    bridge.CmdRequestMissile();
+                    NetworkClient.Send(new MissileRequestMessage());
                 else
                     IssaPluginPlugin.Log.LogError("[Missile] No MissileNetworkBridge on player.");
                 return false;
@@ -55,7 +55,7 @@ namespace IssaPlugin.Patches
                 __result = true;
                 var bridge = __instance.GetComponent<AC130NetworkBridge>();
                 if (bridge != null)
-                    bridge.CmdStartAC130();
+                    NetworkClient.Send(new AC130StartMessage());
                 else
                     IssaPluginPlugin.Log.LogError("[AC130] No AC130NetworkBridge on player.");
                 return false;
@@ -67,7 +67,7 @@ namespace IssaPlugin.Patches
                 __result = true;
                 var bridge = __instance.GetComponent<FreezeNetworkBridge>();
                 if (bridge != null)
-                    bridge.CmdActivateFreeze();
+                    NetworkClient.Send(new FreezeActivateMessage());
                 else
                     IssaPluginPlugin.Log.LogError("[Freeze] No FreezeNetworkBridge on player.");
                 return false;
@@ -79,7 +79,7 @@ namespace IssaPlugin.Patches
                 __result = true;
                 var bridge = __instance.GetComponent<LowGravityNetworkBridge>();
                 if (bridge != null)
-                    bridge.CmdActivateLowGravity();
+                    NetworkClient.Send(new LowGravityActivateMessage());
                 else
                     IssaPluginPlugin.Log.LogError(
                         "[LowGravity] No LowGravityNetworkBridge on player."

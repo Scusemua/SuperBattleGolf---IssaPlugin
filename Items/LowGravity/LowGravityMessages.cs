@@ -43,4 +43,19 @@ namespace IssaPlugin.Items
             return new LowGravityEndMessage { };
         }
     }
+
+    public struct LowGravityActivateMessage : NetworkMessage { }
+
+    public static class LowGravityActivateMessageSerialization
+    {
+        public static void WriteLowGravityActivateMessage(
+            NetworkWriter writer,
+            LowGravityActivateMessage msg
+        ) { }
+
+        public static LowGravityActivateMessage ReadLowGravityActivateMessage(NetworkReader reader)
+        {
+            return new LowGravityActivateMessage();
+        }
+    }
 }

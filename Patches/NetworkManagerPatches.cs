@@ -134,6 +134,240 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<DroppedItemPickupMessage>(
                     DroppedItemMessageHandlers.HandleDroppedItemPickup
                 );
+
+            // ── New Command replacements (client→server) ─────────────────────
+
+            Writer<FreezeActivateMessage>.write =
+                FreezeActivateMessageSerialization.WriteFreezeActivateMessage;
+            Reader<FreezeActivateMessage>.read =
+                FreezeActivateMessageSerialization.ReadFreezeActivateMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<FreezeActivateMessage>(
+                    (conn, msg) =>
+                    {
+                        conn.identity?.GetComponent<FreezeNetworkBridge>()?.ServerActivateFreeze();
+                    }
+                );
+
+            Writer<LowGravityActivateMessage>.write =
+                LowGravityActivateMessageSerialization.WriteLowGravityActivateMessage;
+            Reader<LowGravityActivateMessage>.read =
+                LowGravityActivateMessageSerialization.ReadLowGravityActivateMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<LowGravityActivateMessage>(
+                    (conn, msg) =>
+                    {
+                        conn.identity?.GetComponent<LowGravityNetworkBridge>()
+                            ?.ServerActivateLowGravity();
+                    }
+                );
+
+            Writer<BomberRunMessage>.write = BomberRunMessageSerialization.WriteBomberRunMessage;
+            Reader<BomberRunMessage>.read = BomberRunMessageSerialization.ReadBomberRunMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<BomberRunMessage>(
+                    (conn, msg) =>
+                    {
+                        conn.identity?.GetComponent<BomberNetworkBridge>()
+                            ?.ServerRequestBombingRun(
+                                msg.Center,
+                                msg.Forward,
+                                msg.Length,
+                                msg.EquippedIndex
+                            );
+                    }
+                );
+
+            Writer<BomberPrepareHomingMessage>.write =
+                BomberPrepareHomingMessageSerialization.WriteBomberPrepareHomingMessage;
+            Reader<BomberPrepareHomingMessage>.read =
+                BomberPrepareHomingMessageSerialization.ReadBomberPrepareHomingMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<BomberPrepareHomingMessage>(
+                    (conn, msg) =>
+                    {
+                        conn.identity?.GetComponent<BomberNetworkBridge>()
+                            ?.ServerPrepareBomberRocket();
+                    }
+                );
+
+            Writer<MissileRequestMessage>.write =
+                MissileRequestMessageSerialization.WriteMissileRequestMessage;
+            Reader<MissileRequestMessage>.read =
+                MissileRequestMessageSerialization.ReadMissileRequestMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<MissileRequestMessage>(
+                    (conn, msg) =>
+                    {
+                        conn.identity?.GetComponent<MissileNetworkBridge>()?.ServerRequestMissile();
+                    }
+                );
+
+            Writer<MissileSetVelocityMessage>.write =
+                MissileSetVelocityMessageSerialization.WriteMissileSetVelocityMessage;
+            Reader<MissileSetVelocityMessage>.read =
+                MissileSetVelocityMessageSerialization.ReadMissileSetVelocityMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<MissileSetVelocityMessage>(
+                    (conn, msg) =>
+                    {
+                        conn.identity?.GetComponent<MissileNetworkBridge>()
+                            ?.ServerSetMissileVelocity(msg.Velocity);
+                    }
+                );
+
+            Writer<MissileDetonateMessage>.write =
+                MissileDetonateMessageSerialization.WriteMissileDetonateMessage;
+            Reader<MissileDetonateMessage>.read =
+                MissileDetonateMessageSerialization.ReadMissileDetonateMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<MissileDetonateMessage>(
+                    (conn, msg) =>
+                    {
+                        conn.identity?.GetComponent<MissileNetworkBridge>()
+                            ?.ServerDetonateMissile();
+                    }
+                );
+
+            Writer<AC130StartMessage>.write = AC130StartMessageSerialization.WriteAC130StartMessage;
+            Reader<AC130StartMessage>.read = AC130StartMessageSerialization.ReadAC130StartMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<AC130StartMessage>(
+                    (conn, msg) =>
+                    {
+                        conn.identity?.GetComponent<AC130NetworkBridge>()?.ServerStartAC130();
+                    }
+                );
+
+            Writer<AC130EndMessage>.write = AC130EndMessageSerialization.WriteAC130EndMessage;
+            Reader<AC130EndMessage>.read = AC130EndMessageSerialization.ReadAC130EndMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<AC130EndMessage>(
+                    (conn, msg) =>
+                    {
+                        conn.identity?.GetComponent<AC130NetworkBridge>()?.ServerEndAC130();
+                    }
+                );
+
+            Writer<AC130FireMessage>.write = AC130FireMessageSerialization.WriteAC130FireMessage;
+            Reader<AC130FireMessage>.read = AC130FireMessageSerialization.ReadAC130FireMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<AC130FireMessage>(
+                    (conn, msg) =>
+                    {
+                        conn.identity?.GetComponent<AC130NetworkBridge>()
+                            ?.ServerFireAC130(msg.AimDirection);
+                    }
+                );
+
+            Writer<AC130TriggerMaydayMessage>.write =
+                AC130TriggerMaydayMessageSerialization.WriteAC130TriggerMaydayMessage;
+            Reader<AC130TriggerMaydayMessage>.read =
+                AC130TriggerMaydayMessageSerialization.ReadAC130TriggerMaydayMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<AC130TriggerMaydayMessage>(
+                    (conn, msg) =>
+                    {
+                        conn.identity?.GetComponent<AC130NetworkBridge>()?.ServerTriggerMayday();
+                    }
+                );
+
+            Writer<AC130PrepareHomingMessage>.write =
+                AC130PrepareHomingMessageSerialization.WriteAC130PrepareHomingMessage;
+            Reader<AC130PrepareHomingMessage>.read =
+                AC130PrepareHomingMessageSerialization.ReadAC130PrepareHomingMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<AC130PrepareHomingMessage>(
+                    (conn, msg) =>
+                    {
+                        conn.identity?.GetComponent<AC130NetworkBridge>()
+                            ?.ServerPrepareGunshipRocket();
+                    }
+                );
+
+            Writer<AC130MaydayInputMessage>.write =
+                AC130MaydayInputMessageSerialization.WriteAC130MaydayInputMessage;
+            Reader<AC130MaydayInputMessage>.read =
+                AC130MaydayInputMessageSerialization.ReadAC130MaydayInputMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<AC130MaydayInputMessage>(
+                    (conn, msg) =>
+                    {
+                        conn.identity?.GetComponent<AC130NetworkBridge>()
+                            ?.ServerSetMaydayInput(msg.DiveInfluence, msg.RollInfluence);
+                    }
+                );
+
+            // ── New TargetRpc replacements (server→client) ───────────────────
+
+            Writer<MissileBeginSteeringMessage>.write =
+                MissileBeginSteeringMessageSerialization.WriteMissileBeginSteeringMessage;
+            Reader<MissileBeginSteeringMessage>.read =
+                MissileBeginSteeringMessageSerialization.ReadMissileBeginSteeringMessage;
+            NetworkClient.RegisterHandler<MissileBeginSteeringMessage>(msg =>
+            {
+                NetworkClient
+                    .localPlayer?.GetComponent<MissileNetworkBridge>()
+                    ?.ClientBeginSteering(msg.RocketNetId);
+            });
+
+            Writer<MissileEndSteeringMessage>.write =
+                MissileEndSteeringMessageSerialization.WriteMissileEndSteeringMessage;
+            Reader<MissileEndSteeringMessage>.read =
+                MissileEndSteeringMessageSerialization.ReadMissileEndSteeringMessage;
+            NetworkClient.RegisterHandler<MissileEndSteeringMessage>(msg =>
+            {
+                NetworkClient
+                    .localPlayer?.GetComponent<MissileNetworkBridge>()
+                    ?.ClientEndSteering();
+            });
+
+            Writer<AC130BeginClientMessage>.write =
+                AC130BeginClientMessageSerialization.WriteAC130BeginClientMessage;
+            Reader<AC130BeginClientMessage>.read =
+                AC130BeginClientMessageSerialization.ReadAC130BeginClientMessage;
+            NetworkClient.RegisterHandler<AC130BeginClientMessage>(msg =>
+            {
+                NetworkClient
+                    .localPlayer?.GetComponent<AC130NetworkBridge>()
+                    ?.ClientBeginAC130(msg.GunshipNetId, msg.MapCentre);
+            });
+
+            Writer<AC130EndClientMessage>.write =
+                AC130EndClientMessageSerialization.WriteAC130EndClientMessage;
+            Reader<AC130EndClientMessage>.read =
+                AC130EndClientMessageSerialization.ReadAC130EndClientMessage;
+            NetworkClient.RegisterHandler<AC130EndClientMessage>(msg =>
+            {
+                NetworkClient.localPlayer?.GetComponent<AC130NetworkBridge>()?.ClientEndAC130();
+            });
+
+            Writer<AC130BeginMaydayClientMessage>.write =
+                AC130BeginMaydayClientMessageSerialization.WriteAC130BeginMaydayClientMessage;
+            Reader<AC130BeginMaydayClientMessage>.read =
+                AC130BeginMaydayClientMessageSerialization.ReadAC130BeginMaydayClientMessage;
+            NetworkClient.RegisterHandler<AC130BeginMaydayClientMessage>(msg =>
+            {
+                NetworkClient
+                    .localPlayer?.GetComponent<AC130NetworkBridge>()
+                    ?.ClientBeginMayday(msg.GunshipNetId);
+            });
+
+            Writer<AC130EndMaydayClientMessage>.write =
+                AC130EndMaydayClientMessageSerialization.WriteAC130EndMaydayClientMessage;
+            Reader<AC130EndMaydayClientMessage>.read =
+                AC130EndMaydayClientMessageSerialization.ReadAC130EndMaydayClientMessage;
+            NetworkClient.RegisterHandler<AC130EndMaydayClientMessage>(msg =>
+            {
+                NetworkClient.localPlayer?.GetComponent<AC130NetworkBridge>()?.ClientEndMayday();
+            });
+
+            Writer<AC130BusyMessage>.write = AC130BusyMessageSerialization.WriteAC130BusyMessage;
+            Reader<AC130BusyMessage>.read = AC130BusyMessageSerialization.ReadAC130BusyMessage;
+            NetworkClient.RegisterHandler<AC130BusyMessage>(msg =>
+            {
+                NetworkClient.localPlayer?.GetComponent<AC130NetworkBridge>()?.ClientAC130Busy();
+            });
         }
 
         private static void RegisterHandlers() { }

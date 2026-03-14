@@ -33,8 +33,7 @@ namespace IssaPlugin.Items
         //  Client → Server
         // ================================================================
 
-        [Command]
-        public void CmdActivateLowGravity()
+        public void ServerActivateLowGravity()
         {
             if (_globalSessionActive)
             {

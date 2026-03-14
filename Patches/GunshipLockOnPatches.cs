@@ -1,6 +1,7 @@
 using System.Reflection;
 using HarmonyLib;
 using IssaPlugin.Items;
+using Mirror;
 using UnityEngine;
 
 namespace IssaPlugin.Patches
@@ -144,14 +145,14 @@ namespace IssaPlugin.Patches
                 IssaPluginPlugin.Log.LogInfo("[LockOn] Locked onto AC130 gunship.");
 
             if (nowTargetingGunship)
-                __instance.GetComponent<AC130NetworkBridge>()?.CmdPrepareGunshipRocket();
+                NetworkClient.Send(new AC130PrepareHomingMessage());
 
             // ---- Bomber ----
             if (nowTargetingBomber && !_wasTargetingBomber)
                 IssaPluginPlugin.Log.LogInfo("[LockOn] Locked onto stealth bomber.");
 
             if (nowTargetingBomber)
-                __instance.GetComponent<BomberNetworkBridge>()?.CmdPrepareBomberRocket();
+                NetworkClient.Send(new BomberPrepareHomingMessage());
 
             _wasTargetingGunship = nowTargetingGunship;
             _wasTargetingBomber = nowTargetingBomber;

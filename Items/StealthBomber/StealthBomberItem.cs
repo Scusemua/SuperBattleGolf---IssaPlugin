@@ -74,11 +74,14 @@ namespace IssaPlugin.Items
                 yield break;
             }
 
-            bridge.CmdRequestBombingRun(
-                result.Strip.Value.Center,
-                result.Strip.Value.Forward,
-                result.Strip.Value.Length,
-                equippedIndex
+            NetworkClient.Send(
+                new BomberRunMessage
+                {
+                    Center = result.Strip.Value.Center,
+                    Forward = result.Strip.Value.Forward,
+                    Length = result.Strip.Value.Length,
+                    EquippedIndex = equippedIndex,
+                }
             );
         }
 

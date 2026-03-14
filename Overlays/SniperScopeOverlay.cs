@@ -74,7 +74,14 @@ namespace IssaPlugin.Overlays
 
             // Play the aim sound once on scope entry.
             if (sniperEquipped && wantsScope && !_prevScoped)
+            {
+                GameplayCameraManager.EnterSwingAimCamera();
                 localInfo.PlayerAudio.PlayGunAimForAllClients(ItemType.ElephantGun);
+            }
+            else if (sniperEquipped && !wantsScope && _prevScoped)
+            {
+                GameplayCameraManager.ExitSwingAimCamera();
+            }
 
             _prevScoped = wantsScope;
 
@@ -86,9 +93,9 @@ namespace IssaPlugin.Overlays
             // Capture the base FOV the first time we scope in, and reset zoom to default.
             if (wantsScope && !_fovSaved)
             {
-                _savedBaseFov  = _orbitModule.FieldOfView;
+                _savedBaseFov = _orbitModule.FieldOfView;
                 _targetZoomFov = Configuration.SniperRifleZoomFov.Value;
-                _fovSaved      = true;
+                _fovSaved = true;
             }
 
             // While scoped, let the scroll wheel nudge _targetZoomFov within [min, max].

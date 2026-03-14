@@ -21,8 +21,7 @@ namespace IssaPlugin.Items
         //  Client → Server
         // ================================================================
 
-        [Command]
-        public void CmdRequestMissile()
+        public void ServerRequestMissile()
         {
             // Per-instance guard — prevents this player stacking multiple
             // missile routines without blocking other players.
@@ -45,8 +44,7 @@ namespace IssaPlugin.Items
             StartCoroutine(PredatorMissileItem.ServerMissileRoutine(inventory, this));
         }
 
-        [Command]
-        public void CmdSetMissileVelocity(Vector3 velocity)
+        public void ServerSetMissileVelocity(Vector3 velocity)
         {
             if (_activeRocket == null)
                 return;
@@ -55,8 +53,7 @@ namespace IssaPlugin.Items
                 rb.linearVelocity = velocity;
         }
 
-        [Command]
-        public void CmdDetonateMissile()
+        public void ServerDetonateMissile()
         {
             if (_activeRocket == null)
                 return;
@@ -70,20 +67,18 @@ namespace IssaPlugin.Items
 
         /// <summary>
         /// Called by the server on the specific client who fired the missile.
-        /// Passes the rocket's NetworkIdentity so the client can find it locally.
+        /// Passes the rocket's netId so the client can find it in NetworkClient.spawned.
         /// </summary>
-        [TargetRpc]
-        public void TargetBeginSteering(NetworkConnection target, NetworkIdentity rocketIdentity)
+        public void ClientBeginSteering(uint rocketNetId)
         {
-            if (rocketIdentity == null)
+            if (!NetworkClient.spawned.TryGetValue(rocketNetId, out var ni) || ni == null)
             {
-                IssaPluginPlugin.Log.LogError(
-                    "[Missile] TargetBeginSteering: rocketIdentity is null."
+                IssaPluginPlugin.Log.LogWarning(
+                    "[Missile] ClientBeginSteering: rocket not found in spawned."
                 );
                 return;
             }
-
-            _activeRocket = rocketIdentity.GetComponent<Rocket>();
+            _activeRocket = ni.GetComponent<Rocket>();
             StartCoroutine(LocalSteeringCoroutine());
         }
 
@@ -91,8 +86,7 @@ namespace IssaPlugin.Items
         /// Called by the server when the missile has exploded or timed out,
         /// to clean up client state even if the client didn't trigger it.
         /// </summary>
-        [TargetRpc]
-        public void TargetEndSteering(NetworkConnection target)
+        public void ClientEndSteering()
         {
             _isSteering = false;
             _activeRocket = null;
@@ -141,7 +135,7 @@ namespace IssaPlugin.Items
                 // Manual detonate
                 if (mouse != null && mouse.rightButton.wasPressedThisFrame)
                 {
-                    CmdDetonateMissile();
+                    NetworkClient.Send(new MissileDetonateMessage());
                     break;
                 }
 
@@ -169,7 +163,12 @@ namespace IssaPlugin.Items
                 }
 
                 Vector3 steer = (camRight * inputX + camForward * inputZ) * steerSpeed;
-                CmdSetMissileVelocity(new Vector3(steer.x, -fallSpeed, steer.z));
+                NetworkClient.Send(
+                    new MissileSetVelocityMessage
+                    {
+                        Velocity = new Vector3(steer.x, -fallSpeed, steer.z),
+                    }
+                );
 
                 yield return null;
             }

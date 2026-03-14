@@ -78,4 +78,51 @@ namespace IssaPlugin.Items
             };
         }
     }
+
+    public struct BomberRunMessage : NetworkMessage
+    {
+        public Vector3 Center;
+        public Vector3 Forward;
+        public float Length;
+        public int EquippedIndex;
+    }
+
+    public static class BomberRunMessageSerialization
+    {
+        public static void WriteBomberRunMessage(NetworkWriter writer, BomberRunMessage msg)
+        {
+            writer.WriteVector3(msg.Center);
+            writer.WriteVector3(msg.Forward);
+            writer.WriteFloat(msg.Length);
+            writer.WriteInt(msg.EquippedIndex);
+        }
+
+        public static BomberRunMessage ReadBomberRunMessage(NetworkReader reader)
+        {
+            return new BomberRunMessage
+            {
+                Center = reader.ReadVector3(),
+                Forward = reader.ReadVector3(),
+                Length = reader.ReadFloat(),
+                EquippedIndex = reader.ReadInt(),
+            };
+        }
+    }
+
+    public struct BomberPrepareHomingMessage : NetworkMessage { }
+
+    public static class BomberPrepareHomingMessageSerialization
+    {
+        public static void WriteBomberPrepareHomingMessage(
+            NetworkWriter writer,
+            BomberPrepareHomingMessage msg
+        ) { }
+
+        public static BomberPrepareHomingMessage ReadBomberPrepareHomingMessage(
+            NetworkReader reader
+        )
+        {
+            return new BomberPrepareHomingMessage();
+        }
+    }
 }
