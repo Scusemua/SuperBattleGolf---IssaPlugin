@@ -48,9 +48,9 @@ namespace IssaPlugin.Patches
             NetworkClient.RegisterHandler<BomberVisualSpawnMessage>(BomberNetworkBridge.HandleBomberVisualSpawn);
             NetworkClient.RegisterHandler<BomberShotDownMessage>(BomberNetworkBridge.HandleBomberShotDown);
 
-            NetworkClient.RegisterHandler<AC130SoundMessage>(HandleAC130Sound);
-            NetworkClient.RegisterHandler<AC130MaydayVfxMessage>(HandleAC130MaydayVfx);
-            NetworkClient.RegisterHandler<AC130MaydayImpactMessage>(HandleAC130MaydayImpact);
+            NetworkClient.RegisterHandler<AC130SoundMessage>(AC130MessageHandlers.HandleAC130Sound);
+            NetworkClient.RegisterHandler<AC130MaydayVfxMessage>(AC130MessageHandlers.HandleAC130MaydayVfx);
+            NetworkClient.RegisterHandler<AC130MaydayImpactMessage>(AC130MessageHandlers.HandleAC130MaydayImpact);
 
             IssaPluginPlugin.Log.LogInfo("[NetworkManager] Custom prefabs and message handlers registered.");
         }
@@ -83,9 +83,15 @@ namespace IssaPlugin.Patches
             );
         }
 
-        // ── AC130 message handlers ───────────────────────────────────────────
+        // Registration delegates point into AC130MessageHandlers below.
+    }
 
-        private static void HandleAC130Sound(AC130SoundMessage msg)
+    /// AC130 NetworkMessage handlers — kept in a separate (non-patch) class so
+    /// the Harmony analyser does not misidentify the 'msg' parameters as patch
+    /// parameters and emit false Harmony003 warnings.
+    static class AC130MessageHandlers
+    {
+        internal static void HandleAC130Sound(AC130SoundMessage msg)
         {
             var clip = AssetLoader.AC130AboveClip;
             if (clip == null)
@@ -103,7 +109,7 @@ namespace IssaPlugin.Patches
             Object.Destroy(go, clip.length + 0.1f);
         }
 
-        private static void HandleAC130MaydayVfx(AC130MaydayVfxMessage msg)
+        internal static void HandleAC130MaydayVfx(AC130MaydayVfxMessage msg)
         {
             // Skip for the owning client — TargetBeginMayday handles the cockpit path.
             // All other clients get the external smoke/fire mayday behaviour here.
@@ -124,7 +130,7 @@ namespace IssaPlugin.Patches
             }
         }
 
-        private static void HandleAC130MaydayImpact(AC130MaydayImpactMessage msg)
+        internal static void HandleAC130MaydayImpact(AC130MaydayImpactMessage msg)
         {
             float duration = Configuration.AC130MaydayExplosionDuration.Value;
 
