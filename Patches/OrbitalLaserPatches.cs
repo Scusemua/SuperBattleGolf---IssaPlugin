@@ -65,7 +65,6 @@ namespace IssaPlugin.Patches
             Transform bestAircraft = null;
             float bestDist = float.MaxValue;
 
-            // AC130 gunship — marker added on all clients via RpcAddGunshipLockOnComponents.
             var gunshipMarker = Object.FindFirstObjectByType<AC130GunshipMarker>();
             if (gunshipMarker != null)
             {
@@ -80,7 +79,6 @@ namespace IssaPlugin.Patches
                 }
             }
 
-            // Bomber proxy — BomberMarker added on all clients via RpcAddBomberLockOnComponents.
             var bomberMarker = Object.FindFirstObjectByType<BomberMarker>();
             if (bomberMarker != null)
             {
@@ -92,6 +90,17 @@ namespace IssaPlugin.Patches
                 {
                     bestDist = d;
                     bestAircraft = bomberMarker.transform;
+                }
+            }
+
+            var ufoMarker = Object.FindFirstObjectByType<UFOMarker>();
+            if (ufoMarker != null)
+            {
+                float d = OrbitalLaserAircraftHelpers.XZDist(ufoMarker.transform.position, holePos);
+                if (d < bestDist)
+                {
+                    bestDist = d;
+                    bestAircraft = ufoMarker.transform;
                 }
             }
 
@@ -181,6 +190,24 @@ namespace IssaPlugin.Patches
                 }
             }
 
+            var ufoMarker = Object.FindFirstObjectByType<UFOMarker>();
+            if (ufoMarker != null)
+            {
+                var lot = ufoMarker.GetComponent<LockOnTarget>();
+                if (lot != null)
+                {
+                    float d = OrbitalLaserAircraftHelpers.XZDist(
+                        ufoMarker.transform.position,
+                        holePos
+                    );
+                    if (d < bestDist)
+                    {
+                        bestDist = d;
+                        bestLockOn = lot;
+                    }
+                }
+            }
+
             if (bestLockOn == null)
                 return true; // no aircraft — let base method run normally
 
@@ -249,6 +276,22 @@ namespace IssaPlugin.Patches
                     bestDist = d;
                     bestAircraft = proxy.transform;
                     onHit = () => proxy.OnHit();
+                }
+            }
+
+            // UFO
+            var ufoHitReceiver = Object.FindFirstObjectByType<UFOHitReceiver>();
+            if (ufoHitReceiver != null)
+            {
+                float d = OrbitalLaserAircraftHelpers.XZDist(
+                    ufoHitReceiver.transform.position,
+                    fallbackWorldPosition
+                );
+                if (d < bestDist)
+                {
+                    bestDist = d;
+                    bestAircraft = ufoHitReceiver.transform;
+                    onHit = () => ufoHitReceiver.OnHit();
                 }
             }
 

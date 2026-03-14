@@ -8,7 +8,7 @@ namespace IssaPlugin.Items
     /// direction.  All values are set by UFONetworkBridge from incoming UFOMoveMessages.
     /// NetworkTransform syncs the resulting position to clients each frame.
     /// </summary>
-    public class UFOFlyBehaviour : MonoBehaviour
+    public class UFOFlyBehaviour : CustomHittable
     {
         /// Normalised world-space horizontal direction set each frame by the bridge.
         /// Vector3.zero = no movement.
@@ -24,6 +24,8 @@ namespace IssaPlugin.Items
                 _rb.useGravity = false;
                 _rb.freezeRotation = true; // rotation is driven by transform, not physics
             }
+
+            gameObject.layer = LayerMask.NameToLayer("UFO");
         }
 
         private void FixedUpdate()
@@ -36,19 +38,22 @@ namespace IssaPlugin.Items
             float followSpeed = Configuration.UFOTerrainFollowSpeed.Value;
 
             // ── Terrain-following Y ──────────────────────────────────────────
+            // Start 100 units above the UFO so the ray cannot hit the UFO's own
+            // colliders, then extend the max distance by the same offset.
             float targetY;
+            Vector3 rayOrigin = transform.position + Vector3.down * 5f;
             if (
                 Physics.Raycast(
-                    transform.position,
+                    rayOrigin,
                     Vector3.down,
                     out RaycastHit hit,
-                    2000f,
+                    2100f,
                     ItemHelper.GroundLayerMask
                 )
             )
                 targetY = hit.point.y + targetAltitude;
             else
-                targetY = transform.position.y; // no terrain below — hold current height
+                targetY = targetAltitude; // no terrain below — hold current height
 
             float yVelocity = (targetY - transform.position.y) * followSpeed;
 

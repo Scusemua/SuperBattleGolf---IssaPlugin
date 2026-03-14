@@ -248,7 +248,7 @@ namespace IssaPlugin.Patches
             if (type == SniperRifleItem.SniperRifleItemType)
                 return AssetLoader.SniperRiflePrefab;
             if (type == UFOItem.UFOItemType)
-                return AssetLoader.UFOModelPrefab;
+                return AssetLoader.UFOHandheldPrefab;
             return null;
         }
 

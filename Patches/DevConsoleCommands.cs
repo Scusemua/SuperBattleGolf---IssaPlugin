@@ -27,6 +27,7 @@ namespace IssaPlugin.Patches
                 SniperRifleItem.SniperRifleItemType,
                 1
             ),
+            (new[] { "ufo", "UFO" }, UFOItem.UFOItemType, 1),
         };
 
         /// <summary>
@@ -80,7 +81,7 @@ namespace IssaPlugin.Patches
 
             UnityEngine.Debug.LogWarning(
                 $"[giveCustomItem] Unknown item \"{itemName}\". "
-                    + "Valid names: ac130, bomber, missile, bat, freeze, lowgravity, sniper (or an integer item-type ID)."
+                    + "Valid names: ac130, bomber, missile, bat, freeze, lowgravity, sniper, ufo (or an integer item-type ID)."
             );
         }
     }

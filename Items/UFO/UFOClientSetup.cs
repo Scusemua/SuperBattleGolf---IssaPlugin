@@ -14,6 +14,9 @@ namespace IssaPlugin.Items
     {
         private void Awake()
         {
+            if (gameObject.GetComponent<UFOMarker>() == null)
+                gameObject.AddComponent<UFOMarker>();
+
             if (gameObject.GetComponent<Entity>() == null)
                 gameObject.AddComponent<Entity>();
 

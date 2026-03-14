@@ -94,6 +94,7 @@ namespace IssaPlugin.Items
             var ufoGo = Object.Instantiate(AssetLoader.UFOPrefab, spawnPos, Quaternion.identity);
 
             var flyBehaviour = ufoGo.AddComponent<UFOFlyBehaviour>();
+            var hitReceiver = ufoGo.AddComponent<UFOHitReceiver>();
 
             // Enable the Rigidbody for physics-driven movement (prefab may ship kinematic).
             var rb = ufoGo.GetComponent<Rigidbody>();
@@ -102,6 +103,11 @@ namespace IssaPlugin.Items
                 rb.isKinematic = false;
                 rb.useGravity = false;
             }
+
+            // Wire up rocket-hit threshold callback.
+            hitReceiver.OnHitsExceeded = () => {
+                // ServerBeginMayday();
+            };
 
             NetworkServer.Spawn(ufoGo);
 
@@ -170,6 +176,37 @@ namespace IssaPlugin.Items
             _forceEnd = true;
         }
 
+        public void HandleUFOShotDown(UFOShotDownMessage msg)
+        {
+            IssaPluginPlugin.Log.LogInfo(
+                $"[UFO] UFOShotDownMessage received: triggering physics crash. msg={msg}"
+            );
+
+            foreach (var col in _serverUFO.GetComponents<Collider>())
+                col.enabled = false;
+
+            var rb = _serverUFO.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.isKinematic = false;
+                rb.useGravity = true;
+
+                rb.linearVelocity = msg.CrashDir * 2;
+
+                if (msg.ImpactDir != Vector3.zero)
+                    rb.AddForce(
+                        msg.ImpactDir * Configuration.UFOCrashImpactForce.Value,
+                        ForceMode.Impulse
+                    );
+
+                rb.AddForce(Vector3.down * Configuration.UFOCrashDownwardForce.Value);
+                rb.AddTorque(msg.TorqueImpulse, ForceMode.Impulse);
+            }
+
+            var crashBehavior = _serverUFO.AddComponent<UFOCrashBehaviour>();
+            crashBehavior.Rigidbody = rb;
+        }
+
         // ================================================================
         //  Server internals
         // ================================================================
@@ -178,9 +215,8 @@ namespace IssaPlugin.Items
         {
             _laserPending = true;
             float waited = 0f;
-            float duration = Configuration.UFOLaserAnticipationDuration.Value;
 
-            while (waited < duration)
+            while (waited < 0.125)
             {
                 // Track the ground directly below the UFO each frame so the
                 // laser follows the UFO during the anticipation window.

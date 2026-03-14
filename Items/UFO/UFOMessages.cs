@@ -18,6 +18,19 @@ namespace IssaPlugin.Items
 
     public struct UFOFireLaserMessage : NetworkMessage { }
 
+    public struct UFOShotDownMessage : NetworkMessage
+    {
+        public Vector3 CrashDir;
+        public float CrashSpeed;
+        public Vector3 ImpactDir;
+        public Vector3 TorqueImpulse;
+
+        public override string ToString()
+        {
+            return $"UFOShotDownMessage[CrashDir={CrashDir},CrashSpeed={CrashSpeed},ImpactDir={ImpactDir},TorqueImpulse={TorqueImpulse}]";
+        }
+    }
+
     // ── Server → Client ──────────────────────────────────────────────────────
 
     public struct UFOBeginClientMessage : NetworkMessage
@@ -32,9 +45,11 @@ namespace IssaPlugin.Items
     public static class UFOMessageSerialization
     {
         public static void WriteUFOStartMessage(NetworkWriter w, UFOStartMessage m) { }
+
         public static UFOStartMessage ReadUFOStartMessage(NetworkReader r) => new UFOStartMessage();
 
         public static void WriteUFOEndMessage(NetworkWriter w, UFOEndMessage m) { }
+
         public static UFOEndMessage ReadUFOEndMessage(NetworkReader r) => new UFOEndMessage();
 
         public static void WriteUFOMoveMessage(NetworkWriter w, UFOMoveMessage m)
@@ -66,5 +81,24 @@ namespace IssaPlugin.Items
 
         public static UFOEndClientMessage ReadUFOEndClientMessage(NetworkReader r) =>
             new UFOEndClientMessage();
+
+        public static void WriteUFOShotDownMessage(NetworkWriter writer, UFOShotDownMessage msg)
+        {
+            writer.WriteVector3(msg.CrashDir);
+            writer.WriteFloat(msg.CrashSpeed);
+            writer.WriteVector3(msg.ImpactDir);
+            writer.WriteVector3(msg.TorqueImpulse);
+        }
+
+        public static UFOShotDownMessage ReadUFOShotDownMessage(NetworkReader reader)
+        {
+            return new UFOShotDownMessage
+            {
+                CrashDir = reader.ReadVector3(),
+                CrashSpeed = reader.ReadFloat(),
+                ImpactDir = reader.ReadVector3(),
+                TorqueImpulse = reader.ReadVector3(),
+            };
+        }
     }
 }

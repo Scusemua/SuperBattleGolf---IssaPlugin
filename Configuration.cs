@@ -110,11 +110,11 @@ namespace IssaPlugin
         public static ConfigEntry<float> SniperRifleMaxShotDistance { get; private set; }
         public static ConfigEntry<float> SniperRifleScopedInaccuracy { get; private set; }
         public static ConfigEntry<float> SniperRifleHipFireInaccuracy { get; private set; }
-        public static ConfigEntry<float> SniperRifleZoomFov           { get; private set; }
-        public static ConfigEntry<float> SniperRifleZoomSpeed         { get; private set; }
-        public static ConfigEntry<float> SniperRifleShotDuration      { get; private set; }
-        public static ConfigEntry<float> SniperRifleMinZoomFov        { get; private set; }
-        public static ConfigEntry<float> SniperRifleMaxZoomFov        { get; private set; }
+        public static ConfigEntry<float> SniperRifleZoomFov { get; private set; }
+        public static ConfigEntry<float> SniperRifleZoomSpeed { get; private set; }
+        public static ConfigEntry<float> SniperRifleShotDuration { get; private set; }
+        public static ConfigEntry<float> SniperRifleMinZoomFov { get; private set; }
+        public static ConfigEntry<float> SniperRifleMaxZoomFov { get; private set; }
         public static ConfigEntry<float> SniperRifleScrollSensitivity { get; private set; }
 
         // --- UFO ---
@@ -132,6 +132,11 @@ namespace IssaPlugin
         public static ConfigEntry<float> UFOLaserUses { get; private set; }
         public static ConfigEntry<float> UFOLaserAnticipationDuration { get; private set; }
         public static ConfigEntry<float> UFOLaserCooldown { get; private set; }
+        public static ConfigEntry<float> UFOHitsToDestroy { get; private set; }
+        public static ConfigEntry<float> UFOCrashImpactForce { get; private set; }
+        public static ConfigEntry<float> UFOCrashDownwardForce { get; private set; }
+
+        public static ConfigEntry<float> UFOCrashTorque { get; private set; }
 
         // --- Explosion Scaling ---
         public static ConfigEntry<float> AC130ExplosionScale { get; private set; }
@@ -920,6 +925,34 @@ namespace IssaPlugin
                 "LaserCooldown",
                 3f,
                 "Minimum seconds between orbital laser fires."
+            );
+
+            UFOHitsToDestroy = cfg.Bind(
+                "UFO",
+                "HitsToDestroy",
+                1f,
+                "Rocket hits required to shoot down the UFO. Set to 0 to make it invincible."
+            );
+
+            UFOCrashImpactForce = cfg.Bind(
+                "UFO",
+                "CrashImpactForce",
+                500f,
+                "Impulse force applied to the UFO in the direction of the rocket hit when shot down."
+            );
+
+            UFOCrashDownwardForce = cfg.Bind(
+                "UFO",
+                "CrashDownwardForce",
+                15f,
+                "Impulse force applied to the UFO in the downward direction."
+            );
+
+            UFOCrashTorque = cfg.Bind(
+                "UFO",
+                "CrashTorque",
+                1.2f,
+                "Magnitude of the random tumble torque applied to the UFO when shot down."
             );
         }
     }

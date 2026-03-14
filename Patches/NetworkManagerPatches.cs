@@ -430,6 +430,13 @@ namespace IssaPlugin.Patches
             {
                 NetworkClient.localPlayer?.GetComponent<UFONetworkBridge>()?.ClientEndUFO();
             });
+
+            Writer<UFOShotDownMessage>.write = UFOMessageSerialization.WriteUFOShotDownMessage;
+            Reader<UFOShotDownMessage>.read = UFOMessageSerialization.ReadUFOShotDownMessage;
+            NetworkClient.RegisterHandler<UFOShotDownMessage>(msg =>
+            {
+                NetworkClient.localPlayer?.GetComponent<UFONetworkBridge>()?.HandleUFOShotDown(msg);
+            });
         }
 
         private static void RegisterHandlers() { }
@@ -438,6 +445,7 @@ namespace IssaPlugin.Patches
         {
             RegisterPrefab(AssetLoader.DroppedCustomItemPrefab);
             RegisterPrefab(AssetLoader.UFOPrefab);
+            RegisterPrefab(AssetLoader.UFOHandheldPrefab);
             RegisterPrefab(AssetLoader.BatModelPrefab);
             RegisterPrefab(AssetLoader.BomberPrefab);
             RegisterPrefab(AssetLoader.BomberProxyPrefab);

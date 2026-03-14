@@ -27,6 +27,12 @@ namespace IssaPlugin.Patches
                     stealthBomberProxy.LastHitWorldPos = worldPosition;
                     stealthBomberProxy.OnHit();
                 }
+
+                var ufoHitReceiver = hit.GetComponentInParent<UFOHitReceiver>();
+                if (ufoHitReceiver != null)
+                {
+                    ufoHitReceiver.OnHit();
+                }
             }
         }
     }

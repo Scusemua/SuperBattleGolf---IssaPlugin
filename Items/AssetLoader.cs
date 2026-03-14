@@ -31,7 +31,7 @@ namespace IssaPlugin.Items
 
         public static GameObject SniperRiflePrefab { get; private set; }
         public static GameObject UFOPrefab { get; private set; }
-        public static GameObject UFOModelPrefab { get; private set; }
+        public static GameObject UFOHandheldPrefab { get; private set; }
 
         public static GameObject BloodSplatterPrefab { get; private set; }
 
@@ -140,13 +140,14 @@ namespace IssaPlugin.Items
             SniperRiflePrefab = Load<GameObject>("intervention.prefab");
             BloodSplatterPrefab = Load<GameObject>("blood_splatter_critical.prefab");
 
-            UFOPrefab = Load<GameObject>("ufo.prefab");
+            UFOPrefab = Load<GameObject>("ufo_vehicle.prefab");
             EnsureNetworkIdentity(UFOPrefab, 0xF0000001u);
             if (UFOPrefab != null)
                 UFOPrefab.AddComponent<UFOClientSetup>();
             DisableRigidbody(UFOPrefab);
 
-            UFOModelPrefab = Load<GameObject>("ufo_tablet.prefab");
+            UFOHandheldPrefab = Load<GameObject>("ufo_handheld.prefab");
+            // StripNetworkComponents(UFOHandheldPrefab);
 
             // Set Kinematic to True and Use Gravity to False.
             // We'll toggle them to true if they're dropped.
@@ -156,7 +157,7 @@ namespace IssaPlugin.Items
             DisableRigidbody(FreezeModelPrefab);
             DisableRigidbody(LowGravityModelPrefab);
             DisableRigidbody(SniperRiflePrefab);
-            DisableRigidbody(UFOModelPrefab);
+            DisableRigidbody(UFOHandheldPrefab);
 
             // AudioClips must be loaded by asset name without the file extension.
             // Unity compiles audio into its own internal format at bundle-build
@@ -244,12 +245,29 @@ namespace IssaPlugin.Items
 
         private static void DisableRigidbody(GameObject go)
         {
+            if (go == null)
+                return;
             var rb = go.GetComponent<Rigidbody>();
             if (rb == null)
                 return;
 
             rb.isKinematic = true;
             rb.useGravity = false;
+        }
+
+        /// Destroys Mirror network tick components from a prefab that will only
+        /// ever be used as a local visual (held item / dropped model).  Without
+        /// this, NetworkTransformReliable and NetworkRigidbodyReliable start
+        /// updating every frame and throw NullReferenceException because the
+        /// prefab instance has no network context.
+        private static void StripNetworkComponents(GameObject go)
+        {
+            if (go == null)
+                return;
+            foreach (var c in go.GetComponentsInChildren<NetworkBehaviour>(true))
+                Object.DestroyImmediate(c);
+            foreach (var ni in go.GetComponentsInChildren<NetworkIdentity>(true))
+                Object.DestroyImmediate(ni);
         }
 
         private static Sprite LoadSprite(string name)

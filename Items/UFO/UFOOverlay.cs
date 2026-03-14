@@ -94,9 +94,10 @@ namespace IssaPlugin.Items
 
             for (int i = 0; i < TotalLaserUses; i++)
             {
-                _dotStyle.normal.textColor = i < RemainingLaserUses
-                    ? new Color(0.4f, 0.8f, 1f)   // available — blue-white
-                    : new Color(0.3f, 0.3f, 0.3f); // spent — grey
+                _dotStyle.normal.textColor =
+                    i < RemainingLaserUses
+                        ? new Color(0.4f, 0.8f, 1f) // available — blue-white
+                        : new Color(0.3f, 0.3f, 0.3f); // spent — grey
                 GUI.Label(
                     new Rect(startX + i * (dotSize + gap), dotY, dotSize, dotSize),
                     "●",
@@ -106,11 +107,7 @@ namespace IssaPlugin.Items
 
             // ── "LASER" label below dots ──────────────────────────────────────
             _labelStyle.fontSize = 14;
-            GUI.Label(
-                new Rect(sw * 0.5f - 40f, dotY + dotSize, 80f, 24f),
-                "LASER",
-                _labelStyle
-            );
+            GUI.Label(new Rect(sw * 0.5f - 40f, dotY + dotSize, 80f, 24f), "LASER", _labelStyle);
             _labelStyle.fontSize = 22;
         }
     }
