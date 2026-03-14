@@ -10,8 +10,8 @@ namespace IssaPlugin.Items
     ///
     /// When the owning client uses the Low Gravity item, CmdActivateLowGravity is called
     /// on the server, which validates the request, consumes the item, and broadcasts
-    /// RpcBeginLowGravity to all clients. After the configured duration the server calls
-    /// RpcEndLowGravity to restore everything.
+    /// LowGravityBeginMessage to all clients via NetworkServer.SendToAll (bypassing Mirror's
+    /// IL-weaving requirement that [ClientRpc] methods have).
     /// </summary>
     public class LowGravityNetworkBridge : NetworkBehaviour
     {
@@ -21,12 +21,13 @@ namespace IssaPlugin.Items
         private static bool _globalSessionActive;
 
         // ================================================================
-        //  Per-client saved render state (restored in RpcEndLowGravity)
+        //  Per-client saved render state — static because low-gravity is global
+        //  and only one session is active at a time.
         // ================================================================
-        private Color _savedFogColor;
-        private float _savedFogDensity;
-        private Color _savedAmbientLight;
-        private bool _savedFog;
+        private static Color _savedFogColor;
+        private static float _savedFogDensity;
+        private static Color _savedAmbientLight;
+        private static bool  _savedFog;
 
         // ================================================================
         //  Client → Server
@@ -56,45 +57,42 @@ namespace IssaPlugin.Items
 
             _globalSessionActive = true;
             float duration = Configuration.LowGravityDuration.Value;
-            RpcBeginLowGravity(duration);
+
+            // [ClientRpc] is not IL-weaved in plugin DLLs — use NetworkMessage instead.
+            NetworkServer.SendToAll(new LowGravityBeginMessage { Duration = duration });
             StartCoroutine(ServerTimeoutRoutine(duration));
 
             IssaPluginPlugin.Log.LogInfo($"[LowGravity] Server session started for {duration}s.");
         }
 
         // ================================================================
-        //  Server → All clients
+        //  Message handlers — registered in NetworkManagerPatches
         // ================================================================
 
-        [ClientRpc]
-        private void RpcBeginLowGravity(float duration)
+        public static void HandleLowGravityBegin(LowGravityBeginMessage msg)
         {
-            // Save current render settings so we can restore them exactly.
-            _savedFogColor = RenderSettings.fogColor;
-            _savedFogDensity = RenderSettings.fogDensity;
+            _savedFogColor     = RenderSettings.fogColor;
+            _savedFogDensity   = RenderSettings.fogDensity;
             _savedAmbientLight = RenderSettings.ambientLight;
-            _savedFog = RenderSettings.fog;
+            _savedFog          = RenderSettings.fog;
 
-            // Subtle space-like atmosphere: deep violet tint, faint haze.
-            RenderSettings.fog = true;
-            RenderSettings.fogColor = new Color(0.05f, 0.02f, 0.15f, 1f);
-            RenderSettings.fogDensity = 0.01f;
+            RenderSettings.fog          = true;
+            RenderSettings.fogColor     = new Color(0.05f, 0.02f, 0.15f, 1f);
+            RenderSettings.fogDensity   = 0.01f;
             RenderSettings.ambientLight = new Color(0.2f, 0.1f, 0.4f);
 
             LowGravityItem.IsActive = true;
-            LowGravityOverlay.Instance?.SetActive(true, duration);
+            LowGravityOverlay.Instance?.SetActive(true, msg.Duration);
 
             IssaPluginPlugin.Log.LogInfo("[LowGravity] Client session started.");
         }
 
-        [ClientRpc]
-        private void RpcEndLowGravity()
+        public static void HandleLowGravityEnd(LowGravityEndMessage msg)
         {
-            // Restore all saved render settings.
-            RenderSettings.fogColor = _savedFogColor;
-            RenderSettings.fogDensity = _savedFogDensity;
+            RenderSettings.fogColor     = _savedFogColor;
+            RenderSettings.fogDensity   = _savedFogDensity;
             RenderSettings.ambientLight = _savedAmbientLight;
-            RenderSettings.fog = _savedFog;
+            RenderSettings.fog          = _savedFog;
 
             LowGravityItem.IsActive = false;
             LowGravityOverlay.Instance?.SetActive(false);
@@ -109,15 +107,13 @@ namespace IssaPlugin.Items
         private IEnumerator ServerTimeoutRoutine(float duration)
         {
             yield return new WaitForSeconds(duration);
-            RpcEndLowGravity();
+            NetworkServer.SendToAll(new LowGravityEndMessage());
             _globalSessionActive = false;
             IssaPluginPlugin.Log.LogInfo("[LowGravity] Server session ended.");
         }
 
         public override void OnStopServer()
         {
-            // If the server stops while a session is active, reset the lock
-            // so the next session can start cleanly.
             if (_globalSessionActive)
             {
                 _globalSessionActive = false;

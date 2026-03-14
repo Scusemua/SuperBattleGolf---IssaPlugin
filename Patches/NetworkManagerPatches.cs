@@ -5,19 +5,20 @@ using UnityEngine;
 
 namespace IssaPlugin.Patches
 {
-    /// Registers all custom networked prefabs with Mirror's NetworkClient
+    /// Registers all custom networked prefabs and NetworkMessage handlers with Mirror
     /// immediately after the client transport connects.
     ///
     /// Hook point: BNetworkManager.OnStartClient() — fires on every client
-    /// (including the listen-server host).  Prefabs must be registered before
-    /// the server sends any SpawnMessage for them, so this early hook is ideal.
+    /// (including the listen-server host) before any server spawn messages arrive.
     ///
-    /// Prefabs that must be registered:
-    ///   • DroppedCustomItemPrefab — has a baked assetId from the asset bundle
-    ///                               (error "Failed to spawn … assetId=2784332744")
-    ///   • BomberProxyPrefab       — NetworkIdentity ensured in AssetLoader.Load()
-    ///   • AC130Prefab             — NetworkIdentity + NetworkTransform added in
-    ///                               AssetLoader.Load() with stable assetId
+    /// WHY NetworkMessage INSTEAD OF [ClientRpc]:
+    /// Mirror's [ClientRpc] attribute only works after the IL weaver has rewritten the
+    /// method body to call SendRpcInternal and registered the dispatch delegate in a
+    /// static constructor via RemoteProcedureCalls.RegisterRpc.  BepInEx plugin DLLs
+    /// are NOT processed by Mirror's IL weaver, so [ClientRpc] decorated methods just
+    /// execute locally — remote clients never receive anything.
+    /// NetworkServer.SendToAll<T> / NetworkClient.RegisterHandler<T> bypass that
+    /// pipeline entirely and work without IL weaving.
     [HarmonyPatch]
     static class NetworkManagerRegisterPrefabsPatch
     {
@@ -26,11 +27,26 @@ namespace IssaPlugin.Patches
 
         static void Postfix()
         {
+            // ── Prefab registration ──────────────────────────────────────────
             RegisterPrefab(AssetLoader.DroppedCustomItemPrefab);
             RegisterPrefab(AssetLoader.BomberProxyPrefab);
             RegisterPrefab(AssetLoader.AC130Prefab);
 
-            IssaPluginPlugin.Log.LogInfo("[NetworkManager] Custom prefab registration complete.");
+            // ── NetworkMessage handlers ──────────────────────────────────────
+            NetworkClient.RegisterHandler<FreezeBeginMessage>(FreezeNetworkBridge.HandleFreezeBegin);
+            NetworkClient.RegisterHandler<FreezeEndMessage>(FreezeNetworkBridge.HandleFreezeEnd);
+
+            NetworkClient.RegisterHandler<LowGravityBeginMessage>(LowGravityNetworkBridge.HandleLowGravityBegin);
+            NetworkClient.RegisterHandler<LowGravityEndMessage>(LowGravityNetworkBridge.HandleLowGravityEnd);
+
+            NetworkClient.RegisterHandler<BomberVisualSpawnMessage>(BomberNetworkBridge.HandleBomberVisualSpawn);
+            NetworkClient.RegisterHandler<BomberShotDownMessage>(BomberNetworkBridge.HandleBomberShotDown);
+
+            NetworkClient.RegisterHandler<AC130SoundMessage>(HandleAC130Sound);
+            NetworkClient.RegisterHandler<AC130MaydayVfxMessage>(HandleAC130MaydayVfx);
+            NetworkClient.RegisterHandler<AC130MaydayImpactMessage>(HandleAC130MaydayImpact);
+
+            IssaPluginPlugin.Log.LogInfo("[NetworkManager] Custom prefabs and message handlers registered.");
         }
 
         private static void RegisterPrefab(GameObject prefab)
@@ -58,6 +74,82 @@ namespace IssaPlugin.Patches
             NetworkClient.RegisterPrefab(prefab);
             IssaPluginPlugin.Log.LogInfo(
                 $"[NetworkManager] Registered '{prefab.name}' assetId={ni.assetId}."
+            );
+        }
+
+        // ── AC130 message handlers ───────────────────────────────────────────
+
+        private static void HandleAC130Sound(AC130SoundMessage msg)
+        {
+            var clip = AssetLoader.AC130AboveClip;
+            if (clip == null)
+            {
+                IssaPluginPlugin.Log.LogWarning("[AC130] Audio clip not loaded.");
+                return;
+            }
+
+            var go = new GameObject("AC130_Sound");
+            var src = go.AddComponent<AudioSource>();
+            src.clip         = clip;
+            src.spatialBlend = 0f;
+            src.volume       = 1f;
+            src.Play();
+            Object.Destroy(go, clip.length + 0.1f);
+        }
+
+        private static void HandleAC130MaydayVfx(AC130MaydayVfxMessage msg)
+        {
+            // Skip for the owning client — TargetBeginAC130 handles the cockpit path.
+            // All other clients get the external smoke/fire mayday behaviour here.
+            if (!NetworkClient.spawned.TryGetValue(msg.GunshipNetId, out var ni) || ni == null)
+                return;
+
+            var gunship = ni.gameObject;
+            if (gunship.GetComponent<AC130MaydayBehaviour>() == null)
+            {
+                var mayday = gunship.AddComponent<AC130MaydayBehaviour>();
+                mayday.IsLocalPlayer = false;
+                mayday.MapCentre =
+                    gunship.GetComponent<AC130FlyBehaviour>()?.mapCentre ?? Vector3.zero;
+            }
+        }
+
+        private static void HandleAC130MaydayImpact(AC130MaydayImpactMessage msg)
+        {
+            float duration = Configuration.AC130MaydayExplosionDuration.Value;
+
+            if (AssetLoader.MaydayExplosionVfxPrefab != null)
+            {
+                var vfxGo = Object.Instantiate(
+                    AssetLoader.MaydayExplosionVfxPrefab,
+                    msg.ImpactPos,
+                    Quaternion.identity
+                );
+                Object.Destroy(vfxGo, duration);
+            }
+            else
+            {
+                VfxManager.PlayPooledVfxLocalOnly(
+                    VfxType.RocketLauncherRocketExplosion,
+                    msg.ImpactPos,
+                    Quaternion.identity,
+                    Vector3.one * Configuration.AC130MaydayExplosionScale.Value
+                );
+            }
+
+            if (AssetLoader.AC130ImpactVfxPrefab != null)
+            {
+                var debrisGo = Object.Instantiate(
+                    AssetLoader.AC130ImpactVfxPrefab,
+                    msg.ImpactPos,
+                    Quaternion.identity
+                );
+                Object.Destroy(debrisGo, duration);
+            }
+
+            CameraModuleController.Shake(
+                GameManager.CameraGameplaySettings.RocketExplosionScreenshakeSettings,
+                msg.ImpactPos
             );
         }
     }

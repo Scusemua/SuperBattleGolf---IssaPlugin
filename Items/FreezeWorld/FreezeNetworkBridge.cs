@@ -10,8 +10,8 @@ namespace IssaPlugin.Items
     ///
     /// When the owning client uses the Freeze World item, CmdActivateFreeze is called
     /// on the server, which validates the request, consumes the item, and broadcasts
-    /// RpcBeginFreeze to all clients. After the configured duration the server calls
-    /// RpcEndFreeze to restore everything.
+    /// FreezeBeginMessage to all clients via NetworkServer.SendToAll (bypassing Mirror's
+    /// IL-weaving requirement that [ClientRpc] methods have).
     /// </summary>
     public class FreezeNetworkBridge : NetworkBehaviour
     {
@@ -21,12 +21,13 @@ namespace IssaPlugin.Items
         private static bool _globalSessionActive;
 
         // ================================================================
-        //  Per-client saved render state (restored in RpcEndFreeze)
+        //  Per-client saved render state — static because freeze is global
+        //  and only one session is active at a time.
         // ================================================================
-        private Color _savedFogColor;
-        private float _savedFogDensity;
-        private Color _savedAmbientLight;
-        private bool _savedFog;
+        private static Color _savedFogColor;
+        private static float _savedFogDensity;
+        private static Color _savedAmbientLight;
+        private static bool  _savedFog;
 
         // ================================================================
         //  Client → Server
@@ -56,45 +57,42 @@ namespace IssaPlugin.Items
 
             _globalSessionActive = true;
             float duration = Configuration.FreezeDuration.Value;
-            RpcBeginFreeze(duration);
+
+            // [ClientRpc] is not IL-weaved in plugin DLLs — use NetworkMessage instead.
+            NetworkServer.SendToAll(new FreezeBeginMessage { Duration = duration });
             StartCoroutine(ServerTimeoutRoutine(duration));
 
             IssaPluginPlugin.Log.LogInfo($"[Freeze] Server freeze started for {duration}s.");
         }
 
         // ================================================================
-        //  Server → All clients
+        //  Message handlers — registered in NetworkManagerPatches
         // ================================================================
 
-        [ClientRpc]
-        private void RpcBeginFreeze(float duration)
+        public static void HandleFreezeBegin(FreezeBeginMessage msg)
         {
-            // Save current render settings so we can restore them exactly.
-            _savedFogColor = RenderSettings.fogColor;
-            _savedFogDensity = RenderSettings.fogDensity;
+            _savedFogColor    = RenderSettings.fogColor;
+            _savedFogDensity  = RenderSettings.fogDensity;
             _savedAmbientLight = RenderSettings.ambientLight;
-            _savedFog = RenderSettings.fog;
+            _savedFog         = RenderSettings.fog;
 
-            // Apply icy atmosphere.
-            RenderSettings.fog = true;
-            RenderSettings.fogColor = new Color(0.7f, 0.85f, 1.0f, 1f);
-            RenderSettings.fogDensity = 0.04f;
+            RenderSettings.fog         = true;
+            RenderSettings.fogColor    = new Color(0.7f, 0.85f, 1.0f, 1f);
+            RenderSettings.fogDensity  = 0.04f;
             RenderSettings.ambientLight = new Color(0.5f, 0.65f, 0.9f);
 
             FreezeItem.IsFrozen = true;
-            FreezeOverlay.Instance?.SetFrozen(true, duration);
+            FreezeOverlay.Instance?.SetFrozen(true, msg.Duration);
 
             IssaPluginPlugin.Log.LogInfo("[Freeze] Client freeze started.");
         }
 
-        [ClientRpc]
-        private void RpcEndFreeze()
+        public static void HandleFreezeEnd(FreezeEndMessage msg)
         {
-            // Restore all saved render settings.
-            RenderSettings.fogColor = _savedFogColor;
-            RenderSettings.fogDensity = _savedFogDensity;
+            RenderSettings.fogColor    = _savedFogColor;
+            RenderSettings.fogDensity  = _savedFogDensity;
             RenderSettings.ambientLight = _savedAmbientLight;
-            RenderSettings.fog = _savedFog;
+            RenderSettings.fog         = _savedFog;
 
             FreezeItem.IsFrozen = false;
             FreezeOverlay.Instance?.SetFrozen(false);
@@ -109,15 +107,13 @@ namespace IssaPlugin.Items
         private IEnumerator ServerTimeoutRoutine(float duration)
         {
             yield return new WaitForSeconds(duration);
-            RpcEndFreeze();
+            NetworkServer.SendToAll(new FreezeEndMessage());
             _globalSessionActive = false;
             IssaPluginPlugin.Log.LogInfo("[Freeze] Server freeze session ended.");
         }
 
         public override void OnStopServer()
         {
-            // If the server stops while a freeze is active, reset the lock
-            // so the next session can start cleanly.
             if (_globalSessionActive)
             {
                 _globalSessionActive = false;

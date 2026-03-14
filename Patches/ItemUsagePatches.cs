@@ -156,7 +156,7 @@ namespace IssaPlugin.Patches
                 model.transform.localScale = Vector3.one;
                 model.SetActive(true);
 
-                SetLayerRecursive(model, rightSwitcher.gameObject.layer);
+                SetLayerRecursive(model, rightSwitcher.gameObject.layer); 
 
                 // foreach (var col in model.GetComponentsInChildren<Collider>())
                 //     col.enabled = false;
@@ -230,10 +230,45 @@ namespace IssaPlugin.Patches
                 SetLayerRecursive(child.gameObject, layer);
         }
 
+        public static bool HasCustomModel(PlayerInventory inventory) =>
+            _states.TryGetValue(inventory, out var state) && state.Model != null;
+
         private struct CustomEquipState
         {
             public GameObject Model;
             public ItemType ItemType;
+        }
+    }
+
+    /// On remote clients, Mirror's SyncVar hook (OnEquipmentTypeChanged) fires
+    /// AFTER UpdateEquipmentSwitchers, so the default equipment model gets shown
+    /// on top of our custom model. This patch hides it immediately after the hook runs.
+    [HarmonyPatch]
+    static class OnEquipmentTypeChangedPatch
+    {
+        static MethodBase TargetMethod() =>
+            AccessTools.Method(typeof(EquipmentSwitcher), "OnEquipmentTypeChanged");
+
+        static void Postfix(EquipmentSwitcher __instance)
+        {
+            var playerInfo = __instance.GetComponentInParent<PlayerInfo>();
+            if (playerInfo == null)
+                return;
+
+            var inventory = playerInfo.Inventory;
+            if (inventory == null)
+                return;
+
+            if (!UpdateEquipmentSwitchersPatch.HasCustomModel(inventory))
+                return;
+
+            if (__instance.CurrentEquipment == null)
+                return;
+
+            foreach (
+                var r in __instance.CurrentEquipment.gameObject.GetComponentsInChildren<Renderer>()
+            )
+                r.enabled = false;
         }
     }
 

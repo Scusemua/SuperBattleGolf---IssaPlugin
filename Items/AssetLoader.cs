@@ -120,8 +120,13 @@ namespace IssaPlugin.Items
             BomberPrefab = Load<GameObject>("bomber_model.prefab");
             BomberProxyPrefab = Load<GameObject>("bomber_proxy.prefab");
             EnsureNetworkIdentity(BomberProxyPrefab, 0xB0AA0001u);
+            if (BomberProxyPrefab != null)
+                BomberProxyPrefab.AddComponent<BomberProxyClientSetup>();
+
             AC130Prefab = Load<GameObject>("ac130_model.prefab");
             EnsureNetworkIdentity(AC130Prefab, 0xAC130001u);
+            if (AC130Prefab != null)
+                AC130Prefab.AddComponent<AC130ClientSetup>();
             BomberTabletPrefab = Load<GameObject>("stealth_bomber_tablet.prefab");
             MissileTabletPrefab = Load<GameObject>("predator_missile_tablet.prefab");
             Ac130TabletPrefab = Load<GameObject>("ac130_tablet.prefab");

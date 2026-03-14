@@ -184,8 +184,7 @@ namespace IssaPlugin.Items
 
             var gunshipIdentity = gunshipGo.GetComponent<NetworkIdentity>();
 
-            RpcPlayAC130Sound();
-            RpcAddGunshipLockOnComponents(gunshipIdentity);
+            NetworkServer.SendToAll(new AC130SoundMessage());
             TargetBeginAC130(connectionToClient, gunshipIdentity, mapCentre);
             _serverTimeout = StartCoroutine(ServerTimeoutRoutine());
 
@@ -333,22 +332,6 @@ namespace IssaPlugin.Items
             IssaPluginPlugin.Log.LogInfo("[Mayday] Cockpit cinematic started on owning client.");
         }
 
-        [ClientRpc]
-        public void RpcBeginMaydayVfx(NetworkIdentity gunshipIdentity)
-        {
-            if (gunshipIdentity == null || isOwned)
-                return;
-
-            var gunship = gunshipIdentity.gameObject;
-            if (gunship.GetComponent<AC130MaydayBehaviour>() == null)
-            {
-                var mayday = gunship.AddComponent<AC130MaydayBehaviour>();
-                mayday.IsLocalPlayer = false;
-                mayday.MapCentre =
-                    gunship.GetComponent<AC130FlyBehaviour>()?.mapCentre ?? Vector3.zero;
-            }
-        }
-
         [TargetRpc]
         public void TargetEndMayday(NetworkConnection target)
         {
@@ -365,61 +348,6 @@ namespace IssaPlugin.Items
         {
             IssaPluginPlugin.Log.LogInfo("[AC130] AC130 is already in use by another player.");
             // TODO: surface a HUD notification to the player.
-        }
-
-        [ClientRpc(includeOwner = true)]
-        private void RpcPlayAC130Sound()
-        {
-            var clip = AssetLoader.AC130AboveClip;
-            if (clip == null)
-            {
-                IssaPluginPlugin.Log.LogWarning("[AC130] Audio clip not loaded.");
-                return;
-            }
-
-            var go = new GameObject("AC130_Sound");
-            var src = go.AddComponent<AudioSource>();
-            src.clip = clip;
-            src.spatialBlend = 0f;
-            src.volume = 1f;
-            src.Play();
-            Destroy(go, clip.length + 0.1f);
-        }
-
-        /// <summary>
-        /// Runs on all clients after the gunship is spawned. Adds the lightweight
-        /// AC130GunshipMarker and LockOnTarget components so the game's lock-on
-        /// manager can track the gunship and our Harmony patches can identify it.
-        /// </summary>
-        [ClientRpc(includeOwner = true)]
-        private void RpcAddGunshipLockOnComponents(NetworkIdentity gunshipIdentity)
-        {
-            if (gunshipIdentity == null)
-                return;
-            AddGunshipLockOnComponents(gunshipIdentity.gameObject);
-        }
-
-        private static void AddGunshipLockOnComponents(GameObject go)
-        {
-            if (go.GetComponent<AC130GunshipMarker>() == null)
-                go.AddComponent<AC130GunshipMarker>();
-
-            // Entity must be added BEFORE LockOnTarget so that LockOnTarget.Awake()
-            // can cache AsEntity = GetComponent<Entity>() as non-null.
-            // Without a non-null AsEntity, LockOnTargetUiManager crashes when it
-            // subscribes to WillBeDestroyedReferenced, and ShootRocketLauncherRoutine
-            // crashes reading AsEntity.AsHittable.
-            // (Entity.AsLockOnTarget will be null since LockOnTarget isn't added yet,
-            // but nothing in our code paths uses Entity.AsLockOnTarget on the gunship.)
-            if (go.GetComponent<Entity>() == null)
-                go.AddComponent<Entity>();
-
-            // LockOnTarget.Awake() caches AsEntity = GetComponent<Entity>() immediately,
-            // so Entity must exist first (see above).
-            // LockOnTarget.Start() registers with LockOnTargetManager so the
-            // game's TryGetBestLockOnTarget iterates over the gunship.
-            if (go.GetComponent<LockOnTarget>() == null)
-                go.AddComponent<LockOnTarget>();
         }
 
         // ================================================================
@@ -725,10 +653,6 @@ namespace IssaPlugin.Items
 
             NetworkServer.Spawn(ac130GameObj);
 
-            // Add lock-on components on the server immediately after spawn.
-            // RpcAddGunshipLockOnComponents will mirror this on all clients.
-            AddGunshipLockOnComponents(ac130GameObj);
-
             IssaPluginPlugin.Log.LogInfo(
                 $"[AC130] Gunship spawned at approach distance {approachDist:F0}m."
             );
@@ -792,7 +716,7 @@ namespace IssaPlugin.Items
             }
 
             // All other clients get smoke trail.
-            RpcBeginMaydayVfx(gunshipIdentity);
+            NetworkServer.SendToAll(new AC130MaydayVfxMessage { GunshipNetId = gunshipIdentity.netId });
 
             IssaPluginPlugin.Log.LogInfo("[AC130] Server mayday sequence started.");
         }
@@ -801,8 +725,8 @@ namespace IssaPlugin.Items
         {
             IssaPluginPlugin.Log.LogInfo($"[Mayday] Impact at {impactPos}.");
 
-            // VFX, screen shake, and audio on all clients via RPC.
-            RpcPlayMaydayImpactVfx(impactPos);
+            // VFX, screen shake, and audio on all clients via NetworkMessage.
+            NetworkServer.SendToAll(new AC130MaydayImpactMessage { ImpactPos = impactPos });
 
             ServerSpawnImpactRocket(impactPos);
 
@@ -815,62 +739,6 @@ namespace IssaPlugin.Items
             _serverSessionActive = false;
             ReleaseGlobalLock();
             TargetEndMayday(connectionToClient);
-        }
-
-        [ClientRpc]
-        private void RpcPlayMaydayImpactVfx(Vector3 impactPos)
-        {
-            float duration = Configuration.AC130MaydayExplosionDuration.Value;
-
-            if (AssetLoader.MaydayExplosionVfxPrefab != null)
-            {
-                var vfxGo = Object.Instantiate(
-                    AssetLoader.MaydayExplosionVfxPrefab,
-                    impactPos,
-                    Quaternion.identity
-                );
-
-                // Fade out any lights in the prefab over the explosion duration.
-                // ETFXLightFade can't be bundled (scripts aren't asset-bundle-able),
-                // so we attach our own fader from the mod DLL instead.
-                // LightFader uses GetComponent<Light>() in Start(), so it must be
-                // added to the same GameObject as the Light, and life is set before
-                // Start() runs (AddComponent calls Awake immediately, Start is deferred).
-                // foreach (var light in vfxGo.GetComponentsInChildren<Light>())
-                // {
-                //     var fader = light.gameObject.AddComponent<LightFader>();
-                //     fader.life = duration;
-                // }
-
-                Object.Destroy(vfxGo, duration);
-            }
-            else
-            {
-                // Fallback: use the game's pooled VFX locally.
-                VfxManager.PlayPooledVfxLocalOnly(
-                    VfxType.RocketLauncherRocketExplosion,
-                    impactPos,
-                    Quaternion.identity,
-                    Vector3.one * Configuration.AC130MaydayExplosionScale.Value
-                );
-            }
-
-            // Secondary lingering smoke/debris at the crash site (optional bundle asset).
-            if (AssetLoader.AC130ImpactVfxPrefab != null)
-            {
-                var smokeGo = Object.Instantiate(
-                    AssetLoader.AC130ImpactVfxPrefab,
-                    impactPos,
-                    Quaternion.identity
-                );
-                Object.Destroy(smokeGo, duration);
-            }
-
-            // Screen shake on all clients, including those on a dedicated server.
-            CameraModuleController.Shake(
-                GameManager.CameraGameplaySettings.RocketExplosionScreenshakeSettings,
-                impactPos
-            );
         }
 
         private void ServerSpawnImpactRocket(Vector3 position)

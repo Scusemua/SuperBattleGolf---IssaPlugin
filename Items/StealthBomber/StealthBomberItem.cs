@@ -313,21 +313,11 @@ namespace IssaPlugin.Items
                 }
             );
             proxyBehaviour = proxyGo?.GetComponent<BomberProxyBehaviour>();
-            if (proxyGo != null)
-            {
-                // Add lock-on components directly on the server game object first,
-                // mirroring the AC130 pattern (AddGunshipLockOnComponents at line 733).
-                // Entity is already added in SpawnBomberProxy.
-                if (proxyGo.GetComponent<BomberMarker>() == null)
-                    proxyGo.AddComponent<BomberMarker>();
-                if (proxyGo.GetComponent<LockOnTarget>() == null)
-                    proxyGo.AddComponent<LockOnTarget>();
+            // Lock-on components (Entity, BomberMarker, LockOnTarget) are added to
+            // BomberProxyPrefab via BomberProxyClientSetup in AssetLoader, so all
+            // server and client instances have them automatically without needing an RPC.
 
-                // Also mirror on all clients via RPC.
-                bridge.RpcAddBomberLockOnComponents(proxyGo.GetComponent<NetworkIdentity>());
-            }
-
-            bridge.RpcSpawnBomberVisual(
+            bridge.SendSpawnBomberVisual(
                 spawnPos,
                 exitPos,
                 direction,
@@ -410,7 +400,7 @@ namespace IssaPlugin.Items
             Vector3 torqueImpulse =
                 UnityEngine.Random.insideUnitSphere * Configuration.BomberCrashTorque.Value;
 
-            bridge.RpcBomberShotDown(
+            bridge.SendBomberShotDown(
                 direction,
                 Configuration.BomberSpeed.Value,
                 rocketImpactDir,
@@ -431,8 +421,6 @@ namespace IssaPlugin.Items
                 spawnPos,
                 Quaternion.LookRotation(direction, Vector3.up)
             );
-
-            bomberProxyGo.AddComponent<Entity>(); // required by LockOnTarget.Awake on clients
 
             var proxy = bomberProxyGo.AddComponent<BomberProxyBehaviour>();
             proxy.SpawnPos = spawnPos;
