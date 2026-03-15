@@ -465,23 +465,6 @@ namespace IssaPlugin.Patches
         }
     }
 
-    [HarmonyPatch(typeof(Rocket), "Start")]
-    static class RocketStartPatch
-    {
-        static void Postfix(Rocket __instance)
-        {
-            if (!PredatorMissileItem.ActiveMissileRockets.Contains(__instance))
-                return;
-
-            var entity = __instance.GetComponent<Entity>();
-            if (entity != null && entity.HasRigidbody)
-            {
-                entity.Rigidbody.linearVelocity =
-                    Vector3.down * Configuration.MissileFallSpeed.Value;
-            }
-        }
-    }
-
     /// Redirects the animator integer parameter to OrbitalLaser when a non-bat
     /// custom item is equipped. The animator state machine uses this integer to
     /// transition to the correct upper-body pose (rocket-launcher-style hold).

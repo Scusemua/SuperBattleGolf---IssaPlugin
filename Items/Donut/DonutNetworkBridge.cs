@@ -65,6 +65,8 @@ namespace IssaPlugin.Items
         private float _lastLaserTime;
         private Coroutine _serverTimeout;
 
+        public bool PendingDonutHoming;
+
         // ================================================================
         //  Client-side per-instance state (owning client only)
         // ================================================================
@@ -186,9 +188,21 @@ namespace IssaPlugin.Items
             IssaPluginPlugin.Log.LogInfo("[Donut] Server session started.");
         }
 
-        public void ServerEndDonut()
+        public void ServerEndDonut(bool shouldCrash)
         {
-            EndServerSession();
+            if (!shouldCrash)
+                EndServerSession();
+            else
+                ServerTriggerCrashBehaviour();
+        }
+
+        /// Called when the client is locked onto the Donut and fires a rocket.
+        /// Sets PendingDonutHoming so the next rocket homes toward the Donut.
+        public void ServerPrepareDonutRocket()
+        {
+            if (ActiveDonut == null)
+                return;
+            PendingDonutHoming = true;
         }
 
         /// Called every frame from DonutMoveMessage while the client is in a session.
@@ -226,8 +240,17 @@ namespace IssaPlugin.Items
 
             NetworkServer.SendToAll(new DonutShotDownMessage { });
 
+            ServerTriggerCrashBehaviour();
+        }
+
+        public void ServerTriggerCrashBehaviour()
+        {
             foreach (var col in _serverDonut.GetComponents<Collider>())
-                col.enabled = false;
+                col.enabled = true;
+
+            var donutFlyBehaviour = _serverDonut.GetComponent<DonutFlyBehaviour>();
+            if (donutFlyBehaviour != null)
+                donutFlyBehaviour.enabled = false;
 
             var rb = _serverDonut.GetComponent<Rigidbody>();
             if (rb != null)
@@ -240,13 +263,36 @@ namespace IssaPlugin.Items
                 rb.AddTorque(torqueImpulse, ForceMode.Impulse);
             }
 
-            var donutFlyBehaviour = _serverDonut.GetComponent<DonutFlyBehaviour>();
-            if (donutFlyBehaviour != null)
-                donutFlyBehaviour.enabled = false;
-
             var crashBehaviour = _serverDonut.AddComponent<DonutCrashBehaviour>();
             crashBehaviour.Rigidbody = rb;
             crashBehaviour.DonutNetworkBridge = this;
+        }
+
+        public void ServerSpawnImpactRocket(Vector3 position)
+        {
+            var inventory = GetComponent<PlayerInventory>();
+            if (inventory == null)
+                return;
+
+            var rocket = Object.Instantiate(
+                GameManager.ItemSettings.RocketPrefab,
+                position,
+                Quaternion.identity
+            );
+
+            if (rocket == null)
+                return;
+
+            var itemUseId = new ItemUseId(
+                inventory.PlayerInfo.PlayerId.Guid,
+                int.MaxValue,
+                ItemType.RocketLauncher
+            );
+
+            rocket.ServerInitialize(inventory.PlayerInfo, null, itemUseId);
+            NetworkServer.Spawn(rocket.gameObject, (NetworkConnectionToClient)null);
+            ExplosionScaler.Register(rocket, Configuration.DonutCrashExplosionScale.Value);
+            AC130Item.ServerExplodeRocket(rocket);
         }
 
         // ================================================================
@@ -280,6 +326,7 @@ namespace IssaPlugin.Items
 
             localLaserUsesRemaining--;
             DonutOverlay.UpdateLaserUses(localLaserUsesRemaining);
+            DonutOverlay.TriggerLaserFlash();
             Destroy(go, 3.0f); // Destroy after 3 seconds.
         }
 
@@ -527,7 +574,7 @@ namespace IssaPlugin.Items
             if (!_shotDown)
             {
                 NetworkClient.Send(new DonutMoveMessage { WorldMoveDir = Vector3.zero });
-                NetworkClient.Send(new DonutEndMessage());
+                NetworkClient.Send(new DonutEndMessage { ShouldCrash = true });
             }
 
             DonutOverlay.SetActive(false, 0);

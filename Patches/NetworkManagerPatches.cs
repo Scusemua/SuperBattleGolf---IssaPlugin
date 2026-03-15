@@ -192,6 +192,19 @@ namespace IssaPlugin.Patches
                     }
                 );
 
+            Writer<DonutPrepareHomingMessage>.write =
+                DonutMessageSerialization.WriteDonutPrepareHomingMessage;
+            Reader<DonutPrepareHomingMessage>.read =
+                DonutMessageSerialization.ReadDonutPrepareHomingMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<DonutPrepareHomingMessage>(
+                    (conn, msg) =>
+                    {
+                        conn.identity?.GetComponent<DonutNetworkBridge>()
+                            ?.ServerPrepareDonutRocket();
+                    }
+                );
+
             Writer<MissileRequestMessage>.write =
                 MissileRequestMessageSerialization.WriteMissileRequestMessage;
             Reader<MissileRequestMessage>.read =
@@ -389,7 +402,8 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<DonutEndMessage>(
                     (conn, msg) =>
                     {
-                        conn.identity?.GetComponent<DonutNetworkBridge>()?.ServerEndDonut();
+                        conn.identity?.GetComponent<DonutNetworkBridge>()
+                            ?.ServerEndDonut(msg.ShouldCrash);
                     }
                 );
 
@@ -404,8 +418,10 @@ namespace IssaPlugin.Patches
                     }
                 );
 
-            Writer<DonutFireLaserMessage>.write = DonutMessageSerialization.WriteDonutFireLaserMessage;
-            Reader<DonutFireLaserMessage>.read = DonutMessageSerialization.ReadDonutFireLaserMessage;
+            Writer<DonutFireLaserMessage>.write =
+                DonutMessageSerialization.WriteDonutFireLaserMessage;
+            Reader<DonutFireLaserMessage>.read =
+                DonutMessageSerialization.ReadDonutFireLaserMessage;
             if (NetworkServer.active)
                 NetworkServer.RegisterHandler<DonutFireLaserMessage>(
                     (conn, msg) =>
@@ -417,7 +433,8 @@ namespace IssaPlugin.Patches
             // Server → Client
             Writer<DonutBeginClientMessage>.write =
                 DonutMessageSerialization.WriteDonutBeginClientMessage;
-            Reader<DonutBeginClientMessage>.read = DonutMessageSerialization.ReadDonutBeginClientMessage;
+            Reader<DonutBeginClientMessage>.read =
+                DonutMessageSerialization.ReadDonutBeginClientMessage;
             NetworkClient.RegisterHandler<DonutBeginClientMessage>(msg =>
             {
                 NetworkClient
@@ -425,14 +442,19 @@ namespace IssaPlugin.Patches
                     ?.ClientBeginDonut(msg.DonutNetId);
             });
 
-            Writer<DonutEndClientMessage>.write = DonutMessageSerialization.WriteDonutEndClientMessage;
-            Reader<DonutEndClientMessage>.read = DonutMessageSerialization.ReadDonutEndClientMessage;
+            Writer<DonutEndClientMessage>.write =
+                DonutMessageSerialization.WriteDonutEndClientMessage;
+            Reader<DonutEndClientMessage>.read =
+                DonutMessageSerialization.ReadDonutEndClientMessage;
             NetworkClient.RegisterHandler<DonutEndClientMessage>(msg =>
             {
-                NetworkClient.localPlayer?.GetComponent<DonutNetworkBridge>()?.ClientEndDonut(false);
+                NetworkClient
+                    .localPlayer?.GetComponent<DonutNetworkBridge>()
+                    ?.ClientEndDonut(false);
             });
 
-            Writer<DonutShotDownMessage>.write = DonutMessageSerialization.WriteDonutShotDownMessage;
+            Writer<DonutShotDownMessage>.write =
+                DonutMessageSerialization.WriteDonutShotDownMessage;
             Reader<DonutShotDownMessage>.read = DonutMessageSerialization.ReadDonutShotDownMessage;
             NetworkClient.RegisterHandler<DonutShotDownMessage>(msg =>
             {
@@ -579,10 +601,10 @@ namespace IssaPlugin.Patches
                 );
             }
 
-            if (AssetLoader.AC130ImpactVfxPrefab != null)
+            if (AssetLoader.ImpactVfxPrefab != null)
             {
                 var debrisGo = Object.Instantiate(
-                    AssetLoader.AC130ImpactVfxPrefab,
+                    AssetLoader.ImpactVfxPrefab,
                     msg.ImpactPos,
                     Quaternion.identity
                 );

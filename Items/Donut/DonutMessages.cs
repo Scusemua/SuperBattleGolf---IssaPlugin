@@ -7,7 +7,10 @@ namespace IssaPlugin.Items
 
     public struct DonutStartMessage : NetworkMessage { }
 
-    public struct DonutEndMessage : NetworkMessage { }
+    public struct DonutEndMessage : NetworkMessage
+    {
+        public bool ShouldCrash;
+    }
 
     public struct DonutMoveMessage : NetworkMessage
     {
@@ -17,6 +20,8 @@ namespace IssaPlugin.Items
     }
 
     public struct DonutFireLaserMessage : NetworkMessage { }
+
+    public struct DonutPrepareHomingMessage : NetworkMessage { }
 
     public struct DonutShotDownMessage : NetworkMessage
     {
@@ -53,11 +58,16 @@ namespace IssaPlugin.Items
     {
         public static void WriteDonutStartMessage(NetworkWriter w, DonutStartMessage m) { }
 
-        public static DonutStartMessage ReadDonutStartMessage(NetworkReader r) => new DonutStartMessage();
+        public static DonutStartMessage ReadDonutStartMessage(NetworkReader r) =>
+            new DonutStartMessage();
 
-        public static void WriteDonutEndMessage(NetworkWriter w, DonutEndMessage m) { }
+        public static void WriteDonutEndMessage(NetworkWriter w, DonutEndMessage m)
+        {
+            w.WriteBool(m.ShouldCrash);
+        }
 
-        public static DonutEndMessage ReadDonutEndMessage(NetworkReader r) => new DonutEndMessage();
+        public static DonutEndMessage ReadDonutEndMessage(NetworkReader r) =>
+            new DonutEndMessage { ShouldCrash = r.ReadBool() };
 
         public static void WriteDonutMoveMessage(NetworkWriter w, DonutMoveMessage m)
         {
@@ -73,6 +83,14 @@ namespace IssaPlugin.Items
 
         public static DonutFireLaserMessage ReadDonutFireLaserMessage(NetworkReader r) =>
             new DonutFireLaserMessage();
+
+        public static void WriteDonutPrepareHomingMessage(
+            NetworkWriter w,
+            DonutPrepareHomingMessage m
+        ) { }
+
+        public static DonutPrepareHomingMessage ReadDonutPrepareHomingMessage(NetworkReader r) =>
+            new DonutPrepareHomingMessage();
 
         public static void WriteDonutBeginClientMessage(NetworkWriter w, DonutBeginClientMessage m)
         {

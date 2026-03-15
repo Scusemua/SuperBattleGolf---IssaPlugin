@@ -17,7 +17,9 @@ namespace IssaPlugin.Patches
     internal static class CustomLockOnHelper
     {
         public static bool IsCustomTarget(LockOnTarget t) =>
-            t.GetComponent<AC130GunshipMarker>() != null || t.GetComponent<BomberMarker>() != null;
+            t.GetComponent<AC130GunshipMarker>() != null
+            || t.GetComponent<BomberMarker>() != null
+            || t.GetComponent<DonutMarker>() != null;
     }
 
     // ====================================================================
@@ -83,6 +85,7 @@ namespace IssaPlugin.Patches
     {
         private static bool _wasTargetingGunship;
         private static bool _wasTargetingBomber;
+        private static bool _wasTargetingDonut;
 
         static MethodBase TargetMethod() =>
             AccessTools.Method(typeof(PlayerGolfer), "TryGetBestLockOnTarget");
@@ -106,6 +109,11 @@ namespace IssaPlugin.Patches
                 __result
                 && bestLockOnTarget != null
                 && bestLockOnTarget.GetComponent<BomberMarker>() != null;
+
+            bool nowTargetingDonut =
+                __result
+                && bestLockOnTarget != null
+                && bestLockOnTarget.GetComponent<DonutMarker>() != null;
 
             // ---- Bomber fallback detection ----
             // The proxy's BomberProxyBehaviour is server-only, so the client-side
@@ -154,8 +162,16 @@ namespace IssaPlugin.Patches
             if (nowTargetingBomber)
                 NetworkClient.Send(new BomberPrepareHomingMessage());
 
+            // ---- Donut ----
+            if (nowTargetingDonut && !_wasTargetingDonut)
+                IssaPluginPlugin.Log.LogInfo("[LockOn] Locked onto Donut.");
+
+            if (nowTargetingDonut)
+                NetworkClient.Send(new DonutPrepareHomingMessage());
+
             _wasTargetingGunship = nowTargetingGunship;
             _wasTargetingBomber = nowTargetingBomber;
+            _wasTargetingDonut = nowTargetingDonut;
         }
     }
 
@@ -174,7 +190,7 @@ namespace IssaPlugin.Patches
     {
         static void Postfix(Rocket __instance, PlayerInfo launcher)
         {
-            if (!Mirror.NetworkServer.active)
+            if (!NetworkServer.active)
                 return;
             if (launcher == null)
                 return;
@@ -207,6 +223,22 @@ namespace IssaPlugin.Patches
                     homing.Target = bomberMarker.transform;
                     IssaPluginPlugin.Log.LogInfo(
                         $"[LockOn] Rocket homing toward bomber at {bomberMarker.transform.position}."
+                    );
+                }
+            }
+
+            // ---- Donut homing ----
+            var donutBridge = launcher.GetComponent<DonutNetworkBridge>();
+            if (donutBridge != null && donutBridge.PendingDonutHoming)
+            {
+                var donutMarker = Object.FindFirstObjectByType<DonutMarker>();
+                if (donutMarker != null)
+                {
+                    donutBridge.PendingDonutHoming = false;
+                    var homing = __instance.gameObject.AddComponent<GunshipHomingBehaviour>();
+                    homing.Target = donutMarker.transform;
+                    IssaPluginPlugin.Log.LogInfo(
+                        $"[LockOn] Rocket homing toward Donut at {donutMarker.transform.position}."
                     );
                 }
             }

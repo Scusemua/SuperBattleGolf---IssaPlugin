@@ -20,10 +20,7 @@ namespace IssaPlugin.Items
         /// Fallback: destroy the object if it never reaches terrain.
         private const float MaxLifetime = 15f;
 
-        private void Start()
-        {
-            
-        }
+        private void Start() { }
 
         private void FixedUpdate()
         {
@@ -82,12 +79,24 @@ namespace IssaPlugin.Items
                 Vector3.one * Configuration.AC130MaydayExplosionScale.Value
             );
 
+            if (AssetLoader.ConfettiBlastRainbow != null)
+            {
+                var vfxGo = Object.Instantiate(
+                    AssetLoader.ConfettiBlastRainbow,
+                    transform.position,
+                    Quaternion.identity
+                );
+                Object.Destroy(vfxGo, 3f);
+            }
+
             CameraModuleController.Shake(
                 GameManager.CameraGameplaySettings.RocketExplosionScreenshakeSettings,
                 transform.position
             );
 
-            DonutNetworkBridge.ServerEndDonut();
+            DonutNetworkBridge.ServerSpawnImpactRocket(transform.position);
+
+            DonutNetworkBridge.ServerEndDonut(false);
             Destroy(gameObject);
         }
     }

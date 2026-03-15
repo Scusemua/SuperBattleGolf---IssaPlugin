@@ -35,6 +35,8 @@ namespace IssaPlugin.Items
 
         public static GameObject DonutLaserZoneRed { get; private set; }
 
+        public static GameObject ConfettiBlastRainbow { get; private set; }
+
         public static GameObject BloodSplatterPrefab { get; private set; }
 
         /// Programmatically-built prefab for dropped custom items.
@@ -43,19 +45,8 @@ namespace IssaPlugin.Items
         /// DroppedCustomItem.OnStartClient() from the synced ItemType.
         public static GameObject DroppedCustomItemPrefab { get; private set; }
 
-        // ----------------------------------------------------------------
-        //  AC130 Mayday — populate the asset bundle with these names.
-        //  All are optional: code guards null checks before instantiating.
-        // ----------------------------------------------------------------
-
-        /// Particle / VFX prefab parented to the gunship during the mayday dive.
-        public static GameObject AC130SmokePrefab { get; private set; }
-
-        /// Explosion VFX prefab spawned at the crash impact point.
-        public static GameObject AC130MaydayExplosionPrefab { get; private set; }
-
         /// Secondary debris / dust VFX spawned at the crash site.
-        public static GameObject AC130ImpactVfxPrefab { get; private set; }
+        public static GameObject ImpactVfxPrefab { get; private set; }
 
         // ----------------------------------------------------------------
         //  Audio
@@ -150,6 +141,7 @@ namespace IssaPlugin.Items
 
             DonutHandheldPrefab = Load<GameObject>("donut_model.prefab");
             DonutLaserZoneRed = Load<GameObject>("laser_zone_red.prefab");
+            ConfettiBlastRainbow = Load<GameObject>("ConfettiBlastRainbow.prefab");
 
             // StripNetworkComponents(DonutHandheldPrefab);
 

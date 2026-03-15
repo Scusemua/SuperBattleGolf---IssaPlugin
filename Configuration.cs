@@ -135,8 +135,8 @@ namespace IssaPlugin
         public static ConfigEntry<float> DonutHitsToDestroy { get; private set; }
         public static ConfigEntry<float> DonutCrashImpactForce { get; private set; }
         public static ConfigEntry<float> DonutCrashDownwardForce { get; private set; }
-
         public static ConfigEntry<float> DonutCrashTorque { get; private set; }
+        public static ConfigEntry<float> DonutCrashExplosionScale { get; private set; }
 
         // --- Explosion Scaling ---
         public static ConfigEntry<float> AC130ExplosionScale { get; private set; }
@@ -953,6 +953,13 @@ namespace IssaPlugin
                 "CrashTorque",
                 1.2f,
                 "Magnitude of the random tumble torque applied to the Donut when shot down."
+            );
+
+            DonutCrashExplosionScale = cfg.Bind(
+                "Donut",
+                "CrashExplosionScale",
+                4.0f,
+                "Explosion scale multiplier for when a Donut crashes. Affects blast radius, knockback, and VFX size."
             );
         }
     }

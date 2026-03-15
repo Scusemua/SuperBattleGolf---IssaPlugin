@@ -6,6 +6,23 @@ using UnityEngine;
 
 namespace IssaPlugin.Patches
 {
+    [HarmonyPatch(typeof(Rocket), "Start")]
+    static class RocketStartPatch
+    {
+        static void Postfix(Rocket __instance)
+        {
+            if (!PredatorMissileItem.ActiveMissileRockets.Contains(__instance))
+                return;
+
+            var entity = __instance.GetComponent<Entity>();
+            if (entity != null && entity.HasRigidbody)
+            {
+                entity.Rigidbody.linearVelocity =
+                    Vector3.down * Configuration.MissileFallSpeed.Value;
+            }
+        }
+    }
+
     [HarmonyPatch(typeof(Rocket), "ServerExplode")]
     class Patch_Rocket_ServerExplode
     {
