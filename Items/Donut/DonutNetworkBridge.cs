@@ -257,10 +257,6 @@ namespace IssaPlugin.Items
             {
                 rb.isKinematic = false;
                 rb.useGravity = true;
-                rb.AddForce(Vector3.down * Configuration.DonutCrashDownwardForce.Value);
-                Vector3 torqueImpulse =
-                    UnityEngine.Random.insideUnitSphere * Configuration.DonutCrashTorque.Value;
-                rb.AddTorque(torqueImpulse, ForceMode.Impulse);
             }
 
             var crashBehaviour = _serverDonut.AddComponent<DonutCrashBehaviour>();
@@ -292,7 +288,7 @@ namespace IssaPlugin.Items
             rocket.ServerInitialize(inventory.PlayerInfo, null, itemUseId);
             NetworkServer.Spawn(rocket.gameObject, (NetworkConnectionToClient)null);
             ExplosionScaler.Register(rocket, Configuration.DonutCrashExplosionScale.Value);
-            AC130Item.ServerExplodeRocket(rocket);
+            AC130Item.ServerExplodeRocket(rocket); // Borrow this method
         }
 
         // ================================================================
