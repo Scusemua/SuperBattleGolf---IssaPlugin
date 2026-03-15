@@ -440,6 +440,13 @@ namespace IssaPlugin.Patches
                 );
                 NetworkClient.localPlayer?.GetComponent<UFONetworkBridge>()?.ClientEndUFO(true);
             });
+
+            Writer<UFOBusyMessage>.write = UFOBusyMessageSerialization.WriteUFOBusyMessage;
+            Reader<UFOBusyMessage>.read = UFOBusyMessageSerialization.ReadUFOBusyMessage;
+            NetworkClient.RegisterHandler<UFOBusyMessage>(msg =>
+            {
+                NetworkClient.localPlayer?.GetComponent<UFONetworkBridge>()?.ClientUFOBusy();
+            });
         }
 
         private static void RegisterHandlers() { }

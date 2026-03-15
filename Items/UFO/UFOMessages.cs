@@ -40,6 +40,16 @@ namespace IssaPlugin.Items
 
     public struct UFOEndClientMessage : NetworkMessage { }
 
+    public struct UFOBusyMessage : NetworkMessage { }
+
+    public static class UFOBusyMessageSerialization
+    {
+        public static void WriteUFOBusyMessage(NetworkWriter writer, UFOBusyMessage msg) { }
+
+        public static UFOBusyMessage ReadUFOBusyMessage(NetworkReader reader) =>
+            new UFOBusyMessage();
+    }
+
     // ── Serialization ─────────────────────────────────────────────────────────
 
     public static class UFOMessageSerialization

@@ -232,18 +232,10 @@ namespace IssaPlugin.Patches
     [HarmonyPatch(typeof(OrbitalLaser), "ServerActivate")]
     static class OrbitalLaserServerActivatePatch
     {
-        static void Postfix(OrbitalLaser __instance, Hittable target, Vector3 fallbackWorldPosition)
+        static Transform FindClosestAircraft(Vector3 fallbackWorldPosition, out System.Action onHit)
         {
-            if (!NetworkServer.active || target != null)
-                return;
-
-            // Pick the aircraft closest to fallbackWorldPosition (the position the
-            // client reported when firing). We use FindFirstObjectByType here —
-            // not AC130NetworkBridge.ActiveGunship — because ActiveGunship becomes
-            // null once the session ends (fly-out), even though the gunship
-            // GameObject still exists and the laser should still track it.
             Transform bestAircraft = null;
-            System.Action onHit = null;
+            onHit = null;
             float bestDist = float.MaxValue;
 
             // AC130 gunship — AC130GunshipMarker is added server-side in ServerSpawnGunship.
@@ -295,6 +287,30 @@ namespace IssaPlugin.Patches
                 }
             }
 
+            return bestAircraft;
+        }
+
+        static void Postfix(OrbitalLaser __instance, Hittable target, Vector3 fallbackWorldPosition)
+        {
+            if (!NetworkServer.active || target != null)
+                return;
+
+            System.Action onHit = null;
+            Transform bestAircraft;
+            if (fallbackWorldPosition == UFONetworkBridge.UFOLaserTargetVector)
+            {
+                bestAircraft = UFONetworkBridge.ActiveUFO?.transform;
+            }
+            else
+            {
+                // Pick the aircraft closest to fallbackWorldPosition (the position the
+                // client reported when firing). We use FindFirstObjectByType here —
+                // not AC130NetworkBridge.ActiveGunship — because ActiveGunship becomes
+                // null once the session ends (fly-out), even though the gunship
+                // GameObject still exists and the laser should still track it.
+                bestAircraft = FindClosestAircraft(fallbackWorldPosition, out onHit);
+            }
+
             if (bestAircraft == null)
             {
                 IssaPluginPlugin.Log.LogWarning(
@@ -314,7 +330,7 @@ namespace IssaPlugin.Patches
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[OrbitalLaser] Tracker attached to {bestAircraft.name} "
-                    + $"at {bestAircraft.position} (dist from client pos: {bestDist:F1}m)."
+                    + $"at {bestAircraft.position}.)."
             );
         }
     }

@@ -27,10 +27,7 @@ namespace IssaPlugin.Items
         private static bool _globalSessionActive;
         private static AC130NetworkBridge _activeSessionBridge;
 
-        /// <summary>
         /// Server-side reference to the active gunship GameObject.
-        /// Used by GunshipLockOnPatches to attach GunshipHomingBehaviour to rockets.
-        /// </summary>
         public static GameObject ActiveGunship => _activeSessionBridge?._serverGunship;
 
         // ================================================================

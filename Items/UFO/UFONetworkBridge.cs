@@ -22,6 +22,19 @@ namespace IssaPlugin.Items
     public class UFONetworkBridge : NetworkBehaviour
     {
         // ================================================================
+        //  Global server lock  (server only, static)
+        // ================================================================
+
+        private static bool _globalSessionActive;
+        private static UFONetworkBridge _activeSessionBridge;
+
+        /// Server-side reference to the active UFO GameObject.
+        public static GameObject ActiveUFO => _activeSessionBridge?._serverUFO;
+
+        // Specific Vector3
+        public static Vector3 UFOLaserTargetVector = new Vector3(0xABCDEF0, 0xABCDEF0, 0xABCDEF0);
+
+        // ================================================================
         //  Server-side per-instance state
         // ================================================================
 
@@ -30,7 +43,7 @@ namespace IssaPlugin.Items
         private int _laserUsesRemaining;
         private int _laserUseIndex;
         private bool _laserPending;
-        private Vector3 _pendingLaserGroundPos;
+        // private Vector3 _pendingLaserGroundPos;
         private float _lastLaserTime;
         private Coroutine _serverTimeout;
 
@@ -65,6 +78,13 @@ namespace IssaPlugin.Items
             if (_serverSessionActive)
             {
                 IssaPluginPlugin.Log.LogWarning("[UFO] Session already active for this player.");
+                return;
+            }
+
+            if (_globalSessionActive)
+            {
+                IssaPluginPlugin.Log.LogWarning("[UFO] Another player's UFO is already active.");
+                connectionToClient.Send(new UFOBusyMessage());
                 return;
             }
 
@@ -118,6 +138,9 @@ namespace IssaPlugin.Items
 
             _serverUFO = ufoGo;
             _serverSessionActive = true;
+            _globalSessionActive = true;
+            _activeSessionBridge = this;
+
             _laserUsesRemaining = (int)Configuration.UFOLaserUses.Value;
             _laserUseIndex = 0;
             _laserPending = false;
@@ -161,7 +184,7 @@ namespace IssaPlugin.Items
                 return;
 
             _lastLaserTime = Time.time;
-            StartCoroutine(LaserAnticipationCoroutine());
+            LaserAnticipationCoroutine();
         }
 
         public void ServerUFOShotDown()
@@ -202,39 +225,18 @@ namespace IssaPlugin.Items
             _shotDown = shotDown;
         }
 
+        public void ClientUFOBusy()
+        {
+            IssaPluginPlugin.Log.LogInfo("[UFO] UFO is already in use by another player.");
+        }
+
         // ================================================================
         //  Server internals
         // ================================================================
 
-        private IEnumerator LaserAnticipationCoroutine()
+        private void LaserAnticipationCoroutine()
         {
             _laserPending = true;
-            float waited = 0f;
-
-            while (waited < 0.125)
-            {
-                // Track the ground directly below the UFO each frame so the
-                // laser follows the UFO during the anticipation window.
-                if (_serverSessionActive && _serverUFO != null)
-                {
-                    Vector3 origin = _serverUFO.transform.position;
-                    if (
-                        Physics.Raycast(
-                            origin,
-                            Vector3.down,
-                            out RaycastHit hit,
-                            2000f,
-                            ItemHelper.GroundLayerMask
-                        )
-                    )
-                        _pendingLaserGroundPos = hit.point;
-                    else
-                        _pendingLaserGroundPos = new Vector3(origin.x, 0f, origin.z);
-                }
-
-                waited += Time.deltaTime;
-                yield return null;
-            }
 
             // Fire at wherever the UFO ended up.
             if (_serverSessionActive && _serverUFO != null)
@@ -249,15 +251,15 @@ namespace IssaPlugin.Items
                     );
                     OrbitalLaserManager.ServerActivateLaser(
                         null,
-                        _pendingLaserGroundPos,
+                        UFOLaserTargetVector,
                         inventory,
                         itemUseId
                     );
                     _laserUsesRemaining--;
-                    IssaPluginPlugin.Log.LogInfo(
-                        $"[UFO] Laser fired at {_pendingLaserGroundPos}. "
-                            + $"Remaining: {_laserUsesRemaining}"
-                    );
+                    // IssaPluginPlugin.Log.LogInfo(
+                    //     $"[UFO] Laser fired at {_pendingLaserGroundPos}. "
+                    //         + $"Remaining: {_laserUsesRemaining}"
+                    // );
                 }
             }
 
