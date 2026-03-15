@@ -95,15 +95,15 @@ namespace IssaPlugin.Patches
                 return false;
             }
 
-            if (equipped == UFOItem.UFOItemType)
+            if (equipped == DonutItem.DonutItemType)
             {
                 shouldEatInput = true;
                 __result = true;
-                var bridge = __instance.GetComponent<UFONetworkBridge>();
+                var bridge = __instance.GetComponent<DonutNetworkBridge>();
                 if (bridge != null)
-                    NetworkClient.Send(new UFOStartMessage());
+                    NetworkClient.Send(new DonutStartMessage());
                 else
-                    IssaPluginPlugin.Log.LogError("[UFO] No UFONetworkBridge on player.");
+                    IssaPluginPlugin.Log.LogError("[Donut] No DonutNetworkBridge on player.");
                 return false;
             }
 
@@ -149,7 +149,7 @@ namespace IssaPlugin.Patches
                 || equipped == AC130Item.AC130ItemType
                 || equipped == FreezeItem.FreezeItemType
                 || equipped == LowGravityItem.LowGravityItemType
-                || equipped == UFOItem.UFOItemType
+                || equipped == DonutItem.DonutItemType
             )
             {
                 rightSwitcher.SetEquipment(EquipmentType.RocketLauncher);
@@ -247,8 +247,8 @@ namespace IssaPlugin.Patches
                 return AssetLoader.LowGravityModelPrefab;
             if (type == SniperRifleItem.SniperRifleItemType)
                 return AssetLoader.SniperRiflePrefab;
-            if (type == UFOItem.UFOItemType)
-                return AssetLoader.UFOHandheldPrefab;
+            if (type == DonutItem.DonutItemType)
+                return AssetLoader.DonutHandheldPrefab;
             return null;
         }
 

@@ -117,26 +117,26 @@ namespace IssaPlugin
         public static ConfigEntry<float> SniperRifleMaxZoomFov { get; private set; }
         public static ConfigEntry<float> SniperRifleScrollSensitivity { get; private set; }
 
-        // --- UFO ---
-        public static ConfigEntry<Key> UFOGiveKey { get; private set; }
-        public static ConfigEntry<float> UFOUses { get; private set; }
-        public static ConfigEntry<float> UFOSpawnWeight { get; private set; }
-        public static ConfigEntry<float> UFOSpeed { get; private set; }
-        public static ConfigEntry<float> UFOAltitude { get; private set; }
-        public static ConfigEntry<float> UFOTerrainFollowSpeed { get; private set; }
-        public static ConfigEntry<float> UFOTurnSpeed { get; private set; }
-        public static ConfigEntry<float> UFOCameraPitch { get; private set; }
-        public static ConfigEntry<float> UFOCameraDistance { get; private set; }
-        public static ConfigEntry<float> UFOMouseSensitivity { get; private set; }
-        public static ConfigEntry<float> UFODuration { get; private set; }
-        public static ConfigEntry<float> UFOLaserUses { get; private set; }
-        public static ConfigEntry<float> UFOLaserAnticipationDuration { get; private set; }
-        public static ConfigEntry<float> UFOLaserCooldown { get; private set; }
-        public static ConfigEntry<float> UFOHitsToDestroy { get; private set; }
-        public static ConfigEntry<float> UFOCrashImpactForce { get; private set; }
-        public static ConfigEntry<float> UFOCrashDownwardForce { get; private set; }
+        // --- Donut ---
+        public static ConfigEntry<Key> DonutGiveKey { get; private set; }
+        public static ConfigEntry<float> DonutUses { get; private set; }
+        public static ConfigEntry<float> DonutSpawnWeight { get; private set; }
+        public static ConfigEntry<float> DonutSpeed { get; private set; }
+        public static ConfigEntry<float> DonutAltitude { get; private set; }
+        public static ConfigEntry<float> DonutTerrainFollowSpeed { get; private set; }
+        public static ConfigEntry<float> DonutTurnSpeed { get; private set; }
+        public static ConfigEntry<float> DonutCameraPitch { get; private set; }
+        public static ConfigEntry<float> DonutCameraDistance { get; private set; }
+        public static ConfigEntry<float> DonutMouseSensitivity { get; private set; }
+        public static ConfigEntry<float> DonutDuration { get; private set; }
+        public static ConfigEntry<float> DonutLaserUses { get; private set; }
+        public static ConfigEntry<float> DonutLaserAnticipationDuration { get; private set; }
+        public static ConfigEntry<float> DonutLaserCooldown { get; private set; }
+        public static ConfigEntry<float> DonutHitsToDestroy { get; private set; }
+        public static ConfigEntry<float> DonutCrashImpactForce { get; private set; }
+        public static ConfigEntry<float> DonutCrashDownwardForce { get; private set; }
 
-        public static ConfigEntry<float> UFOCrashTorque { get; private set; }
+        public static ConfigEntry<float> DonutCrashTorque { get; private set; }
 
         // --- Explosion Scaling ---
         public static ConfigEntry<float> AC130ExplosionScale { get; private set; }
@@ -833,126 +833,126 @@ namespace IssaPlugin
                 "FOV units changed per scroll notch. Higher values zoom faster."
             );
 
-            // --- UFO ---
-            UFOGiveKey = cfg.Bind(
-                "UFO",
+            // --- Donut ---
+            DonutGiveKey = cfg.Bind(
+                "Donut",
                 "GiveKey",
                 Key.Numpad2,
-                "Debug key to add the UFO to your inventory."
+                "Debug key to add the Donut to your inventory."
             );
 
-            UFOUses = cfg.Bind("UFO", "Uses", 1f, "Number of UFO uses per pickup.");
+            DonutUses = cfg.Bind("Donut", "Uses", 1f, "Number of Donut uses per pickup.");
 
-            UFOSpawnWeight = cfg.Bind(
+            DonutSpawnWeight = cfg.Bind(
                 "ItemBoxSpawns",
-                "UFOWeight",
+                "DonutWeight",
                 1f,
-                "Spawn weight for the UFO in item boxes. Set to 0 to disable."
+                "Spawn weight for the Donut in item boxes. Set to 0 to disable."
             );
 
-            UFOSpeed = cfg.Bind(
-                "UFO",
+            DonutSpeed = cfg.Bind(
+                "Donut",
                 "Speed",
                 30f,
-                "Horizontal movement speed of the UFO in units per second."
+                "Horizontal movement speed of the Donut in units per second."
             );
 
-            UFOAltitude = cfg.Bind(
-                "UFO",
+            DonutAltitude = cfg.Bind(
+                "Donut",
                 "Altitude",
                 20f,
-                "Height above terrain the UFO hovers at."
+                "Height above terrain the Donut hovers at."
             );
 
-            UFOTerrainFollowSpeed = cfg.Bind(
-                "UFO",
+            DonutTerrainFollowSpeed = cfg.Bind(
+                "Donut",
                 "TerrainFollowSpeed",
                 5f,
-                "How quickly the UFO adjusts its altitude to match terrain changes (lerp speed)."
+                "How quickly the Donut adjusts its altitude to match terrain changes (lerp speed)."
             );
 
-            UFOTurnSpeed = cfg.Bind(
-                "UFO",
+            DonutTurnSpeed = cfg.Bind(
+                "Donut",
                 "TurnSpeed",
                 8f,
-                "How quickly the UFO rotates to face the movement direction (Slerp speed)."
+                "How quickly the Donut rotates to face the movement direction (Slerp speed)."
             );
 
-            UFOCameraPitch = cfg.Bind(
-                "UFO",
+            DonutCameraPitch = cfg.Bind(
+                "Donut",
                 "CameraPitch",
                 60f,
-                "Camera pitch angle in degrees during the UFO session (0 = horizontal, 90 = straight down)."
+                "Camera pitch angle in degrees during the Donut session (0 = horizontal, 90 = straight down)."
             );
 
-            UFOCameraDistance = cfg.Bind(
-                "UFO",
+            DonutCameraDistance = cfg.Bind(
+                "Donut",
                 "CameraDistance",
                 40f,
-                "Camera distance addition from the UFO during the session."
+                "Camera distance addition from the Donut during the session."
             );
 
-            UFOMouseSensitivity = cfg.Bind(
-                "UFO",
+            DonutMouseSensitivity = cfg.Bind(
+                "Donut",
                 "MouseSensitivity",
                 0.2f,
-                "Mouse X sensitivity for rotating the UFO orbit camera."
+                "Mouse X sensitivity for rotating the Donut orbit camera."
             );
 
-            UFODuration = cfg.Bind(
-                "UFO",
+            DonutDuration = cfg.Bind(
+                "Donut",
                 "Duration",
                 30f,
-                "How many seconds the UFO session lasts before automatically ending."
+                "How many seconds the Donut session lasts before automatically ending."
             );
 
-            UFOLaserUses = cfg.Bind(
-                "UFO",
+            DonutLaserUses = cfg.Bind(
+                "Donut",
                 "LaserUses",
                 3f,
-                "How many orbital laser strikes the player can fire during a UFO session."
+                "How many orbital laser strikes the player can fire during a Donut session."
             );
 
-            UFOLaserAnticipationDuration = cfg.Bind(
-                "UFO",
+            DonutLaserAnticipationDuration = cfg.Bind(
+                "Donut",
                 "LaserAnticipationDuration",
                 1.5f,
-                "Seconds of anticipation before the orbital laser fires. The laser tracks the UFO during this window."
+                "Seconds of anticipation before the orbital laser fires. The laser tracks the Donut during this window."
             );
 
-            UFOLaserCooldown = cfg.Bind(
-                "UFO",
+            DonutLaserCooldown = cfg.Bind(
+                "Donut",
                 "LaserCooldown",
                 3f,
                 "Minimum seconds between orbital laser fires."
             );
 
-            UFOHitsToDestroy = cfg.Bind(
-                "UFO",
+            DonutHitsToDestroy = cfg.Bind(
+                "Donut",
                 "HitsToDestroy",
                 1f,
-                "Rocket hits required to shoot down the UFO. Set to 0 to make it invincible."
+                "Rocket hits required to shoot down the Donut. Set to 0 to make it invincible."
             );
 
-            UFOCrashImpactForce = cfg.Bind(
-                "UFO",
+            DonutCrashImpactForce = cfg.Bind(
+                "Donut",
                 "CrashImpactForce",
                 500f,
-                "Impulse force applied to the UFO in the direction of the rocket hit when shot down."
+                "Impulse force applied to the Donut in the direction of the rocket hit when shot down."
             );
 
-            UFOCrashDownwardForce = cfg.Bind(
-                "UFO",
+            DonutCrashDownwardForce = cfg.Bind(
+                "Donut",
                 "CrashDownwardForce",
                 15f,
-                "Impulse force applied to the UFO in the downward direction."
+                "Impulse force applied to the Donut in the downward direction."
             );
 
-            UFOCrashTorque = cfg.Bind(
-                "UFO",
+            DonutCrashTorque = cfg.Bind(
+                "Donut",
                 "CrashTorque",
                 1.2f,
-                "Magnitude of the random tumble torque applied to the UFO when shot down."
+                "Magnitude of the random tumble torque applied to the Donut when shot down."
             );
         }
     }

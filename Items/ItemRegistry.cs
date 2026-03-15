@@ -36,7 +36,7 @@ namespace IssaPlugin.Items
                 || type == FreezeItem.FreezeItemType
                 || type == LowGravityItem.LowGravityItemType
                 || type == SniperRifleItem.SniperRifleItemType
-                || type == UFOItem.UFOItemType;
+                || type == DonutItem.DonutItemType;
         }
 
         public static int GetMaxUses(ItemType type)
@@ -55,8 +55,8 @@ namespace IssaPlugin.Items
                 return (int)Configuration.LowGravityUses.Value;
             if (type == SniperRifleItem.SniperRifleItemType)
                 return (int)Configuration.SniperRifleUses.Value;
-            if (type == UFOItem.UFOItemType)
-                return (int)Configuration.UFOUses.Value;
+            if (type == DonutItem.DonutItemType)
+                return (int)Configuration.DonutUses.Value;
             return 1;
         }
 
@@ -108,7 +108,7 @@ namespace IssaPlugin.Items
             var freezeData = GetOrCreateItemData(FreezeItem.FreezeItemType);
             var lowGravityData = GetOrCreateItemData(LowGravityItem.LowGravityItemType);
             var sniperRifleData = GetOrCreateItemData(SniperRifleItem.SniperRifleItemType);
-            var ufoData = GetOrCreateItemData(UFOItem.UFOItemType);
+            var donutData = GetOrCreateItemData(DonutItem.DonutItemType);
 
             Sprite rocketFallbackIcon = null;
             if (
@@ -134,7 +134,7 @@ namespace IssaPlugin.Items
                 sniperRifleData,
                 AssetLoader.SniperRifleIcon ?? pistolFallbackIcon
             );
-            IconProperty.SetValue(ufoData, AssetLoader.UFOIcon ?? rocketFallbackIcon);
+            IconProperty.SetValue(donutData, AssetLoader.DonutIcon ?? rocketFallbackIcon);
 
             dict[BatItem.BatItemType] = batData;
             dict[StealthBomberItem.BomberItemType] = bomberData;
@@ -143,7 +143,7 @@ namespace IssaPlugin.Items
             dict[FreezeItem.FreezeItemType] = freezeData;
             dict[LowGravityItem.LowGravityItemType] = lowGravityData;
             dict[SniperRifleItem.SniperRifleItemType] = sniperRifleData;
-            dict[UFOItem.UFOItemType] = ufoData;
+            dict[DonutItem.DonutItemType] = donutData;
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[ItemRegistry] Injected {CustomItemDataCache.Count} custom items."

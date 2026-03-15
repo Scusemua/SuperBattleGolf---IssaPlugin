@@ -3,12 +3,12 @@ using UnityEngine;
 namespace IssaPlugin.Items
 {
     /// <summary>
-    /// Server-side MonoBehaviour added dynamically to the UFO GameObject after spawn.
+    /// Server-side MonoBehaviour added dynamically to the Donut GameObject after spawn.
     /// Drives terrain-following altitude and smooth yaw rotation toward the movement
-    /// direction.  All values are set by UFONetworkBridge from incoming UFOMoveMessages.
+    /// direction.  All values are set by DonutNetworkBridge from incoming DonutMoveMessages.
     /// NetworkTransform syncs the resulting position to clients each frame.
     /// </summary>
-    public class UFOFlyBehaviour : CustomHittable
+    public class DonutFlyBehaviour : CustomHittable
     {
         /// Normalised world-space horizontal direction set each frame by the bridge.
         /// Vector3.zero = no movement.
@@ -16,7 +16,7 @@ namespace IssaPlugin.Items
 
         private Rigidbody _rb;
 
-        public GameObject UFOLaserTarget;
+        public GameObject DonutLaserTarget;
 
         private void Start()
         {
@@ -27,10 +27,10 @@ namespace IssaPlugin.Items
                 _rb.freezeRotation = true; // rotation is driven by transform, not physics
             }
 
-            gameObject.layer = LayerMask.NameToLayer("UFO");
+            gameObject.layer = LayerMask.NameToLayer("Donut");
 
-            UFOLaserTarget = new GameObject("UFO_LaserTarget");
-            UFOLaserTarget.transform.SetParent(transform);
+            DonutLaserTarget = new GameObject("Donut_LaserTarget");
+            DonutLaserTarget.transform.SetParent(transform);
         }
 
         private void FixedUpdate()
@@ -38,12 +38,12 @@ namespace IssaPlugin.Items
             if (_rb == null)
                 return;
 
-            float speed = Configuration.UFOSpeed.Value;
-            float targetAltitude = Configuration.UFOAltitude.Value;
-            float followSpeed = Configuration.UFOTerrainFollowSpeed.Value;
+            float speed = Configuration.DonutSpeed.Value;
+            float targetAltitude = Configuration.DonutAltitude.Value;
+            float followSpeed = Configuration.DonutTerrainFollowSpeed.Value;
 
             // ── Terrain-following Y ──────────────────────────────────────────
-            // Start 100 units above the UFO so the ray cannot hit the UFO's own
+            // Start 100 units above the Donut so the ray cannot hit the Donut's own
             // colliders, then extend the max distance by the same offset.
             float targetY;
             Vector3 rayOrigin = transform.position + Vector3.down * 5f;
@@ -58,7 +58,7 @@ namespace IssaPlugin.Items
             )
             {
                 targetY = hit.point.y + targetAltitude;
-                UFOLaserTarget.transform.position = hit.point;
+                DonutLaserTarget.transform.position = hit.point;
             }
             else
             {
@@ -82,7 +82,7 @@ namespace IssaPlugin.Items
                 transform.rotation = Quaternion.Slerp(
                     transform.rotation,
                     targetRot,
-                    Configuration.UFOTurnSpeed.Value * Time.fixedDeltaTime
+                    Configuration.DonutTurnSpeed.Value * Time.fixedDeltaTime
                 );
             }
         }

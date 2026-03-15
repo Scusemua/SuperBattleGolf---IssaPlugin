@@ -9,43 +9,43 @@ namespace IssaPlugin.Items
     /// <summary>
     /// Attached to every player object via NetworkBridgePatches.
     ///
-    /// SERVER SIDE: Validates activation, spawns the UFO prefab, drives
+    /// SERVER SIDE: Validates activation, spawns the Donut prefab, drives
     /// terrain-following movement from client input, and fires the orbital
     /// laser after an anticipation delay.
     ///
     /// CLIENT SIDE (owning player only): Manages the orbit camera, reads
-    /// WASD + mouse input each frame, sends UFOMoveMessage to the server,
-    /// and fires UFOFireLaserMessage on left-click.
+    /// WASD + mouse input each frame, sends DonutMoveMessage to the server,
+    /// and fires DonutFireLaserMessage on left-click.
     ///
-    /// Multiple players may run UFO sessions simultaneously — there is no
+    /// Multiple players may run Donut sessions simultaneously — there is no
     /// global session lock.
     /// </summary>
-    public class UFONetworkBridge : NetworkBehaviour
+    public class DonutNetworkBridge : NetworkBehaviour
     {
         // ================================================================
         //  Global server lock  (server only, static)
         // ================================================================
 
         private static bool _globalSessionActive;
-        private static UFONetworkBridge _activeSessionBridge;
+        private static DonutNetworkBridge _activeSessionBridge;
 
         // Transform whose position is repeatedly set to the raycast
-        // to the ground by the UFO.
-        private static Transform ufoLaserTarget = new Transform();
+        // to the ground by the Donut.
+        private static Transform donutLaserTarget = new Transform();
 
-        /// Server-side reference to the active UFO GameObject.
-        public static GameObject ActiveUFO => _activeSessionBridge?._serverUFO;
+        /// Server-side reference to the active Donut GameObject.
+        public static GameObject ActiveDonut => _activeSessionBridge?._serverDonut;
 
-        public static Transform UFOLaserTarget
+        public static Transform DonutLaserTarget
         {
-            get => ufoLaserTarget;
-            set { ufoLaserTarget = value; }
+            get => donutLaserTarget;
+            set { donutLaserTarget = value; }
         }
 
         // Vector3 passed to OrbitalLaserManager.ServerActivateLaser so when we execute
-        // our patched version, we can tell that the laser came from the UFO and can
+        // our patched version, we can tell that the laser came from the Donut and can
         // adjust the target appropriately.
-        public static readonly Vector3 UFOLaserTargetVector = new Vector3(
+        public static readonly Vector3 DonutLaserTargetVector = new Vector3(
             0xABCDEF0,
             0xABCDEF0,
             0xABCDEF0
@@ -56,7 +56,7 @@ namespace IssaPlugin.Items
         // ================================================================
 
         private bool _serverSessionActive;
-        private GameObject _serverUFO;
+        private GameObject _serverDonut;
         private int _laserUsesRemaining;
         private int _laserUseIndex;
         private bool _laserPending;
@@ -87,27 +87,27 @@ namespace IssaPlugin.Items
         {
             if (_serverSessionActive)
             {
-                IssaPluginPlugin.Log.LogInfo("[UFO] Player disconnected during session — cleanup.");
+                IssaPluginPlugin.Log.LogInfo("[Donut] Player disconnected during session — cleanup.");
                 ForceServerCleanup();
             }
         }
 
         // ================================================================
-        //  Client → Server  (called by UFOMessageHandlers in NetworkManagerPatches)
+        //  Client → Server  (called by DonutMessageHandlers in NetworkManagerPatches)
         // ================================================================
 
-        public void ServerStartUFO()
+        public void ServerStartDonut()
         {
             if (_serverSessionActive)
             {
-                IssaPluginPlugin.Log.LogWarning("[UFO] Session already active for this player.");
+                IssaPluginPlugin.Log.LogWarning("[Donut] Session already active for this player.");
                 return;
             }
 
             if (_globalSessionActive)
             {
-                IssaPluginPlugin.Log.LogWarning("[UFO] Another player's UFO is already active.");
-                connectionToClient.Send(new UFOBusyMessage());
+                IssaPluginPlugin.Log.LogWarning("[Donut] Another player's Donut is already active.");
+                connectionToClient.Send(new DonutBusyMessage());
                 return;
             }
 
@@ -116,33 +116,33 @@ namespace IssaPlugin.Items
                 return;
 
             var equipped = inventory.GetEffectivelyEquippedItem(true);
-            if (equipped != UFOItem.UFOItemType)
+            if (equipped != DonutItem.DonutItemType)
             {
-                IssaPluginPlugin.Log.LogWarning("[UFO] Player does not have UFO item equipped.");
+                IssaPluginPlugin.Log.LogWarning("[Donut] Player does not have Donut item equipped.");
                 return;
             }
 
-            if (AssetLoader.UFOPrefab == null)
+            if (AssetLoader.DonutPrefab == null)
             {
-                IssaPluginPlugin.Log.LogError("[UFO] UFO prefab not loaded.");
+                IssaPluginPlugin.Log.LogError("[Donut] Donut prefab not loaded.");
                 return;
             }
 
             ItemHelper.ConsumeEquippedItem(inventory);
 
-            // Spawn UFO directly above the player; UFOFlyBehaviour terrain-follow
+            // Spawn Donut directly above the player; DonutFlyBehaviour terrain-follow
             // takes over immediately and settles at the configured altitude.
             Vector3 spawnPos =
                 inventory.PlayerInfo.transform.position
-                + Vector3.up * Configuration.UFOAltitude.Value;
+                + Vector3.up * Configuration.DonutAltitude.Value;
 
-            var ufoGo = Object.Instantiate(AssetLoader.UFOPrefab, spawnPos, Quaternion.identity);
+            var donutGo = Object.Instantiate(AssetLoader.DonutPrefab, spawnPos, Quaternion.identity);
 
-            var flyBehaviour = ufoGo.AddComponent<UFOFlyBehaviour>();
-            var hitReceiver = ufoGo.AddComponent<UFOHitReceiver>();
+            var flyBehaviour = donutGo.AddComponent<DonutFlyBehaviour>();
+            var hitReceiver = donutGo.AddComponent<DonutHitReceiver>();
 
             // Enable the Rigidbody for physics-driven movement (prefab may ship kinematic).
-            var rb = ufoGo.GetComponent<Rigidbody>();
+            var rb = donutGo.GetComponent<Rigidbody>();
             if (rb != null)
             {
                 rb.isKinematic = false;
@@ -152,49 +152,49 @@ namespace IssaPlugin.Items
             // Wire up rocket-hit threshold callback.
             hitReceiver.OnHitsExceeded = () =>
             {
-                ServerUFOShotDown();
+                ServerDonutShotDown();
             };
 
-            NetworkServer.Spawn(ufoGo);
+            NetworkServer.Spawn(donutGo);
 
-            var ni = ufoGo.GetComponent<NetworkIdentity>();
+            var ni = donutGo.GetComponent<NetworkIdentity>();
 
-            _serverUFO = ufoGo;
+            _serverDonut = donutGo;
             _serverSessionActive = true;
             _globalSessionActive = true;
             _activeSessionBridge = this;
 
-            _laserUsesRemaining = (int)Configuration.UFOLaserUses.Value;
+            _laserUsesRemaining = (int)Configuration.DonutLaserUses.Value;
             _laserUseIndex = 0;
             _laserPending = false;
             _lastLaserTime = -999f;
 
-            connectionToClient.Send(new UFOBeginClientMessage { UFONetId = ni.netId });
+            connectionToClient.Send(new DonutBeginClientMessage { DonutNetId = ni.netId });
 
             _serverTimeout = StartCoroutine(ServerTimeoutRoutine());
 
-            IssaPluginPlugin.Log.LogInfo("[UFO] Server session started.");
+            IssaPluginPlugin.Log.LogInfo("[Donut] Server session started.");
         }
 
-        public void ServerEndUFO()
+        public void ServerEndDonut()
         {
             EndServerSession();
         }
 
-        /// Called every frame from UFOMoveMessage while the client is in a session.
-        public void ServerMoveUFO(Vector3 worldMoveDir)
+        /// Called every frame from DonutMoveMessage while the client is in a session.
+        public void ServerMoveDonut(Vector3 worldMoveDir)
         {
-            if (!_serverSessionActive || _serverUFO == null)
+            if (!_serverSessionActive || _serverDonut == null)
                 return;
 
-            var fly = _serverUFO.GetComponent<UFOFlyBehaviour>();
+            var fly = _serverDonut.GetComponent<DonutFlyBehaviour>();
             if (fly != null)
                 fly.MoveInput = worldMoveDir;
         }
 
         public void ServerFireLaser()
         {
-            if (!_serverSessionActive || _serverUFO == null)
+            if (!_serverSessionActive || _serverDonut == null)
                 return;
 
             if (_laserPending)
@@ -203,33 +203,33 @@ namespace IssaPlugin.Items
             if (_laserUsesRemaining <= 0)
                 return;
 
-            if (Time.time - _lastLaserTime < Configuration.UFOLaserCooldown.Value)
+            if (Time.time - _lastLaserTime < Configuration.DonutLaserCooldown.Value)
                 return;
 
             _lastLaserTime = Time.time;
             LaserAnticipationCoroutine();
         }
 
-        public void ServerUFOShotDown()
+        public void ServerDonutShotDown()
         {
-            IssaPluginPlugin.Log.LogInfo("[UFO] Server UFO Shot Down sequence started.");
+            IssaPluginPlugin.Log.LogInfo("[Donut] Server Donut Shot Down sequence started.");
 
-            NetworkServer.SendToAll(new UFOShotDownMessage { });
+            NetworkServer.SendToAll(new DonutShotDownMessage { });
 
-            foreach (var col in _serverUFO.GetComponents<Collider>())
+            foreach (var col in _serverDonut.GetComponents<Collider>())
                 col.enabled = false;
 
-            var rb = _serverUFO.GetComponent<Rigidbody>();
+            var rb = _serverDonut.GetComponent<Rigidbody>();
             if (rb != null)
             {
                 rb.isKinematic = false;
                 rb.useGravity = true;
-                rb.AddForce(Vector3.down * Configuration.UFOCrashDownwardForce.Value);
+                rb.AddForce(Vector3.down * Configuration.DonutCrashDownwardForce.Value);
             }
 
-            var crashBehaviour = _serverUFO.AddComponent<UFOCrashBehaviour>();
+            var crashBehaviour = _serverDonut.AddComponent<DonutCrashBehaviour>();
             crashBehaviour.Rigidbody = rb;
-            crashBehaviour.UFONetworkBridge = this;
+            crashBehaviour.DonutNetworkBridge = this;
         }
 
         // ================================================================
@@ -237,32 +237,32 @@ namespace IssaPlugin.Items
         //  NetworkManagerPatches)
         // ================================================================
 
-        public void ClientBeginUFO(uint ufoNetId)
+        public void ClientBeginDonut(uint donutNetId)
         {
-            StartCoroutine(RunLocalSession(ufoNetId));
+            StartCoroutine(RunLocalSession(donutNetId));
         }
 
-        public void ClientEndUFO(bool shotDown)
+        public void ClientEndDonut(bool shotDown)
         {
             _forceEnd = true;
             _shotDown = shotDown;
         }
 
-        public void ClientUFOBusy()
+        public void ClientDonutBusy()
         {
-            IssaPluginPlugin.Log.LogInfo("[UFO] UFO is already in use by another player.");
+            IssaPluginPlugin.Log.LogInfo("[Donut] Donut is already in use by another player.");
         }
 
-        public void ClientUFOStartShooting(Vector3 startPosition)
+        public void ClientDonutStartShooting(Vector3 startPosition)
         {
             var go = Object.Instantiate(
-                AssetLoader.UFOLaserZoneRed,
+                AssetLoader.DonutLaserZoneRed,
                 startPosition,
                 Quaternion.identity
             );
 
             localLaserUsesRemaining--;
-            UFOOverlay.UpdateLaserUses(localLaserUsesRemaining);
+            DonutOverlay.UpdateLaserUses(localLaserUsesRemaining);
             Destroy(go, 3.0f); // Destroy after 3 seconds.
         }
 
@@ -274,8 +274,8 @@ namespace IssaPlugin.Items
         {
             _laserPending = true;
 
-            // Fire at wherever the UFO ended up.
-            if (_serverSessionActive && _serverUFO != null)
+            // Fire at wherever the Donut ended up.
+            if (_serverSessionActive && _serverDonut != null)
             {
                 var inventory = GetComponent<PlayerInventory>();
                 if (inventory != null)
@@ -287,7 +287,7 @@ namespace IssaPlugin.Items
                     );
                     OrbitalLaserManager.ServerActivateLaser(
                         null,
-                        UFOLaserTargetVector,
+                        DonutLaserTargetVector,
                         inventory,
                         itemUseId
                     );
@@ -296,7 +296,7 @@ namespace IssaPlugin.Items
             }
 
             NetworkServer.SendToAll(
-                new UFOLaserShootStartMessage { StartPosition = UFOLaserTargetVector }
+                new DonutLaserShootStartMessage { StartPosition = DonutLaserTargetVector }
             );
 
             _laserPending = false;
@@ -314,16 +314,16 @@ namespace IssaPlugin.Items
             }
 
             _serverSessionActive = false;
-            connectionToClient.Send(new UFOEndClientMessage());
+            connectionToClient.Send(new DonutEndClientMessage());
 
-            if (_serverUFO != null)
+            if (_serverDonut != null)
             {
-                NetworkServer.Destroy(_serverUFO);
-                _serverUFO = null;
+                NetworkServer.Destroy(_serverDonut);
+                _serverDonut = null;
             }
 
             ReleaseGlobalLock();
-            IssaPluginPlugin.Log.LogInfo("[UFO] Server session ended.");
+            IssaPluginPlugin.Log.LogInfo("[Donut] Server session ended.");
         }
 
         private void ForceServerCleanup()
@@ -334,10 +334,10 @@ namespace IssaPlugin.Items
                 _serverTimeout = null;
             }
 
-            if (_serverUFO != null)
+            if (_serverDonut != null)
             {
-                NetworkServer.Destroy(_serverUFO);
-                _serverUFO = null;
+                NetworkServer.Destroy(_serverDonut);
+                _serverDonut = null;
             }
 
             _serverSessionActive = false;
@@ -352,7 +352,7 @@ namespace IssaPlugin.Items
 
         private IEnumerator ServerTimeoutRoutine()
         {
-            yield return new WaitForSeconds(Configuration.UFODuration.Value + 10f);
+            yield return new WaitForSeconds(Configuration.DonutDuration.Value + 10f);
             if (_serverSessionActive)
                 EndServerSession();
         }
@@ -361,7 +361,7 @@ namespace IssaPlugin.Items
         //  Client: local session coroutine
         // ================================================================
 
-        private IEnumerator RunLocalSession(uint ufoNetId)
+        private IEnumerator RunLocalSession(uint donutNetId)
         {
             LocalSessionActive = true;
             _forceEnd = false;
@@ -372,25 +372,25 @@ namespace IssaPlugin.Items
             // doesn't immediately read as an Escape / early-exit press.
             yield return null;
 
-            // Wait for Mirror to spawn the UFO on this client.
+            // Wait for Mirror to spawn the Donut on this client.
             float waited = 0f;
-            NetworkIdentity ufoIdentity = null;
-            while (!NetworkClient.spawned.TryGetValue(ufoNetId, out ufoIdentity) && waited < 2f)
+            NetworkIdentity donutIdentity = null;
+            while (!NetworkClient.spawned.TryGetValue(donutNetId, out donutIdentity) && waited < 2f)
             {
                 waited += Time.deltaTime;
                 yield return null;
             }
 
-            if (ufoIdentity == null)
+            if (donutIdentity == null)
             {
-                IssaPluginPlugin.Log.LogError("[UFO] UFO not found in spawned dict after wait.");
-                UFOOverlay.SetActive(false, 0);
+                IssaPluginPlugin.Log.LogError("[Donut] Donut not found in spawned dict after wait.");
+                DonutOverlay.SetActive(false, 0);
                 LocalSessionActive = false;
                 InputManager.Controls.Gameplay.Enable();
                 yield break;
             }
 
-            Transform ufoTransform = ufoIdentity.transform;
+            Transform donutTransform = donutIdentity.transform;
 
             // ── Orbit camera setup ────────────────────────────────────────────
             CameraModuleController.TryGetOrbitModule(out var orbitModule);
@@ -402,18 +402,18 @@ namespace IssaPlugin.Items
 
             if (orbitModule != null)
             {
-                orbitModule.SetSubject(ufoTransform);
-                orbitModule.SetPitch(Configuration.UFOCameraPitch.Value);
-                orbitModule.SetDistanceAddition(Configuration.UFOCameraDistance.Value);
+                orbitModule.SetSubject(donutTransform);
+                orbitModule.SetPitch(Configuration.DonutCameraPitch.Value);
+                orbitModule.SetDistanceAddition(Configuration.DonutCameraDistance.Value);
                 orbitModule.disablePhysics = true;
                 orbitModule.ForceUpdateModule();
             }
 
-            localLaserUsesRemaining = (int)Configuration.UFOLaserUses.Value;
+            localLaserUsesRemaining = (int)Configuration.DonutLaserUses.Value;
             float sessionElapsed = 0f;
-            float sessionDuration = Configuration.UFODuration.Value;
+            float sessionDuration = Configuration.DonutDuration.Value;
 
-            UFOOverlay.SetActive(true, localLaserUsesRemaining);
+            DonutOverlay.SetActive(true, localLaserUsesRemaining);
 
             // ── Main control loop ─────────────────────────────────────────────
             while (!_forceEnd && sessionElapsed < sessionDuration)
@@ -425,7 +425,7 @@ namespace IssaPlugin.Items
 
                 if (
                     !_canMove
-                    && Time.time - _localLastLaserTime >= Configuration.UFOLaserCooldown.Value
+                    && Time.time - _localLastLaserTime >= Configuration.DonutLaserCooldown.Value
                 )
                 {
                     _canMove = true;
@@ -433,7 +433,7 @@ namespace IssaPlugin.Items
 
                 if (keyboard != null && Keyboard.current[Key.Space].wasPressedThisFrame)
                 {
-                    IssaPluginPlugin.Log.LogInfo("[UFO] UFO cancelled by player.");
+                    IssaPluginPlugin.Log.LogInfo("[Donut] Donut cancelled by player.");
                     _forceEnd = true;
                     break;
                 }
@@ -442,7 +442,7 @@ namespace IssaPlugin.Items
                 if (mouse != null)
                 {
                     float mouseX =
-                        mouse.delta.x.ReadValue() * Configuration.UFOMouseSensitivity.Value;
+                        mouse.delta.x.ReadValue() * Configuration.DonutMouseSensitivity.Value;
                     cameraYaw += mouseX;
                     if (cameraYaw >= 360f)
                         cameraYaw -= 360f;
@@ -451,7 +451,7 @@ namespace IssaPlugin.Items
                     orbitModule?.SetYaw(cameraYaw);
                 }
 
-                // Keep camera snapped to the UFO without lerp lag.
+                // Keep camera snapped to the Donut without lerp lag.
                 orbitModule?.ForceUpdateModule();
 
                 // WASD → camera-relative world-space move direction.
@@ -482,36 +482,36 @@ namespace IssaPlugin.Items
                         worldMoveDir.Normalize();
                 }
 
-                NetworkClient.Send(new UFOMoveMessage { WorldMoveDir = worldMoveDir });
+                NetworkClient.Send(new DonutMoveMessage { WorldMoveDir = worldMoveDir });
 
                 // Left click → fire laser.
                 if (
                     mouse != null
                     && mouse.leftButton.wasPressedThisFrame
                     && localLaserUsesRemaining > 0
-                    && Time.time - _localLastLaserTime >= Configuration.UFOLaserCooldown.Value
+                    && Time.time - _localLastLaserTime >= Configuration.DonutLaserCooldown.Value
                 )
                 {
-                    NetworkClient.Send(new UFOFireLaserMessage());
+                    NetworkClient.Send(new DonutFireLaserMessage());
                     _localLastLaserTime = Time.time;
                     _canMove = false;
                 }
 
-                UFOOverlay.UpdateTimeRemaining(sessionDuration - sessionElapsed);
+                DonutOverlay.UpdateTimeRemaining(sessionDuration - sessionElapsed);
 
                 yield return null;
             }
 
             // ── Session end ───────────────────────────────────────────────────
-            // Stop the UFO before the server destroys it.
+            // Stop the Donut before the server destroys it.
             // If we were shot down, then the server will handle things.
             if (!_shotDown)
             {
-                NetworkClient.Send(new UFOMoveMessage { WorldMoveDir = Vector3.zero });
-                NetworkClient.Send(new UFOEndMessage());
+                NetworkClient.Send(new DonutMoveMessage { WorldMoveDir = Vector3.zero });
+                NetworkClient.Send(new DonutEndMessage());
             }
 
-            UFOOverlay.SetActive(false, 0);
+            DonutOverlay.SetActive(false, 0);
 
             // Restore orbit camera to normal player tracking.
             if (orbitModule != null)
@@ -531,7 +531,7 @@ namespace IssaPlugin.Items
             InputManager.Controls.Gameplay.Enable();
             LocalSessionActive = false;
 
-            IssaPluginPlugin.Log.LogInfo("[UFO] Client session ended.");
+            IssaPluginPlugin.Log.LogInfo("[Donut] Client session ended.");
         }
     }
 }

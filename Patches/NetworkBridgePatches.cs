@@ -26,8 +26,8 @@ namespace IssaPlugin.Patches
                 __instance.gameObject.AddComponent<FreezeNetworkBridge>();
             if (!__instance.GetComponent<LowGravityNetworkBridge>())
                 __instance.gameObject.AddComponent<LowGravityNetworkBridge>();
-            if (!__instance.GetComponent<UFONetworkBridge>())
-                __instance.gameObject.AddComponent<UFONetworkBridge>();
+            if (!__instance.GetComponent<DonutNetworkBridge>())
+                __instance.gameObject.AddComponent<DonutNetworkBridge>();
 
             IssaPluginPlugin.Log.LogInfo(
                 "[Network] Bridge components injected onto player object."

@@ -23,7 +23,7 @@ namespace IssaPlugin.Patches
         /// <summary>Prevents the callback from firing more than once.</summary>
         public bool Triggered;
 
-        public bool WasShotFromUFO;
+        public bool WasShotFromDonut;
     }
 
     /// <summary>
@@ -95,14 +95,14 @@ namespace IssaPlugin.Patches
                 }
             }
 
-            var ufoMarker = Object.FindFirstObjectByType<UFOMarker>();
-            if (ufoMarker != null)
+            var donutMarker = Object.FindFirstObjectByType<DonutMarker>();
+            if (donutMarker != null)
             {
-                float d = OrbitalLaserAircraftHelpers.XZDist(ufoMarker.transform.position, holePos);
+                float d = OrbitalLaserAircraftHelpers.XZDist(donutMarker.transform.position, holePos);
                 if (d < bestDist)
                 {
                     bestDist = d;
-                    bestAircraft = ufoMarker.transform;
+                    bestAircraft = donutMarker.transform;
                 }
             }
 
@@ -192,14 +192,14 @@ namespace IssaPlugin.Patches
                 }
             }
 
-            // var ufoMarker = Object.FindFirstObjectByType<UFOMarker>();
-            // if (ufoMarker != null)
+            // var donutMarker = Object.FindFirstObjectByType<DonutMarker>();
+            // if (donutMarker != null)
             // {
-            //     var lot = ufoMarker.GetComponent<LockOnTarget>();
+            //     var lot = donutMarker.GetComponent<LockOnTarget>();
             //     if (lot != null)
             //     {
             //         float d = OrbitalLaserAircraftHelpers.XZDist(
-            //             ufoMarker.transform.position,
+            //             donutMarker.transform.position,
             //             holePos
             //         );
             //         if (d < bestDist)
@@ -273,19 +273,19 @@ namespace IssaPlugin.Patches
                 }
             }
 
-            // // UFO
-            // var ufoHitReceiver = Object.FindFirstObjectByType<UFOHitReceiver>();
-            // if (ufoHitReceiver != null)
+            // // Donut
+            // var donutHitReceiver = Object.FindFirstObjectByType<DonutHitReceiver>();
+            // if (donutHitReceiver != null)
             // {
             //     float d = OrbitalLaserAircraftHelpers.XZDist(
-            //         ufoHitReceiver.transform.position,
+            //         donutHitReceiver.transform.position,
             //         fallbackWorldPosition
             //     );
             //     if (d < bestDist)
             //     {
             //         bestDist = d;
-            //         bestAircraft = ufoHitReceiver.transform;
-            //         onHit = () => ufoHitReceiver.OnHit();
+            //         bestAircraft = donutHitReceiver.transform;
+            //         onHit = () => donutHitReceiver.OnHit();
             //     }
             // }
 
@@ -303,7 +303,7 @@ namespace IssaPlugin.Patches
             if (!NetworkServer.active || target != null)
                 return true;
 
-            if (fallbackWorldPosition == UFONetworkBridge.UFOLaserTargetVector)
+            if (fallbackWorldPosition == DonutNetworkBridge.DonutLaserTargetVector)
             {
                 var ownerField = typeof(OrbitalLaser).GetField(
                     "owner",
@@ -343,15 +343,15 @@ namespace IssaPlugin.Patches
 
             System.Action onHit = null;
             Transform bestAircraft = null;
-            bool ufoShootingLaser = false;
-            if (fallbackWorldPosition == UFONetworkBridge.UFOLaserTargetVector)
+            bool donutShootingLaser = false;
+            if (fallbackWorldPosition == DonutNetworkBridge.DonutLaserTargetVector)
             {
-                ufoShootingLaser = true;
-                var activeUfoFlyBehaviour =
-                    UFONetworkBridge.ActiveUFO.GetComponent<UFOFlyBehaviour>();
-                if (activeUfoFlyBehaviour != null)
+                donutShootingLaser = true;
+                var activeDonutFlyBehaviour =
+                    DonutNetworkBridge.ActiveDonut.GetComponent<DonutFlyBehaviour>();
+                if (activeDonutFlyBehaviour != null)
                 {
-                    bestAircraft = activeUfoFlyBehaviour.UFOLaserTarget.transform;
+                    bestAircraft = activeDonutFlyBehaviour.DonutLaserTarget.transform;
                 }
             }
             else
@@ -375,14 +375,14 @@ namespace IssaPlugin.Patches
             var tracker = __instance.gameObject.AddComponent<OrbitalLaserAircraftTracker>();
             tracker.AircraftTransform = bestAircraft;
             tracker.OnHit = onHit;
-            tracker.WasShotFromUFO = ufoShootingLaser;
+            tracker.WasShotFromDonut = donutShootingLaser;
 
             // Snap NetworktargetPosition to the server-authoritative aircraft position
             // so the beam starts at the correct location even if there was slight
             // client/server position drift during the activation delay.
             __instance.NetworktargetPosition = bestAircraft.position;
 
-            if (ufoShootingLaser && bestAircraft != null)
+            if (donutShootingLaser && bestAircraft != null)
             {
                 __instance.Networkstate = OrbitalLaserState.Exploding;
             }

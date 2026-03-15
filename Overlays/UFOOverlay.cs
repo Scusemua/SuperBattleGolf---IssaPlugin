@@ -2,13 +2,13 @@ using UnityEngine;
 
 namespace IssaPlugin.Overlays
 {
-    /// Static HUD overlay displayed during an active UFO session.
+    /// Static HUD overlay displayed during an active Donut session.
     /// Shows remaining laser uses and session time remaining.
-    /// Activated/deactivated by UFONetworkBridge.RunLocalSession.
-    public static class UFOOverlay
+    /// Activated/deactivated by DonutNetworkBridge.RunLocalSession.
+    public static class DonutOverlay
     {
         private static GameObject _go;
-        private static UFOOverlayRenderer _renderer;
+        private static DonutOverlayRenderer _renderer;
 
         public static void SetActive(bool active, int totalLaserUses)
         {
@@ -16,14 +16,14 @@ namespace IssaPlugin.Overlays
             {
                 if (_go == null)
                 {
-                    _go = new GameObject("UFOOverlay");
+                    _go = new GameObject("DonutOverlay");
                     Object.DontDestroyOnLoad(_go);
-                    _renderer = _go.AddComponent<UFOOverlayRenderer>();
+                    _renderer = _go.AddComponent<DonutOverlayRenderer>();
                 }
 
                 _renderer.TotalLaserUses = totalLaserUses;
                 _renderer.RemainingLaserUses = totalLaserUses;
-                _renderer.TimeRemaining = Configuration.UFODuration.Value;
+                _renderer.TimeRemaining = Configuration.DonutDuration.Value;
                 _go.SetActive(true);
             }
             else
@@ -46,7 +46,7 @@ namespace IssaPlugin.Overlays
         }
     }
 
-    internal class UFOOverlayRenderer : MonoBehaviour
+    internal class DonutOverlayRenderer : MonoBehaviour
     {
         public int TotalLaserUses;
         public int RemainingLaserUses;
@@ -110,7 +110,7 @@ namespace IssaPlugin.Overlays
 
             // ── Session timer — top-centre ────────────────────────────────────
             int secs = Mathf.CeilToInt(Mathf.Max(0f, TimeRemaining));
-            string timerText = $"UFO  {secs / 60:D2}:{secs % 60:D2}";
+            string timerText = $"Donut  {secs / 60:D2}:{secs % 60:D2}";
             GUI.Label(new Rect(sw * 0.5f - 80f, 16f, 160f, 36f), timerText, _labelStyle);
 
             // ── Laser uses — bottom-centre ────────────────────────────────────

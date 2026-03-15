@@ -2,18 +2,18 @@ using UnityEngine;
 
 namespace IssaPlugin.Items
 {
-    public class UFOCrashBehaviour : MonoBehaviour
+    public class DonutCrashBehaviour : MonoBehaviour
     {
-        /// Assigned by UFONetworkBridge immediately after AddComponent so
+        /// Assigned by DonutNetworkBridge immediately after AddComponent so
         /// the velocity-direction raycast can read the current linear velocity.
         public Rigidbody Rigidbody;
 
-        public UFONetworkBridge UFONetworkBridge;
+        public DonutNetworkBridge DonutNetworkBridge;
 
         private bool _impacted;
         private float _lifetime;
 
-        /// How close to terrain (in units) the UFO must be for the downward
+        /// How close to terrain (in units) the Donut must be for the downward
         /// raycast to trigger the explosion.
         private const float ImpactProximity = 2f;
 
@@ -68,7 +68,7 @@ namespace IssaPlugin.Items
 
             _impacted = true;
 
-            IssaPluginPlugin.Log.LogInfo($"[UFOCrash] Impact at {transform.position}.");
+            IssaPluginPlugin.Log.LogInfo($"[DonutCrash] Impact at {transform.position}.");
 
             VfxManager.PlayPooledVfxLocalOnly(
                 VfxType.RocketLauncherRocketExplosion,
@@ -82,7 +82,7 @@ namespace IssaPlugin.Items
                 transform.position
             );
 
-            UFONetworkBridge.ServerEndUFO();
+            DonutNetworkBridge.ServerEndDonut();
             Destroy(gameObject);
         }
     }

@@ -370,94 +370,94 @@ namespace IssaPlugin.Patches
                 NetworkClient.localPlayer?.GetComponent<AC130NetworkBridge>()?.ClientAC130Busy();
             });
 
-            // ── UFO Messages ─────────────────────────────────────────────────
+            // ── Donut Messages ─────────────────────────────────────────────────
 
             // Client → Server
-            Writer<UFOStartMessage>.write = UFOMessageSerialization.WriteUFOStartMessage;
-            Reader<UFOStartMessage>.read = UFOMessageSerialization.ReadUFOStartMessage;
+            Writer<DonutStartMessage>.write = DonutMessageSerialization.WriteDonutStartMessage;
+            Reader<DonutStartMessage>.read = DonutMessageSerialization.ReadDonutStartMessage;
             if (NetworkServer.active)
-                NetworkServer.RegisterHandler<UFOStartMessage>(
+                NetworkServer.RegisterHandler<DonutStartMessage>(
                     (conn, msg) =>
                     {
-                        conn.identity?.GetComponent<UFONetworkBridge>()?.ServerStartUFO();
+                        conn.identity?.GetComponent<DonutNetworkBridge>()?.ServerStartDonut();
                     }
                 );
 
-            Writer<UFOEndMessage>.write = UFOMessageSerialization.WriteUFOEndMessage;
-            Reader<UFOEndMessage>.read = UFOMessageSerialization.ReadUFOEndMessage;
+            Writer<DonutEndMessage>.write = DonutMessageSerialization.WriteDonutEndMessage;
+            Reader<DonutEndMessage>.read = DonutMessageSerialization.ReadDonutEndMessage;
             if (NetworkServer.active)
-                NetworkServer.RegisterHandler<UFOEndMessage>(
+                NetworkServer.RegisterHandler<DonutEndMessage>(
                     (conn, msg) =>
                     {
-                        conn.identity?.GetComponent<UFONetworkBridge>()?.ServerEndUFO();
+                        conn.identity?.GetComponent<DonutNetworkBridge>()?.ServerEndDonut();
                     }
                 );
 
-            Writer<UFOMoveMessage>.write = UFOMessageSerialization.WriteUFOMoveMessage;
-            Reader<UFOMoveMessage>.read = UFOMessageSerialization.ReadUFOMoveMessage;
+            Writer<DonutMoveMessage>.write = DonutMessageSerialization.WriteDonutMoveMessage;
+            Reader<DonutMoveMessage>.read = DonutMessageSerialization.ReadDonutMoveMessage;
             if (NetworkServer.active)
-                NetworkServer.RegisterHandler<UFOMoveMessage>(
+                NetworkServer.RegisterHandler<DonutMoveMessage>(
                     (conn, msg) =>
                     {
-                        conn.identity?.GetComponent<UFONetworkBridge>()
-                            ?.ServerMoveUFO(msg.WorldMoveDir);
+                        conn.identity?.GetComponent<DonutNetworkBridge>()
+                            ?.ServerMoveDonut(msg.WorldMoveDir);
                     }
                 );
 
-            Writer<UFOFireLaserMessage>.write = UFOMessageSerialization.WriteUFOFireLaserMessage;
-            Reader<UFOFireLaserMessage>.read = UFOMessageSerialization.ReadUFOFireLaserMessage;
+            Writer<DonutFireLaserMessage>.write = DonutMessageSerialization.WriteDonutFireLaserMessage;
+            Reader<DonutFireLaserMessage>.read = DonutMessageSerialization.ReadDonutFireLaserMessage;
             if (NetworkServer.active)
-                NetworkServer.RegisterHandler<UFOFireLaserMessage>(
+                NetworkServer.RegisterHandler<DonutFireLaserMessage>(
                     (conn, msg) =>
                     {
-                        conn.identity?.GetComponent<UFONetworkBridge>()?.ServerFireLaser();
+                        conn.identity?.GetComponent<DonutNetworkBridge>()?.ServerFireLaser();
                     }
                 );
 
             // Server → Client
-            Writer<UFOBeginClientMessage>.write =
-                UFOMessageSerialization.WriteUFOBeginClientMessage;
-            Reader<UFOBeginClientMessage>.read = UFOMessageSerialization.ReadUFOBeginClientMessage;
-            NetworkClient.RegisterHandler<UFOBeginClientMessage>(msg =>
+            Writer<DonutBeginClientMessage>.write =
+                DonutMessageSerialization.WriteDonutBeginClientMessage;
+            Reader<DonutBeginClientMessage>.read = DonutMessageSerialization.ReadDonutBeginClientMessage;
+            NetworkClient.RegisterHandler<DonutBeginClientMessage>(msg =>
             {
                 NetworkClient
-                    .localPlayer?.GetComponent<UFONetworkBridge>()
-                    ?.ClientBeginUFO(msg.UFONetId);
+                    .localPlayer?.GetComponent<DonutNetworkBridge>()
+                    ?.ClientBeginDonut(msg.DonutNetId);
             });
 
-            Writer<UFOEndClientMessage>.write = UFOMessageSerialization.WriteUFOEndClientMessage;
-            Reader<UFOEndClientMessage>.read = UFOMessageSerialization.ReadUFOEndClientMessage;
-            NetworkClient.RegisterHandler<UFOEndClientMessage>(msg =>
+            Writer<DonutEndClientMessage>.write = DonutMessageSerialization.WriteDonutEndClientMessage;
+            Reader<DonutEndClientMessage>.read = DonutMessageSerialization.ReadDonutEndClientMessage;
+            NetworkClient.RegisterHandler<DonutEndClientMessage>(msg =>
             {
-                NetworkClient.localPlayer?.GetComponent<UFONetworkBridge>()?.ClientEndUFO(false);
+                NetworkClient.localPlayer?.GetComponent<DonutNetworkBridge>()?.ClientEndDonut(false);
             });
 
-            Writer<UFOShotDownMessage>.write = UFOMessageSerialization.WriteUFOShotDownMessage;
-            Reader<UFOShotDownMessage>.read = UFOMessageSerialization.ReadUFOShotDownMessage;
-            NetworkClient.RegisterHandler<UFOShotDownMessage>(msg =>
+            Writer<DonutShotDownMessage>.write = DonutMessageSerialization.WriteDonutShotDownMessage;
+            Reader<DonutShotDownMessage>.read = DonutMessageSerialization.ReadDonutShotDownMessage;
+            NetworkClient.RegisterHandler<DonutShotDownMessage>(msg =>
             {
                 IssaPluginPlugin.Log.LogWarning(
-                    $"[NetworkManager] Client received UFOShotDownMessage."
+                    $"[NetworkManager] Client received DonutShotDownMessage."
                 );
-                NetworkClient.localPlayer?.GetComponent<UFONetworkBridge>()?.ClientEndUFO(true);
+                NetworkClient.localPlayer?.GetComponent<DonutNetworkBridge>()?.ClientEndDonut(true);
             });
 
-            Writer<UFOBusyMessage>.write = UFOMessageSerialization.WriteUFOBusyMessage;
-            Reader<UFOBusyMessage>.read = UFOMessageSerialization.ReadUFOBusyMessage;
-            NetworkClient.RegisterHandler<UFOBusyMessage>(msg =>
+            Writer<DonutBusyMessage>.write = DonutMessageSerialization.WriteDonutBusyMessage;
+            Reader<DonutBusyMessage>.read = DonutMessageSerialization.ReadDonutBusyMessage;
+            NetworkClient.RegisterHandler<DonutBusyMessage>(msg =>
             {
-                NetworkClient.localPlayer?.GetComponent<UFONetworkBridge>()?.ClientUFOBusy();
+                NetworkClient.localPlayer?.GetComponent<DonutNetworkBridge>()?.ClientDonutBusy();
             });
 
-            Writer<UFOLaserShootStartMessage>.write =
-                UFOMessageSerialization.WriteUFOLaserShootStartMessage;
-            Reader<UFOLaserShootStartMessage>.read =
-                UFOMessageSerialization.ReadUFOLaserShootStartMessage;
-            NetworkClient.RegisterHandler<UFOLaserShootStartMessage>(msg =>
+            Writer<DonutLaserShootStartMessage>.write =
+                DonutMessageSerialization.WriteDonutLaserShootStartMessage;
+            Reader<DonutLaserShootStartMessage>.read =
+                DonutMessageSerialization.ReadDonutLaserShootStartMessage;
+            NetworkClient.RegisterHandler<DonutLaserShootStartMessage>(msg =>
             {
                 NetworkClient
-                    .localPlayer?.GetComponent<UFONetworkBridge>()
-                    ?.ClientUFOStartShooting(msg.StartPosition);
+                    .localPlayer?.GetComponent<DonutNetworkBridge>()
+                    ?.ClientDonutStartShooting(msg.StartPosition);
             });
         }
 
@@ -466,8 +466,8 @@ namespace IssaPlugin.Patches
         private static void RegisterPrefabs()
         {
             RegisterPrefab(AssetLoader.DroppedCustomItemPrefab);
-            RegisterPrefab(AssetLoader.UFOPrefab);
-            RegisterPrefab(AssetLoader.UFOHandheldPrefab);
+            RegisterPrefab(AssetLoader.DonutPrefab);
+            RegisterPrefab(AssetLoader.DonutHandheldPrefab);
             RegisterPrefab(AssetLoader.BatModelPrefab);
             RegisterPrefab(AssetLoader.BomberPrefab);
             RegisterPrefab(AssetLoader.BomberProxyPrefab);

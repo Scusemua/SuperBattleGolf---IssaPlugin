@@ -28,10 +28,10 @@ namespace IssaPlugin.Patches
                     stealthBomberProxy.OnHit();
                 }
 
-                var ufoHitReceiver = hit.GetComponentInParent<UFOHitReceiver>();
-                if (ufoHitReceiver != null)
+                var donutHitReceiver = hit.GetComponentInParent<DonutHitReceiver>();
+                if (donutHitReceiver != null)
                 {
-                    ufoHitReceiver.OnHit();
+                    donutHitReceiver.OnHit();
                 }
             }
         }

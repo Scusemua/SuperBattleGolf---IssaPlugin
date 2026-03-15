@@ -4,18 +4,18 @@ using UnityEngine;
 
 namespace IssaPlugin.Items
 {
-    public class UFOHitReceiver : CustomHittable
+    public class DonutHitReceiver : CustomHittable
     {
         public void Awake()
         {
             HitCount = 0;
             HitsRequired = 1;
-            OnHit += OnUfoHit;
+            OnHit += OnDonutHit;
         }
 
-        private void OnUfoHit()
+        private void OnDonutHit()
         {
-            IssaPluginPlugin.Log.LogInfo($"[UFO] OnUfoHit called.");
+            IssaPluginPlugin.Log.LogInfo($"[Donut] OnDonutHit called.");
 
             if (!NetworkServer.active)
                 return;
@@ -27,11 +27,11 @@ namespace IssaPlugin.Items
                 return;
 
             HitCount++;
-            IssaPluginPlugin.Log.LogInfo($"[UFO] Rocket impact {HitCount}/{HitsRequired}.");
+            IssaPluginPlugin.Log.LogInfo($"[Donut] Rocket impact {HitCount}/{HitsRequired}.");
 
             if (HitCount >= HitsRequired)
             {
-                IssaPluginPlugin.Log.LogInfo("[UFO] Hit threshold reached — triggering mayday.");
+                IssaPluginPlugin.Log.LogInfo("[Donut] Hit threshold reached — triggering mayday.");
                 OnHitsExceeded?.Invoke();
             }
         }

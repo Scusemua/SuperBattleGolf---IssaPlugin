@@ -142,8 +142,8 @@ namespace IssaPlugin.Items
                 return AssetLoader.LowGravityModelPrefab;
             if (type == SniperRifleItem.SniperRifleItemType)
                 return AssetLoader.SniperRiflePrefab;
-            if (type == UFOItem.UFOItemType)
-                return AssetLoader.UFOHandheldPrefab;
+            if (type == DonutItem.DonutItemType)
+                return AssetLoader.DonutHandheldPrefab;
             return null;
         }
     }

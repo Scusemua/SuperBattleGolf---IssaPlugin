@@ -89,8 +89,8 @@ namespace IssaPlugin
             if (keyboard[Configuration.SniperRifleGiveKey.Value].wasPressedThisFrame)
                 SniperRifleItem.GiveSniperRifleToLocalPlayer();
 
-            if (keyboard[Configuration.UFOGiveKey.Value].wasPressedThisFrame)
-                UFOItem.GiveUFOToLocalPlayer();
+            if (keyboard[Configuration.DonutGiveKey.Value].wasPressedThisFrame)
+                DonutItem.GiveDonutToLocalPlayer();
 
             if (keyboard[Key.F10].wasPressedThisFrame)
                 DebugDummies.ToggleDebugDummies();
