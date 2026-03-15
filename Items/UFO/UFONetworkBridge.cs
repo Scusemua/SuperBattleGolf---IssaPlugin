@@ -28,11 +28,27 @@ namespace IssaPlugin.Items
         private static bool _globalSessionActive;
         private static UFONetworkBridge _activeSessionBridge;
 
+        // Transform whose position is repeatedly set to the raycast
+        // to the ground by the UFO.
+        private static Transform ufoLaserTarget = new Transform();
+
         /// Server-side reference to the active UFO GameObject.
         public static GameObject ActiveUFO => _activeSessionBridge?._serverUFO;
 
-        // Specific Vector3
-        public static Vector3 UFOLaserTargetVector = new Vector3(0xABCDEF0, 0xABCDEF0, 0xABCDEF0);
+        public static Transform UFOLaserTarget
+        {
+            get => ufoLaserTarget;
+            set { ufoLaserTarget = value; }
+        }
+
+        // Vector3 passed to OrbitalLaserManager.ServerActivateLaser so when we execute
+        // our patched version, we can tell that the laser came from the UFO and can
+        // adjust the target appropriately.
+        public static readonly Vector3 UFOLaserTargetVector = new Vector3(
+            0xABCDEF0,
+            0xABCDEF0,
+            0xABCDEF0
+        );
 
         // ================================================================
         //  Server-side per-instance state
@@ -43,6 +59,7 @@ namespace IssaPlugin.Items
         private int _laserUsesRemaining;
         private int _laserUseIndex;
         private bool _laserPending;
+
         // private Vector3 _pendingLaserGroundPos;
         private float _lastLaserTime;
         private Coroutine _serverTimeout;

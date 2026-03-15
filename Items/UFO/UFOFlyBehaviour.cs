@@ -51,9 +51,23 @@ namespace IssaPlugin.Items
                     ItemHelper.GroundLayerMask
                 )
             )
+            {
                 targetY = hit.point.y + targetAltitude;
+                UFONetworkBridge.UFOLaserTarget.position = new Vector3(
+                    transform.position.x,
+                    targetY,
+                    transform.position.z
+                );
+            }
             else
+            {
                 targetY = targetAltitude; // no terrain below — hold current height
+                UFONetworkBridge.UFOLaserTarget.position = new Vector3(
+                    transform.position.x,
+                    transform.position.y,
+                    transform.position.z
+                );
+            }
 
             float yVelocity = (targetY - transform.position.y) * followSpeed;
 

@@ -299,7 +299,7 @@ namespace IssaPlugin.Patches
             Transform bestAircraft;
             if (fallbackWorldPosition == UFONetworkBridge.UFOLaserTargetVector)
             {
-                bestAircraft = UFONetworkBridge.ActiveUFO?.transform;
+                bestAircraft = UFONetworkBridge.UFOLaserTarget;
             }
             else
             {
