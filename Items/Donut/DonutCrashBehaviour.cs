@@ -20,6 +20,11 @@ namespace IssaPlugin.Items
         /// Fallback: destroy the object if it never reaches terrain.
         private const float MaxLifetime = 15f;
 
+        private void Start()
+        {
+            
+        }
+
         private void FixedUpdate()
         {
             if (_impacted)

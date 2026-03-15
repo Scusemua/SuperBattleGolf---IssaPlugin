@@ -87,7 +87,9 @@ namespace IssaPlugin.Items
         {
             if (_serverSessionActive)
             {
-                IssaPluginPlugin.Log.LogInfo("[Donut] Player disconnected during session — cleanup.");
+                IssaPluginPlugin.Log.LogInfo(
+                    "[Donut] Player disconnected during session — cleanup."
+                );
                 ForceServerCleanup();
             }
         }
@@ -106,7 +108,9 @@ namespace IssaPlugin.Items
 
             if (_globalSessionActive)
             {
-                IssaPluginPlugin.Log.LogWarning("[Donut] Another player's Donut is already active.");
+                IssaPluginPlugin.Log.LogWarning(
+                    "[Donut] Another player's Donut is already active."
+                );
                 connectionToClient.Send(new DonutBusyMessage());
                 return;
             }
@@ -118,7 +122,9 @@ namespace IssaPlugin.Items
             var equipped = inventory.GetEffectivelyEquippedItem(true);
             if (equipped != DonutItem.DonutItemType)
             {
-                IssaPluginPlugin.Log.LogWarning("[Donut] Player does not have Donut item equipped.");
+                IssaPluginPlugin.Log.LogWarning(
+                    "[Donut] Player does not have Donut item equipped."
+                );
                 return;
             }
 
@@ -136,7 +142,11 @@ namespace IssaPlugin.Items
                 inventory.PlayerInfo.transform.position
                 + Vector3.up * Configuration.DonutAltitude.Value;
 
-            var donutGo = Object.Instantiate(AssetLoader.DonutPrefab, spawnPos, Quaternion.identity);
+            var donutGo = Object.Instantiate(
+                AssetLoader.DonutPrefab,
+                spawnPos,
+                Quaternion.identity
+            );
 
             var flyBehaviour = donutGo.AddComponent<DonutFlyBehaviour>();
             var hitReceiver = donutGo.AddComponent<DonutHitReceiver>();
@@ -225,7 +235,14 @@ namespace IssaPlugin.Items
                 rb.isKinematic = false;
                 rb.useGravity = true;
                 rb.AddForce(Vector3.down * Configuration.DonutCrashDownwardForce.Value);
+                Vector3 torqueImpulse =
+                    UnityEngine.Random.insideUnitSphere * Configuration.DonutCrashTorque.Value;
+                rb.AddTorque(torqueImpulse, ForceMode.Impulse);
             }
+
+            var donutFlyBehaviour = _serverDonut.GetComponent<DonutFlyBehaviour>();
+            if (donutFlyBehaviour != null)
+                donutFlyBehaviour.enabled = false;
 
             var crashBehaviour = _serverDonut.AddComponent<DonutCrashBehaviour>();
             crashBehaviour.Rigidbody = rb;
@@ -383,7 +400,9 @@ namespace IssaPlugin.Items
 
             if (donutIdentity == null)
             {
-                IssaPluginPlugin.Log.LogError("[Donut] Donut not found in spawned dict after wait.");
+                IssaPluginPlugin.Log.LogError(
+                    "[Donut] Donut not found in spawned dict after wait."
+                );
                 DonutOverlay.SetActive(false, 0);
                 LocalSessionActive = false;
                 InputManager.Controls.Gameplay.Enable();
