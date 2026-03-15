@@ -434,11 +434,11 @@ namespace IssaPlugin.Overlays
         /// Dot indicators with rainbow hue cycling on available dots.
         private void DrawLaserDots(float sw, float sh)
         {
-            float dotSize = 30f;
+            float dotSize = 60f;
             float gap = 10f;
             float totalW = TotalLaserUses * dotSize + (TotalLaserUses - 1) * gap;
             float startX = sw * 0.5f - totalW * 0.5f;
-            float dotY = sh - 180f;
+            float dotY = sh - 160f;
 
             for (int i = 0; i < TotalLaserUses; i++)
             {

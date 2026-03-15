@@ -17,7 +17,7 @@ namespace IssaPlugin.Items
 
         /// How close to terrain (in units) the Donut must be for the downward
         /// raycast to trigger the explosion.
-        private const float ImpactProximity = 1.5f;
+        private const float ImpactProximity = 0.25f;
 
         /// Fallback: destroy the object if it never reaches terrain.
         private const float MaxLifetime = 15f;
@@ -31,6 +31,10 @@ namespace IssaPlugin.Items
 
             if (!_initialForcesApplied && Rigidbody != null)
             {
+                Rigidbody.isKinematic = false;
+                Rigidbody.useGravity = true;
+                Rigidbody.freezeRotation = false;
+
                 Rigidbody.AddForce(Vector3.down * Configuration.DonutCrashDownwardForce.Value);
                 Vector3 torqueImpulse =
                     UnityEngine.Random.insideUnitSphere * Configuration.DonutCrashTorque.Value;

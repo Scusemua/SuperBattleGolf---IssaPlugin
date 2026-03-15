@@ -10,7 +10,11 @@ namespace IssaPlugin.Items
 
         public static void GiveDonutToLocalPlayer()
         {
-            ItemHelper.GiveItemToLocalPlayer(DonutItemType, (int)Configuration.DonutUses.Value, "Donut");
+            ItemHelper.GiveItemToLocalPlayer(
+                DonutItemType,
+                (int)Configuration.DonutUses.Value,
+                "Donut"
+            );
         }
     }
 }
