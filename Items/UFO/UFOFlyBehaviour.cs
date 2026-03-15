@@ -16,6 +16,8 @@ namespace IssaPlugin.Items
 
         private Rigidbody _rb;
 
+        public GameObject UFOLaserTarget;
+
         private void Start()
         {
             _rb = GetComponent<Rigidbody>();
@@ -26,6 +28,9 @@ namespace IssaPlugin.Items
             }
 
             gameObject.layer = LayerMask.NameToLayer("UFO");
+
+            UFOLaserTarget = new GameObject("UFO_LaserTarget");
+            UFOLaserTarget.transform.SetParent(transform);
         }
 
         private void FixedUpdate()
@@ -53,20 +58,11 @@ namespace IssaPlugin.Items
             )
             {
                 targetY = hit.point.y + targetAltitude;
-                UFONetworkBridge.UFOLaserTarget.position = new Vector3(
-                    transform.position.x,
-                    targetY,
-                    transform.position.z
-                );
+                UFOLaserTarget.transform.position = hit.point;
             }
             else
             {
                 targetY = targetAltitude; // no terrain below — hold current height
-                UFONetworkBridge.UFOLaserTarget.position = new Vector3(
-                    transform.position.x,
-                    transform.position.y,
-                    transform.position.z
-                );
             }
 
             float yVelocity = (targetY - transform.position.y) * followSpeed;

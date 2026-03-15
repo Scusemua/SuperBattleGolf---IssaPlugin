@@ -42,12 +42,9 @@ namespace IssaPlugin.Items
 
     public struct UFOBusyMessage : NetworkMessage { }
 
-    public static class UFOBusyMessageSerialization
+    public struct UFOLaserShootStartMessage : NetworkMessage
     {
-        public static void WriteUFOBusyMessage(NetworkWriter writer, UFOBusyMessage msg) { }
-
-        public static UFOBusyMessage ReadUFOBusyMessage(NetworkReader reader) =>
-            new UFOBusyMessage();
+        public Vector3 StartPosition;
     }
 
     // ── Serialization ─────────────────────────────────────────────────────────
@@ -110,5 +107,22 @@ namespace IssaPlugin.Items
                 TorqueImpulse = reader.ReadVector3(),
             };
         }
+
+        public static void WriteUFOBusyMessage(NetworkWriter writer, UFOBusyMessage msg) { }
+
+        public static UFOBusyMessage ReadUFOBusyMessage(NetworkReader reader) =>
+            new UFOBusyMessage();
+
+        public static void WriteUFOLaserShootStartMessage(
+            NetworkWriter writer,
+            UFOLaserShootStartMessage msg
+        )
+        {
+            writer.WriteVector3(msg.StartPosition);
+        }
+
+        public static UFOLaserShootStartMessage ReadUFOLaserShootStartMessage(
+            NetworkReader reader
+        ) => new UFOLaserShootStartMessage { StartPosition = reader.ReadVector3() };
     }
 }

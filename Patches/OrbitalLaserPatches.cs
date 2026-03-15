@@ -22,6 +22,8 @@ namespace IssaPlugin.Patches
 
         /// <summary>Prevents the callback from firing more than once.</summary>
         public bool Triggered;
+
+        public bool WasShotFromUFO;
     }
 
     /// <summary>
@@ -190,23 +192,23 @@ namespace IssaPlugin.Patches
                 }
             }
 
-            var ufoMarker = Object.FindFirstObjectByType<UFOMarker>();
-            if (ufoMarker != null)
-            {
-                var lot = ufoMarker.GetComponent<LockOnTarget>();
-                if (lot != null)
-                {
-                    float d = OrbitalLaserAircraftHelpers.XZDist(
-                        ufoMarker.transform.position,
-                        holePos
-                    );
-                    if (d < bestDist)
-                    {
-                        bestDist = d;
-                        bestLockOn = lot;
-                    }
-                }
-            }
+            // var ufoMarker = Object.FindFirstObjectByType<UFOMarker>();
+            // if (ufoMarker != null)
+            // {
+            //     var lot = ufoMarker.GetComponent<LockOnTarget>();
+            //     if (lot != null)
+            //     {
+            //         float d = OrbitalLaserAircraftHelpers.XZDist(
+            //             ufoMarker.transform.position,
+            //             holePos
+            //         );
+            //         if (d < bestDist)
+            //         {
+            //             bestDist = d;
+            //             bestLockOn = lot;
+            //         }
+            //     }
+            // }
 
             if (bestLockOn == null)
                 return true; // no aircraft — let base method run normally
@@ -271,35 +273,86 @@ namespace IssaPlugin.Patches
                 }
             }
 
-            // UFO
-            var ufoHitReceiver = Object.FindFirstObjectByType<UFOHitReceiver>();
-            if (ufoHitReceiver != null)
-            {
-                float d = OrbitalLaserAircraftHelpers.XZDist(
-                    ufoHitReceiver.transform.position,
-                    fallbackWorldPosition
-                );
-                if (d < bestDist)
-                {
-                    bestDist = d;
-                    bestAircraft = ufoHitReceiver.transform;
-                    onHit = () => ufoHitReceiver.OnHit();
-                }
-            }
+            // // UFO
+            // var ufoHitReceiver = Object.FindFirstObjectByType<UFOHitReceiver>();
+            // if (ufoHitReceiver != null)
+            // {
+            //     float d = OrbitalLaserAircraftHelpers.XZDist(
+            //         ufoHitReceiver.transform.position,
+            //         fallbackWorldPosition
+            //     );
+            //     if (d < bestDist)
+            //     {
+            //         bestDist = d;
+            //         bestAircraft = ufoHitReceiver.transform;
+            //         onHit = () => ufoHitReceiver.OnHit();
+            //     }
+            // }
 
             return bestAircraft;
         }
 
-        static void Postfix(OrbitalLaser __instance, Hittable target, Vector3 fallbackWorldPosition)
+        static bool Prefix(
+            OrbitalLaser __instance,
+            Hittable target,
+            Vector3 fallbackWorldPosition,
+            PlayerInventory owner,
+            ItemUseId itemUseId
+        )
+        {
+            if (!NetworkServer.active || target != null)
+                return true;
+
+            if (fallbackWorldPosition == UFONetworkBridge.UFOLaserTargetVector)
+            {
+                var ownerField = typeof(OrbitalLaser).GetField(
+                    "owner",
+                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance
+                );
+                ownerField.SetValue(__instance, owner);
+
+                var itemUseIdField = typeof(OrbitalLaser).GetField(
+                    "itemUseId",
+                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance
+                );
+                itemUseIdField.SetValue(__instance, itemUseId);
+
+                var activationTimestampField = typeof(OrbitalLaser).GetField(
+                    "activationTimestamp",
+                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance
+                );
+                activationTimestampField.SetValue(__instance, Time.timeAsDouble);
+
+                __instance.NetworktargetPosition = fallbackWorldPosition;
+                return false;
+            }
+
+            return true;
+        }
+
+        static void Postfix(
+            OrbitalLaser __instance,
+            Hittable target,
+            Vector3 fallbackWorldPosition,
+            PlayerInventory owner,
+            ItemUseId itemUseId
+        )
         {
             if (!NetworkServer.active || target != null)
                 return;
 
             System.Action onHit = null;
-            Transform bestAircraft;
+            Transform bestAircraft = null;
+            bool ufoShootingLaser = false;
             if (fallbackWorldPosition == UFONetworkBridge.UFOLaserTargetVector)
             {
-                bestAircraft = UFONetworkBridge.UFOLaserTarget;
+                ufoShootingLaser = true;
+                var activeUfoFlyBehaviour =
+                    UFONetworkBridge.ActiveUFO.GetComponent<UFOFlyBehaviour>();
+                if (activeUfoFlyBehaviour != null)
+                {
+                    bestAircraft = activeUfoFlyBehaviour.UFOLaserTarget.transform;
+                }
             }
             else
             {
@@ -322,11 +375,17 @@ namespace IssaPlugin.Patches
             var tracker = __instance.gameObject.AddComponent<OrbitalLaserAircraftTracker>();
             tracker.AircraftTransform = bestAircraft;
             tracker.OnHit = onHit;
+            tracker.WasShotFromUFO = ufoShootingLaser;
 
             // Snap NetworktargetPosition to the server-authoritative aircraft position
             // so the beam starts at the correct location even if there was slight
             // client/server position drift during the activation delay.
             __instance.NetworktargetPosition = bestAircraft.position;
+
+            if (ufoShootingLaser && bestAircraft != null)
+            {
+                __instance.Networkstate = OrbitalLaserState.Exploding;
+            }
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[OrbitalLaser] Tracker attached to {bestAircraft.name} "

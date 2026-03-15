@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 2532852811
+CRC: 1445411970
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 4dad1a4f3fd7778bc5273e29064a3f73
+    Hash: 50886497a7fc311d624067f00e30b8fa
   TypeTreeHash:
     serializedVersion: 2
     Hash: f3672b0c1f82247490603e54482e422d
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: ee455323d86d22e47cbfc04a61f36410
+    Hash: 1d77b5478bc19881e2199aef648fe79f
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -70,30 +70,30 @@ Assets:
 - Assets/Assets/fire_torch_intense.prefab
 - Assets/Assets/ac130_model.prefab
 - Assets/Assets/Material.003.mat
+- Assets/Assets/donut_model.prefab
 - Assets/Assets/missile_icon.png
-- Assets/Assets/ufo_handheld.prefab
 - Assets/Assets/sniper_scope_overlay.png
 - Assets/Assets/lightning.prefab
 - Assets/Assets/bomber_proxy.prefab
 - Assets/Assets/stealth_bomber_tablet_model.prefab
 - Assets/Assets/ac130_tablet.prefab
-- Assets/Assets/Material.001.mat
+- Assets/Assets/donut_icon.png
 - Assets/Assets/predator_missile_tablet_model.prefab
 - Assets/Assets/jet_plane_flyby.ogg
 - Assets/Assets/predator_missile_ready.ogg
-- Assets/Assets/bomber_jet.prefab
-- Assets/Assets/gravity_remote_model.fbx
+- Assets/Assets/Material.001.mat
+- Assets/Assets/laser_zone_red.prefab
 - Assets/Assets/gravity_remote.prefab
-- Assets/Assets/big_plane.ogg
+- Assets/Assets/gravity_remote_model.fbx
 - Assets/Assets/WarningExclamation.prefab
 - Assets/Assets/bat_icon.png
+- Assets/Assets/big_plane.ogg
 - Assets/Assets/Dark 1.mat
 - Assets/Assets/Dark 2.mat
 - Assets/Assets/missile_locked.ogg
 - Assets/Assets/bat_model.prefab
 - Assets/Assets/intervention.prefab
 - Assets/Assets/gravity_remote_icon.png
-- Assets/Assets/ufo_icon.png
 - Assets/Assets/sniper_rifle_icon.png
 - Assets/Assets/freeze_effect_icon.png
 - Assets/Assets/DroppedCustomItem.prefab
@@ -104,7 +104,6 @@ Assets:
 - Assets/Assets/Brass.mat
 - Assets/Assets/bomber_icon.png
 - Assets/Assets/plane_falling.ogg
-- Assets/Assets/ufo_vehicle.prefab
 - Assets/Assets/ac130_tablet_model.prefab
 - Assets/Assets/smoke_trail_prefab.prefab
 - Assets/Assets/Material.002.mat
@@ -115,8 +114,8 @@ Assets:
 - Assets/Assets/NukeExplosionFire.prefab
 - Assets/Assets/ac130_icon.png
 - Assets/Assets/predator_missile_tablet.prefab
-- Assets/Assets/ice_shader.shader
 - Assets/Assets/blood_splatter_critical.prefab
 - Assets/Assets/NukeVerticalExplosionFire.prefab
 - Assets/Assets/Glass.mat
+- Assets/Assets/donut_vehicle.prefab
 Dependencies: []

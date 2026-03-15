@@ -1,12 +1,10 @@
 using UnityEngine;
 
-namespace IssaPlugin.Items
+namespace IssaPlugin.Overlays
 {
-    /// <summary>
     /// Static HUD overlay displayed during an active UFO session.
     /// Shows remaining laser uses and session time remaining.
     /// Activated/deactivated by UFONetworkBridge.RunLocalSession.
-    /// </summary>
     public static class UFOOverlay
     {
         private static GameObject _go;
@@ -55,28 +53,58 @@ namespace IssaPlugin.Items
         public float TimeRemaining;
 
         private GUIStyle _labelStyle;
+        private GUIStyle _instructionStyle;
         private GUIStyle _dotStyle;
+        private Texture2D _bgTex;
 
-        private void Awake()
+        private void Awake() { }
+
+        private void EnsureStyles()
         {
-            _labelStyle = new GUIStyle
+            if (_labelStyle == null)
             {
-                fontSize = 22,
-                fontStyle = FontStyle.Bold,
-                normal = { textColor = Color.white },
-                alignment = TextAnchor.MiddleCenter,
-            };
+                _labelStyle = new GUIStyle
+                {
+                    fontSize = 32,
+                    fontStyle = FontStyle.Bold,
+                    normal = { textColor = Color.white },
+                    alignment = TextAnchor.MiddleCenter,
+                };
+            }
 
-            _dotStyle = new GUIStyle
+            if (_dotStyle == null)
             {
-                fontSize = 28,
-                fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.MiddleCenter,
-            };
+                _dotStyle = new GUIStyle
+                {
+                    fontSize = 28,
+                    fontStyle = FontStyle.Bold,
+                    alignment = TextAnchor.MiddleCenter,
+                };
+            }
+
+            if (_instructionStyle == null)
+            {
+                _instructionStyle = new GUIStyle(GUI.skin.label)
+                {
+                    alignment = TextAnchor.MiddleCenter,
+                    fontSize = 18,
+                    fontStyle = FontStyle.Bold,
+                };
+                _instructionStyle.normal.textColor = Color.white;
+            }
+
+            if (_bgTex == null)
+            {
+                _bgTex = new Texture2D(1, 1);
+                _bgTex.SetPixel(0, 0, new Color(0f, 0f, 0f, 0.6f));
+                _bgTex.Apply();
+            }
         }
 
         private void OnGUI()
         {
+            EnsureStyles();
+
             float sw = Screen.width;
             float sh = Screen.height;
 
@@ -90,7 +118,7 @@ namespace IssaPlugin.Items
             float gap = 8f;
             float totalWidth = TotalLaserUses * dotSize + (TotalLaserUses - 1) * gap;
             float startX = sw * 0.5f - totalWidth * 0.5f;
-            float dotY = sh - 80f;
+            float dotY = sh - 160f;
 
             for (int i = 0; i < TotalLaserUses; i++)
             {
@@ -109,6 +137,15 @@ namespace IssaPlugin.Items
             _labelStyle.fontSize = 14;
             GUI.Label(new Rect(sw * 0.5f - 40f, dotY + dotSize, 80f, 24f), "LASER", _labelStyle);
             _labelStyle.fontSize = 22;
+
+            // Bottom bar.
+            if (_bgTex != null)
+                GUI.DrawTexture(new Rect(0, sh - 160, sw, 160), _bgTex);
+            GUI.Label(
+                new Rect(0, sh - 42, sw, 30),
+                "Click: Fire Laser   |   Space: Exit",
+                _instructionStyle
+            );
         }
     }
 }

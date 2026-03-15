@@ -33,6 +33,8 @@ namespace IssaPlugin.Items
         public static GameObject UFOPrefab { get; private set; }
         public static GameObject UFOHandheldPrefab { get; private set; }
 
+        public static GameObject UFOLaserZoneRed { get; private set; }
+
         public static GameObject BloodSplatterPrefab { get; private set; }
 
         /// Programmatically-built prefab for dropped custom items.
@@ -111,7 +113,7 @@ namespace IssaPlugin.Items
             FreezeIcon = LoadSprite("freeze_effect_icon.png");
             LowGravityIcon = LoadSprite("gravity_remote_icon.png");
             SniperRifleIcon = LoadSprite("sniper_rifle_icon.png");
-            UFOIcon = LoadSprite("ufo_icon.png");
+            UFOIcon = LoadSprite("donut_icon.png");
 
             SniperScopeTexture = LoadTexture2D("sniper_scope.png");
 
@@ -140,13 +142,15 @@ namespace IssaPlugin.Items
             SniperRiflePrefab = Load<GameObject>("intervention.prefab");
             BloodSplatterPrefab = Load<GameObject>("blood_splatter_critical.prefab");
 
-            UFOPrefab = Load<GameObject>("ufo_vehicle.prefab");
+            UFOPrefab = Load<GameObject>("donut_vehicle.prefab");
             EnsureNetworkIdentity(UFOPrefab, 0xF0000001u);
             if (UFOPrefab != null)
                 UFOPrefab.AddComponent<UFOClientSetup>();
             DisableRigidbody(UFOPrefab);
 
-            UFOHandheldPrefab = Load<GameObject>("ufo_handheld.prefab");
+            UFOHandheldPrefab = Load<GameObject>("donut_model.prefab");
+            UFOLaserZoneRed = Load<GameObject>("laser_zone_red.prefab");
+
             // StripNetworkComponents(UFOHandheldPrefab);
 
             // Set Kinematic to True and Use Gravity to False.

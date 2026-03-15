@@ -1,4 +1,5 @@
 using System.Collections;
+using IssaPlugin.Overlays;
 using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -72,6 +73,11 @@ namespace IssaPlugin.Items
         private bool _forceEnd;
 
         private bool _shotDown;
+
+        private int localLaserUsesRemaining;
+        private float _localLastLaserTime;
+
+        private bool _canMove; // Can't move while shooting
 
         // ================================================================
         //  Mirror lifecycle
@@ -247,6 +253,19 @@ namespace IssaPlugin.Items
             IssaPluginPlugin.Log.LogInfo("[UFO] UFO is already in use by another player.");
         }
 
+        public void ClientUFOStartShooting(Vector3 startPosition)
+        {
+            var go = Object.Instantiate(
+                AssetLoader.UFOLaserZoneRed,
+                startPosition,
+                Quaternion.identity
+            );
+
+            localLaserUsesRemaining--;
+            UFOOverlay.UpdateLaserUses(localLaserUsesRemaining);
+            Destroy(go, 3.0f); // Destroy after 3 seconds.
+        }
+
         // ================================================================
         //  Server internals
         // ================================================================
@@ -273,12 +292,12 @@ namespace IssaPlugin.Items
                         itemUseId
                     );
                     _laserUsesRemaining--;
-                    // IssaPluginPlugin.Log.LogInfo(
-                    //     $"[UFO] Laser fired at {_pendingLaserGroundPos}. "
-                    //         + $"Remaining: {_laserUsesRemaining}"
-                    // );
                 }
             }
+
+            NetworkServer.SendToAll(
+                new UFOLaserShootStartMessage { StartPosition = UFOLaserTargetVector }
+            );
 
             _laserPending = false;
         }
@@ -303,6 +322,7 @@ namespace IssaPlugin.Items
                 _serverUFO = null;
             }
 
+            ReleaseGlobalLock();
             IssaPluginPlugin.Log.LogInfo("[UFO] Server session ended.");
         }
 
@@ -321,6 +341,13 @@ namespace IssaPlugin.Items
             }
 
             _serverSessionActive = false;
+            ReleaseGlobalLock();
+        }
+
+        private static void ReleaseGlobalLock()
+        {
+            _globalSessionActive = false;
+            _activeSessionBridge = null;
         }
 
         private IEnumerator ServerTimeoutRoutine()
@@ -382,7 +409,7 @@ namespace IssaPlugin.Items
                 orbitModule.ForceUpdateModule();
             }
 
-            int localLaserUsesRemaining = (int)Configuration.UFOLaserUses.Value;
+            localLaserUsesRemaining = (int)Configuration.UFOLaserUses.Value;
             float sessionElapsed = 0f;
             float sessionDuration = Configuration.UFODuration.Value;
 
@@ -395,6 +422,21 @@ namespace IssaPlugin.Items
 
                 var mouse = Mouse.current;
                 var keyboard = Keyboard.current;
+
+                if (
+                    !_canMove
+                    && Time.time - _localLastLaserTime >= Configuration.UFOLaserCooldown.Value
+                )
+                {
+                    _canMove = true;
+                }
+
+                if (keyboard != null && Keyboard.current[Key.Space].wasPressedThisFrame)
+                {
+                    IssaPluginPlugin.Log.LogInfo("[UFO] UFO cancelled by player.");
+                    _forceEnd = true;
+                    break;
+                }
 
                 // Mouse X → rotate orbit camera yaw.
                 if (mouse != null)
@@ -415,7 +457,7 @@ namespace IssaPlugin.Items
                 // WASD → camera-relative world-space move direction.
                 float fwd = 0f,
                     strafe = 0f;
-                if (keyboard != null)
+                if (keyboard != null && _canMove)
                 {
                     if (keyboard[Key.W].isPressed)
                         fwd += 1f;
@@ -447,11 +489,12 @@ namespace IssaPlugin.Items
                     mouse != null
                     && mouse.leftButton.wasPressedThisFrame
                     && localLaserUsesRemaining > 0
+                    && Time.time - _localLastLaserTime >= Configuration.UFOLaserCooldown.Value
                 )
                 {
                     NetworkClient.Send(new UFOFireLaserMessage());
-                    localLaserUsesRemaining--;
-                    UFOOverlay.UpdateLaserUses(localLaserUsesRemaining);
+                    _localLastLaserTime = Time.time;
+                    _canMove = false;
                 }
 
                 UFOOverlay.UpdateTimeRemaining(sessionDuration - sessionElapsed);

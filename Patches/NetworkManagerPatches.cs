@@ -1,3 +1,4 @@
+using System.Data.SqlTypes;
 using HarmonyLib;
 using IssaPlugin.Items;
 using Mirror;
@@ -441,11 +442,22 @@ namespace IssaPlugin.Patches
                 NetworkClient.localPlayer?.GetComponent<UFONetworkBridge>()?.ClientEndUFO(true);
             });
 
-            Writer<UFOBusyMessage>.write = UFOBusyMessageSerialization.WriteUFOBusyMessage;
-            Reader<UFOBusyMessage>.read = UFOBusyMessageSerialization.ReadUFOBusyMessage;
+            Writer<UFOBusyMessage>.write = UFOMessageSerialization.WriteUFOBusyMessage;
+            Reader<UFOBusyMessage>.read = UFOMessageSerialization.ReadUFOBusyMessage;
             NetworkClient.RegisterHandler<UFOBusyMessage>(msg =>
             {
                 NetworkClient.localPlayer?.GetComponent<UFONetworkBridge>()?.ClientUFOBusy();
+            });
+
+            Writer<UFOLaserShootStartMessage>.write =
+                UFOMessageSerialization.WriteUFOLaserShootStartMessage;
+            Reader<UFOLaserShootStartMessage>.read =
+                UFOMessageSerialization.ReadUFOLaserShootStartMessage;
+            NetworkClient.RegisterHandler<UFOLaserShootStartMessage>(msg =>
+            {
+                NetworkClient
+                    .localPlayer?.GetComponent<UFONetworkBridge>()
+                    ?.ClientUFOStartShooting(msg.StartPosition);
             });
         }
 
