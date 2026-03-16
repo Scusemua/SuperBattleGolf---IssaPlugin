@@ -439,6 +439,7 @@ namespace IssaPlugin.Items
         {
             LocalSessionActive = true;
             _forceEnd = false;
+            _shotDown = false;
 
             InputManager.Controls.Gameplay.Disable();
 

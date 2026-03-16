@@ -128,6 +128,9 @@ namespace IssaPlugin
                 local.GetComponent<DonutNetworkBridge>()?.ClientHoleCleanup();
             }
 
+            // Cancel any in-progress Stealth Bomber targeting UI.
+            StealthBomberItem.CancelTargeting();
+
             // ── Shared lock-on detection state ───────────────────────────────
             GunshipLockOnDetectionPatch.ResetTargetingState();
 

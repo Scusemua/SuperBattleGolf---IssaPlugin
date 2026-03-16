@@ -15,9 +15,17 @@ namespace IssaPlugin.Items
         // only one player's input is processed on any given client.
         // _isBombing has been moved to BomberNetworkBridge as an instance field.
         private static bool _isTargeting;
+        private static bool _targetingCancelled;
         private static int _bomberUseIndex;
 
         public static bool IsTargeting => _isTargeting;
+
+        /// <summary>
+        /// Signals the targeting coroutine to exit immediately.
+        /// Called on hole transitions so a player stuck in the targeting UI
+        /// has their input and camera restored before the new hole starts.
+        /// </summary>
+        public static void CancelTargeting() => _targetingCancelled = true;
 
         /// The local visual bomber GameObject spawned by LocalSpawnBomberVisual.
         /// Set on all clients; used by BomberNetworkBridge.RpcBomberShotDown to
@@ -149,6 +157,7 @@ namespace IssaPlugin.Items
         )
         {
             _isTargeting = true;
+            _targetingCancelled = false;
             InputManager.Controls.Gameplay.Disable();
 
             OrbitCameraModule orbitModule = null;
@@ -187,7 +196,7 @@ namespace IssaPlugin.Items
             bool confirmed = false;
             bool cancelled = false;
 
-            while (!confirmed && !cancelled)
+            while (!confirmed && !cancelled && !_targetingCancelled)
             {
                 var keyboard = Keyboard.current;
                 var mouse = Mouse.current;
