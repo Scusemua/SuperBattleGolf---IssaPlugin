@@ -839,9 +839,13 @@ namespace IssaPlugin.Items
             {
                 // No fly component (prefab not loaded or already removed) — fall back.
                 NetworkServer.Destroy(_serverGunship);
+                _serverGunship = null;
             }
 
-            _serverGunship = null;
+            // Do NOT null _serverGunship here. Keep the reference alive so that
+            // ServerBeginMayday can still fire if a rocket hits during fly-out.
+            // Unity's fake-null makes _serverGunship == null automatically once
+            // the gameObject is destroyed at the end of the fly-out path.
             IssaPluginPlugin.Log.LogInfo("[AC130] Server session ended — gunship flying out.");
         }
 

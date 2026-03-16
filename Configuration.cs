@@ -707,9 +707,10 @@ namespace IssaPlugin
             AC130RocketProximityFuse = cfg.Bind(
                 "AC130Mayday",
                 "RocketProximityFuse",
-                8f,
+                4f,
                 "Distance in metres at which a homing rocket detonates near the gunship. "
-                    + "Required because the gunship has no physics collider."
+                    + "Must be less than 5 m so the explosion's overlap sphere (radius 5 m) "
+                    + "still reaches the gunship and registers the hit."
             );
 
             // --- Low Gravity ---

@@ -28,14 +28,24 @@ namespace IssaPlugin.Patches
     {
         static void Postfix(Rocket __instance, Vector3 worldPosition)
         {
-            var hits = Physics.OverlapSphere(worldPosition, 5f);
+            // Include triggers: the AC130 model collider is a trigger so rockets
+            // pass through visually; without Collide, OverlapSphere misses it.
+            var hits = Physics.OverlapSphere(
+                worldPosition,
+                5f,
+                Physics.AllLayers,
+                QueryTriggerInteraction.Collide
+            );
 
             foreach (var hit in hits)
             {
                 var ac130HitReceiver = hit.GetComponentInParent<AC130HitReceiver>();
                 if (ac130HitReceiver != null)
                 {
-                    ac130HitReceiver.OnHit();
+                    IssaPluginPlugin.Log.LogInfo(
+                        $"[AC130] Rocket exploded within range — notifying AC130HitReceiver."
+                    );
+                    ac130HitReceiver.OnHit?.Invoke();
                 }
 
                 var stealthBomberProxy = hit.GetComponentInParent<BomberProxyBehaviour>();

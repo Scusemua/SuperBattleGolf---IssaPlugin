@@ -14,22 +14,24 @@ namespace IssaPlugin
     {
         private const float SyncInterval = 5f;
 
+        // Sentinel: impossible weight value so the first check always triggers a sync.
+        private static SpawnWeightsMessage _lastSent = new SpawnWeightsMessage
+        {
+            Bat = -1f,
+        };
+
         private IEnumerator Start()
         {
             while (true)
             {
                 yield return new WaitForSeconds(SyncInterval);
                 if (NetworkServer.active)
-                    BroadcastWeights();
+                    BroadcastWeightsIfChanged();
             }
         }
 
-        private static void BroadcastWeights()
+        private static void BroadcastWeightsIfChanged()
         {
-            // Re-inject custom weights into the live server pools.
-            foreach (var settings in Resources.FindObjectsOfTypeAll<ItemSpawnerSettings>())
-                settings.ResetRuntimeData();
-
             var msg = new SpawnWeightsMessage
             {
                 Bat = Configuration.BaseballBatSpawnWeight.Value,
@@ -42,6 +44,15 @@ namespace IssaPlugin
                 Donut = Configuration.DonutSpawnWeight.Value,
             };
 
+            if (WeightsEqual(msg, _lastSent))
+                return;
+
+            _lastSent = msg;
+
+            // Re-inject custom weights into the live server pools.
+            foreach (var settings in Resources.FindObjectsOfTypeAll<ItemSpawnerSettings>())
+                settings.ResetRuntimeData();
+
             NetworkServer.SendToAll(msg);
 
             IssaPluginPlugin.Log.LogDebug(
@@ -50,6 +61,16 @@ namespace IssaPlugin
                     + $"Sniper={msg.Sniper} Donut={msg.Donut}"
             );
         }
+
+        private static bool WeightsEqual(SpawnWeightsMessage a, SpawnWeightsMessage b) =>
+            a.Bat == b.Bat
+            && a.Bomber == b.Bomber
+            && a.Missile == b.Missile
+            && a.AC130 == b.AC130
+            && a.Freeze == b.Freeze
+            && a.LowGravity == b.LowGravity
+            && a.Sniper == b.Sniper
+            && a.Donut == b.Donut;
 
         /// Called on each client when a SpawnWeightsMessage arrives from the host.
         internal static void HandleSpawnWeights(SpawnWeightsMessage msg)
