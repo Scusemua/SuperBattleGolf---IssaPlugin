@@ -32,10 +32,10 @@ namespace IssaPlugin.Items
             var playerInfo = inventory.PlayerInfo;
             var playerTransform = playerInfo.transform;
 
-            // Consume the item server-side
-            int slotIndex = inventory.EquippedItemIndex;
-            if (slotIndex >= 0)
-                ItemHelper.DecrementAndRemove(inventory, slotIndex);
+            // Consume the item server-side.
+            // ConsumeEquippedItem uses NetworkedEquippedItemIndex for non-local players
+            // so it works correctly for client-fired missiles, not just the host.
+            ItemHelper.ConsumeEquippedItem(inventory);
 
             float altitude = Configuration.MissileAltitude.Value;
             Vector3 spawnPos = playerTransform.position + Vector3.up * altitude;
@@ -63,6 +63,7 @@ namespace IssaPlugin.Items
             rocket.ServerInitialize(playerInfo, null, itemUseId);
             NetworkServer.Spawn(rocket.gameObject, (NetworkConnectionToClient)null);
             ActiveMissileRockets.Add(rocket);
+            bridge.ServerSetActiveRocket(rocket);
 
             ExplosionScaler.Register(rocket, Configuration.PredatorMissileExplosionScale.Value);
 
