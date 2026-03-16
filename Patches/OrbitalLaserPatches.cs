@@ -439,10 +439,13 @@ namespace IssaPlugin.Patches
             }
 
             // (b) Explosion phase — check XZ proximity to the aircraft.
+            // Use NetworktargetPosition (which we track to the aircraft during anticipation)
+            // rather than transform.position (the OrbitalLaser component's own world pos,
+            // which is unrelated to where the beam lands).
             if (state == OrbitalLaserState.Exploding)
             {
                 float xzDist = OrbitalLaserAircraftHelpers.XZDist(
-                    __instance.transform.position,
+                    __instance.NetworktargetPosition,
                     tracker.AircraftTransform.position
                 );
                 float hitRadius = GameManager.ItemSettings.OrbitalLaserExplosionMaxRange;

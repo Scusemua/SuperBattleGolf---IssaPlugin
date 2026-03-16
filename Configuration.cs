@@ -85,6 +85,7 @@ namespace IssaPlugin
         public static ConfigEntry<float> AC130MaydayExplosionDuration { get; private set; }
         public static ConfigEntry<float> AC130MaydayRollTurnRate { get; private set; }
         public static ConfigEntry<float> AC130HitsToMayday { get; private set; }
+        public static ConfigEntry<float> AC130RocketProximityFuse { get; private set; }
 
         // --- Freeze World ---
         public static ConfigEntry<Key> FreezeGiveKey { get; private set; }
@@ -701,6 +702,14 @@ namespace IssaPlugin
                 1f,
                 "Number of rocket hits required to force the gunship into mayday. "
                     + "Only counts hits during an active session. Set to 0 to disable."
+            );
+
+            AC130RocketProximityFuse = cfg.Bind(
+                "AC130Mayday",
+                "RocketProximityFuse",
+                8f,
+                "Distance in metres at which a homing rocket detonates near the gunship. "
+                    + "Required because the gunship has no physics collider."
             );
 
             // --- Low Gravity ---

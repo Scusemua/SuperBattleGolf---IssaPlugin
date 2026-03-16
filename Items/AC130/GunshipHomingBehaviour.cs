@@ -34,7 +34,20 @@ namespace IssaPlugin.Items
                 return;
 
             Vector3 toTarget = Target.position - _rb.worldCenterOfMass;
-            if (toTarget.sqrMagnitude < 0.01f)
+            float distToTarget = toTarget.magnitude;
+
+            // The gunship has no physics collider, so the rocket never collides with it.
+            // Detonate via proximity fuse when close enough.
+            float proximityFuse = Configuration.AC130RocketProximityFuse.Value;
+            if (distToTarget <= proximityFuse)
+            {
+                var rocket = GetComponent<Rocket>();
+                if (rocket != null)
+                    PredatorMissileItem.ServerExplode(rocket);
+                return;
+            }
+
+            if (distToTarget < 0.01f)
                 return;
 
             // Mirror the game's own homing: rotate the velocity vector toward the

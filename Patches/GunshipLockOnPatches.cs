@@ -155,6 +155,35 @@ namespace IssaPlugin.Patches
                 }
             }
 
+            // ---- AC130 fallback detection ----
+            // The gunship's Entity has no AsHittable on clients (AC130HitReceiver is
+            // server-only), so its LockOnTarget may not register with LockOnTargetManager.
+            // Mirror the bomber fallback: find the marker directly and inject it.
+            if (!nowTargetingGunship)
+            {
+                var gunshipMarker = Object.FindFirstObjectByType<AC130GunshipMarker>();
+                if (gunshipMarker != null)
+                {
+                    var lot = gunshipMarker.GetComponent<LockOnTarget>();
+                    if (lot != null)
+                    {
+                        var cam = Camera.main;
+                        if (cam != null)
+                        {
+                            Vector3 toCraft = (
+                                gunshipMarker.transform.position - cam.transform.position
+                            ).normalized;
+                            if (Vector3.Dot(toCraft, cam.transform.forward) > 0.7f)
+                            {
+                                __result = true;
+                                bestLockOnTarget = lot;
+                                nowTargetingGunship = true;
+                            }
+                        }
+                    }
+                }
+            }
+
             // ---- Gunship ----
             if (nowTargetingGunship && !_wasTargetingGunship)
                 IssaPluginPlugin.Log.LogInfo("[LockOn] Locked onto AC130 gunship.");
