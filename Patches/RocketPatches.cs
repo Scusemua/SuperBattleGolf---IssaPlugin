@@ -30,7 +30,7 @@ namespace IssaPlugin.Patches
         {
             var hits = Physics.OverlapSphere(
                 worldPosition,
-                5f,
+                8f,
                 Physics.AllLayers,
                 QueryTriggerInteraction.Collide
             );
