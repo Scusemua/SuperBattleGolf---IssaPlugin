@@ -129,6 +129,46 @@ namespace IssaPlugin.Patches
                     }
                 );
 
+            float freezeWeight = Configuration.FreezeSpawnWeight.Value;
+            if (freezeWeight > 0f)
+                list.Add(
+                    new ItemPool.ItemSpawnChance
+                    {
+                        item = FreezeItem.FreezeItemType,
+                        spawnChanceWeight = freezeWeight,
+                    }
+                );
+
+            float lowGravityWeight = Configuration.LowGravitySpawnWeight.Value;
+            if (lowGravityWeight > 0f)
+                list.Add(
+                    new ItemPool.ItemSpawnChance
+                    {
+                        item = LowGravityItem.LowGravityItemType,
+                        spawnChanceWeight = lowGravityWeight,
+                    }
+                );
+
+            float sniperWeight = Configuration.SniperRifleSpawnWeight.Value;
+            if (sniperWeight > 0f)
+                list.Add(
+                    new ItemPool.ItemSpawnChance
+                    {
+                        item = SniperRifleItem.SniperRifleItemType,
+                        spawnChanceWeight = sniperWeight,
+                    }
+                );
+
+            float donutWeight = Configuration.DonutSpawnWeight.Value;
+            if (donutWeight > 0f)
+                list.Add(
+                    new ItemPool.ItemSpawnChance
+                    {
+                        item = DonutItem.DonutItemType,
+                        spawnChanceWeight = donutWeight,
+                    }
+                );
+
             return list.ToArray();
         }
 
