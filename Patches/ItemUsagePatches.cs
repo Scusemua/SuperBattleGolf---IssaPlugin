@@ -503,7 +503,7 @@ namespace IssaPlugin.Patches
             if (equippedItem == SniperRifleItem.SniperRifleItemType)
                 equippedItem = ItemType.ElephantGun;
             else if (equippedItem == BatItem.BatItemType)
-                equippedItem = ItemType.GolfClub; // gives correct hand pose on remote clients
+                equippedItem = ItemType.None; // gives correct hand pose on remote clients
             else
                 equippedItem = ItemType.OrbitalLaser;
         }
