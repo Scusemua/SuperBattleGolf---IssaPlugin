@@ -252,7 +252,7 @@ namespace IssaPlugin.Patches
             return null;
         }
 
-        private static void ShowDefaultEquipment(EquipmentSwitcher switcher)
+        internal static void ShowDefaultEquipment(EquipmentSwitcher switcher)
         {
             if (switcher.CurrentEquipment == null)
                 return;
@@ -498,17 +498,47 @@ namespace IssaPlugin.Patches
         static void Prefix(ref ItemType equippedItem)
         {
             if (!ItemRegistry.IsCustomItem(equippedItem))
-            {
                 return;
-            }
 
             if (equippedItem == SniperRifleItem.SniperRifleItemType)
-            {
                 equippedItem = ItemType.ElephantGun;
-            }
-            else if (equippedItem != BatItem.BatItemType)
-            {
+            else if (equippedItem == BatItem.BatItemType)
+                equippedItem = ItemType.GolfClub; // gives correct hand pose on remote clients
+            else
                 equippedItem = ItemType.OrbitalLaser;
+        }
+
+        static void Postfix(PlayerAnimatorIo __instance)
+        {
+            var playerInfo = __instance.GetComponentInParent<PlayerInfo>();
+            if (playerInfo == null)
+                return;
+
+            var inventory = playerInfo.Inventory;
+            var rightSwitcher = playerInfo.RightHandEquipmentSwitcher;
+            if (inventory == null || rightSwitcher == null)
+                return;
+
+            var equipped = inventory.GetEffectivelyEquippedItem(true);
+
+            if (equipped == BatItem.BatItemType)
+            {
+                // Bat shares EquipmentType.GolfClub with regular golf clubs, so
+                // OnEquipmentTypeChanged won't fire on remote clients when switching
+                // from a golf club to the bat (SyncVar value unchanged). Use the
+                // ItemType-level hook here — it always fires for the bat's unique type.
+                UpdateEquipmentSwitchersPatch.EnsureCustomModel(rightSwitcher, inventory, equipped);
+            }
+            else if (
+                !ItemRegistry.IsCustomItem(equipped)
+                && UpdateEquipmentSwitchersPatch.HasCustomModel(inventory)
+            )
+            {
+                // Switching from bat back to a non-custom item (e.g. golf club): same
+                // EquipmentType, so OnEquipmentTypeChangedPatch won't fire. Clear the
+                // bat model and restore the default equipment mesh.
+                UpdateEquipmentSwitchersPatch.ClearCustomModel(inventory);
+                UpdateEquipmentSwitchersPatch.ShowDefaultEquipment(rightSwitcher);
             }
         }
     }
