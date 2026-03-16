@@ -28,8 +28,6 @@ namespace IssaPlugin.Patches
     {
         static void Postfix(Rocket __instance, Vector3 worldPosition)
         {
-            // Include triggers: the AC130 model collider is a trigger so rockets
-            // pass through visually; without Collide, OverlapSphere misses it.
             var hits = Physics.OverlapSphere(
                 worldPosition,
                 5f,
