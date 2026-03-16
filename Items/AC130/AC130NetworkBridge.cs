@@ -552,7 +552,18 @@ namespace IssaPlugin.Items
                     else
                         crosshairWorld = AC130Item.ProjectAimToGround(camPos, camForward);
 
-                    aimDirection = (crosshairWorld - gunshipPos).normalized;
+                    // Use the actual synced gunship position as the aim origin.
+                    // The orbit-math estimate (gunshipPos) can diverge from the real
+                    // gunship — especially on remote clients whose angle estimate is
+                    // session.Elapsed * BaseOrbitSpeed — causing aimDirection to drift
+                    // until it collapses to near-zero and Quaternion.LookRotation(zero)
+                    // returns Quaternion.identity, firing rockets straight ahead.
+                    // The server always spawns from _serverGunship.transform.position,
+                    // so computing the direction from the same reference is correct.
+                    Vector3 aimOrigin = session.GunshipVisual != null
+                        ? session.GunshipVisual.transform.position
+                        : gunshipPos;
+                    aimDirection = (crosshairWorld - aimOrigin).normalized;
                 }
 
                 AC130Overlay.UpdateAimInfo(crosshairWorld, session.Elapsed, session.Duration);
