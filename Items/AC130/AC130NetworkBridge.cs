@@ -802,6 +802,18 @@ namespace IssaPlugin.Items
             IssaPluginPlugin.Log.LogInfo("[AC130] Server session ended — gunship flying out.");
         }
 
+        public void ServerHoleCleanup()
+        {
+            if (_serverSessionActive)
+                ForceServerCleanup();
+        }
+
+        public void ClientHoleCleanup()
+        {
+            if (LocalSessionActive)
+                _forceEnd = true;
+        }
+
         private void ForceServerCleanup()
         {
             if (_serverTimeout != null)
@@ -812,7 +824,7 @@ namespace IssaPlugin.Items
 
             if (_serverGunship != null)
             {
-                Object.Destroy(_serverGunship);
+                NetworkServer.Destroy(_serverGunship);
                 _serverGunship = null;
             }
 

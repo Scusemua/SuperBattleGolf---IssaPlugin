@@ -4,6 +4,7 @@ using HarmonyLib;
 using IssaPlugin.Items;
 using IssaPlugin.Overlays;
 using IssaPlugin.Patches;
+using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -99,6 +100,38 @@ namespace IssaPlugin
         private void OnMatchStateChanged(MatchState previousState, MatchState currentState)
         {
             Log.LogDebug($"[MatchState] {previousState} → {currentState}");
+
+            // When a new hole begins, force-end any item sessions that survived the
+            // scene transition (player objects are DontDestroyOnLoad; OnStopServer
+            // only fires on disconnect, not on hole-to-hole scene changes).
+            if (currentState != MatchState.HoleOverview)
+                return;
+
+            // ── Server-side cleanup ───────────────────────────────────────────
+            if (NetworkServer.active)
+            {
+                foreach (var b in FindObjectsByType<AC130NetworkBridge>(FindObjectsSortMode.None))
+                    b.ServerHoleCleanup();
+
+                foreach (var b in FindObjectsByType<DonutNetworkBridge>(FindObjectsSortMode.None))
+                    b.ServerHoleCleanup();
+
+                FreezeNetworkBridge.ServerHoleCleanup();
+                LowGravityNetworkBridge.ServerHoleCleanup();
+            }
+
+            // ── Client-side cleanup (local player only) ───────────────────────
+            var local = NetworkClient.localPlayer;
+            if (local != null)
+            {
+                local.GetComponent<AC130NetworkBridge>()?.ClientHoleCleanup();
+                local.GetComponent<DonutNetworkBridge>()?.ClientHoleCleanup();
+            }
+
+            // ── Shared lock-on detection state ───────────────────────────────
+            GunshipLockOnDetectionPatch.ResetTargetingState();
+
+            Log.LogInfo("[MatchState] Hole transition cleanup complete.");
         }
     }
 }

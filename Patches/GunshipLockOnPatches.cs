@@ -87,6 +87,13 @@ namespace IssaPlugin.Patches
         private static bool _wasTargetingBomber;
         private static bool _wasTargetingDonut;
 
+        internal static void ResetTargetingState()
+        {
+            _wasTargetingGunship = false;
+            _wasTargetingBomber = false;
+            _wasTargetingDonut = false;
+        }
+
         static MethodBase TargetMethod() =>
             AccessTools.Method(typeof(PlayerGolfer), "TryGetBestLockOnTarget");
 

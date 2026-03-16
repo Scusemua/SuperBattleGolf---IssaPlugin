@@ -19,6 +19,8 @@ namespace IssaPlugin.Items
         //  Global server lock — only one freeze session may run at a time.
         // ================================================================
         private static bool _globalSessionActive;
+        private static Coroutine _timeoutCoroutine;
+        private static FreezeNetworkBridge _activeInstance;
 
         // ================================================================
         //  Per-client saved render state — static because freeze is global
@@ -57,11 +59,12 @@ namespace IssaPlugin.Items
             ItemHelper.ConsumeEquippedItem(inventory);
 
             _globalSessionActive = true;
+            _activeInstance = this;
             float duration = Configuration.FreezeDuration.Value;
 
             // [ClientRpc] is not IL-weaved in plugin DLLs — use NetworkMessage instead.
             NetworkServer.SendToAll(new FreezeBeginMessage { Duration = duration });
-            StartCoroutine(ServerTimeoutRoutine(duration));
+            _timeoutCoroutine = StartCoroutine(ServerTimeoutRoutine(duration));
 
             IssaPluginPlugin.Log.LogInfo($"[Freeze] Server freeze started for {duration}s.");
         }
@@ -119,13 +122,32 @@ namespace IssaPlugin.Items
             yield return new WaitForSeconds(duration);
             NetworkServer.SendToAll(new FreezeEndMessage());
             _globalSessionActive = false;
+            _activeInstance = null;
+            _timeoutCoroutine = null;
             IssaPluginPlugin.Log.LogInfo("[Freeze] Server freeze session ended.");
+        }
+
+        public static void ServerHoleCleanup()
+        {
+            if (!_globalSessionActive)
+                return;
+            if (_timeoutCoroutine != null && _activeInstance != null)
+                _activeInstance.StopCoroutine(_timeoutCoroutine);
+            _timeoutCoroutine = null;
+            _activeInstance = null;
+            NetworkServer.SendToAll(new FreezeEndMessage());
+            _globalSessionActive = false;
+            IssaPluginPlugin.Log.LogInfo("[Freeze] Session force-ended for hole transition.");
         }
 
         public override void OnStopServer()
         {
             if (_globalSessionActive)
             {
+                if (_timeoutCoroutine != null && _activeInstance != null)
+                    _activeInstance.StopCoroutine(_timeoutCoroutine);
+                _timeoutCoroutine = null;
+                _activeInstance = null;
                 NetworkServer.SendToAll(new FreezeEndMessage());
                 _globalSessionActive = false;
                 IssaPluginPlugin.Log.LogInfo(

@@ -190,6 +190,8 @@ namespace IssaPlugin.Items
 
         public void ServerEndDonut(bool shouldCrash)
         {
+            if (!_serverSessionActive)
+                return;
             if (!shouldCrash)
                 EndServerSession();
             else
@@ -384,6 +386,18 @@ namespace IssaPlugin.Items
 
             ReleaseGlobalLock();
             IssaPluginPlugin.Log.LogInfo("[Donut] Server session ended.");
+        }
+
+        public void ServerHoleCleanup()
+        {
+            if (_serverSessionActive)
+                ForceServerCleanup();
+        }
+
+        public void ClientHoleCleanup()
+        {
+            if (LocalSessionActive)
+                _forceEnd = true;
         }
 
         private void ForceServerCleanup()

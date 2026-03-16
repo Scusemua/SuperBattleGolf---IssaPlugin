@@ -19,6 +19,8 @@ namespace IssaPlugin.Items
         //  Global server lock — only one low-gravity session may run at a time.
         // ================================================================
         private static bool _globalSessionActive;
+        private static Coroutine _timeoutCoroutine;
+        private static LowGravityNetworkBridge _activeInstance;
 
         // ================================================================
         //  Per-client saved render state — static because low-gravity is global
@@ -57,11 +59,12 @@ namespace IssaPlugin.Items
             ItemHelper.ConsumeEquippedItem(inventory);
 
             _globalSessionActive = true;
+            _activeInstance = this;
             float duration = Configuration.LowGravityDuration.Value;
 
             // [ClientRpc] is not IL-weaved in plugin DLLs — use NetworkMessage instead.
             NetworkServer.SendToAll(new LowGravityBeginMessage { Duration = duration });
-            StartCoroutine(ServerTimeoutRoutine(duration));
+            _timeoutCoroutine = StartCoroutine(ServerTimeoutRoutine(duration));
 
             IssaPluginPlugin.Log.LogInfo($"[LowGravity] Server session started for {duration}s.");
         }
@@ -119,13 +122,32 @@ namespace IssaPlugin.Items
             yield return new WaitForSeconds(duration);
             NetworkServer.SendToAll(new LowGravityEndMessage());
             _globalSessionActive = false;
+            _activeInstance = null;
+            _timeoutCoroutine = null;
             IssaPluginPlugin.Log.LogInfo("[LowGravity] Server session ended.");
+        }
+
+        public static void ServerHoleCleanup()
+        {
+            if (!_globalSessionActive)
+                return;
+            if (_timeoutCoroutine != null && _activeInstance != null)
+                _activeInstance.StopCoroutine(_timeoutCoroutine);
+            _timeoutCoroutine = null;
+            _activeInstance = null;
+            NetworkServer.SendToAll(new LowGravityEndMessage());
+            _globalSessionActive = false;
+            IssaPluginPlugin.Log.LogInfo("[LowGravity] Session force-ended for hole transition.");
         }
 
         public override void OnStopServer()
         {
             if (_globalSessionActive)
             {
+                if (_timeoutCoroutine != null && _activeInstance != null)
+                    _activeInstance.StopCoroutine(_timeoutCoroutine);
+                _timeoutCoroutine = null;
+                _activeInstance = null;
                 NetworkServer.SendToAll(new LowGravityEndMessage());
                 _globalSessionActive = false;
                 IssaPluginPlugin.Log.LogInfo(
