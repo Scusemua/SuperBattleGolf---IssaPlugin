@@ -257,6 +257,25 @@ namespace IssaPlugin.Items
         }
 
         /// <summary>
+        /// Sent every frame by the owning client while on-station (remote client only).
+        /// Applies altitude offset and boost state to the server-side AC130FlyBehaviour.
+        /// </summary>
+        public void ServerSetFlightInput(float altitudeOffset, bool boosting)
+        {
+            if (!_serverSessionActive || _serverGunship == null)
+                return;
+
+            var flyComp = _serverGunship.GetComponent<AC130FlyBehaviour>();
+            if (flyComp == null)
+                return;
+
+            flyComp.altitude = Configuration.AC130Altitude.Value + altitudeOffset;
+            flyComp.orbitSpeed = boosting
+                ? Configuration.AC130OrbitSpeed.Value * Configuration.AC130BoostMultiplier.Value
+                : Configuration.AC130OrbitSpeed.Value;
+        }
+
+        /// <summary>
         /// Sent every frame by the owning client while LocalMaydayActive is true.
         /// Forwards keyboard input so the server-side AC130MaydayBehaviour can apply
         /// player pull and roll to the authoritative dive physics.
@@ -482,6 +501,19 @@ namespace IssaPlugin.Items
                 CheckMaydayHotkey();
 
                 AC130Item.HandleFlight(keyboard, session);
+
+                // On a remote client FlyComp is null, so HandleFlight cannot reach
+                // the server-side AC130FlyBehaviour. Forward altitude and boost state
+                // each frame so the server can apply them authoritatively.
+                if (session.FlyComp == null)
+                {
+                    NetworkClient.Send(new AC130FlightInputMessage
+                    {
+                        AltitudeOffset = session.AltitudeOffset,
+                        Boosting = keyboard != null && keyboard[Key.LeftShift].isPressed,
+                    });
+                }
+
                 session.GunshipCam?.UpdateLook();
 
                 float currentAngle =

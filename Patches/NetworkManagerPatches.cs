@@ -312,6 +312,19 @@ namespace IssaPlugin.Patches
                     }
                 );
 
+            Writer<AC130FlightInputMessage>.write =
+                AC130FlightInputMessageSerialization.WriteAC130FlightInputMessage;
+            Reader<AC130FlightInputMessage>.read =
+                AC130FlightInputMessageSerialization.ReadAC130FlightInputMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<AC130FlightInputMessage>(
+                    (conn, msg) =>
+                    {
+                        conn.identity?.GetComponent<AC130NetworkBridge>()
+                            ?.ServerSetFlightInput(msg.AltitudeOffset, msg.Boosting);
+                    }
+                );
+
             // ── New TargetRpc replacements (server→client) ───────────────────
 
             Writer<MissileBeginSteeringMessage>.write =

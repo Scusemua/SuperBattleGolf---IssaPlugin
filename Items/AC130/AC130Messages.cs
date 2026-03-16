@@ -162,6 +162,33 @@ namespace IssaPlugin.Items
         }
     }
 
+    public struct AC130FlightInputMessage : NetworkMessage
+    {
+        public float AltitudeOffset;
+        public bool Boosting;
+    }
+
+    public static class AC130FlightInputMessageSerialization
+    {
+        public static void WriteAC130FlightInputMessage(
+            NetworkWriter writer,
+            AC130FlightInputMessage msg
+        )
+        {
+            writer.WriteFloat(msg.AltitudeOffset);
+            writer.WriteBool(msg.Boosting);
+        }
+
+        public static AC130FlightInputMessage ReadAC130FlightInputMessage(NetworkReader reader)
+        {
+            return new AC130FlightInputMessage
+            {
+                AltitudeOffset = reader.ReadFloat(),
+                Boosting = reader.ReadBool(),
+            };
+        }
+    }
+
     // ── [TargetRpc] replacements (server→client) ────────────────────────────
 
     public struct AC130BeginClientMessage : NetworkMessage
