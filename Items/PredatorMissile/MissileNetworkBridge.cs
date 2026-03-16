@@ -92,6 +92,10 @@ namespace IssaPlugin.Items
             _activeRocket = null;
         }
 
+        /// <summary>Called by the server coroutine to register the spawned rocket so that
+        /// velocity and detonate messages can be forwarded to it.</summary>
+        public void ServerSetActiveRocket(Rocket rocket) => _activeRocket = rocket;
+
         /// <summary>Server calls this to clear its own references after the routine ends.</summary>
         public void ServerClearSteering()
         {
