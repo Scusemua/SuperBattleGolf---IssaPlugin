@@ -495,6 +495,13 @@ namespace IssaPlugin.Patches
                     .localPlayer?.GetComponent<DonutNetworkBridge>()
                     ?.ClientDonutStartShooting(msg.StartPosition);
             });
+
+            // ── Spawn-weight sync (server → all clients) ─────────────────────
+            Writer<SpawnWeightsMessage>.write =
+                SpawnWeightsMessageSerialization.WriteSpawnWeightsMessage;
+            Reader<SpawnWeightsMessage>.read =
+                SpawnWeightsMessageSerialization.ReadSpawnWeightsMessage;
+            NetworkClient.RegisterHandler<SpawnWeightsMessage>(SpawnWeightsSyncer.HandleSpawnWeights);
         }
 
         private static void RegisterHandlers() { }
