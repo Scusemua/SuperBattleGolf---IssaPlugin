@@ -36,7 +36,8 @@ namespace IssaPlugin.Items
                 || type == FreezeItem.FreezeItemType
                 || type == LowGravityItem.LowGravityItemType
                 || type == SniperRifleItem.SniperRifleItemType
-                || type == DonutItem.DonutItemType;
+                || type == DonutItem.DonutItemType
+                || type == JavelinItem.JavelinItemType;
         }
 
         public static int GetMaxUses(ItemType type)
@@ -57,6 +58,8 @@ namespace IssaPlugin.Items
                 return (int)Configuration.SniperRifleUses.Value;
             if (type == DonutItem.DonutItemType)
                 return (int)Configuration.DonutUses.Value;
+            if (type == JavelinItem.JavelinItemType)
+                return (int)Configuration.JavelinUses.Value;
             return 1;
         }
 
@@ -109,6 +112,7 @@ namespace IssaPlugin.Items
             var lowGravityData = GetOrCreateItemData(LowGravityItem.LowGravityItemType);
             var sniperRifleData = GetOrCreateItemData(SniperRifleItem.SniperRifleItemType);
             var donutData = GetOrCreateItemData(DonutItem.DonutItemType);
+            var javelinData = GetOrCreateItemData(JavelinItem.JavelinItemType);
 
             Sprite rocketFallbackIcon = null;
             if (
@@ -135,6 +139,7 @@ namespace IssaPlugin.Items
                 AssetLoader.SniperRifleIcon ?? pistolFallbackIcon
             );
             IconProperty.SetValue(donutData, AssetLoader.DonutIcon ?? rocketFallbackIcon);
+            IconProperty.SetValue(javelinData, AssetLoader.JavelinIcon ?? rocketFallbackIcon);
 
             dict[BatItem.BatItemType] = batData;
             dict[StealthBomberItem.BomberItemType] = bomberData;
@@ -144,6 +149,7 @@ namespace IssaPlugin.Items
             dict[LowGravityItem.LowGravityItemType] = lowGravityData;
             dict[SniperRifleItem.SniperRifleItemType] = sniperRifleData;
             dict[DonutItem.DonutItemType] = donutData;
+            dict[JavelinItem.JavelinItemType] = javelinData;
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[ItemRegistry] Injected {CustomItemDataCache.Count} custom items."
@@ -239,6 +245,7 @@ namespace IssaPlugin.Items
                 addEntryMethod.Invoke(table, new object[] { "ITEM_105", "Low Gravity" });
                 addEntryMethod.Invoke(table, new object[] { "ITEM_106", "M200 Intervention" });
                 addEntryMethod.Invoke(table, new object[] { "ITEM_107", "Donut" });
+                addEntryMethod.Invoke(table, new object[] { "ITEM_108", "Javelin" });
 
                 IssaPluginPlugin.Log.LogInfo(
                     "[ItemRegistry] Custom item names registered in string table."

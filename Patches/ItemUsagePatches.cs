@@ -107,6 +107,26 @@ namespace IssaPlugin.Patches
                 return false;
             }
 
+            if (equipped == JavelinItem.JavelinItemType)
+            {
+                shouldEatInput = true;
+                __result = true;
+                var bridge = __instance.GetComponent<JavelinNetworkBridge>();
+                if (bridge != null)
+                {
+                    bridge.ClientUpdateLockOn();
+                    if (bridge.HasLock && !bridge.IsWaitingForDetonation)
+                        bridge.ClientFire(bridge.ClientLockedTarget);
+                    else if (bridge.IsWaitingForDetonation)
+                        IssaPluginPlugin.Log.LogInfo("[Javelin] Already in-flight, please wait.");
+                    else
+                        IssaPluginPlugin.Log.LogInfo("[Javelin] No lock — aim at the ground first.");
+                }
+                else
+                    IssaPluginPlugin.Log.LogError("[Javelin] No JavelinNetworkBridge on player.");
+                return false;
+            }
+
             return true;
         }
     }
@@ -150,6 +170,7 @@ namespace IssaPlugin.Patches
                 || equipped == FreezeItem.FreezeItemType
                 || equipped == LowGravityItem.LowGravityItemType
                 || equipped == DonutItem.DonutItemType
+                || equipped == JavelinItem.JavelinItemType
             )
             {
                 rightSwitcher.SetEquipment(EquipmentType.RocketLauncher);
@@ -249,6 +270,8 @@ namespace IssaPlugin.Patches
                 return AssetLoader.SniperRiflePrefab;
             if (type == DonutItem.DonutItemType)
                 return AssetLoader.DonutHandheldPrefab;
+            if (type == JavelinItem.JavelinItemType)
+                return AssetLoader.JavelinHandheldPrefab;
             return null;
         }
 
@@ -485,8 +508,7 @@ namespace IssaPlugin.Patches
             else if (equippedItem != BatItem.BatItemType)
             {
                 equippedItem = ItemType.OrbitalLaser;
-            }
-        }
+            }        }
     }
 
     /// Redirects the runtime animator controller lookup to OrbitalLaser when a

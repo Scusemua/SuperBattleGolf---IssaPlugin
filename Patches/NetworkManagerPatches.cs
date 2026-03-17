@@ -496,12 +496,53 @@ namespace IssaPlugin.Patches
                     ?.ClientDonutStartShooting(msg.StartPosition);
             });
 
+            // ── Javelin Messages ──────────────────────────────────────────────
+
+            // Client → Server
+            Writer<JavelinFireMessage>.write =
+                JavelinFireMessageSerialization.WriteJavelinFireMessage;
+            Reader<JavelinFireMessage>.read =
+                JavelinFireMessageSerialization.ReadJavelinFireMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<JavelinFireMessage>(
+                    (conn, msg) =>
+                    {
+                        conn.identity?.GetComponent<JavelinNetworkBridge>()
+                            ?.ServerHandleFire(msg.TargetPosition);
+                    }
+                );
+
+            // Server → Client
+            Writer<JavelinLaunchedMessage>.write =
+                JavelinLaunchedMessageSerialization.WriteJavelinLaunchedMessage;
+            Reader<JavelinLaunchedMessage>.read =
+                JavelinLaunchedMessageSerialization.ReadJavelinLaunchedMessage;
+            NetworkClient.RegisterHandler<JavelinLaunchedMessage>(msg =>
+            {
+                NetworkClient
+                    .localPlayer?.GetComponent<JavelinNetworkBridge>()
+                    ?.ClientHandleLaunched();
+            });
+
+            Writer<JavelinDetonatedMessage>.write =
+                JavelinDetonatedMessageSerialization.WriteJavelinDetonatedMessage;
+            Reader<JavelinDetonatedMessage>.read =
+                JavelinDetonatedMessageSerialization.ReadJavelinDetonatedMessage;
+            NetworkClient.RegisterHandler<JavelinDetonatedMessage>(msg =>
+            {
+                NetworkClient
+                    .localPlayer?.GetComponent<JavelinNetworkBridge>()
+                    ?.ClientHandleDetonated();
+            });
+
             // ── Spawn-weight sync (server → all clients) ─────────────────────
             Writer<SpawnWeightsMessage>.write =
                 SpawnWeightsMessageSerialization.WriteSpawnWeightsMessage;
             Reader<SpawnWeightsMessage>.read =
                 SpawnWeightsMessageSerialization.ReadSpawnWeightsMessage;
-            NetworkClient.RegisterHandler<SpawnWeightsMessage>(SpawnWeightsSyncer.HandleSpawnWeights);
+            NetworkClient.RegisterHandler<SpawnWeightsMessage>(
+                SpawnWeightsSyncer.HandleSpawnWeights
+            );
         }
 
         private static void RegisterHandlers() { }
@@ -511,6 +552,7 @@ namespace IssaPlugin.Patches
             RegisterPrefab(AssetLoader.DroppedCustomItemPrefab);
             RegisterPrefab(AssetLoader.DonutPrefab);
             RegisterPrefab(AssetLoader.DonutHandheldPrefab);
+            RegisterPrefab(AssetLoader.JavelinHandheldPrefab);
             RegisterPrefab(AssetLoader.BatModelPrefab);
             RegisterPrefab(AssetLoader.BomberPrefab);
             RegisterPrefab(AssetLoader.BomberProxyPrefab);

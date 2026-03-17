@@ -17,6 +17,8 @@ namespace IssaPlugin.Items
         public static Sprite SniperRifleIcon { get; private set; }
         public static Sprite DonutIcon { get; private set; }
 
+        public static Sprite JavelinIcon { get; private set; }
+
         public static Texture2D SniperScopeTexture { get; private set; }
 
         public static GameObject BatModelPrefab { get; private set; }
@@ -32,6 +34,8 @@ namespace IssaPlugin.Items
         public static GameObject SniperRiflePrefab { get; private set; }
         public static GameObject DonutPrefab { get; private set; }
         public static GameObject DonutHandheldPrefab { get; private set; }
+
+        public static GameObject JavelinHandheldPrefab { get; private set; }
 
         public static GameObject DonutLaserZoneRed { get; private set; }
 
@@ -105,6 +109,7 @@ namespace IssaPlugin.Items
             LowGravityIcon = LoadSprite("gravity_remote_icon.png");
             SniperRifleIcon = LoadSprite("sniper_rifle_icon.png");
             DonutIcon = LoadSprite("donut_icon.png");
+            JavelinIcon = LoadSprite("javelin_icon.png");
 
             SniperScopeTexture = LoadTexture2D("sniper_scope.png");
 
@@ -140,6 +145,7 @@ namespace IssaPlugin.Items
             DisableRigidbody(DonutPrefab);
 
             DonutHandheldPrefab = Load<GameObject>("donut_model.prefab");
+            JavelinHandheldPrefab = Load<GameObject>("javelin_rocket_launcher.prefab");
             DonutLaserZoneRed = Load<GameObject>("laser_zone_red.prefab");
             ConfettiBlastRainbow = Load<GameObject>("ConfettiBlastRainbow.prefab");
 
@@ -154,6 +160,7 @@ namespace IssaPlugin.Items
             DisableRigidbody(LowGravityModelPrefab);
             DisableRigidbody(SniperRiflePrefab);
             DisableRigidbody(DonutHandheldPrefab);
+            DisableRigidbody(JavelinHandheldPrefab);
 
             // AudioClips must be loaded by asset name without the file extension.
             // Unity compiles audio into its own internal format at bundle-build

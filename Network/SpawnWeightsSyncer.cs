@@ -42,6 +42,7 @@ namespace IssaPlugin
                 LowGravity = Configuration.LowGravitySpawnWeight.Value,
                 Sniper = Configuration.SniperRifleSpawnWeight.Value,
                 Donut = Configuration.DonutSpawnWeight.Value,
+                Javelin = Configuration.JavelinSpawnWeight.Value,
             };
 
             if (WeightsEqual(msg, _lastSent))
@@ -58,7 +59,7 @@ namespace IssaPlugin
             IssaPluginPlugin.Log.LogDebug(
                 $"[SpawnWeights] Synced — Bat={msg.Bat} Bomber={msg.Bomber} Missile={msg.Missile} "
                     + $"AC130={msg.AC130} Freeze={msg.Freeze} LowGravity={msg.LowGravity} "
-                    + $"Sniper={msg.Sniper} Donut={msg.Donut}"
+                    + $"Sniper={msg.Sniper} Donut={msg.Donut} Javelin={msg.Javelin}"
             );
         }
 
@@ -70,7 +71,8 @@ namespace IssaPlugin
             && a.Freeze == b.Freeze
             && a.LowGravity == b.LowGravity
             && a.Sniper == b.Sniper
-            && a.Donut == b.Donut;
+            && a.Donut == b.Donut
+            && a.Javelin == b.Javelin;
 
         /// Called on each client when a SpawnWeightsMessage arrives from the host.
         internal static void HandleSpawnWeights(SpawnWeightsMessage msg)
@@ -87,11 +89,12 @@ namespace IssaPlugin
             Configuration.LowGravitySpawnWeight.Value = msg.LowGravity;
             Configuration.SniperRifleSpawnWeight.Value = msg.Sniper;
             Configuration.DonutSpawnWeight.Value = msg.Donut;
+            Configuration.JavelinSpawnWeight.Value = msg.Javelin;
 
             IssaPluginPlugin.Log.LogDebug(
                 $"[SpawnWeights] Received from host — Bat={msg.Bat} Bomber={msg.Bomber} "
                     + $"Missile={msg.Missile} AC130={msg.AC130} Freeze={msg.Freeze} "
-                    + $"LowGravity={msg.LowGravity} Sniper={msg.Sniper} Donut={msg.Donut}"
+                    + $"LowGravity={msg.LowGravity} Sniper={msg.Sniper} Donut={msg.Donut} Javelin={msg.Javelin}"
             );
         }
     }

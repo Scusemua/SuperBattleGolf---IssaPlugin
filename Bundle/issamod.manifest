@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 3900427778
+CRC: 422167497
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: d9c7dd9718995e0c9e815304888898d6
+    Hash: 0ecb250c969f6acf8e3ac2d2aa186e59
   TypeTreeHash:
     serializedVersion: 2
     Hash: f3672b0c1f82247490603e54482e422d
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 90ca17b6a6c5b5d8e7908865d9028e43
+    Hash: 5f633ec41ea98fb308bcc6b02c77c42d
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -106,6 +106,7 @@ Assets:
 - Assets/Assets/bomber_icon.png
 - Assets/Assets/plane_falling.ogg
 - Assets/Assets/ac130_tablet_model.prefab
+- Assets/Assets/javelin_rocket_launcher.prefab
 - Assets/Assets/smoke_trail_prefab.prefab
 - Assets/Assets/Material.002.mat
 - Assets/Assets/ac130_impact_vfx.prefab

@@ -144,6 +144,8 @@ namespace IssaPlugin.Items
                 return AssetLoader.SniperRiflePrefab;
             if (type == DonutItem.DonutItemType)
                 return AssetLoader.DonutHandheldPrefab;
+            if (type == JavelinItem.JavelinItemType)
+                return AssetLoader.JavelinHandheldPrefab;
             return null;
         }
     }

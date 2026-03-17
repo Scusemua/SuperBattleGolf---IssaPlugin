@@ -139,10 +139,22 @@ namespace IssaPlugin
         public static ConfigEntry<float> DonutCrashTorque { get; private set; }
         public static ConfigEntry<float> DonutCrashExplosionScale { get; private set; }
 
+        // --- Javelin ---
+        public static ConfigEntry<Key> JavelinGiveKey { get; private set; }
+        public static ConfigEntry<float> JavelinUses { get; private set; }
+        public static ConfigEntry<float> JavelinSpawnWeight { get; private set; }
+        public static ConfigEntry<float> JavelinApexHeight { get; private set; }
+        public static ConfigEntry<float> JavelinAscentSpeed { get; private set; }
+        public static ConfigEntry<float> JavelinDiveSpeed { get; private set; }
+        public static ConfigEntry<float> JavelinDiveAcceleration { get; private set; }
+        public static ConfigEntry<float> JavelinArrivalRadius { get; private set; }
+        public static ConfigEntry<float> JavelinTimeout { get; private set; }
+
         // --- Explosion Scaling ---
         public static ConfigEntry<float> AC130ExplosionScale { get; private set; }
         public static ConfigEntry<float> PredatorMissileExplosionScale { get; private set; }
         public static ConfigEntry<float> StealthBomberExplosionScale { get; private set; }
+        public static ConfigEntry<float> JavelinExplosionScale { get; private set; }
 
         public static void Initialize(ConfigFile cfg)
         {
@@ -970,6 +982,71 @@ namespace IssaPlugin
                 "CrashExplosionScale",
                 4.0f,
                 "Explosion scale multiplier for when a Donut crashes. Affects blast radius, knockback, and VFX size."
+            );
+            // --- Javelin ---
+            JavelinGiveKey = cfg.Bind(
+                "Javelin",
+                "GiveKey",
+                Key.Numpad3,
+                "Debug key to add the Javelin to your inventory."
+            );
+
+            JavelinUses = cfg.Bind("Javelin", "Uses", 1f, "Number of Javelin uses per pickup.");
+
+            JavelinSpawnWeight = cfg.Bind(
+                "ItemBoxSpawns",
+                "JavelinWeight",
+                2f,
+                "Spawn weight for the Javelin in item boxes. Set to 0 to disable."
+            );
+
+            JavelinApexHeight = cfg.Bind(
+                "Javelin",
+                "ApexHeight",
+                80f,
+                "How many units above the launch point the rocket climbs before turning."
+            );
+
+            JavelinAscentSpeed = cfg.Bind(
+                "Javelin",
+                "AscentSpeed",
+                35f,
+                "Speed in units per second during the upward climb phase."
+            );
+
+            JavelinDiveSpeed = cfg.Bind(
+                "Javelin",
+                "DiveSpeed",
+                55f,
+                "Initial speed in units per second when the rocket begins its dive."
+            );
+
+            JavelinDiveAcceleration = cfg.Bind(
+                "Javelin",
+                "DiveAcceleration",
+                25f,
+                "Additional speed gained per second during the dive phase."
+            );
+
+            JavelinArrivalRadius = cfg.Bind(
+                "Javelin",
+                "ArrivalRadius",
+                3f,
+                "Distance from the target position at which the rocket detonates."
+            );
+
+            JavelinTimeout = cfg.Bind(
+                "Javelin",
+                "Timeout",
+                20f,
+                "Maximum seconds before the rocket force-detonates if it hasn't hit yet."
+            );
+
+            JavelinExplosionScale = cfg.Bind(
+                "Explosions",
+                "JavelinScale",
+                3.5f,
+                "Multiplier for Javelin explosions. Affects blast radius, knockback, and VFX size."
             );
         }
     }

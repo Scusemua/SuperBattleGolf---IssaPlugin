@@ -85,9 +85,10 @@ namespace IssaPlugin.Items
         /// inventory, use NetworkedEquippedItemIndex instead (the synced value).
         public static void ConsumeEquippedItem(PlayerInventory inventory)
         {
-            int slot = (!inventory.isLocalPlayer && NetworkServer.active)
-                ? inventory.PlayerInfo.NetworkedEquippedItemIndex
-                : inventory.EquippedItemIndex;
+            int slot =
+                (!inventory.isLocalPlayer && NetworkServer.active)
+                    ? inventory.PlayerInfo.NetworkedEquippedItemIndex
+                    : inventory.EquippedItemIndex;
             if (slot < 0)
                 return;
 

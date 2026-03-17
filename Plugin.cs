@@ -94,6 +94,22 @@ namespace IssaPlugin
             if (keyboard[Configuration.DonutGiveKey.Value].wasPressedThisFrame)
                 DonutItem.GiveDonutToLocalPlayer();
 
+            if (keyboard[Configuration.JavelinGiveKey.Value].wasPressedThisFrame)
+                JavelinItem.GiveJavelinToLocalPlayer();
+
+            // Keep the Javelin lock-on target fresh every frame while equipped.
+            var localInventory = GameManager.LocalPlayerInventory;
+            if (localInventory != null)
+            {
+                var equippedItem = localInventory.GetEffectivelyEquippedItem(true);
+                if (equippedItem == JavelinItem.JavelinItemType)
+                {
+                    var javelinBridge =
+                        NetworkClient.localPlayer?.GetComponent<JavelinNetworkBridge>();
+                    javelinBridge?.ClientUpdateLockOn();
+                }
+            }
+
             if (keyboard[Key.F10].wasPressedThisFrame)
                 DebugDummies.ToggleDebugDummies();
         }

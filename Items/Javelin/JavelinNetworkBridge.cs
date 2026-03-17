@@ -1,0 +1,262 @@
+using System.Collections;
+using System.Reflection;
+using Mirror;
+using UnityEngine;
+
+namespace IssaPlugin.Items
+{
+    /// Attached to every player object via <see cref="NetworkBridgePatches"/>.
+    ///
+    /// Flow:
+    ///   1. Client aims at ground → stores TargetPosition locally.
+    ///   2. Client presses use → sends JavelinFireMessage with TargetPosition.
+    ///   3. Server receives it, runs ServerFireRoutine (spawns rocket, attaches
+    ///      JavelinRocketBehaviour, waits for completion).
+    ///   4. Server sends JavelinLaunchedMessage back to firing client (HUD hint).
+    ///   5. When done, server sends JavelinDetonatedMessage so client clears state.
+    public class JavelinNetworkBridge : NetworkBehaviour
+    {
+        // ================================================================
+        //  Client state  (owning client only)
+        // ================================================================
+
+        /// World-space ground position under the player's crosshair.
+        /// Updated every frame on the local client while the item is equipped.
+        public Vector3 ClientLockedTarget { get; private set; }
+
+        /// True when a valid ground position has been locked (crosshair hits terrain).
+        public bool HasLock { get; private set; }
+
+        /// True from fire until detonation — prevents double-fire.
+        public bool IsWaitingForDetonation { get; private set; }
+
+        // ================================================================
+        //  Server state  (server only, per-instance)
+        // ================================================================
+
+        private bool _serverRoutineActive;
+
+        // ================================================================
+        //  Mirror lifecycle
+        // ================================================================
+
+        public override void OnStopServer()
+        {
+            // Nothing extra needed — the rocket will clean itself up when
+            // the player disconnects mid-flight.
+        }
+
+        // ================================================================
+        //  Client-side lock-on update
+        //  Called each frame by JavelinLockOnUpdater (client-only component).
+        // ================================================================
+
+        /// <summary>
+        /// Called every frame on the local client to raycast and update the
+        /// lock-on ground target.  Should only run when the Javelin is equipped.
+        /// </summary>
+        public void ClientUpdateLockOn()
+        {
+            // Raycast from camera through crosshair into terrain/ground.
+            var cam = Camera.main;
+            if (cam == null)
+            {
+                HasLock = false;
+                return;
+            }
+
+            Ray ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+            if (Physics.Raycast(ray, out RaycastHit hit, 2000f, ItemHelper.GroundLayerMask))
+            {
+                ClientLockedTarget = hit.point;
+                HasLock = true;
+            }
+            else
+            {
+                // Fallback: project ray to Y=0 plane.
+                if (Mathf.Abs(ray.direction.y) > 0.001f)
+                {
+                    float t = -ray.origin.y / ray.direction.y;
+                    if (t > 0f)
+                    {
+                        ClientLockedTarget = ray.origin + ray.direction * t;
+                        HasLock = true;
+                        return;
+                    }
+                }
+                HasLock = false;
+            }
+        }
+
+        /// <summary>
+        /// Clears the local lock-on state (e.g. when the item is unequipped
+        /// or after the rocket fires).
+        /// </summary>
+        public void ClientClearLock()
+        {
+            HasLock = false;
+            IsWaitingForDetonation = false;
+        }
+
+        // ================================================================
+        //  Client → Server  (called from ItemUsagePatches)
+        // ================================================================
+
+        /// <summary>
+        /// Called on the local client when the player activates the Javelin.
+        /// Sends the locked target position to the server.
+        /// </summary>
+        public void ClientFire(Vector3 targetPosition)
+        {
+            if (IsWaitingForDetonation)
+            {
+                IssaPluginPlugin.Log.LogWarning("[Javelin] Already waiting for detonation.");
+                return;
+            }
+
+            IsWaitingForDetonation = true;
+            NetworkClient.Send(new JavelinFireMessage { TargetPosition = targetPosition });
+        }
+
+        // ================================================================
+        //  Server-side handler (called from NetworkManagerPatches message handler)
+        // ================================================================
+
+        public void ServerHandleFire(Vector3 targetPosition)
+        {
+            if (_serverRoutineActive)
+            {
+                IssaPluginPlugin.Log.LogWarning("[Javelin] Server routine already active.");
+                return;
+            }
+
+            var inventory = GetComponent<PlayerInventory>();
+            if (inventory == null)
+            {
+                IssaPluginPlugin.Log.LogError("[Javelin] No PlayerInventory on bridge object.");
+                return;
+            }
+
+            _serverRoutineActive = true;
+            StartCoroutine(ServerFireRoutine(inventory, targetPosition));
+        }
+
+        // ================================================================
+        //  Server fire routine
+        // ================================================================
+
+        private IEnumerator ServerFireRoutine(PlayerInventory inventory, Vector3 targetPosition)
+        {
+            ItemHelper.ConsumeEquippedItem(inventory);
+
+            var playerInfo = inventory.PlayerInfo;
+            Vector3 spawnPos = playerInfo.transform.position + Vector3.up * 2f;
+            Quaternion spawnRot = Quaternion.LookRotation(Vector3.up, Vector3.forward);
+
+            var useIndex = JavelinItem.NextUseIndex();
+            var itemUseId = new ItemUseId(
+                playerInfo.PlayerId.Guid,
+                useIndex,
+                ItemType.RocketLauncher
+            );
+
+            var rocket = Object.Instantiate(
+                GameManager.ItemSettings.RocketPrefab,
+                spawnPos,
+                spawnRot
+            );
+
+            if (rocket == null)
+            {
+                IssaPluginPlugin.Log.LogError("[Javelin] Rocket prefab failed to instantiate.");
+                _serverRoutineActive = false;
+                yield break;
+            }
+
+            rocket.ServerInitialize(playerInfo, null, itemUseId);
+            NetworkServer.Spawn(rocket.gameObject, (NetworkConnectionToClient)null);
+
+            // Register for large explosion scaling.
+            ExplosionScaler.Register(rocket, Configuration.JavelinExplosionScale.Value);
+
+            // Attach the flight behaviour.
+            var flight = rocket.gameObject.AddComponent<JavelinRocketBehaviour>();
+            flight.TargetPosition = targetPosition;
+            flight.ApexHeightAboveLaunch = Configuration.JavelinApexHeight.Value;
+            flight.AscentSpeed = Configuration.JavelinAscentSpeed.Value;
+            flight.DiveSpeed = Configuration.JavelinDiveSpeed.Value;
+            flight.DiveAcceleration = Configuration.JavelinDiveAcceleration.Value;
+            flight.ArrivalRadius = Configuration.JavelinArrivalRadius.Value;
+
+            IssaPluginPlugin.Log.LogInfo(
+                $"[Javelin] Rocket spawned. Target={targetPosition}, "
+                    + $"Apex+{Configuration.JavelinApexHeight.Value} units."
+            );
+
+            // Give Mirror one frame to propagate the new NetworkIdentity to clients.
+            yield return null;
+
+            // Notify the firing client the rocket is in the air.
+            connectionToClient.Send(new JavelinLaunchedMessage());
+
+            // Wait for the rocket to die (naturally or via timeout).
+            float elapsed = 0f;
+            float timeout = Configuration.JavelinTimeout.Value;
+
+            while (rocket != null && rocket.gameObject != null && elapsed < timeout)
+            {
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            // Force-detonate if still alive at timeout.
+            if (rocket != null && rocket.gameObject != null)
+            {
+                var flightComp = rocket.gameObject.GetComponent<JavelinRocketBehaviour>();
+                if (flightComp != null)
+                    flightComp.Detonate();
+                else
+                    ForceServerExplode(rocket);
+            }
+
+            // Notify client the sequence is complete.
+            if (connectionToClient != null)
+                connectionToClient.Send(new JavelinDetonatedMessage());
+
+            _serverRoutineActive = false;
+            IssaPluginPlugin.Log.LogInfo("[Javelin] Server routine complete.");
+        }
+
+        // ================================================================
+        //  Client-side server-message handlers
+        // ================================================================
+
+        /// Called when the server confirms the rocket is airborne.
+        public void ClientHandleLaunched()
+        {
+            IssaPluginPlugin.Log.LogInfo("[Javelin] Rocket launched — watching for impact.");
+        }
+
+        /// Called when the server reports the rocket has detonated.
+        public void ClientHandleDetonated()
+        {
+            IsWaitingForDetonation = false;
+            HasLock = false;
+            IssaPluginPlugin.Log.LogInfo("[Javelin] Detonation confirmed — lock cleared.");
+        }
+
+        // ================================================================
+        //  Helpers
+        // ================================================================
+
+        private static readonly MethodInfo ServerExplodeMethod = typeof(Rocket).GetMethod(
+            "ServerExplode",
+            BindingFlags.NonPublic | BindingFlags.Instance
+        );
+
+        private static void ForceServerExplode(Rocket rocket)
+        {
+            ServerExplodeMethod?.Invoke(rocket, new object[] { rocket.transform.position });
+        }
+    }
+}

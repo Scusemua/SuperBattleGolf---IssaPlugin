@@ -169,6 +169,16 @@ namespace IssaPlugin.Patches
                     }
                 );
 
+            float javelinWeight = Configuration.JavelinSpawnWeight.Value;
+            if (javelinWeight > 0f)
+                list.Add(
+                    new ItemPool.ItemSpawnChance
+                    {
+                        item = JavelinItem.JavelinItemType,
+                        spawnChanceWeight = javelinWeight,
+                    }
+                );
+
             return list.ToArray();
         }
 

@@ -28,6 +28,8 @@ namespace IssaPlugin.Patches
                 __instance.gameObject.AddComponent<LowGravityNetworkBridge>();
             if (!__instance.GetComponent<DonutNetworkBridge>())
                 __instance.gameObject.AddComponent<DonutNetworkBridge>();
+            if (!__instance.GetComponent<JavelinNetworkBridge>())
+                __instance.gameObject.AddComponent<JavelinNetworkBridge>();
 
             IssaPluginPlugin.Log.LogInfo(
                 "[Network] Bridge components injected onto player object."
