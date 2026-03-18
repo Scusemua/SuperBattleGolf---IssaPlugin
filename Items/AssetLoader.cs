@@ -242,7 +242,7 @@ namespace IssaPlugin.Items
         {
             var asset = _bundle.LoadAsset<T>(name);
             if (asset == null)
-                IssaPluginPlugin.Log.LogWarning($"[Assets] Missing asset: {name}");
+                IssaPluginPlugin.Log.LogError($"[Assets] Missing asset: {name}");
             return asset;
         }
 
