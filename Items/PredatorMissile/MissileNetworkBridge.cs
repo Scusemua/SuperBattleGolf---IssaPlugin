@@ -131,6 +131,12 @@ namespace IssaPlugin.Items
             float fallSpeed = Configuration.MissileFallSpeed.Value;
             float steerSpeed = Configuration.MissileSteerSpeed.Value;
 
+            // Rate-limit velocity sends to 20 Hz and skip when velocity hasn't changed,
+            // avoiding a packet every frame over the internet.
+            const float SendInterval = 0.05f;
+            float sendTimer = 0f;
+            Vector3 lastSentVelocity = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
+
             while (_isSteering && _activeRocket != null && _activeRocket.gameObject != null)
             {
                 var keyboard = Keyboard.current;
@@ -167,12 +173,19 @@ namespace IssaPlugin.Items
                 }
 
                 Vector3 steer = (camRight * inputX + camForward * inputZ) * steerSpeed;
-                NetworkClient.Send(
-                    new MissileSetVelocityMessage
-                    {
-                        Velocity = new Vector3(steer.x, -fallSpeed, steer.z),
-                    }
-                );
+                Vector3 desiredVelocity = new Vector3(steer.x, -fallSpeed, steer.z);
+
+                sendTimer -= Time.deltaTime;
+                bool velocityChanged = (desiredVelocity - lastSentVelocity).sqrMagnitude > 0.25f;
+
+                if (velocityChanged || sendTimer <= 0f)
+                {
+                    NetworkClient.Send(
+                        new MissileSetVelocityMessage { Velocity = desiredVelocity }
+                    );
+                    lastSentVelocity = desiredVelocity;
+                    sendTimer = SendInterval;
+                }
 
                 yield return null;
             }

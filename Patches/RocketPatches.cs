@@ -70,12 +70,20 @@ namespace IssaPlugin.Patches
             "distanceTravelled"
         );
 
-        static void Prefix(Rocket __instance)
+        static bool Prefix(Rocket __instance)
         {
-            if (!PredatorMissileItem.ActiveMissileRockets.Contains(__instance))
-                return;
+            // Javelin rockets: fully suppress OnFixedBUpdate so JavelinRocketBehaviour
+            // has exclusive control over velocity. Return false = skip the original.
+            if (JavelinItem.ActiveJavelinRockets.Contains(__instance))
+                return false;
 
-            DistanceField?.SetValue(__instance, 0f);
+            // Predator Missile rockets: zero distanceTravelled so the range-limit
+            // never fires, but allow the rest of OnFixedBUpdate to run normally
+            // (the client overrides velocity every frame via MissileSetVelocityMessage).
+            if (PredatorMissileItem.ActiveMissileRockets.Contains(__instance))
+                DistanceField?.SetValue(__instance, 0f);
+
+            return true;
         }
     }
 }

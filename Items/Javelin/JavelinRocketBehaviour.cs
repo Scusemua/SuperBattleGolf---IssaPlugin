@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace IssaPlugin.Items
 {
+    /// <summary>
     /// Drives the Javelin rocket through its three-phase lofted arc entirely
     /// on the server.  Attach this to the Rocket GameObject immediately after
     /// NetworkServer.Spawn so it starts updating on the first FixedUpdate.
@@ -16,6 +17,7 @@ namespace IssaPlugin.Items
     /// All physics are applied by directly setting the Rigidbody velocity each
     /// FixedUpdate so the standard Rocket distance-limit code never kicks in (the
     /// same trick used by PredatorMissileItem via RocketFixedBUpdatePatch).
+    /// </summary>
     public class JavelinRocketBehaviour : MonoBehaviour
     {
         // ----------------------------------------------------------------
@@ -92,6 +94,11 @@ namespace IssaPlugin.Items
                     _rb = entity.Rigidbody;
             }
 
+            // Register so RocketFixedBUpdatePatch suppresses the game's own
+            // velocity-setting code, giving us exclusive control over the physics.
+            if (_rocket != null)
+                JavelinItem.ActiveJavelinRockets.Add(_rocket);
+
             _apexY = transform.position.y + ApexHeightAboveLaunch;
             _currentDiveSpeed = DiveSpeed;
 
@@ -154,11 +161,22 @@ namespace IssaPlugin.Items
             // Keep rocket stationary while it rotates to face the target.
             _rb.linearVelocity = Vector3.zero;
 
-            Vector3 toTarget = (TargetPosition - transform.position).normalized;
-            if (toTarget == Vector3.zero)
-                toTarget = Vector3.down;
+            Vector3 raw = TargetPosition - transform.position;
 
-            Quaternion targetRot = Quaternion.LookRotation(toTarget, Vector3.up);
+            // If the target is unreachably close (degenerate), just begin diving straight down.
+            if (raw.sqrMagnitude < 0.01f)
+            {
+                _phase = Phase.Diving;
+                _currentDiveSpeed = DiveSpeed;
+                IssaPluginPlugin.Log.LogInfo(
+                    "[Javelin] Target too close during turn — diving straight down."
+                );
+                return;
+            }
+
+            Vector3 toTarget = raw.normalized;
+            Quaternion targetRot = SafeLookRotation(toTarget);
+
             transform.rotation = Quaternion.RotateTowards(
                 transform.rotation,
                 targetRot,
@@ -182,14 +200,13 @@ namespace IssaPlugin.Items
             // Accelerate toward target.
             _currentDiveSpeed += DiveAcceleration * Time.fixedDeltaTime;
 
-            Vector3 toTarget = (TargetPosition - transform.position).normalized;
-            if (toTarget == Vector3.zero)
-                toTarget = Vector3.down;
+            Vector3 raw = TargetPosition - transform.position;
+            Vector3 toTarget = raw.sqrMagnitude > 0.001f ? raw.normalized : Vector3.down;
 
             _rb.linearVelocity = toTarget * _currentDiveSpeed;
 
             // Keep nose pointed at the target.
-            transform.rotation = Quaternion.LookRotation(toTarget, Vector3.up);
+            transform.rotation = SafeLookRotation(toTarget);
 
             // Check arrival — use horizontal+vertical distance to handle hills.
             float dist = Vector3.Distance(
@@ -208,6 +225,28 @@ namespace IssaPlugin.Items
         }
 
         // ----------------------------------------------------------------
+        //  Helpers
+        // ----------------------------------------------------------------
+
+        /// <summary>
+        /// LookRotation wrapper that never produces a zero-vector warning.
+        /// When <paramref name="forward"/> points nearly straight up or down,
+        /// Vector3.up is a degenerate "up" reference, so we substitute
+        /// Vector3.forward to give LookRotation a valid perpendicular axis.
+        /// </summary>
+        private static Quaternion SafeLookRotation(Vector3 forward)
+        {
+            if (forward.sqrMagnitude < 0.001f)
+                forward = Vector3.down;
+
+            // If forward is nearly parallel to Vector3.up, use Vector3.forward as up.
+            Vector3 up =
+                Mathf.Abs(Vector3.Dot(forward, Vector3.up)) > 0.99f ? Vector3.forward : Vector3.up;
+
+            return Quaternion.LookRotation(forward, up);
+        }
+
+        // ----------------------------------------------------------------
         //  Detonation
         // ----------------------------------------------------------------
 
@@ -216,6 +255,9 @@ namespace IssaPlugin.Items
             if (_exploded)
                 return;
             _exploded = true;
+
+            if (_rocket != null)
+                JavelinItem.ActiveJavelinRockets.Remove(_rocket);
 
             if (_rocket == null)
                 return;

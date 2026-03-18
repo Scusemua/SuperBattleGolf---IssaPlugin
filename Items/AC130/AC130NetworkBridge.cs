@@ -72,11 +72,22 @@ namespace IssaPlugin.Items
             }
         }
 
+        // Rate-limiting state for per-frame sends
+        private float _maydayInputSendTimer;
+        private float _lastMaydayDive;
+        private float _lastMaydayRoll;
+        private float _flightInputSendTimer;
+        private float _lastAltitudeOffset = float.MinValue;
+        private bool _lastBoosting;
+
+        private const float InputSendInterval = 0.05f; // 20 Hz cap
+
         private void Update()
         {
-            // Forward mayday input to the server every frame while the owning
-            // client is in an active mayday. This keeps server-side dive physics
-            // responsive to player input on both listen-server and dedicated-server.
+            // Forward mayday input to the server while the owning client is in mayday.
+            // Rate-limited to 20 Hz and only sent when input actually changes, so
+            // the common case of no keys held (0, 0) generates at most one packet
+            // per interval rather than one per frame.
             if (!LocalMaydayActive || !isOwned)
                 return;
 
@@ -96,13 +107,22 @@ namespace IssaPlugin.Items
                     rollInfluence = -1f;
             }
 
-            NetworkClient.Send(
-                new AC130MaydayInputMessage
-                {
-                    DiveInfluence = diveInfluence,
-                    RollInfluence = rollInfluence,
-                }
-            );
+            bool changed = diveInfluence != _lastMaydayDive || rollInfluence != _lastMaydayRoll;
+            _maydayInputSendTimer -= Time.deltaTime;
+
+            if (changed || _maydayInputSendTimer <= 0f)
+            {
+                NetworkClient.Send(
+                    new AC130MaydayInputMessage
+                    {
+                        DiveInfluence = diveInfluence,
+                        RollInfluence = rollInfluence,
+                    }
+                );
+                _lastMaydayDive = diveInfluence;
+                _lastMaydayRoll = rollInfluence;
+                _maydayInputSendTimer = InputSendInterval;
+            }
         }
 
         // ================================================================
@@ -504,14 +524,30 @@ namespace IssaPlugin.Items
 
                 // On a remote client FlyComp is null, so HandleFlight cannot reach
                 // the server-side AC130FlyBehaviour. Forward altitude and boost state
-                // each frame so the server can apply them authoritatively.
+                // when they change, capped at 20 Hz, so the server can apply them
+                // authoritatively without generating a packet every frame.
                 if (session.FlyComp == null)
                 {
-                    NetworkClient.Send(new AC130FlightInputMessage
+                    bool boosting = keyboard != null && keyboard[Key.LeftShift].isPressed;
+                    bool flightChanged =
+                        Mathf.Abs(session.AltitudeOffset - _lastAltitudeOffset) > 0.05f
+                        || boosting != _lastBoosting;
+
+                    _flightInputSendTimer -= Time.deltaTime;
+
+                    if (flightChanged || _flightInputSendTimer <= 0f)
                     {
-                        AltitudeOffset = session.AltitudeOffset,
-                        Boosting = keyboard != null && keyboard[Key.LeftShift].isPressed,
-                    });
+                        NetworkClient.Send(
+                            new AC130FlightInputMessage
+                            {
+                                AltitudeOffset = session.AltitudeOffset,
+                                Boosting = boosting,
+                            }
+                        );
+                        _lastAltitudeOffset = session.AltitudeOffset;
+                        _lastBoosting = boosting;
+                        _flightInputSendTimer = InputSendInterval;
+                    }
                 }
 
                 session.GunshipCam?.UpdateLook();
@@ -560,9 +596,10 @@ namespace IssaPlugin.Items
                     // returns Quaternion.identity, firing rockets straight ahead.
                     // The server always spawns from _serverGunship.transform.position,
                     // so computing the direction from the same reference is correct.
-                    Vector3 aimOrigin = session.GunshipVisual != null
-                        ? session.GunshipVisual.transform.position
-                        : gunshipPos;
+                    Vector3 aimOrigin =
+                        session.GunshipVisual != null
+                            ? session.GunshipVisual.transform.position
+                            : gunshipPos;
                     aimDirection = (crosshairWorld - aimOrigin).normalized;
                 }
 
