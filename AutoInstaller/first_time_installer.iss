@@ -4,7 +4,7 @@ AppVersion=1.0
 DefaultDirName={code:GetGamePath}
 DisableDirPage=no
 OutputDir=Output
-OutputBaseFilename=SuperBattleGolfModInstaller
+OutputBaseFilename=SuperBattleGolfModFirstTimeInstaller
 SetupIconFile=G:\Documents\SuperBattleGolfPlugin\AutoInstaller\installer.ico
 
 [Files]
