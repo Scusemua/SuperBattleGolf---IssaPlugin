@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 39316425
+CRC: 672175743
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 784ec4c680637672aa41fcc01a0cbaa0
+    Hash: dcc9f05c04f3ab0167c8d625b5430baa
   TypeTreeHash:
     serializedVersion: 2
     Hash: f3672b0c1f82247490603e54482e422d
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 4a0c7f71e45e1758c686a99085ad04dd
+    Hash: e835e9974734317df3636f25ee6dc029
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -112,9 +112,11 @@ Assets:
 - Assets/Assets/Brass.mat
 - Assets/Assets/bomber_icon.png
 - Assets/Assets/plane_falling.ogg
+- Assets/Assets/spike_ball_icon.png
 - Assets/Assets/ac130_tablet_model.prefab
 - Assets/Assets/javelin_rocket_launcher.prefab
 - Assets/Assets/smoke_trail_prefab.prefab
+- Assets/Assets/spike_ball.prefab
 - Assets/Assets/Material.002.mat
 - Assets/Assets/ac130_impact_vfx.prefab
 - Assets/Assets/stealth_bomber_tablet.prefab
