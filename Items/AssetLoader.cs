@@ -37,6 +37,7 @@ namespace IssaPlugin.Items
         public static GameObject DonutHandheldPrefab { get; private set; }
 
         public static GameObject JavelinHandheldPrefab { get; private set; }
+        public static GameObject JavelinTargetIndicatorPrefab { get; private set; }
 
         public static GameObject DonutLaserZoneRed { get; private set; }
         public static GameObject StickyGrenadePrefab { get; private set; }
@@ -154,6 +155,7 @@ namespace IssaPlugin.Items
 
             DonutHandheldPrefab = Load<GameObject>("donut_model.prefab");
             JavelinHandheldPrefab = Load<GameObject>("javelin_rocket_launcher.prefab");
+            JavelinTargetIndicatorPrefab = Load<GameObject>("javelin_target_indicator.prefab");
             DonutLaserZoneRed = Load<GameObject>("laser_zone_red.prefab");
             ConfettiBlastRainbow = Load<GameObject>("ConfettiBlastRainbow.prefab");
 

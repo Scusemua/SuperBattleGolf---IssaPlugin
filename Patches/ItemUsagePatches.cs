@@ -153,6 +153,14 @@ namespace IssaPlugin.Patches
                 return;
             }
 
+            // Add the lock-on indicator updater when Javelin is equipped.
+            // UpdateEquipmentSwitchers only runs for the local player, so this is safe.
+            if (equipped == JavelinItem.JavelinItemType)
+            {
+                if (__instance.GetComponent<JavelinLockOnIndicator>() == null)
+                    __instance.gameObject.AddComponent<JavelinLockOnIndicator>();
+            }
+
             if (equipped == SniperRifleItem.SniperRifleItemType)
             {
                 // ElephantGun pose — sniper holds the rifle two-handed like the elephant gun.

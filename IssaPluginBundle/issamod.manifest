@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 1057622181
+CRC: 1622644039
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 8be88df51adbb3b360f8ec28d61ce013
+    Hash: ebcd399cfdb67422d9bac20523b4f751
   TypeTreeHash:
     serializedVersion: 2
     Hash: f3672b0c1f82247490603e54482e422d
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: f959df5603d97d0d87ea9b04284f63f5
+    Hash: 5a8700aeb7116f5d20230d00d610bdd1
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -93,6 +93,7 @@ Assets:
 - Assets/Assets/big_plane.ogg
 - Assets/Assets/Dark 1.mat
 - Assets/Assets/Dark 2.mat
+- Assets/Assets/javelin_target_indicator.prefab
 - Assets/Assets/missile_locked.ogg
 - Assets/Assets/bat_model.prefab
 - Assets/Assets/javelin_icon.png
