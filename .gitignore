@@ -2,6 +2,8 @@ SAMPLE_PLUGIN/
 DECOMPILED_SOURCE/
 Assembly/
 baseball_bat/
+AutoInstaller/Output
+AutoInstaller/ModFiles
 .claude/
 
 ## Ignore Visual Studio temporary files, build results, and
