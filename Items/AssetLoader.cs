@@ -160,7 +160,7 @@ namespace IssaPlugin.Items
             JavelinHandheldPrefab = Load<GameObject>("javelin_rocket_launcher.prefab");
             JavelinTargetIndicatorPrefab = Load<GameObject>("javelin_target_indicator.prefab");
             JavelinExplosionVfxPrefab = Load<GameObject>("NukeVerticalExplosionFire.prefab");
-            JavelinTrailVfxPrefab = Load<GameObject>("javelin_trail_vfx.prefab");
+            JavelinTrailVfxPrefab = Load<GameObject>("javelin_trail.prefab");
             DonutLaserZoneRed = Load<GameObject>("laser_zone_red.prefab");
             ConfettiBlastRainbow = Load<GameObject>("ConfettiBlastRainbow.prefab");
 
