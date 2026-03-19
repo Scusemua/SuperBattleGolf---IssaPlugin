@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace IssaPlugin.Items
 {
@@ -42,6 +43,8 @@ namespace IssaPlugin.Items
                 return;
             }
 
+            bool aiming = Mouse.current?.rightButton.isPressed ?? false;
+
             // While the rocket is in-flight, freeze the indicator at the fired position.
             if (!_bridge.IsWaitingForDetonation)
                 _bridge.ClientUpdateLockOn();
@@ -49,7 +52,9 @@ namespace IssaPlugin.Items
             if (_indicator == null)
                 return;
 
-            bool show = _bridge.HasLock;
+            // Show while right-click is held (searching for a lock), or while the
+            // missile is already in-flight so the player can see the target.
+            bool show = _bridge.HasLock && (aiming || _bridge.IsWaitingForDetonation);
             _indicator.SetActive(show);
 
             if (show)

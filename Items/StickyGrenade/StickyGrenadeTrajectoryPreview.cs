@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
 
 namespace IssaPlugin.Items
@@ -53,6 +54,12 @@ namespace IssaPlugin.Items
             )
             {
                 Destroy(this);
+                return;
+            }
+
+            if (!(Mouse.current?.rightButton.isPressed ?? false))
+            {
+                _line.enabled = false;
                 return;
             }
 
