@@ -512,6 +512,15 @@ namespace IssaPlugin.Patches
                     }
                 );
 
+            // Server → All Clients
+            Writer<JavelinExplosionMessage>.write =
+                JavelinExplosionMessageSerialization.WriteJavelinExplosionMessage;
+            Reader<JavelinExplosionMessage>.read =
+                JavelinExplosionMessageSerialization.ReadJavelinExplosionMessage;
+            NetworkClient.RegisterHandler<JavelinExplosionMessage>(
+                JavelinMessageHandlers.HandleJavelinExplosion
+            );
+
             // Server → Client
             Writer<JavelinLaunchedMessage>.write =
                 JavelinLaunchedMessageSerialization.WriteJavelinLaunchedMessage;
@@ -678,6 +687,24 @@ namespace IssaPlugin.Patches
                 GameManager.CameraGameplaySettings.RocketExplosionScreenshakeSettings,
                 msg.ImpactPos
             );
+        }
+    }
+
+    /// Javelin NetworkMessage handlers — kept in a separate (non-patch) class so
+    /// the Harmony analyser does not misidentify the 'msg' parameters as patch parameters.
+    static class JavelinMessageHandlers
+    {
+        internal static void HandleJavelinExplosion(JavelinExplosionMessage msg)
+        {
+            if (AssetLoader.JavelinExplosionVfxPrefab == null)
+                return;
+
+            var vfx = Object.Instantiate(
+                AssetLoader.JavelinExplosionVfxPrefab,
+                msg.Position,
+                Quaternion.identity
+            );
+            Object.Destroy(vfx, Configuration.JavelinExplosionVfxDuration.Value);
         }
     }
 

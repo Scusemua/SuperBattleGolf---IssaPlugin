@@ -1,4 +1,5 @@
 using System.Reflection;
+using Mirror;
 using UnityEngine;
 
 namespace IssaPlugin.Items
@@ -272,12 +273,16 @@ namespace IssaPlugin.Items
             if (_rocket == null)
                 return;
 
+            Vector3 pos = transform.position;
+
             IssaPluginPlugin.Log.LogInfo(
-                $"[Javelin] Detonating at {transform.position:F1} "
-                    + $"(target {TargetPosition:F1})."
+                $"[Javelin] Detonating at {pos:F1} (target {TargetPosition:F1})."
             );
 
-            ServerExplodeMethod?.Invoke(_rocket, new object[] { transform.position });
+            // Broadcast explosion position to all clients so each can play the VFX.
+            NetworkServer.SendToAll(new JavelinExplosionMessage { Position = pos });
+
+            ServerExplodeMethod?.Invoke(_rocket, new object[] { pos });
         }
     }
 }

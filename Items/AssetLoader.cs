@@ -38,6 +38,7 @@ namespace IssaPlugin.Items
 
         public static GameObject JavelinHandheldPrefab { get; private set; }
         public static GameObject JavelinTargetIndicatorPrefab { get; private set; }
+        public static GameObject JavelinExplosionVfxPrefab { get; private set; }
 
         public static GameObject DonutLaserZoneRed { get; private set; }
         public static GameObject StickyGrenadePrefab { get; private set; }
@@ -149,6 +150,7 @@ namespace IssaPlugin.Items
             DisableRigidbody(DonutPrefab);
 
             StickyGrenadePrefab = Load<GameObject>("sticky_grenade.prefab");
+            DisableRigidbody(StickyGrenadePrefab);
             EnsureNetworkIdentity(StickyGrenadePrefab, 0x5E47EC01u);
             if (StickyGrenadePrefab != null)
                 StickyGrenadePrefab.AddComponent<StickyGrenadeClientSetup>();
@@ -156,6 +158,7 @@ namespace IssaPlugin.Items
             DonutHandheldPrefab = Load<GameObject>("donut_model.prefab");
             JavelinHandheldPrefab = Load<GameObject>("javelin_rocket_launcher.prefab");
             JavelinTargetIndicatorPrefab = Load<GameObject>("javelin_target_indicator.prefab");
+            JavelinExplosionVfxPrefab = Load<GameObject>("NukeVerticalExplosionFire.prefab");
             DonutLaserZoneRed = Load<GameObject>("laser_zone_red.prefab");
             ConfettiBlastRainbow = Load<GameObject>("ConfettiBlastRainbow.prefab");
 

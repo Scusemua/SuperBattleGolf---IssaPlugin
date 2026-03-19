@@ -26,6 +26,26 @@ namespace IssaPlugin.Items
         }
     }
 
+    // ── Server → All Clients ─────────────────────────────────────────────
+
+    /// Broadcast to every client when the Javelin rocket detonates so each
+    /// client can spawn the explosion VFX locally.
+    public struct JavelinExplosionMessage : NetworkMessage
+    {
+        public Vector3 Position;
+    }
+
+    public static class JavelinExplosionMessageSerialization
+    {
+        public static void WriteJavelinExplosionMessage(
+            NetworkWriter w,
+            JavelinExplosionMessage m
+        ) => w.WriteVector3(m.Position);
+
+        public static JavelinExplosionMessage ReadJavelinExplosionMessage(NetworkReader r) =>
+            new JavelinExplosionMessage { Position = r.ReadVector3() };
+    }
+
     // ── Server → Client ──────────────────────────────────────────────────
 
     /// Sent to the firing client once the server has spawned and launched

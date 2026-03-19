@@ -129,6 +129,20 @@ namespace IssaPlugin.Patches
                 return false;
             }
 
+            if (equipped == StickyGrenadeItem.StickyGrenadeItemType)
+            {
+                shouldEatInput = true;
+                __result = true;
+                var bridge = __instance.GetComponent<StickyGrenadeNetworkBridge>();
+                if (bridge != null)
+                    bridge.ClientThrow();
+                else
+                    IssaPluginPlugin.Log.LogError(
+                        "[StickyGrenade] No StickyGrenadeNetworkBridge on player."
+                    );
+                return false;
+            }
+
             return true;
         }
     }
@@ -181,6 +195,7 @@ namespace IssaPlugin.Patches
                 || equipped == LowGravityItem.LowGravityItemType
                 || equipped == DonutItem.DonutItemType
                 || equipped == JavelinItem.JavelinItemType
+                || equipped == StickyGrenadeItem.StickyGrenadeItemType
             )
             {
                 rightSwitcher.SetEquipment(EquipmentType.RocketLauncher);
