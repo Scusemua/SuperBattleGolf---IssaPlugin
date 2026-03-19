@@ -86,4 +86,16 @@ namespace IssaPlugin.Patches
             return true;
         }
     }
+
+    [HarmonyPatch(typeof(Rocket), "OnLateBUpdate")]
+    static class RocketLateBUpdatePatch
+    {
+        static bool Prefix(Rocket __instance)
+        {
+            // Javelin rockets: suppress OnLateBUpdate so it never calls
+            // LookRotation(linearVelocity) — which writes Quaternion.identity to the
+            // transform when velocity is zero (Turning phase), undoing our rotation work.
+            return !JavelinItem.ActiveJavelinRockets.Contains(__instance);
+        }
+    }
 }

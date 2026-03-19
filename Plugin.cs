@@ -97,6 +97,9 @@ namespace IssaPlugin
             if (keyboard[Configuration.JavelinGiveKey.Value].wasPressedThisFrame)
                 JavelinItem.GiveJavelinToLocalPlayer();
 
+            if (keyboard[Configuration.StickyGrenadeGiveKey.Value].wasPressedThisFrame)
+                StickyGrenadeItem.GiveStickyGrenadeToLocalPlayer();
+
             // Keep the Javelin lock-on target fresh every frame while equipped.
             var localInventory = GameManager.LocalPlayerInventory;
             if (localInventory != null)
