@@ -513,6 +513,14 @@ namespace IssaPlugin.Patches
                 );
 
             // Server → All Clients
+            Writer<JavelinRocketTrailMessage>.write =
+                JavelinRocketTrailMessageSerialization.WriteJavelinRocketTrailMessage;
+            Reader<JavelinRocketTrailMessage>.read =
+                JavelinRocketTrailMessageSerialization.ReadJavelinRocketTrailMessage;
+            NetworkClient.RegisterHandler<JavelinRocketTrailMessage>(
+                JavelinMessageHandlers.HandleJavelinRocketTrail
+            );
+
             Writer<JavelinExplosionMessage>.write =
                 JavelinExplosionMessageSerialization.WriteJavelinExplosionMessage;
             Reader<JavelinExplosionMessage>.read =
@@ -694,6 +702,26 @@ namespace IssaPlugin.Patches
     /// the Harmony analyser does not misidentify the 'msg' parameters as patch parameters.
     static class JavelinMessageHandlers
     {
+        internal static void HandleJavelinRocketTrail(JavelinRocketTrailMessage msg)
+        {
+            if (AssetLoader.JavelinTrailVfxPrefab == null)
+                return;
+
+            if (!NetworkClient.spawned.TryGetValue(msg.RocketNetId, out var ni) || ni == null)
+                return;
+
+            var trail = Object.Instantiate(
+                AssetLoader.JavelinTrailVfxPrefab,
+                ni.transform.position,
+                ni.transform.rotation
+            );
+            trail.transform.SetParent(ni.transform, worldPositionStays: false);
+            trail.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+
+            var detacher = ni.gameObject.AddComponent<JavelinRocketTrailDetacher>();
+            detacher.TrailRoot = trail.transform;
+        }
+
         internal static void HandleJavelinExplosion(JavelinExplosionMessage msg)
         {
             if (AssetLoader.JavelinExplosionVfxPrefab == null)

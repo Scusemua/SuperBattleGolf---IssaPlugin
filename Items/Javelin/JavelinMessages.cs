@@ -28,6 +28,25 @@ namespace IssaPlugin.Items
 
     // ── Server → All Clients ─────────────────────────────────────────────
 
+    /// Broadcast to every client immediately after the rocket spawns so each
+    /// client can attach the trail VFX to the rocket's GameObject.
+    public struct JavelinRocketTrailMessage : NetworkMessage
+    {
+        public uint RocketNetId;
+    }
+
+    public static class JavelinRocketTrailMessageSerialization
+    {
+        public static void WriteJavelinRocketTrailMessage(
+            NetworkWriter w,
+            JavelinRocketTrailMessage m
+        ) => w.WriteUInt(m.RocketNetId);
+
+        public static JavelinRocketTrailMessage ReadJavelinRocketTrailMessage(
+            NetworkReader r
+        ) => new JavelinRocketTrailMessage { RocketNetId = r.ReadUInt() };
+    }
+
     /// Broadcast to every client when the Javelin rocket detonates so each
     /// client can spawn the explosion VFX locally.
     public struct JavelinExplosionMessage : NetworkMessage

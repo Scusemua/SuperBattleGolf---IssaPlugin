@@ -196,6 +196,11 @@ namespace IssaPlugin.Items
             // Give Mirror one frame to propagate the new NetworkIdentity to clients.
             yield return null;
 
+            // Tell all clients to attach the trail VFX to the rocket.
+            NetworkServer.SendToAll(
+                new JavelinRocketTrailMessage { RocketNetId = rocket.netId }
+            );
+
             // Notify the firing client the rocket is in the air.
             connectionToClient.Send(new JavelinLaunchedMessage());
 
