@@ -135,6 +135,11 @@ namespace IssaPlugin.Items
 
             foreach (var col in playerHits)
             {
+                // Skip our own colliders — the grenade is on Default layer which
+                // is included in GunHittablesMask, so it would otherwise stick to itself.
+                if (col.transform.IsChildOf(transform) || col.transform == transform)
+                    continue;
+
                 // Skip the thrower during the grace window (already past, but
                 // double-guard in case of unusual frame timing)
                 var playerInfo = col.GetComponentInParent<PlayerInfo>();
