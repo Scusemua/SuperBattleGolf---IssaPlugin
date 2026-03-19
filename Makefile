@@ -47,27 +47,12 @@ clean-modfiles:
 	if exist $(MODFILES) rmdir /S /Q $(MODFILES)
 
 bump-version:
-	powershell -NoProfile -Command "\
-		$$f = 'IssaPlugin.csproj'; \
-		$$c = Get-Content $$f -Raw; \
-		$$v = [regex]::Match($$c, '<Version>([^<]+)</Version>').Groups[1].Value; \
-		$$p = $$v -split '\.'; \
-		if ('$(BUMP)' -eq 'major') { $$p[0] = [int]$$p[0]+1; $$p[1]=0; $$p[2]=0 } \
-		elseif ('$(BUMP)' -eq 'minor') { $$p[1] = [int]$$p[1]+1; $$p[2]=0 } \
-		else { $$p[2] = [int]$$p[2]+1 }; \
-		$$n = $$p -join '.'; \
-		$$c = $$c -replace '<Version>[^<]+</Version>', \"<Version>$$n</Version>\"; \
-		Set-Content $$f $$c; \
-		$$pi = 'PluginInfo.cs'; \
-		$$pic = Get-Content $$pi -Raw; \
-		$$pic = $$pic -replace 'PLUGIN_VERSION = \"[^\"]+\"', \"PLUGIN_VERSION = \`"$$n\`"\"; \
-		Set-Content $$pi $$pic; \
-		Write-Host \"Bumped version $$v -> $$n\""
+	powershell -NoProfile -ExecutionPolicy Bypass -File bump_version.ps1 -Bump $(BUMP)
 
 release: bump-version build
 	$(eval VERSION := $(shell powershell -NoProfile -Command "(Select-String -Path IssaPlugin.csproj -Pattern '<Version>([^<]+)</Version>').Matches[0].Groups[1].Value"))
 	@echo Signing DLL...
-	powershell -NoProfile -File sign_release.ps1 -DllPath $(DLL)
+	powershell -NoProfile -ExecutionPolicy Bypass -File sign_release.ps1 -DllPath $(DLL)
 	@echo Creating release v$(VERSION)...
 	if exist $(RELEASE_DIR) rmdir /S /Q $(RELEASE_DIR)
 	mkdir $(RELEASE_DIR)

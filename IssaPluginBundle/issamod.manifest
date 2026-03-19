@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 1543988969
+CRC: 4288631136
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 07170acd76c625c30e43812537b0c03e
+    Hash: 1e54e9a8563800ef49cfe111c829bbde
   TypeTreeHash:
     serializedVersion: 2
     Hash: f3672b0c1f82247490603e54482e422d
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 135dd6ede2a7021f0fb0335605a634f5
+    Hash: a50cf798ddf03eb937ea2e554d2017b1
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -69,7 +69,7 @@ Assets:
 - Assets/Assets/homerun.ogg
 - Assets/Assets/fire_torch_intense.prefab
 - Assets/Assets/ac130_model.prefab
-- Assets/Assets/sticky_grenade.prefab
+- Assets/Assets/sticky_grenade_model.prefab
 - Assets/Assets/Material.003.mat
 - Assets/Assets/donut_model.prefab
 - Assets/Assets/missile_icon.png
@@ -82,6 +82,7 @@ Assets:
 - Assets/Assets/ac130_tablet.prefab
 - Assets/Assets/jet_plane_flyby.ogg
 - Assets/Assets/predator_missile_ready.ogg
+- Assets/Assets/sticky_grenade.prefab
 - Assets/Assets/Material.001.mat
 - Assets/Assets/bomber_proxy.prefab
 - Assets/Assets/sticky_grenade_icon.png
