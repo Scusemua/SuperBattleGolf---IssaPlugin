@@ -66,14 +66,17 @@ bump-version:
 
 release: bump-version build
 	$(eval VERSION := $(shell powershell -NoProfile -Command "(Select-String -Path IssaPlugin.csproj -Pattern '<Version>([^<]+)</Version>').Matches[0].Groups[1].Value"))
+	@echo Signing DLL...
+	powershell -NoProfile -File sign_release.ps1 -DllPath $(DLL)
 	@echo Creating release v$(VERSION)...
 	if exist $(RELEASE_DIR) rmdir /S /Q $(RELEASE_DIR)
 	mkdir $(RELEASE_DIR)
 	xcopy /E /I /Y $(BUNDLE) $(RELEASE_DIR)\IssaPluginBundle
 	copy /Y $(DLL) $(RELEASE_DIR)
 	copy /Y $(PDB) $(RELEASE_DIR)
+	copy /Y $(DLL).sig $(RELEASE_DIR)\IssaPlugin.dll.sig
 	powershell -NoProfile -Command "Compress-Archive -Path '$(RELEASE_DIR)\*' -DestinationPath 'IssaMod-v$(VERSION).zip' -Force"
-	gh release create v$(VERSION) IssaMod-v$(VERSION).zip --title "v$(VERSION)" --generate-notes
+	gh release create v$(VERSION) IssaMod-v$(VERSION).zip $(RELEASE_DIR)\IssaPlugin.dll $(RELEASE_DIR)\IssaPlugin.dll.sig --title "v$(VERSION)" --generate-notes
 	if exist $(RELEASE_DIR) rmdir /S /Q $(RELEASE_DIR)
 
 install: build
