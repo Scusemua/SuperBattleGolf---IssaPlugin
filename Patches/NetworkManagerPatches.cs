@@ -552,6 +552,39 @@ namespace IssaPlugin.Patches
                     ?.ClientHandleDetonated();
             });
 
+            // ── StickyGrenade Messages ────────────────────────────────────────
+
+            // Client → Server
+            Writer<StickyGrenadeThrowMessage>.write =
+                StickyGrenadeThrowMessageSerialization.WriteStickyGrenadeThrowMessage;
+            Reader<StickyGrenadeThrowMessage>.read =
+                StickyGrenadeThrowMessageSerialization.ReadStickyGrenadeThrowMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<StickyGrenadeThrowMessage>(
+                    (conn, msg) =>
+                    {
+                        conn.identity?.GetComponent<StickyGrenadeNetworkBridge>()
+                            ?.ServerHandleThrow(msg.ThrowOrigin, msg.ThrowVelocity);
+                    }
+                );
+
+            // Server → All Clients
+            Writer<StickyGrenadeStuckMessage>.write =
+                StickyGrenadeStuckMessageSerialization.WriteStickyGrenadeStuckMessage;
+            Reader<StickyGrenadeStuckMessage>.read =
+                StickyGrenadeStuckMessageSerialization.ReadStickyGrenadeStuckMessage;
+            NetworkClient.RegisterHandler<StickyGrenadeStuckMessage>(
+                StickyGrenadeNetworkBridge.HandleStickyGrenadeStuck
+            );
+
+            Writer<StickyGrenadeDetonatedMessage>.write =
+                StickyGrenadeDetonatedMessageSerialization.WriteStickyGrenadeDetonatedMessage;
+            Reader<StickyGrenadeDetonatedMessage>.read =
+                StickyGrenadeDetonatedMessageSerialization.ReadStickyGrenadeDetonatedMessage;
+            NetworkClient.RegisterHandler<StickyGrenadeDetonatedMessage>(
+                StickyGrenadeNetworkBridge.HandleStickyGrenadeDetonated
+            );
+
             // ── Spawn-weight sync (server → all clients) ─────────────────────
             Writer<SpawnWeightsMessage>.write =
                 SpawnWeightsMessageSerialization.WriteSpawnWeightsMessage;
@@ -581,6 +614,7 @@ namespace IssaPlugin.Patches
             RegisterPrefab(AssetLoader.LowGravityModelPrefab);
             RegisterPrefab(AssetLoader.SniperRiflePrefab);
             RegisterPrefab(AssetLoader.BloodSplatterPrefab);
+            RegisterPrefab(AssetLoader.StickyGrenadePrefab);
         }
 
         private static void RegisterPrefab(GameObject prefab)
