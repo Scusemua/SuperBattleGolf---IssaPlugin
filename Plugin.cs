@@ -29,7 +29,7 @@ namespace IssaPlugin
             Instance = this;
 
             Log = base.Logger;
-            Log.LogInfo($"IssaPlugin {PluginInfo.PLUGIN_VERSION} loading...");
+            Log.LogInfo($"IssaPlugin {PluginInfo.PLUGIN_VERSION} is now loading...");
 
             Configuration.Initialize(Config);
             AssetLoader.Load();
