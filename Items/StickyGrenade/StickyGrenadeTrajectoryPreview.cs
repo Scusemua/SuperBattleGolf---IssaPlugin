@@ -108,11 +108,16 @@ namespace IssaPlugin.Items
                 (forward + Vector3.up * Configuration.StickyGrenadeLobAngle.Value).normalized
                 * Configuration.StickyGrenadeThrowSpeed.Value;
 
+            // Combine both masks so the arc stops on terrain, walls, players,
+            // and vehicles — mirroring the two-phase check in StickyGrenadeBehaviour.
+            int stickMask =
+                ItemHelper.GroundLayerMask | GameManager.LayerSettings.GunHittablesMask;
+
             _positions[0] = pos;
             int count = 1;
             Vector3 landingPoint = pos;
             Vector3 landingNormal = Vector3.up;
-            bool hitTerrain = false;
+            bool hitSomething = false;
 
             for (int i = 1; i <= ArcSteps; i++)
             {
@@ -124,7 +129,7 @@ namespace IssaPlugin.Items
                         pos,
                         next,
                         out RaycastHit hit,
-                        ItemHelper.GroundLayerMask,
+                        stickMask,
                         QueryTriggerInteraction.Ignore
                     )
                 )
@@ -133,7 +138,7 @@ namespace IssaPlugin.Items
                     count = i + 1;
                     landingPoint = hit.point;
                     landingNormal = hit.normal;
-                    hitTerrain = true;
+                    hitSomething = true;
                     break;
                 }
 
@@ -146,9 +151,9 @@ namespace IssaPlugin.Items
             _line.positionCount = count;
             _line.SetPositions(_positions);
 
-            // Update the landing ring.
-            _ring.enabled = hitTerrain;
-            if (hitTerrain)
+            // Update the landing ring on any stickable surface.
+            _ring.enabled = hitSomething;
+            if (hitSomething)
                 UpdateRing(landingPoint, landingNormal);
         }
 
