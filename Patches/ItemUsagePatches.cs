@@ -175,6 +175,14 @@ namespace IssaPlugin.Patches
                     __instance.gameObject.AddComponent<JavelinLockOnIndicator>();
             }
 
+            // Show the parabolic arc preview when StickyGrenade is equipped.
+            // The component self-destructs when a different item is equipped.
+            if (equipped == StickyGrenadeItem.StickyGrenadeItemType)
+            {
+                if (__instance.GetComponent<StickyGrenadeTrajectoryPreview>() == null)
+                    __instance.gameObject.AddComponent<StickyGrenadeTrajectoryPreview>();
+            }
+
             if (equipped == SniperRifleItem.SniperRifleItemType)
             {
                 // ElephantGun pose — sniper holds the rifle two-handed like the elephant gun.
