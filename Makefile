@@ -18,7 +18,7 @@ stage-files: clean-modfiles build-issamod
 
 	if not exist $(MODFILES) mkdir $(MODFILES)
 
-	xcopy /E /I /Y $(BUNDLE) $(MODFILES)
+	xcopy /E /I /Y $(BUNDLE) $(MODFILES)\IssaPluginBundle
 	copy /Y $(DLL) $(MODFILES)
 
 clean-modfiles:

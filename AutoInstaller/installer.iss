@@ -5,6 +5,7 @@ DefaultDirName={code:GetGamePath}
 DisableDirPage=no
 OutputDir=Output
 OutputBaseFilename=SuperBattleGolfModInstaller
+SetupIconFile=G:\Documents\SuperBattleGolfPlugin\AutoInstaller\installer.ico
 
 [Files]
 Source: "ModFiles\*"; DestDir: "{app}\BepInEx\plugins"; Flags: recursesubdirs ignoreversion
