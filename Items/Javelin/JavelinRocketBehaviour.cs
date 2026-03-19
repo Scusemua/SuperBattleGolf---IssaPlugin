@@ -125,6 +125,7 @@ namespace IssaPlugin.Items
                 return;
 
             _rb.linearVelocity = Vector3.up * AscentSpeed;
+            _rb.angularVelocity = Vector3.zero;
             RotateTowardVelocity();
 
             if (transform.position.y >= _apexY)
@@ -143,6 +144,7 @@ namespace IssaPlugin.Items
                 return;
 
             _rb.linearVelocity = Vector3.zero;
+            _rb.angularVelocity = Vector3.zero;
 
             Vector3 toTarget = TargetPosition - transform.position;
 
