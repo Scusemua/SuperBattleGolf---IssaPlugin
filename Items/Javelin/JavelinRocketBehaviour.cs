@@ -11,40 +11,30 @@ namespace IssaPlugin.Items
     /// Phase 1 – Ascending:  rocket climbs steeply upward from the launch point.
     /// Phase 2 – Turning:    at apex altitude the rocket smoothly rotates to
     ///                        point at the locked target.
-    /// Phase 3 – Diving:     rocket accelerates straight down toward the target;
-    ///                        when it arrives (or gets close) ServerExplode is called.
+    /// Phase 3 – Diving:     rocket accelerates toward the target and detonates
+    ///                        on arrival.
     ///
-    /// All physics are applied by directly setting the Rigidbody velocity each
-    /// FixedUpdate so the standard Rocket distance-limit code never kicks in (the
-    /// same trick used by PredatorMissileItem via RocketFixedBUpdatePatch).
+    /// Physics are driven by setting Rigidbody.linearVelocity directly each
+    /// FixedUpdate.  Rocket.OnFixedBUpdate is suppressed for this rocket via
+    /// RocketFixedBUpdatePatch so the game never overwrites our velocity.
+    ///
+    /// Rotation is cosmetic only — the nose tracks the current velocity direction
+    /// via a safe slerp that is skipped entirely when velocity is zero, which
+    /// is the only reliable way to avoid "Look rotation viewing vector is zero".
     /// </summary>
     public class JavelinRocketBehaviour : MonoBehaviour
     {
         // ----------------------------------------------------------------
-        //  Configuration (set by JavelinItem before this component starts)
+        //  Configuration  (set by JavelinNetworkBridge before Start fires)
         // ----------------------------------------------------------------
 
-        /// World-space position the rocket will dive toward.
         public Vector3 TargetPosition;
-
-        /// How high above the launch point the rocket climbs before turning.
         public float ApexHeightAboveLaunch = 60f;
-
-        /// Speed during the ascent phase (units/sec).
         public float AscentSpeed = 35f;
-
-        /// Speed during the dive phase (units/sec, continuously accelerated).
-        public float DiveSpeed = 50f;
-
-        /// Acceleration added to dive speed each second.
-        public float DiveAcceleration = 20f;
-
-        /// Horizontal distance from target at which we consider it a hit.
+        public float DiveSpeed = 55f;
+        public float DiveAcceleration = 25f;
         public float ArrivalRadius = 3f;
-
-        /// How quickly the rocket rotates to face the target during the
-        /// turning phase (degrees per second).
-        public float TurnRate = 180f;
+        public float TurnRate = 180f; // degrees/sec during Turning phase
 
         // ----------------------------------------------------------------
         //  Internal state
@@ -61,18 +51,15 @@ namespace IssaPlugin.Items
 
         private Rocket _rocket;
         private Rigidbody _rb;
-        private float _apexY; // world Y the rocket must reach before turning
+        private float _apexY;
         private float _currentDiveSpeed;
         private bool _exploded;
 
-        // Cached reflection handle for Rocket.ServerExplode (private method).
         private static readonly MethodInfo ServerExplodeMethod = typeof(Rocket).GetMethod(
             "ServerExplode",
             BindingFlags.NonPublic | BindingFlags.Instance
         );
 
-        // Same field zeroed by RocketFixedBUpdatePatch — we zero it ourselves
-        // since this component is server-only and the patch is still active.
         private static readonly FieldInfo DistanceTravelledField = typeof(Rocket).GetField(
             "distanceTravelled",
             BindingFlags.NonPublic | BindingFlags.Instance
@@ -94,8 +81,6 @@ namespace IssaPlugin.Items
                     _rb = entity.Rigidbody;
             }
 
-            // Register so RocketFixedBUpdatePatch suppresses the game's own
-            // velocity-setting code, giving us exclusive control over the physics.
             if (_rocket != null)
                 JavelinItem.ActiveJavelinRockets.Add(_rocket);
 
@@ -103,8 +88,8 @@ namespace IssaPlugin.Items
             _currentDiveSpeed = DiveSpeed;
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[Javelin] Rocket launched from {transform.position} toward {TargetPosition}. "
-                    + $"Apex Y={_apexY:F1}"
+                $"[Javelin] Launched from {transform.position:F1} "
+                    + $"toward {TargetPosition:F1}. ApexY={_apexY:F1}"
             );
         }
 
@@ -113,7 +98,7 @@ namespace IssaPlugin.Items
             if (_exploded || _rocket == null)
                 return;
 
-            // Zero distanceTravelled so Rocket's own range-limit never fires.
+            // Prevent Rocket's own range-limit from firing.
             DistanceTravelledField?.SetValue(_rocket, 0f);
 
             switch (_phase)
@@ -131,7 +116,7 @@ namespace IssaPlugin.Items
         }
 
         // ----------------------------------------------------------------
-        //  Phase updates
+        //  Phases
         // ----------------------------------------------------------------
 
         private void UpdateAscending()
@@ -139,17 +124,16 @@ namespace IssaPlugin.Items
             if (_rb == null)
                 return;
 
-            // Fly straight up.
             _rb.linearVelocity = Vector3.up * AscentSpeed;
-
-            // Orient the rocket nose-up while ascending.
-            transform.rotation = Quaternion.LookRotation(Vector3.up, Vector3.forward);
+            RotateTowardVelocity();
 
             if (transform.position.y >= _apexY)
             {
                 _rb.linearVelocity = Vector3.zero;
                 _phase = Phase.Turning;
-                IssaPluginPlugin.Log.LogInfo("[Javelin] Apex reached — beginning turn.");
+                IssaPluginPlugin.Log.LogInfo(
+                    $"[Javelin] Apex reached at Y={transform.position.y:F1}. Turning."
+                );
             }
         }
 
@@ -158,24 +142,22 @@ namespace IssaPlugin.Items
             if (_rb == null)
                 return;
 
-            // Keep rocket stationary while it rotates to face the target.
             _rb.linearVelocity = Vector3.zero;
 
-            Vector3 raw = TargetPosition - transform.position;
+            Vector3 toTarget = TargetPosition - transform.position;
 
-            // If the target is unreachably close (degenerate), just begin diving straight down.
-            if (raw.sqrMagnitude < 0.01f)
+            // If somehow the rocket is already on top of the target, dive straight down.
+            if (toTarget.sqrMagnitude < 0.01f)
             {
+                IssaPluginPlugin.Log.LogInfo("[Javelin] Already at target during turn — diving.");
                 _phase = Phase.Diving;
                 _currentDiveSpeed = DiveSpeed;
-                IssaPluginPlugin.Log.LogInfo(
-                    "[Javelin] Target too close during turn — diving straight down."
-                );
                 return;
             }
 
-            Vector3 toTarget = raw.normalized;
-            Quaternion targetRot = SafeLookRotation(toTarget);
+            // Compute target rotation without any LookRotation call.
+            // We slerp toward it at TurnRate deg/sec and advance phase once close.
+            Quaternion targetRot = DirectionToRotation(toTarget.normalized);
 
             transform.rotation = Quaternion.RotateTowards(
                 transform.rotation,
@@ -183,12 +165,11 @@ namespace IssaPlugin.Items
                 TurnRate * Time.fixedDeltaTime
             );
 
-            float angle = Quaternion.Angle(transform.rotation, targetRot);
-            if (angle < 5f)
+            if (Quaternion.Angle(transform.rotation, targetRot) < 5f)
             {
                 _phase = Phase.Diving;
                 _currentDiveSpeed = DiveSpeed;
-                IssaPluginPlugin.Log.LogInfo("[Javelin] Turn complete — beginning dive.");
+                IssaPluginPlugin.Log.LogInfo("[Javelin] Turn complete — diving.");
             }
         }
 
@@ -197,53 +178,80 @@ namespace IssaPlugin.Items
             if (_rb == null)
                 return;
 
-            // Accelerate toward target.
             _currentDiveSpeed += DiveAcceleration * Time.fixedDeltaTime;
 
-            Vector3 raw = TargetPosition - transform.position;
-            Vector3 toTarget = raw.sqrMagnitude > 0.001f ? raw.normalized : Vector3.down;
+            Vector3 toTarget = TargetPosition - transform.position;
 
-            _rb.linearVelocity = toTarget * _currentDiveSpeed;
+            Vector3 velocity =
+                toTarget.sqrMagnitude > 0.001f
+                    ? toTarget.normalized * _currentDiveSpeed
+                    : Vector3.down * _currentDiveSpeed;
 
-            // Keep nose pointed at the target.
-            transform.rotation = SafeLookRotation(toTarget);
+            _rb.linearVelocity = velocity;
+            RotateTowardVelocity();
 
-            // Check arrival — use horizontal+vertical distance to handle hills.
-            float dist = Vector3.Distance(
-                new Vector3(transform.position.x, 0, transform.position.z),
-                new Vector3(TargetPosition.x, 0, TargetPosition.z)
+            float dist3d = Vector3.Distance(transform.position, TargetPosition);
+            float distXZ = Vector3.Distance(
+                new Vector3(transform.position.x, 0f, transform.position.z),
+                new Vector3(TargetPosition.x, 0f, TargetPosition.z)
             );
 
+            bool veryClose = dist3d < ArrivalRadius;
             bool pastTarget =
-                transform.position.y <= TargetPosition.y + 2f && dist < ArrivalRadius * 2f;
-            bool veryClose = Vector3.Distance(transform.position, TargetPosition) < ArrivalRadius;
+                transform.position.y <= TargetPosition.y + 2f && distXZ < ArrivalRadius * 2f;
 
             if (veryClose || pastTarget)
-            {
                 Detonate();
-            }
         }
 
         // ----------------------------------------------------------------
-        //  Helpers
+        //  Rotation helpers — never call LookRotation with zero or
+        //  near-parallel vectors
         // ----------------------------------------------------------------
 
-        /// <summary>
-        /// LookRotation wrapper that never produces a zero-vector warning.
-        /// When <paramref name="forward"/> points nearly straight up or down,
-        /// Vector3.up is a degenerate "up" reference, so we substitute
-        /// Vector3.forward to give LookRotation a valid perpendicular axis.
-        /// </summary>
-        private static Quaternion SafeLookRotation(Vector3 forward)
+        /// Smoothly rotates the transform to face the current Rigidbody velocity.
+        /// Skipped entirely when velocity is near-zero so LookRotation is never
+        /// given a zero forward vector.
+        private void RotateTowardVelocity()
         {
-            if (forward.sqrMagnitude < 0.001f)
-                forward = Vector3.down;
+            if (_rb == null)
+                return;
 
-            // If forward is nearly parallel to Vector3.up, use Vector3.forward as up.
+            Vector3 vel = _rb.linearVelocity;
+            if (vel.sqrMagnitude < 0.01f)
+                return; // stationary — keep current rotation, don't call LookRotation
+
+            Quaternion target = DirectionToRotation(vel.normalized);
+            transform.rotation = Quaternion.RotateTowards(
+                transform.rotation,
+                target,
+                720f * Time.fixedDeltaTime
+            ); // fast cosmetic snap
+        }
+
+        /// Converts a normalised direction into a Quaternion without ever passing
+        /// a zero or near-parallel vector to Quaternion.LookRotation.
+        ///
+        /// Unity's LookRotation(forward, up) requires forward and up to be
+        /// non-zero AND non-parallel.  When forward ≈ ±Vector3.up the cross
+        /// product collapses, producing the "Look rotation viewing vector is zero"
+        /// warning.  We detect this and substitute Vector3.forward as the up axis.
+        private static Quaternion DirectionToRotation(Vector3 direction)
+        {
+            // direction is assumed to be normalised by the caller.
+            // Guard against zero just in case.
+            if (direction.sqrMagnitude < 0.001f)
+                return Quaternion.identity;
+
+            // Choose an up vector that is guaranteed not to be parallel to direction.
+            // |dot| > 0.99 means the angle between direction and Vector3.up is < ~8°
+            // (or > ~172°), i.e. the rocket is pointing nearly straight up or down.
             Vector3 up =
-                Mathf.Abs(Vector3.Dot(forward, Vector3.up)) > 0.99f ? Vector3.forward : Vector3.up;
+                Mathf.Abs(Vector3.Dot(direction, Vector3.up)) > 0.99f
+                    ? Vector3.forward // use world-forward when nearly vertical
+                    : Vector3.up;
 
-            return Quaternion.LookRotation(forward, up);
+            return Quaternion.LookRotation(direction, up);
         }
 
         // ----------------------------------------------------------------
@@ -263,7 +271,8 @@ namespace IssaPlugin.Items
                 return;
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[Javelin] Detonating at {transform.position} (target was {TargetPosition})."
+                $"[Javelin] Detonating at {transform.position:F1} "
+                    + $"(target {TargetPosition:F1})."
             );
 
             ServerExplodeMethod?.Invoke(_rocket, new object[] { transform.position });

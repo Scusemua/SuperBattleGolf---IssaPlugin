@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 3926779927
+CRC: 2000707960
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 4a33d7c167f33b4a2779f0c3c212d69e
+    Hash: 7083084c9076f3f1e0714776a4f1ab72
   TypeTreeHash:
     serializedVersion: 2
     Hash: f3672b0c1f82247490603e54482e422d
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 99e25cd5deefd109229c42adedf200bb
+    Hash: dd2a306add3792e29797d08664fbb010
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -93,6 +93,7 @@ Assets:
 - Assets/Assets/Dark 2.mat
 - Assets/Assets/missile_locked.ogg
 - Assets/Assets/bat_model.prefab
+- Assets/Assets/javelin_icon.png
 - Assets/Assets/intervention.prefab
 - Assets/Assets/gravity_remote_icon.png
 - Assets/Assets/sniper_rifle_icon.png

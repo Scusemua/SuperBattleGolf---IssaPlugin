@@ -120,7 +120,9 @@ namespace IssaPlugin.Patches
                     else if (bridge.IsWaitingForDetonation)
                         IssaPluginPlugin.Log.LogInfo("[Javelin] Already in-flight, please wait.");
                     else
-                        IssaPluginPlugin.Log.LogInfo("[Javelin] No lock — aim at the ground first.");
+                        IssaPluginPlugin.Log.LogInfo(
+                            "[Javelin] No lock — aim at the ground first."
+                        );
                 }
                 else
                     IssaPluginPlugin.Log.LogError("[Javelin] No JavelinNetworkBridge on player.");
@@ -505,10 +507,15 @@ namespace IssaPlugin.Patches
             {
                 equippedItem = ItemType.ElephantGun;
             }
+            else if (equippedItem == JavelinItem.JavelinItemType)
+            {
+                equippedItem = ItemType.RocketLauncher;
+            }
             else if (equippedItem != BatItem.BatItemType)
             {
                 equippedItem = ItemType.OrbitalLaser;
-            }        }
+            }
+        }
     }
 
     /// Redirects the runtime animator controller lookup to OrbitalLaser when a
@@ -524,6 +531,8 @@ namespace IssaPlugin.Patches
 
             if (equippedItem == SniperRifleItem.SniperRifleItemType)
                 equippedItem = ItemType.ElephantGun;
+            else if (equippedItem == JavelinItem.JavelinItemType)
+                equippedItem = ItemType.RocketLauncher;
             else if (equippedItem == BatItem.BatItemType)
                 equippedItem = ItemType.None; // gives correct hand pose on remote clients
             else
