@@ -161,6 +161,7 @@ namespace IssaPlugin
         public static ConfigEntry<float> JavelinDiveAcceleration { get; private set; }
         public static ConfigEntry<float> JavelinArrivalRadius { get; private set; }
         public static ConfigEntry<float> JavelinTimeout { get; private set; }
+        public static ConfigEntry<float> JavelinExplosionVfxDuration { get; private set; }
 
         // --- Explosion Scaling ---
         public static ConfigEntry<float> AC130ExplosionScale { get; private set; }
@@ -1052,6 +1053,13 @@ namespace IssaPlugin
                 "Timeout",
                 20f,
                 "Maximum seconds before the rocket force-detonates if it hasn't hit yet."
+            );
+
+            JavelinExplosionVfxDuration = cfg.Bind(
+                "Javelin",
+                "ExplosionVfxDuration",
+                5f,
+                "Seconds before the Javelin explosion VFX prefab is destroyed on each client."
             );
 
             JavelinExplosionScale = cfg.Bind(
