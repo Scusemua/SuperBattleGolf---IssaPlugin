@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 2363783025
+CRC: 1057622181
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 67dab1cf72aeff86548721d1e6a31b2e
+    Hash: 8be88df51adbb3b360f8ec28d61ce013
   TypeTreeHash:
     serializedVersion: 2
     Hash: f3672b0c1f82247490603e54482e422d
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 9e62c71668026b21444a344251f1df95
+    Hash: f959df5603d97d0d87ea9b04284f63f5
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -69,6 +69,7 @@ Assets:
 - Assets/Assets/homerun.ogg
 - Assets/Assets/fire_torch_intense.prefab
 - Assets/Assets/ac130_model.prefab
+- Assets/Assets/sticky_grenade.prefab
 - Assets/Assets/Material.003.mat
 - Assets/Assets/donut_model.prefab
 - Assets/Assets/missile_icon.png
@@ -83,6 +84,7 @@ Assets:
 - Assets/Assets/predator_missile_ready.ogg
 - Assets/Assets/Material.001.mat
 - Assets/Assets/bomber_proxy.prefab
+- Assets/Assets/sticky_grenade_icon.png
 - Assets/Assets/laser_zone_red.prefab
 - Assets/Assets/gravity_remote.prefab
 - Assets/Assets/gravity_remote_model.fbx
