@@ -18,6 +18,7 @@ namespace IssaPlugin.Items
         public static Sprite DonutIcon { get; private set; }
 
         public static Sprite JavelinIcon { get; private set; }
+        public static Sprite StickyGrenadeIcon { get; private set; }
 
         public static Texture2D SniperScopeTexture { get; private set; }
 
@@ -38,6 +39,7 @@ namespace IssaPlugin.Items
         public static GameObject JavelinHandheldPrefab { get; private set; }
 
         public static GameObject DonutLaserZoneRed { get; private set; }
+        public static GameObject StickyGrenadePrefab { get; private set; }
 
         public static GameObject ConfettiBlastRainbow { get; private set; }
 
@@ -110,6 +112,7 @@ namespace IssaPlugin.Items
             SniperRifleIcon = LoadSprite("sniper_rifle_icon.png");
             DonutIcon = LoadSprite("donut_icon.png");
             JavelinIcon = LoadSprite("javelin_icon.png");
+            StickyGrenadeIcon = LoadSprite("semtex_icon.png");
 
             SniperScopeTexture = LoadTexture2D("sniper_scope.png");
 
@@ -143,6 +146,11 @@ namespace IssaPlugin.Items
             if (DonutPrefab != null)
                 DonutPrefab.AddComponent<DonutClientSetup>();
             DisableRigidbody(DonutPrefab);
+
+            StickyGrenadePrefab = Load<GameObject>("semtex_grenade.prefab");
+            EnsureNetworkIdentity(StickyGrenadePrefab, 0x5E47EC01u);
+            if (StickyGrenadePrefab != null)
+                StickyGrenadePrefab.AddComponent<StickyGrenadeClientSetup>();
 
             DonutHandheldPrefab = Load<GameObject>("donut_model.prefab");
             JavelinHandheldPrefab = Load<GameObject>("javelin_rocket_launcher.prefab");

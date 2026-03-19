@@ -37,7 +37,8 @@ namespace IssaPlugin.Items
                 || type == LowGravityItem.LowGravityItemType
                 || type == SniperRifleItem.SniperRifleItemType
                 || type == DonutItem.DonutItemType
-                || type == JavelinItem.JavelinItemType;
+                || type == JavelinItem.JavelinItemType
+                || type == StickyGrenadeItem.StickyGrenadeItemType;
         }
 
         public static int GetMaxUses(ItemType type)
@@ -60,6 +61,8 @@ namespace IssaPlugin.Items
                 return (int)Configuration.DonutUses.Value;
             if (type == JavelinItem.JavelinItemType)
                 return (int)Configuration.JavelinUses.Value;
+            if (type == StickyGrenadeItem.StickyGrenadeItemType)
+                return (int)Configuration.StickyGrenadeUses.Value;
             return 1;
         }
 
@@ -113,6 +116,7 @@ namespace IssaPlugin.Items
             var sniperRifleData = GetOrCreateItemData(SniperRifleItem.SniperRifleItemType);
             var donutData = GetOrCreateItemData(DonutItem.DonutItemType);
             var javelinData = GetOrCreateItemData(JavelinItem.JavelinItemType);
+            var semtexData = GetOrCreateItemData(StickyGrenadeItem.StickyGrenadeItemType);
 
             Sprite rocketFallbackIcon = null;
             if (
@@ -140,6 +144,7 @@ namespace IssaPlugin.Items
             );
             IconProperty.SetValue(donutData, AssetLoader.DonutIcon ?? rocketFallbackIcon);
             IconProperty.SetValue(javelinData, AssetLoader.JavelinIcon ?? rocketFallbackIcon);
+            IconProperty.SetValue(semtexData, AssetLoader.StickyGrenadeIcon ?? rocketFallbackIcon);
 
             dict[BatItem.BatItemType] = batData;
             dict[StealthBomberItem.BomberItemType] = bomberData;
@@ -150,6 +155,7 @@ namespace IssaPlugin.Items
             dict[SniperRifleItem.SniperRifleItemType] = sniperRifleData;
             dict[DonutItem.DonutItemType] = donutData;
             dict[JavelinItem.JavelinItemType] = javelinData;
+            dict[StickyGrenadeItem.StickyGrenadeItemType] = semtexData;
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[ItemRegistry] Injected {CustomItemDataCache.Count} custom items."
@@ -246,6 +252,7 @@ namespace IssaPlugin.Items
                 addEntryMethod.Invoke(table, new object[] { "ITEM_106", "M200 Intervention" });
                 addEntryMethod.Invoke(table, new object[] { "ITEM_107", "Donut" });
                 addEntryMethod.Invoke(table, new object[] { "ITEM_108", "Javelin" });
+                addEntryMethod.Invoke(table, new object[] { "ITEM_109", "StickyGrenade" });
 
                 IssaPluginPlugin.Log.LogInfo(
                     "[ItemRegistry] Custom item names registered in string table."

@@ -139,6 +139,18 @@ namespace IssaPlugin
         public static ConfigEntry<float> DonutCrashTorque { get; private set; }
         public static ConfigEntry<float> DonutCrashExplosionScale { get; private set; }
 
+        // --- StickyGrenade ---
+        public static ConfigEntry<Key> StickyGrenadeGiveKey { get; private set; }
+        public static ConfigEntry<float> StickyGrenadeUses { get; private set; }
+        public static ConfigEntry<float> StickyGrenadeSpawnWeight { get; private set; }
+        public static ConfigEntry<float> StickyGrenadeThrowSpeed { get; private set; }
+        public static ConfigEntry<float> StickyGrenadeMaxThrowSpeed { get; private set; }
+        public static ConfigEntry<float> StickyGrenadeLobAngle { get; private set; }
+        public static ConfigEntry<float> StickyGrenadeFuseTime { get; private set; }
+        public static ConfigEntry<float> StickyGrenadeGraceTime { get; private set; }
+        public static ConfigEntry<float> StickyGrenadeStickRadius { get; private set; }
+        public static ConfigEntry<float> StickyGrenadeExplosionScale { get; private set; }
+
         // --- Javelin ---
         public static ConfigEntry<Key> JavelinGiveKey { get; private set; }
         public static ConfigEntry<float> JavelinUses { get; private set; }
@@ -1047,6 +1059,79 @@ namespace IssaPlugin
                 "JavelinScale",
                 3.5f,
                 "Multiplier for Javelin explosions. Affects blast radius, knockback, and VFX size."
+            );
+
+            // --- StickyGrenade ---
+            StickyGrenadeGiveKey = cfg.Bind(
+                "StickyGrenade",
+                "GiveKey",
+                Key.Numpad4,
+                "Debug key to add the StickyGrenade grenade to your inventory."
+            );
+
+            StickyGrenadeUses = cfg.Bind(
+                "StickyGrenade",
+                "Uses",
+                2f,
+                "Number of StickyGrenade grenades per pickup."
+            );
+
+            StickyGrenadeSpawnWeight = cfg.Bind(
+                "ItemBoxSpawns",
+                "StickyGrenadeWeight",
+                3f,
+                "Spawn weight for the StickyGrenade in item boxes. Set to 0 to disable."
+            );
+
+            StickyGrenadeThrowSpeed = cfg.Bind(
+                "StickyGrenade",
+                "ThrowSpeed",
+                22f,
+                "Initial speed in units per second when the grenade is thrown."
+            );
+
+            StickyGrenadeMaxThrowSpeed = cfg.Bind(
+                "StickyGrenade",
+                "MaxThrowSpeed",
+                35f,
+                "Server-side cap on throw speed to prevent exploits."
+            );
+
+            StickyGrenadeLobAngle = cfg.Bind(
+                "StickyGrenade",
+                "LobAngle",
+                0.25f,
+                "Upward component added to the throw direction for a natural lob arc. "
+                    + "0 = perfectly flat, 1 = 45 degrees upward."
+            );
+
+            StickyGrenadeFuseTime = cfg.Bind(
+                "StickyGrenade",
+                "FuseTime",
+                3.5f,
+                "Seconds from when the grenade sticks until it detonates."
+            );
+
+            StickyGrenadeGraceTime = cfg.Bind(
+                "StickyGrenade",
+                "GraceTime",
+                0.35f,
+                "Seconds after throwing before the grenade can stick to anything. "
+                    + "Prevents the grenade from immediately sticking to the thrower."
+            );
+
+            StickyGrenadeStickRadius = cfg.Bind(
+                "StickyGrenade",
+                "StickRadius",
+                0.55f,
+                "Radius of the overlap sphere used to detect stick targets each FixedUpdate."
+            );
+
+            StickyGrenadeExplosionScale = cfg.Bind(
+                "Explosions",
+                "StickyGrenadeScale",
+                4.0f,
+                "Multiplier for StickyGrenade explosions. Affects blast radius, knockback, and VFX size."
             );
         }
     }

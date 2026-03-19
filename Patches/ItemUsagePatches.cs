@@ -274,6 +274,8 @@ namespace IssaPlugin.Patches
                 return AssetLoader.DonutHandheldPrefab;
             if (type == JavelinItem.JavelinItemType)
                 return AssetLoader.JavelinHandheldPrefab;
+            if (type == StickyGrenadeItem.StickyGrenadeItemType)
+                return AssetLoader.StickyGrenadePrefab;
             return null;
         }
 

@@ -28,6 +28,8 @@ namespace IssaPlugin.Patches
                 1
             ),
             (new[] { "donut", "Donut" }, DonutItem.DonutItemType, 1),
+            (new[] { "javelin", "Javelin" }, JavelinItem.JavelinItemType, 1),
+            (new[] { "javelin", "Javelin" }, JavelinItem.JavelinItemType, 1),
         };
 
         /// <summary>

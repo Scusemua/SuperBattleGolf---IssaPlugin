@@ -15,10 +15,7 @@ namespace IssaPlugin
         private const float SyncInterval = 5f;
 
         // Sentinel: impossible weight value so the first check always triggers a sync.
-        private static SpawnWeightsMessage _lastSent = new SpawnWeightsMessage
-        {
-            Bat = -1f,
-        };
+        private static SpawnWeightsMessage _lastSent = new SpawnWeightsMessage { Bat = -1f };
 
         private IEnumerator Start()
         {
@@ -43,6 +40,7 @@ namespace IssaPlugin
                 Sniper = Configuration.SniperRifleSpawnWeight.Value,
                 Donut = Configuration.DonutSpawnWeight.Value,
                 Javelin = Configuration.JavelinSpawnWeight.Value,
+                StickyGrenade = Configuration.StickyGrenadeSpawnWeight.Value,
             };
 
             if (WeightsEqual(msg, _lastSent))
@@ -59,7 +57,7 @@ namespace IssaPlugin
             IssaPluginPlugin.Log.LogDebug(
                 $"[SpawnWeights] Synced — Bat={msg.Bat} Bomber={msg.Bomber} Missile={msg.Missile} "
                     + $"AC130={msg.AC130} Freeze={msg.Freeze} LowGravity={msg.LowGravity} "
-                    + $"Sniper={msg.Sniper} Donut={msg.Donut} Javelin={msg.Javelin}"
+                    + $"Sniper={msg.Sniper} Donut={msg.Donut} Javelin={msg.Javelin} StickyGrenade={msg.StickyGrenade}"
             );
         }
 
@@ -72,7 +70,8 @@ namespace IssaPlugin
             && a.LowGravity == b.LowGravity
             && a.Sniper == b.Sniper
             && a.Donut == b.Donut
-            && a.Javelin == b.Javelin;
+            && a.Javelin == b.Javelin
+            && a.StickyGrenade == b.StickyGrenade;
 
         /// Called on each client when a SpawnWeightsMessage arrives from the host.
         internal static void HandleSpawnWeights(SpawnWeightsMessage msg)
@@ -90,11 +89,12 @@ namespace IssaPlugin
             Configuration.SniperRifleSpawnWeight.Value = msg.Sniper;
             Configuration.DonutSpawnWeight.Value = msg.Donut;
             Configuration.JavelinSpawnWeight.Value = msg.Javelin;
+            Configuration.StickyGrenadeSpawnWeight.Value = msg.StickyGrenade;
 
             IssaPluginPlugin.Log.LogDebug(
                 $"[SpawnWeights] Received from host — Bat={msg.Bat} Bomber={msg.Bomber} "
                     + $"Missile={msg.Missile} AC130={msg.AC130} Freeze={msg.Freeze} "
-                    + $"LowGravity={msg.LowGravity} Sniper={msg.Sniper} Donut={msg.Donut} Javelin={msg.Javelin}"
+                    + $"LowGravity={msg.LowGravity} Sniper={msg.Sniper} Donut={msg.Donut} Javelin={msg.Javelin} StickyGrenade={msg.StickyGrenade}"
             );
         }
     }
