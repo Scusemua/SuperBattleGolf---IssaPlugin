@@ -275,7 +275,7 @@ namespace IssaPlugin.Items
             {
                 // Build a minimal ItemUseId — the thrower's info was stored at throw time
                 var useId = new ItemUseId(
-                    ThrowerInfo?.PlayerId.Guid ?? 0UL,
+                    (ulong)(ThrowerInfo?.PlayerId.Guid ?? 0UL),
                     StickyGrenadeItem.NextUseIndex(),
                     ItemType.RocketLauncher
                 );

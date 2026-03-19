@@ -112,7 +112,7 @@ namespace IssaPlugin.Items
             SniperRifleIcon = LoadSprite("sniper_rifle_icon.png");
             DonutIcon = LoadSprite("donut_icon.png");
             JavelinIcon = LoadSprite("javelin_icon.png");
-            StickyGrenadeIcon = LoadSprite("semtex_icon.png");
+            StickyGrenadeIcon = LoadSprite("sticky_grenade_icon.png");
 
             SniperScopeTexture = LoadTexture2D("sniper_scope.png");
 
@@ -147,7 +147,7 @@ namespace IssaPlugin.Items
                 DonutPrefab.AddComponent<DonutClientSetup>();
             DisableRigidbody(DonutPrefab);
 
-            StickyGrenadePrefab = Load<GameObject>("semtex_grenade.prefab");
+            StickyGrenadePrefab = Load<GameObject>("sticky_grenade.prefab");
             EnsureNetworkIdentity(StickyGrenadePrefab, 0x5E47EC01u);
             if (StickyGrenadePrefab != null)
                 StickyGrenadePrefab.AddComponent<StickyGrenadeClientSetup>();
