@@ -30,6 +30,11 @@ namespace IssaPlugin.Patches
             (new[] { "donut", "Donut" }, DonutItem.DonutItemType, 1),
             (new[] { "javelin", "Javelin" }, JavelinItem.JavelinItemType, 1),
             (new[] { "javelin", "Javelin" }, JavelinItem.JavelinItemType, 1),
+            (
+                new[] { "sticky_grenade", "sticky", "stickygrenade" },
+                StickyGrenadeItem.StickyGrenadeItemType,
+                1
+            ),
         };
 
         /// <summary>
@@ -83,7 +88,7 @@ namespace IssaPlugin.Patches
 
             UnityEngine.Debug.LogWarning(
                 $"[giveCustomItem] Unknown item \"{itemName}\". "
-                    + "Valid names: ac130, bomber, missile, bat, freeze, lowgravity, sniper, donut (or an integer item-type ID)."
+                    + "Valid names: ac130, bomber, missile, bat, freeze, lowgravity, sniper, donut, javelin, stickygrenade (or an integer item-type ID)."
             );
         }
     }
