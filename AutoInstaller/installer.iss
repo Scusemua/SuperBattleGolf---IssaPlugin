@@ -7,7 +7,7 @@ OutputDir=Output
 OutputBaseFilename=SuperBattleGolfModInstaller
 
 [Files]
-Source: "ModFiles\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
+Source: "ModFiles\*"; DestDir: "{app}\BepInEx\plugins"; Flags: recursesubdirs ignoreversion
 
 [Code]
 

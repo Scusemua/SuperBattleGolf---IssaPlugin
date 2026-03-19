@@ -79,7 +79,7 @@ namespace IssaPlugin.Items
         public static void Load()
         {
             string pluginDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            string bundlePath = Path.Combine(pluginDir, "Bundle", "issamod");
+            string bundlePath = Path.Combine(pluginDir, "IssaPluginBundle", "issamod");
 
             if (!File.Exists(bundlePath))
             {
@@ -88,7 +88,7 @@ namespace IssaPlugin.Items
                 {
                     IssaPluginPlugin.Log.LogWarning(
                         "[Assets] Asset bundle not found. "
-                            + "Place 'issamod' in Bundle/ next to the plugin DLL."
+                            + "Place 'issamod' in IssaPluginBundle/ next to the plugin DLL."
                     );
                     return;
                 }
@@ -193,7 +193,7 @@ namespace IssaPlugin.Items
                 GameObject.DontDestroyOnLoad(DroppedCustomItemPrefab);
             }
 
-            IssaPluginPlugin.Log.LogInfo("[Assets] Bundle loaded.");
+            IssaPluginPlugin.Log.LogInfo("[Assets] IssaPluginBundle loaded.");
         }
 
         /// Ensures a prefab has a NetworkIdentity with a stable assetId so Mirror

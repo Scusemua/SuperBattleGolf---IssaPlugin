@@ -2,12 +2,12 @@ ISCC="C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
 SCRIPT=AutoInstaller/installer.iss
 
 MODFILES=AutoInstaller\ModFiles
-BUNDLE=Bundle
+BUNDLE=IssaPluginBundle
 DLL=bin\Debug\netstandard2.1\IssaPlugin.dll
 
 all: build-issamod build-autoinstaller
 
-build-autoinstaller: # stage-files
+build-autoinstaller: stage-files
 	$(ISCC) $(SCRIPT)
 
 build-issamod:
