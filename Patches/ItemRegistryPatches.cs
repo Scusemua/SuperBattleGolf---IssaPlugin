@@ -179,6 +179,16 @@ namespace IssaPlugin.Patches
                     }
                 );
 
+            float stickyGrenadeWeight = Configuration.StickyGrenadeSpawnWeight.Value;
+            if (stickyGrenadeWeight > 0f)
+                list.Add(
+                    new ItemPool.ItemSpawnChance
+                    {
+                        item = StickyGrenadeItem.StickyGrenadeItemType,
+                        spawnChanceWeight = stickyGrenadeWeight,
+                    }
+                );
+
             return list.ToArray();
         }
 
