@@ -1,3 +1,8 @@
+ifneq (,$(wildcard ./.env))
+    include .env
+    export
+endif
+
 ISCC="C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
 SCRIPT=AutoInstaller/installer.iss
 FIRST_TIME_SCRIPT=AutoInstaller/first_time_installer.iss
@@ -6,8 +11,11 @@ MODFILES=AutoInstaller\ModFiles
 FIRST_TIME_MODFILES=AutoInstaller\FirstTime
 BUNDLE=IssaPluginBundle
 DLL=bin\Debug\netstandard2.1\IssaPlugin.dll
+PDB=bin\Debug\netstandard2.1\IssaPlugin.pdb
+RELEASE_DIR=release-staging
+VERSION=$(shell powershell -NoProfile -Command "(Select-String -Path IssaPlugin.csproj -Pattern '<Version>([^<]+)</Version>').Matches[0].Groups[1].Value")
 
-all: build-issamod build-autoinstaller
+all: build build-autoinstaller
 
 build-autoinstaller: stage-files
 	$(ISCC) $(SCRIPT)
@@ -15,7 +23,7 @@ build-autoinstaller: stage-files
 build-first-time-autoinstaller: stage-first-time-files
 	$(ISCC) $(SCRIPT)
 
-build-issamod:
+build:
 	dotnet build
 
 stage-files: clean-modfiles build-issamod
@@ -37,6 +45,24 @@ stage-first-time-files: build-issamod
 clean-modfiles:
 	if exist $(MODFILES) rmdir /S /Q $(MODFILES)
 
+release: build
+	@echo Creating release v$(VERSION)...
+	if exist $(RELEASE_DIR) rmdir /S /Q $(RELEASE_DIR)
+	mkdir $(RELEASE_DIR)
+	xcopy /E /I /Y $(BUNDLE) $(RELEASE_DIR)\IssaPluginBundle
+	copy /Y $(DLL) $(RELEASE_DIR)
+	copy /Y $(PDB) $(RELEASE_DIR)
+	powershell -NoProfile -Command "Compress-Archive -Path '$(RELEASE_DIR)\*' -DestinationPath 'IssaMod-v$(VERSION).zip' -Force"
+	gh release create v$(VERSION) IssaMod-v$(VERSION).zip --title "v$(VERSION)" --generate-notes
+	if exist $(RELEASE_DIR) rmdir /S /Q $(RELEASE_DIR)
+
+install: build
+	@echo Installing mod to $(MOD_DIR)...
+	xcopy /E /I /Y $(BUNDLE) $(MOD_DIR)\IssaPluginBundle
+	copy /Y $(DLL) $(MOD_DIR)
+
 clean:
 	if exist Output rmdir /S /Q Output
 	if exist $(MODFILES) rmdir /S /Q $(MODFILES)
+	if exist $(RELEASE_DIR) rmdir /S /Q $(RELEASE_DIR)
+	del /Q IssaMod-v*.zip 2>nul || true
