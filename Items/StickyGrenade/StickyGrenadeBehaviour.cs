@@ -166,8 +166,13 @@ namespace IssaPlugin.Items
                 QueryTriggerInteraction.Ignore
             );
 
-            if (groundHits.Length > 0)
+            foreach (var col in groundHits)
             {
+                // Skip the grenade's own colliders — they share its layer and
+                // would otherwise trigger an immediate stick after grace time.
+                if (col.transform.IsChildOf(transform) || col.transform == transform)
+                    continue;
+
                 StickTo(null, null); // static world geometry — no moving parent
                 return;
             }
