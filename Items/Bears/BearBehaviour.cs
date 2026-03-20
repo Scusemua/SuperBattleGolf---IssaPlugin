@@ -94,9 +94,9 @@ namespace IssaPlugin.Items
             // ApplyAttackHit, not through physics contact.
             var bearColliders = GetComponentsInChildren<Collider>();
             foreach (var player in GetActivePlayers())
-                foreach (var pc in player.GetComponentsInChildren<Collider>())
-                    foreach (var bc in bearColliders)
-                        Physics.IgnoreCollision(bc, pc, true);
+            foreach (var pc in player.GetComponentsInChildren<Collider>())
+            foreach (var bc in bearColliders)
+                Physics.IgnoreCollision(bc, pc, true);
 
             // Aggro notification is handled directly via OnHitByExplosion —
             // no separate event subscription needed.
@@ -550,6 +550,19 @@ namespace IssaPlugin.Items
         }
 
         // ── External events ───────────────────────────────────────────────────
+
+        /// <summary>
+        /// Called by GolfClubBearHitPatch when the bear is struck by a melee swing.
+        /// Applies an impulse to the rigidbody (giving a "flying" feel) and transitions
+        /// to Stunned so the AI does not fight the physics impulse.
+        /// </summary>
+        public void ApplyMeleeKnockback(Vector3 direction, float force)
+        {
+            if (_rb == null || _destroying)
+                return;
+
+            _rb.AddForce(direction * force, ForceMode.Impulse);
+        }
 
         /// <summary>
         /// Called by BearHitReceiver when the bear is struck by an explosion / rocket.

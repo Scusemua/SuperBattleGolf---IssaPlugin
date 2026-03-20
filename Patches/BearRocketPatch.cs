@@ -130,10 +130,19 @@ namespace IssaPlugin.Patches
                     if (!_notifiedBears.Add(receiver.gameObject))
                         continue;
 
+                    // A direct hit is when the explosion centre is very close to the bear.
+                    // Splash damage applies when the bear is caught in the blast radius.
+                    float dist = Vector3.Distance(worldPosition, receiver.transform.position);
+                    bool isDirect = dist < 1.5f;
+                    float damage = isDirect
+                        ? Configuration.BearDamageRocketDirect.Value
+                        : Configuration.BearDamageRocketExplosion.Value;
+
                     IssaPluginPlugin.Log.LogInfo(
-                        $"[Bear] Rocket exploded near bear at {worldPosition} — hit registered."
+                        $"[Bear] Rocket {(isDirect ? "direct hit" : "splash")} at {worldPosition} "
+                            + $"(dist={dist:F1}) — {damage} damage."
                     );
-                    receiver.OnHit?.Invoke();
+                    receiver.DealDamage(damage);
                 }
             }
             finally

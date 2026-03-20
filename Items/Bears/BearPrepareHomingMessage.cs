@@ -9,7 +9,7 @@ namespace IssaPlugin.Items
     /// The server handler calls BearNetworkBridge.ServerPrepareBearRocket(), which
     /// sets PendingBearHoming = true. BearRocketHomingPatch.Postfix then consumes
     /// that flag the moment the next Rocket.ServerInitialize fires, attaching a
-    /// GunshipHomingBehaviour that steers the rocket toward the nearest bear.
+    /// RocketHomingBehaviour that steers the rocket toward the nearest bear.
     ///
     /// Mirrors BomberPrepareHomingMessage and AC130PrepareHomingMessage exactly.
     /// </summary>
@@ -18,9 +18,11 @@ namespace IssaPlugin.Items
     public static class BearPrepareHomingMessageSerialization
     {
         public static void WriteBearPrepareHomingMessage(
-            NetworkWriter writer, BearPrepareHomingMessage msg) { }
+            NetworkWriter writer,
+            BearPrepareHomingMessage msg
+        ) { }
 
-        public static BearPrepareHomingMessage ReadBearPrepareHomingMessage(
-            NetworkReader reader) => new BearPrepareHomingMessage();
+        public static BearPrepareHomingMessage ReadBearPrepareHomingMessage(NetworkReader reader) =>
+            new BearPrepareHomingMessage();
     }
 }

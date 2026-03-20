@@ -52,7 +52,7 @@ namespace IssaPlugin.Patches
 
     /// <summary>
     /// When a player is locked onto a bear and fires a rocket, we attach
-    /// GunshipHomingBehaviour (which already exists in the codebase) to home
+    /// RocketHomingBehaviour (which already exists in the codebase) to home
     /// the rocket toward the bear. This reuses the exact same homing component
     /// used for gunship and bomber homing — no new code needed.
     ///
@@ -80,7 +80,7 @@ namespace IssaPlugin.Patches
 
             bearBridge.PendingBearHoming = false;
 
-            var homing = __instance.gameObject.AddComponent<GunshipHomingBehaviour>();
+            var homing = __instance.gameObject.AddComponent<RocketHomingBehaviour>();
             homing.Target = nearestBear.transform;
 
             IssaPluginPlugin.Log.LogInfo(

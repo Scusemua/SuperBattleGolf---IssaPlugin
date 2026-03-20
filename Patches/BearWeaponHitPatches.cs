@@ -20,6 +20,8 @@ namespace IssaPlugin.Patches
     ///
     ///   • Melee swings (golf club / baseball bat): after OnFinishedSwinging on the
     ///     server, OverlapSphere around the swing hitbox centre to check for bears.
+    ///     The bear is also launched with an impulse force scaled to the weapon type,
+    ///     mirroring the "flying" effect players experience when hit.
     ///
     /// Both hooks run only on the server (NetworkServer.active guard) so all hit
     /// events reach BearHitReceiver, which itself requires NetworkServer.active.
@@ -37,7 +39,8 @@ namespace IssaPlugin.Patches
             BearWeaponHitHelper.TryHitBearAlongRay(
                 shootingPlayer.PlayerInfo,
                 shootingPlayer.GetElephantGunBarrelEndPosition(),
-                direction
+                direction,
+                Configuration.BearDamageElephantGun.Value
             );
         }
     }
@@ -55,7 +58,8 @@ namespace IssaPlugin.Patches
             BearWeaponHitHelper.TryHitBearAlongRay(
                 shootingPlayer.PlayerInfo,
                 shootingPlayer.GetDuelingPistolBarrelEndPosition(),
-                direction
+                direction,
+                Configuration.BearDamageDuelingPistol.Value
             );
         }
     }
@@ -65,8 +69,18 @@ namespace IssaPlugin.Patches
     /// <summary>
     /// After any golf swing completes on the server, check for bears within
     /// <see cref="Configuration.BearMeleeHitRange"/> of the swing hitbox centre
-    /// and apply one hit to each.  A HashSet prevents double-hitting the same bear
-    /// from compound colliders.
+    /// and apply one hit to each.
+    ///
+    /// Weapon detection:
+    ///   • Baseball bat (BatItem.BatItemType): applies BearDamageBaseballBat damage
+    ///     and BearBatKnockbackForce impulse.
+    ///   • Golf club (anything else): applies BearDamageGolfClub damage and
+    ///     BearMeleeKnockbackForce impulse.
+    ///
+    /// The knockback direction is away from the swinging player plus a slight upward
+    /// angle, giving the bear the same "going flying" feel as a player hit.
+    ///
+    /// A HashSet prevents double-hitting the same bear from compound colliders.
     /// </summary>
     [HarmonyPatch(typeof(PlayerGolfer), "OnFinishedSwinging")]
     static class GolfClubBearHitPatch
@@ -81,6 +95,17 @@ namespace IssaPlugin.Patches
             var playerInfo = __instance.PlayerInfo;
             if (playerInfo == null)
                 return;
+
+            bool isBat =
+                playerInfo.Inventory?.GetEffectivelyEquippedItem(true) == BatItem.BatItemType;
+
+            float damage = isBat
+                ? Configuration.BearDamageBaseballBat.Value
+                : Configuration.BearDamageGolfClub.Value;
+
+            float knockbackForce = isBat
+                ? Configuration.BearBatKnockbackForce.Value
+                : Configuration.BearMeleeKnockbackForce.Value;
 
             // World-space centre of the swing hitbox
             Vector3 swingCenter = __instance.transform.TransformPoint(
@@ -107,8 +132,15 @@ namespace IssaPlugin.Patches
                 if (!_hitBears.Add(receiver.gameObject))
                     continue;
 
+                // Knockback: away from the swinging player + slight upward angle
+                Vector3 knockDir = (
+                    receiver.transform.position - playerInfo.transform.position
+                ).normalized;
+                knockDir = (knockDir + Vector3.up * 0.5f).normalized;
+
                 BearExplosionAttackerContext.CurrentAttacker = playerInfo;
-                receiver.OnHit?.Invoke();
+                receiver.Behaviour?.ApplyMeleeKnockback(knockDir, knockbackForce);
+                receiver.DealDamage(damage);
                 BearExplosionAttackerContext.CurrentAttacker = null;
 
                 // Blood splatter on all clients: origin is the swinging player,
@@ -122,7 +154,8 @@ namespace IssaPlugin.Patches
                 );
 
                 IssaPluginPlugin.Log.LogInfo(
-                    $"[Bear] Hit by melee swing from {playerInfo.PlayerId.PlayerName}."
+                    $"[Bear] Hit by {(isBat ? "baseball bat" : "golf club")} "
+                        + $"from {playerInfo.PlayerId.PlayerName} for {damage} damage."
                 );
             }
         }
@@ -137,13 +170,14 @@ namespace IssaPlugin.Patches
         /// <summary>
         /// Fires a single raycast from <paramref name="origin"/> in
         /// <paramref name="direction"/> against all layers.  If the first solid
-        /// hit belongs to a bear, registers one hit on that bear and credits
-        /// <paramref name="attacker"/> for aggro.
+        /// hit belongs to a bear, deals <paramref name="damage"/> HP to that bear
+        /// and credits <paramref name="attacker"/> for aggro.
         /// </summary>
         internal static void TryHitBearAlongRay(
             PlayerInfo attacker,
             Vector3 origin,
-            Vector3 direction
+            Vector3 direction,
+            float damage
         )
         {
             if (direction == Vector3.zero)
@@ -166,7 +200,7 @@ namespace IssaPlugin.Patches
                 return;
 
             BearExplosionAttackerContext.CurrentAttacker = attacker;
-            receiver.OnHit?.Invoke();
+            receiver.DealDamage(damage);
             BearExplosionAttackerContext.CurrentAttacker = null;
 
             // Blood splatter on all clients: origin is the barrel end, hit point
@@ -176,7 +210,7 @@ namespace IssaPlugin.Patches
             );
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[Bear] Hit by gun shot from {attacker?.PlayerId.PlayerName}."
+                $"[Bear] Hit by gun shot from {attacker?.PlayerId.PlayerName} for {damage} damage."
             );
         }
     }

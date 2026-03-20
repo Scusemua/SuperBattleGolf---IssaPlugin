@@ -136,6 +136,35 @@ namespace IssaPlugin.Items
             new BearHuntEndedMessage();
     }
 
+    /// <summary>
+    /// Broadcast to all clients whenever a bear's HP changes.
+    /// Clients use this to update the world-space health bar above the bear.
+    /// </summary>
+    public struct BearHPUpdateMessage : NetworkMessage
+    {
+        public uint BearNetId;
+        public float CurrentHP;
+        public float MaxHP;
+    }
+
+    public static class BearHPUpdateMessageSerialization
+    {
+        public static void WriteBearHPUpdateMessage(NetworkWriter writer, BearHPUpdateMessage msg)
+        {
+            writer.WriteUInt(msg.BearNetId);
+            writer.WriteFloat(msg.CurrentHP);
+            writer.WriteFloat(msg.MaxHP);
+        }
+
+        public static BearHPUpdateMessage ReadBearHPUpdateMessage(NetworkReader reader) =>
+            new BearHPUpdateMessage
+            {
+                BearNetId = reader.ReadUInt(),
+                CurrentHP = reader.ReadFloat(),
+                MaxHP = reader.ReadFloat(),
+            };
+    }
+
     // ── Server → Owning Client only (TargetRpc replacements) ────────────────
     // These are sent via connectionToClient.Send() so only the summoning player
     // receives them — not every player in the session.

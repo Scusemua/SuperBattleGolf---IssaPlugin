@@ -5,87 +5,87 @@ namespace IssaPlugin.Items
 {
     /// <summary>
     /// Attached server-side to each bear alongside BearBehaviour.
-    /// Tracks incoming hits from the explosion patch and manages the bear's HP.
+    /// Tracks HP and kills the bear when it reaches zero.
     ///
-    /// Inherits CustomHittable so the existing Patch_Rocket_ServerExplode
-    /// overlap-sphere check in RocketPatches.cs naturally discovers this component
-    /// and calls OnHit (once the A-5 audit fix has been applied to filter to
-    /// mod-only rockets — until then, this will also trigger on base-game rockets,
-    /// which may actually be desirable for bear hunting).
+    /// Inherits CustomHittable so the existing RocketPatches overlap-sphere
+    /// check naturally discovers this component. However, callers should prefer
+    /// DealDamage(float) over OnHit so that weapon-specific damage values are
+    /// applied correctly.
     ///
-    /// OnHitsExceeded is raised (from CustomHittable) to trigger death.
-    /// NOTE: CustomHittable.OnHitsExceeded is used as a plain Action delegate here —
-    /// the base class does not auto-invoke it; the subclass calls it directly in HandleHit.
+    /// Sends BearHPUpdateMessage to all clients whenever HP changes so that
+    /// BearHealthBarOverlay can display the current health above each bear.
     /// </summary>
     public class BearHitReceiver : CustomHittable
     {
-        /// Back-reference to the driving behaviour component so we can call
-        /// OnHitByExplosion / OnKilled without requiring another GetComponent call.
+        /// Back-reference to the driving behaviour component.
         public BearBehaviour Behaviour { get; set; }
+
+        public float CurrentHP { get; private set; }
+        public float MaxHP { get; private set; }
+
+        private NetworkIdentity _ni;
 
         private void Awake()
         {
-            HitCount = 0;
-            HitsRequired = (int)Configuration.BearHitsToKill.Value;
-
-            OnHit += HandleHit;
-
-            OnHitsExceeded = () =>
-            {
-                Behaviour?.OnKilled();
-            };
+            MaxHP = Configuration.BearMaxHP.Value;
+            CurrentHP = MaxHP;
         }
 
-        private void HandleHit()
+        private void Start()
         {
-            if (!NetworkServer.active)
-                return;
-            if (HitsRequired <= 0)
-                return;
-            if (HitCount >= HitsRequired)
-                return;
-
-            HitCount++;
-
-            IssaPluginPlugin.Log.LogInfo($"[Bear] Hit {HitCount}/{HitsRequired}.");
-
-            // Try to resolve the attacking player from the most recent explosion.
-            // The explosion patch stores the attacker via BearExplosionAttackerContext.
-            PlayerInfo attacker = TryGetCurrentAttacker();
-
-            if (HitCount >= HitsRequired)
-            {
-                IssaPluginPlugin.Log.LogInfo("[Bear] Bear killed by explosion.");
-                OnHitsExceeded?.Invoke();
-                return;
-            }
-
-            // OnHitByExplosion handles both aggro (NotifyHitBy) and stun transition.
-            Behaviour?.OnHitByExplosion(attacker);
+            _ni = GetComponent<NetworkIdentity>();
         }
 
         /// <summary>
-        /// Attempts to find the PlayerInfo of the player whose rocket most recently
-        /// overlapped this bear. This is a best-effort approach: we walk up the
-        /// recent-explosion context set by the explosion postfix patch.
-        ///
-        /// If we cannot determine the attacker (e.g. the rocket has already been
-        /// destroyed), we return null — which causes the bear to keep its existing
-        /// aggro target.
+        /// Applies <paramref name="amount"/> HP damage to this bear on the server.
+        /// Kills the bear if HP reaches zero; otherwise triggers a stun/aggro
+        /// transition and broadcasts the new HP to all clients.
         /// </summary>
-        private static PlayerInfo TryGetCurrentAttacker()
+        public void DealDamage(float amount)
         {
-            // BearExplosionAttackerContext is a lightweight static set by the
-            // Patch_Rocket_ServerExplode postfix immediately before calling OnHit.
-            // See BearRocketPatch.cs.
-            return BearExplosionAttackerContext.CurrentAttacker;
+            if (!NetworkServer.active)
+                return;
+            if (CurrentHP <= 0f)
+                return;
+            if (MaxHP <= 0f)
+                return;
+
+            CurrentHP -= amount;
+
+            IssaPluginPlugin.Log.LogInfo(
+                $"[Bear] Hit for {amount} damage. HP: {CurrentHP}/{MaxHP}."
+            );
+
+            // Broadcast new HP to all clients for the health bar.
+            if (_ni != null)
+            {
+                NetworkServer.SendToAll(
+                    new BearHPUpdateMessage
+                    {
+                        BearNetId = _ni.netId,
+                        CurrentHP = Mathf.Max(0f, CurrentHP),
+                        MaxHP = MaxHP,
+                    }
+                );
+            }
+
+            if (CurrentHP <= 0f)
+            {
+                IssaPluginPlugin.Log.LogInfo("[Bear] Bear killed.");
+                Behaviour?.OnKilled();
+                return;
+            }
+
+            // Stun + aggro update for non-lethal hits.
+            PlayerInfo attacker = BearExplosionAttackerContext.CurrentAttacker;
+            Behaviour?.OnHitByExplosion(attacker);
         }
     }
 
     /// <summary>
-    /// Thread-local-ish context set by the rocket explosion patch immediately
-    /// before invoking BearHitReceiver.OnHit so the hit receiver can identify
-    /// the attacker without storing state on the Rocket itself.
+    /// Thread-local-ish context set by weapon patches immediately before invoking
+    /// BearHitReceiver.DealDamage so the hit receiver can identify the attacker
+    /// without storing state on the weapon itself.
     ///
     /// Unity is single-threaded so a simple static field is safe here.
     /// </summary>
