@@ -86,6 +86,22 @@ namespace IssaPlugin.Patches
 
             if (hasInput) return; // Moving normally — let normal drag cap speed.
 
+            // Restore normal traction when the local player is close to their own ball,
+            // so they can stop and align for a shot instead of sliding past it.
+            var localGolfer = GameManager.LocalPlayerAsGolfer;
+            if (localGolfer != null)
+            {
+                var ball = localGolfer.OwnBall;
+                if (ball != null)
+                {
+                    Vector3 playerPos = ((UnityEngine.Component)__instance).transform.position;
+                    float sqrDist = (playerPos - ball.transform.position).sqrMagnitude;
+                    float radius = Configuration.FreezeGripRadius.Value;
+                    if (sqrDist <= radius * radius)
+                        return; // Within grip zone — leave game's normal drag in place.
+                }
+            }
+
             Vector3 prevVel = __state;
             float horizSqr = prevVel.x * prevVel.x + prevVel.z * prevVel.z;
             if (horizSqr < 0.01f) return; // Already essentially stopped.
