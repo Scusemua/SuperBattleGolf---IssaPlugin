@@ -644,11 +644,11 @@ namespace IssaPlugin.Patches
             );
 
             // Entire session ended (cleanup on all clients)
-            Writer<BearSessionEndMessage>.write =
-                BearSessionEndMessageSerialization.WriteBearSessionEndMessage;
-            Reader<BearSessionEndMessage>.read =
-                BearSessionEndMessageSerialization.ReadBearSessionEndMessage;
-            NetworkClient.RegisterHandler<BearSessionEndMessage>(
+            Writer<BearHuntEndedMessage>.write =
+                BearHuntEndedMessageSerialization.WriteBearHuntEndedMessage;
+            Reader<BearHuntEndedMessage>.read =
+                BearHuntEndedMessageSerialization.ReadBearHuntEndedMessage;
+            NetworkClient.RegisterHandler<BearHuntEndedMessage>(
                 BearNetworkBridge.HandleBearSessionEnd
             );
 

@@ -14,7 +14,9 @@ namespace IssaPlugin.Items
     public static class BearSummonMessageSerialization
     {
         public static void WriteBearSummonMessage(NetworkWriter writer, BearSummonMessage msg) { }
-        public static BearSummonMessage ReadBearSummonMessage(NetworkReader reader) => new BearSummonMessage();
+
+        public static BearSummonMessage ReadBearSummonMessage(NetworkReader reader) =>
+            new BearSummonMessage();
     }
 
     // ── Server → All Clients ─────────────────────────────────────────────────
@@ -51,8 +53,8 @@ namespace IssaPlugin.Items
         {
             return new BearStateMessage
             {
-                BearNetId      = reader.ReadUInt(),
-                State          = (BearAIState)reader.ReadByte(),
+                BearNetId = reader.ReadUInt(),
+                State = (BearAIState)reader.ReadByte(),
                 TargetPosition = reader.ReadVector3(),
             };
         }
@@ -65,13 +67,16 @@ namespace IssaPlugin.Items
     /// </summary>
     public struct BearAttackImpactMessage : NetworkMessage
     {
-        public uint  BearNetId;
+        public uint BearNetId;
         public Vector3 ImpactPosition;
     }
 
     public static class BearAttackImpactMessageSerialization
     {
-        public static void WriteBearAttackImpactMessage(NetworkWriter writer, BearAttackImpactMessage msg)
+        public static void WriteBearAttackImpactMessage(
+            NetworkWriter writer,
+            BearAttackImpactMessage msg
+        )
         {
             writer.WriteUInt(msg.BearNetId);
             writer.WriteVector3(msg.ImpactPosition);
@@ -81,7 +86,7 @@ namespace IssaPlugin.Items
         {
             return new BearAttackImpactMessage
             {
-                BearNetId      = reader.ReadUInt(),
+                BearNetId = reader.ReadUInt(),
                 ImpactPosition = reader.ReadVector3(),
             };
         }
@@ -91,12 +96,17 @@ namespace IssaPlugin.Items
     /// Broadcast to all clients when all bears from a session have died or
     /// the session timeout expires, so clients can clean up any local VFX.
     /// </summary>
-    public struct BearSessionEndMessage : NetworkMessage { }
+    public struct BearHuntEndedMessage : NetworkMessage { }
 
-    public static class BearSessionEndMessageSerialization
+    public static class BearHuntEndedMessageSerialization
     {
-        public static void WriteBearSessionEndMessage(NetworkWriter writer, BearSessionEndMessage msg) { }
-        public static BearSessionEndMessage ReadBearSessionEndMessage(NetworkReader reader) => new BearSessionEndMessage();
+        public static void WriteBearHuntEndedMessage(
+            NetworkWriter writer,
+            BearHuntEndedMessage msg
+        ) { }
+
+        public static BearHuntEndedMessage ReadBearHuntEndedMessage(NetworkReader reader) =>
+            new BearHuntEndedMessage();
     }
 
     // ── Server → Owning Client only (TargetRpc replacements) ────────────────
@@ -109,14 +119,16 @@ namespace IssaPlugin.Items
     /// </summary>
     public struct BearOverlayBeginMessage : NetworkMessage
     {
-        public int   BearCount;
+        public int BearCount;
         public float SessionDuration;
     }
 
     public static class BearOverlayBeginMessageSerialization
     {
         public static void WriteBearOverlayBeginMessage(
-            NetworkWriter writer, BearOverlayBeginMessage msg)
+            NetworkWriter writer,
+            BearOverlayBeginMessage msg
+        )
         {
             writer.WriteInt(msg.BearCount);
             writer.WriteFloat(msg.SessionDuration);
@@ -126,7 +138,7 @@ namespace IssaPlugin.Items
         {
             return new BearOverlayBeginMessage
             {
-                BearCount       = reader.ReadInt(),
+                BearCount = reader.ReadInt(),
                 SessionDuration = reader.ReadFloat(),
             };
         }
@@ -141,9 +153,12 @@ namespace IssaPlugin.Items
     public static class BearKilledClientMessageSerialization
     {
         public static void WriteBearKilledClientMessage(
-            NetworkWriter writer, BearKilledClientMessage msg) { }
-        public static BearKilledClientMessage ReadBearKilledClientMessage(NetworkReader reader)
-            => new BearKilledClientMessage();
+            NetworkWriter writer,
+            BearKilledClientMessage msg
+        ) { }
+
+        public static BearKilledClientMessage ReadBearKilledClientMessage(NetworkReader reader) =>
+            new BearKilledClientMessage();
     }
 
     /// <summary>
@@ -155,8 +170,11 @@ namespace IssaPlugin.Items
     public static class BearOverlayEndMessageSerialization
     {
         public static void WriteBearOverlayEndMessage(
-            NetworkWriter writer, BearOverlayEndMessage msg) { }
-        public static BearOverlayEndMessage ReadBearOverlayEndMessage(NetworkReader reader)
-            => new BearOverlayEndMessage();
+            NetworkWriter writer,
+            BearOverlayEndMessage msg
+        ) { }
+
+        public static BearOverlayEndMessage ReadBearOverlayEndMessage(NetworkReader reader) =>
+            new BearOverlayEndMessage();
     }
 }

@@ -202,7 +202,7 @@ namespace IssaPlugin.Items
             }
 
             // Broadcast session-end to all clients (VFX / audio cleanup)
-            NetworkServer.SendToAll(new BearSessionEndMessage());
+            NetworkServer.SendToAll(new BearHuntEndedMessage());
 
             // Tell owning client to hide its HUD
             if (connectionToClient != null)
@@ -270,7 +270,7 @@ namespace IssaPlugin.Items
         /// Currently only logs — reserved for future client-side VFX / audio cleanup.
         /// If no VFX is ever added, remove this message and its registration in
         /// NetworkManagerPatches_BearAdditions.cs to reduce network overhead.
-        public static void HandleBearSessionEnd(BearSessionEndMessage msg)
+        public static void HandleBearSessionEnd(BearHuntEndedMessage msg)
         {
             IssaPluginPlugin.Log.LogInfo("[Bear] Session ended (all clients).");
         }

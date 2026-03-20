@@ -161,10 +161,13 @@ namespace IssaPlugin.Patches
             }
 
             if (nowTargetingBear && !_wasTargetingBear)
-            {
                 IssaPluginPlugin.Log.LogInfo("[LockOn] Locked onto bear.");
+
+            // Send every frame while locked on — same reasoning as gunship/bomber:
+            // mirror buffers messages end-of-frame, so rising-edge-only risks the
+            // flag being false when ServerInitialize runs in the same frame as lock-on.
+            if (nowTargetingBear)
                 NetworkClient.Send(new BearPrepareHomingMessage());
-            }
 
             _wasTargetingBear = nowTargetingBear;
         }
