@@ -9,8 +9,6 @@ namespace IssaPlugin.Items
 {
     public static class StealthBomberItem
     {
-        public static readonly ItemType BomberItemType = (ItemType)101;
-
         // _isTargeting is client-side and per-local-player, so static is fine —
         // only one player's input is processed on any given client.
         // _isBombing has been moved to BomberNetworkBridge as an instance field.
@@ -52,7 +50,7 @@ namespace IssaPlugin.Items
         public static void GiveBomberToLocalPlayer()
         {
             ItemHelper.GiveItemToLocalPlayer(
-                BomberItemType,
+                ItemRegistry.StealthBomberItemType,
                 (int)Configuration.BomberUses.Value,
                 "Bomber"
             );

@@ -6,7 +6,7 @@ namespace IssaPlugin.Items
 {
     public class AC130ItemDefinition : CustomItemDefinition
     {
-        public override ItemType ItemType => AC130Item.AC130ItemType;
+        public override ItemType ItemType => ItemRegistry.AC130ItemType;
         public override string DisplayName => "AC130 Gunship";
         public override string[] ConsoleAliases => new[] { "ac130" };
         public override Sprite Icon => AssetLoader.AC130Icon;

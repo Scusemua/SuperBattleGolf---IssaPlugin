@@ -7,12 +7,10 @@ namespace IssaPlugin.Items
 {
     public static class BatItem
     {
-        public static readonly ItemType BatItemType = (ItemType)100;
-
         public static void GiveBatToLocalPlayer()
         {
             ItemHelper.GiveItemToLocalPlayer(
-                BatItemType,
+                ItemRegistry.BaseballBatItemType,
                 (int)Configuration.BaseballBatUses.Value,
                 "Bat"
             );

@@ -72,7 +72,7 @@ namespace IssaPlugin.Patches
     /// and apply one hit to each.
     ///
     /// Weapon detection:
-    ///   • Baseball bat (BatItem.BatItemType): applies BearDamageBaseballBat damage
+    ///   • Baseball bat (BatItemDefinition.ItemType): applies BearDamageBaseballBat damage
     ///     and BearBatKnockbackForce impulse.
     ///   • Golf club (anything else): applies BearDamageGolfClub damage and
     ///     BearMeleeKnockbackForce impulse.
@@ -97,7 +97,8 @@ namespace IssaPlugin.Patches
                 return;
 
             bool isBat =
-                playerInfo.Inventory?.GetEffectivelyEquippedItem(true) == BatItem.BatItemType;
+                playerInfo.Inventory?.GetEffectivelyEquippedItem(true)
+                == ItemRegistry.BaseballBatItemType;
 
             float damage = isBat
                 ? Configuration.BearDamageBaseballBat.Value

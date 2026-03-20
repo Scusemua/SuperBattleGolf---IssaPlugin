@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using IssaPlugin.Items;
 
 namespace IssaPlugin.Patches
@@ -13,58 +14,6 @@ namespace IssaPlugin.Patches
     /// </summary>
     internal static class DevConsoleCommands
     {
-        // Accepted names for each item (all checked case-insensitively).
-        private static readonly (string[] Names, ItemType Type, int Uses)[] _customItems =
-        {
-            (new[] { "ac130" }, AC130Item.AC130ItemType, (int)Configuration.AC130Uses.Value),
-            (
-                new[] { "stealthbomber", "bomber" },
-                StealthBomberItem.BomberItemType,
-                (int)Configuration.BomberUses.Value
-            ),
-            (
-                new[] { "predatormissile", "missile" },
-                PredatorMissileItem.MissileItemType,
-                (int)Configuration.MissileUses.Value
-            ),
-            (
-                new[] { "baseballbat", "bat" },
-                BatItem.BatItemType,
-                (int)Configuration.BaseballBatUses.Value
-            ),
-            (
-                new[] { "freezeworld", "freeze" },
-                FreezeItem.FreezeItemType,
-                (int)Configuration.FreezeUses.Value
-            ),
-            (
-                new[] { "lowgravity", "gravity" },
-                LowGravityItem.LowGravityItemType,
-                (int)Configuration.LowGravityUses.Value
-            ),
-            (
-                new[] { "m200", "sniper", "sniper_rifle", "intervention" },
-                SniperRifleItem.SniperRifleItemType,
-                (int)Configuration.SniperRifleUses.Value
-            ),
-            (
-                new[] { "donut", "Donut" },
-                DonutItem.DonutItemType,
-                (int)Configuration.DonutUses.Value
-            ),
-            (
-                new[] { "javelin", "Javelin" },
-                JavelinItem.JavelinItemType,
-                (int)Configuration.JavelinUses.Value
-            ),
-            (
-                new[] { "sticky_grenade", "sticky", "stickygrenade" },
-                StickyGrenadeItem.StickyGrenadeItemType,
-                (int)Configuration.StickyGrenadeUses.Value
-            ),
-            (new[] { "bear", "bears" }, BearItem.BearItemType, (int)Configuration.BearUses.Value),
-        };
-
         /// <summary>
         /// Console command: giveCustomItem <name>
         /// Gives the named custom item to the local player.
@@ -77,46 +26,34 @@ namespace IssaPlugin.Patches
             // Integer fallback: giveCustomItem 100
             if (int.TryParse(itemName, out int id))
             {
-                var numericType = (ItemType)id;
-                if (!ItemRegistry.IsCustomItem(numericType))
+                var def = ItemRegistry.GetDefinition((ItemType)id);
+                if (def == null)
                 {
                     UnityEngine.Debug.LogWarning(
                         $"[giveCustomItem] Item ID {id} is not a recognised custom item."
                     );
                     return;
                 }
-
-                // Look up default uses from the table, default to 1.
-                int uses = 1;
-                foreach (var entry in _customItems)
-                {
-                    if (entry.Type == numericType)
-                    {
-                        uses = entry.Uses;
-                        break;
-                    }
-                }
-
-                ItemHelper.GiveItemToLocalPlayer(numericType, uses, "giveCustomItem");
+                ItemHelper.GiveItemToLocalPlayer(def.ItemType, def.MaxUses, "giveCustomItem");
                 return;
             }
 
-            // Named lookup.
-            foreach (var (names, type, defaultUses) in _customItems)
-            {
-                foreach (var alias in names)
+            // Named lookup — all aliases are lowercase; comparison is OrdinalIgnoreCase.
+            foreach (var def in ItemRegistry.AllItems)
+            foreach (var alias in def.ConsoleAliases)
+                if (string.Equals(itemName, alias, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (string.Equals(itemName, alias, StringComparison.OrdinalIgnoreCase))
-                    {
-                        ItemHelper.GiveItemToLocalPlayer(type, defaultUses, "giveCustomItem");
-                        return;
-                    }
+                    ItemHelper.GiveItemToLocalPlayer(def.ItemType, def.MaxUses, "giveCustomItem");
+                    return;
                 }
-            }
 
+            // Build valid-name hint from the registry (stays in sync automatically).
+            var validNames = string.Join(
+                ", ",
+                ItemRegistry.AllItems.SelectMany(d => d.ConsoleAliases)
+            );
             UnityEngine.Debug.LogWarning(
-                $"[giveCustomItem] Unknown item \"{itemName}\". "
-                    + "Valid names: ac130, bomber, missile, bat, freeze, lowgravity, sniper, donut, javelin, stickygrenade (or an integer item-type ID)."
+                $"[giveCustomItem] Unknown item \"{itemName}\". Valid names: {validNames} (or an integer item-type ID)."
             );
         }
     }

@@ -386,7 +386,7 @@ namespace IssaPlugin.Patches
                 equippedItem = ItemType.ElephantGun;
             else if (equippedItem == JavelinItem.JavelinItemType)
                 equippedItem = ItemType.RocketLauncher;
-            else if (equippedItem == BatItem.BatItemType)
+            else if (equippedItem == ItemRegistry.BaseballBatItemType)
                 equippedItem = ItemType.None; // gives correct hand pose on remote clients
             else
                 equippedItem = ItemType.OrbitalLaser;

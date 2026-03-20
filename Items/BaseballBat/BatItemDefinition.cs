@@ -5,7 +5,7 @@ namespace IssaPlugin.Items
 {
     public class BatItemDefinition : CustomItemDefinition
     {
-        public override ItemType ItemType => BatItem.BatItemType;
+        public override ItemType ItemType => ItemRegistry.BaseballBatItemType;
         public override string DisplayName => "Baseball Bat";
         public override string[] ConsoleAliases => new[] { "baseballbat", "bat" };
         public override Sprite Icon => AssetLoader.BatIcon;

@@ -39,7 +39,7 @@ namespace IssaPlugin.Patches
                 return;
 
             var inv = hitter.PlayerInfo.Inventory;
-            if (inv.GetEffectivelyEquippedItem(true) != BatItem.BatItemType)
+            if (inv.GetEffectivelyEquippedItem(true) != ItemRegistry.BaseballBatItemType)
                 return;
 
             BatActive = true;
@@ -92,7 +92,7 @@ namespace IssaPlugin.Patches
                 return;
 
             var inventory = __instance.PlayerInfo.Inventory;
-            if (inventory.GetEffectivelyEquippedItem(true) != BatItem.BatItemType)
+            if (inventory.GetEffectivelyEquippedItem(true) != ItemRegistry.BaseballBatItemType)
                 return;
 
             int slotIndex = inventory.EquippedItemIndex;

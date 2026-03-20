@@ -11,8 +11,6 @@ namespace IssaPlugin.Items
     /// that multiple players can run concurrent sessions without conflicts.
     public static class AC130Item
     {
-        public static readonly ItemType AC130ItemType = (ItemType)103;
-
         // _useIndex is server-only and scoped per-rocket by PlayerId inside
         // ItemUseId, so it's safe to remain static.
         private static int _useIndex;
@@ -20,7 +18,7 @@ namespace IssaPlugin.Items
         public static void GiveAC130ToLocalPlayer()
         {
             ItemHelper.GiveItemToLocalPlayer(
-                AC130ItemType,
+                ItemRegistry.AC130ItemType,
                 (int)Configuration.AC130Uses.Value,
                 "AC130"
             );

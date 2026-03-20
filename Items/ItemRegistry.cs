@@ -16,6 +16,10 @@ namespace IssaPlugin.Items
 {
     public static class ItemRegistry
     {
+        public static ItemType BaseballBatItemType = (ItemType)100;
+        public static ItemType StealthBomberItemType = (ItemType)101;
+        public static ItemType AC130ItemType = (ItemType)103;
+
         // Static initialization order note: AllItems is a static field initializer that only
         // instantiates the definition objects; it does not call any abstract members. Properties like
         // MaxUses, SpawnWeight, and GiveKey are evaluated lazily at call time, after Configuration
@@ -204,7 +208,7 @@ namespace IssaPlugin.Items
                     return false;
 
                 // Why this works: each XxxItem.XxxItemType is defined as (ItemType)NNN (e.g.
-                // BatItemType = (ItemType)100), so (int)def.ItemType produces the same integer that was
+                // BatItemDefinition.ItemType = (ItemType)100), so (int)def.ItemType produces the same integer that was
                 // previously hardcoded. This is an invariant of how custom item IDs are assigned.
                 foreach (var def in AllItems)
                     addEntryMethod.Invoke(

@@ -151,7 +151,7 @@ namespace IssaPlugin.Items
                 return;
 
             var equipped = inventory.GetEffectivelyEquippedItem(true);
-            if (equipped != AC130Item.AC130ItemType)
+            if (equipped != ItemRegistry.AC130ItemType)
             {
                 IssaPluginPlugin.Log.LogWarning("[AC130] Player does not have AC130 equipped.");
                 return;
