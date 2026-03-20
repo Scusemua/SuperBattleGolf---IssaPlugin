@@ -37,6 +37,10 @@ namespace IssaPlugin.Items
 
         public void ServerActivateLowGravity()
         {
+            IssaPluginPlugin.Log.LogInfo(
+                $"[LowGravity] ServerActivateLowGravity called. globalSessionActive={_globalSessionActive}, inventory={(GetComponent<PlayerInventory>() != null ? "OK" : "NULL")}"
+            );
+
             if (_globalSessionActive)
             {
                 IssaPluginPlugin.Log.LogWarning("[LowGravity] A session is already active.");
@@ -48,6 +52,10 @@ namespace IssaPlugin.Items
                 return;
 
             var equipped = inventory.GetEffectivelyEquippedItem(true);
+            IssaPluginPlugin.Log.LogInfo(
+                $"[LowGravity] Equipped item on server: {(int)equipped} (expected {(int)LowGravityItem.LowGravityItemType})"
+            );
+
             if (equipped != LowGravityItem.LowGravityItemType)
             {
                 IssaPluginPlugin.Log.LogWarning(

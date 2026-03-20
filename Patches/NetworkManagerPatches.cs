@@ -159,8 +159,11 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<LowGravityActivateMessage>(
                     (conn, msg) =>
                     {
-                        conn.identity?.GetComponent<LowGravityNetworkBridge>()
-                            ?.ServerActivateLowGravity();
+                        var bridge = conn.identity?.GetComponent<LowGravityNetworkBridge>();
+                        IssaPluginPlugin.Log.LogInfo(
+                            $"[LowGravity] Server received LowGravityActivateMessage. identity={(conn.identity != null ? "OK" : "NULL")}, bridge={(bridge != null ? "OK" : "NULL")}"
+                        );
+                        bridge?.ServerActivateLowGravity();
                     }
                 );
 

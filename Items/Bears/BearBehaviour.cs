@@ -88,6 +88,16 @@ namespace IssaPlugin.Items
             // foreach (var mc in GetComponentsInChildren<MeshCollider>())
             //     mc.convex = true;
 
+            // Prevent physical bear↔player collisions. PlayerMovement.OnCollisionEnter calls
+            // Entity.GetNetworkedPointVelocity on whatever it touches while ragdolling, which
+            // NREs on bears because they have no Entity component. Bears deal damage only via
+            // ApplyAttackHit, not through physics contact.
+            var bearColliders = GetComponentsInChildren<Collider>();
+            foreach (var player in GetActivePlayers())
+                foreach (var pc in player.GetComponentsInChildren<Collider>())
+                    foreach (var bc in bearColliders)
+                        Physics.IgnoreCollision(bc, pc, true);
+
             // Aggro notification is handled directly via OnHitByExplosion —
             // no separate event subscription needed.
 
@@ -404,15 +414,10 @@ namespace IssaPlugin.Items
                 Vector3 surfaceDir = Vector3.ProjectOnPlane(worldDir, hit.normal).normalized;
                 moveVelocity = surfaceDir * speed;
 
-                // Snap Y velocity toward terrain surface rather than accumulating
-                // AddForce, which would grow unboundedly on flat ground.
-                float targetY = hit.point.y + 0.1f;
-                float yVel = Mathf.Clamp(
-                    (targetY - transform.position.y) / Time.fixedDeltaTime,
-                    -10f,
-                    10f
-                );
-                _rb.linearVelocity = new Vector3(moveVelocity.x, yVel, moveVelocity.z);
+                // Use the full projected velocity — including its Y component — so the
+                // bear actually climbs slopes. The old snap-to-ground yVel replaced Y
+                // with ~0 every frame, which cancelled the uphill component entirely.
+                _rb.linearVelocity = moveVelocity;
             }
             else
             {
@@ -483,27 +488,11 @@ namespace IssaPlugin.Items
         /// </summary>
         private bool IsTargetReachable(Vector3 targetPos)
         {
+            // Only check height — a direct ray toward the target always hits hillside
+            // slopes and incorrectly marks them as unreachable. Context steering in
+            // ComputeContextSteering handles true walls and cliff faces.
             float heightDiff = targetPos.y - transform.position.y;
-
-            // Within climbable height — always reachable
-            if (Mathf.Abs(heightDiff) <= Configuration.BearMaxClimbHeight.Value)
-                return true;
-
-            // Ray from bear toward target: if terrain blocks it before arrival,
-            // the height gap is likely a cliff rather than a walkable slope.
-            Vector3 toTarget = targetPos - transform.position;
-            float dist = toTarget.magnitude;
-            if (
-                Physics.Raycast(
-                    transform.position + Vector3.up * 0.5f,
-                    toTarget.normalized,
-                    dist * 0.8f,
-                    ItemHelper.GroundLayerMask
-                )
-            )
-                return false;
-
-            return true;
+            return Mathf.Abs(heightDiff) <= Configuration.BearMaxClimbHeight.Value;
         }
 
         // ── Attack ────────────────────────────────────────────────────────────

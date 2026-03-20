@@ -24,7 +24,9 @@ build-autoinstaller: stage-files
 build-first-time-autoinstaller: stage-first-time-files
 	$(ISCC) $(SCRIPT)
 
-build:
+build: build-issamod
+
+build-issamod:
 	dotnet build
 
 stage-files: clean-modfiles build-issamod

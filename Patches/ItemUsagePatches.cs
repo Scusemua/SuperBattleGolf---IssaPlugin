@@ -78,6 +78,9 @@ namespace IssaPlugin.Patches
                 shouldEatInput = true;
                 __result = true;
                 var bridge = __instance.GetComponent<LowGravityNetworkBridge>();
+                IssaPluginPlugin.Log.LogInfo(
+                    $"[LowGravity] TryUseItem intercepted. bridge={(bridge != null ? "OK" : "NULL")}, sending LowGravityActivateMessage."
+                );
                 if (bridge != null)
                     NetworkClient.Send(new LowGravityActivateMessage());
                 else
