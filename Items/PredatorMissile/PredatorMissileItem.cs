@@ -8,7 +8,6 @@ namespace IssaPlugin.Items
 {
     public static class PredatorMissileItem
     {
-        public static readonly ItemType MissileItemType = (ItemType)102;
         private static int _missileUseIndex;
 
         internal static readonly HashSet<Rocket> ActiveMissileRockets = new();
@@ -16,7 +15,7 @@ namespace IssaPlugin.Items
         public static void GiveMissileToLocalPlayer()
         {
             ItemHelper.GiveItemToLocalPlayer(
-                MissileItemType,
+                ItemRegistry.PredatorMissileItemType,
                 (int)Configuration.MissileUses.Value,
                 "Missile"
             );

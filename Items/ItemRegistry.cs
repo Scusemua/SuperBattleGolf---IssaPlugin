@@ -16,9 +16,12 @@ namespace IssaPlugin.Items
 {
     public static class ItemRegistry
     {
-        public static ItemType BaseballBatItemType = (ItemType)100;
-        public static ItemType StealthBomberItemType = (ItemType)101;
-        public static ItemType AC130ItemType = (ItemType)103;
+        public static readonly ItemType BaseballBatItemType = (ItemType)100;
+        public static readonly ItemType StealthBomberItemType = (ItemType)101;
+        public static readonly ItemType PredatorMissileItemType = (ItemType)102;
+        public static readonly ItemType AC130ItemType = (ItemType)103;
+
+        public static readonly ItemType FreezeItemType = (ItemType)104;
 
         // Static initialization order note: AllItems is a static field initializer that only
         // instantiates the definition objects; it does not call any abstract members. Properties like

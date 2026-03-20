@@ -6,7 +6,7 @@ namespace IssaPlugin.Items
 {
     public class PredatorMissileItemDefinition : CustomItemDefinition
     {
-        public override ItemType ItemType => PredatorMissileItem.MissileItemType;
+        public override ItemType ItemType => ItemRegistry.PredatorMissileItemType;
         public override string DisplayName => "Predator Missile";
         public override string[] ConsoleAliases => new[] { "predatormissile", "missile" };
         public override Sprite Icon => AssetLoader.MissileIcon;

@@ -5,7 +5,7 @@ namespace IssaPlugin.Items
 {
     class StealthBomberItemDefinition : CustomItemDefinition
     {
-        public override ItemType ItemType => (ItemType)101;
+        public override ItemType ItemType => ItemRegistry.StealthBomberItemType;
         public override string DisplayName => "Stealth Bomber";
         public override string[] ConsoleAliases => new[] { "stealthbomber", "bomber" };
         public override Sprite Icon => AssetLoader.BomberIcon;

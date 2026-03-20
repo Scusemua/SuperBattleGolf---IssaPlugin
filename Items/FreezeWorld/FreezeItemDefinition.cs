@@ -6,7 +6,7 @@ namespace IssaPlugin.Items
 {
     public class FreezeItemDefinition : CustomItemDefinition
     {
-        public override ItemType ItemType => FreezeItem.FreezeItemType;
+        public override ItemType ItemType => ItemRegistry.FreezeItemType;
         public override string DisplayName => "Freeze World";
         public override string[] ConsoleAliases => new[] { "freezeworld", "freeze" };
         public override Sprite Icon => AssetLoader.FreezeIcon;
