@@ -229,6 +229,7 @@ namespace IssaPlugin.Patches
             _wasTargetingGunship = nowTargetingGunship;
             _wasTargetingBomber = nowTargetingBomber;
             _wasTargetingDonut = nowTargetingDonut;
+            _wasTargetingBear = nowTargetingBear;
         }
     }
 
