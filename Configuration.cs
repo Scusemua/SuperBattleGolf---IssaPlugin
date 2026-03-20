@@ -197,6 +197,7 @@ namespace IssaPlugin
         public static ConfigEntry<float> BearTargetAbandonDistance { get; private set; }
         public static ConfigEntry<float> BearAggroStealThreshold { get; private set; }
         public static ConfigEntry<float> BearAggroDuration { get; private set; }
+        public static ConfigEntry<float> BearMeleeHitRange { get; private set; }
 
         public static void Initialize(ConfigFile cfg)
         {
@@ -1286,7 +1287,7 @@ namespace IssaPlugin
                 "Bear",
                 "HitsToKill",
                 2f,
-                "Rocket/explosion hits required to kill a bear. 0 = invincible."
+                "Hits required to kill a bear (rockets, guns, and melee all count). 0 = invincible."
             );
             BearMaxClimbHeight = cfg.Bind(
                 "Bear",
@@ -1323,6 +1324,12 @@ namespace IssaPlugin
                 "AggroDuration",
                 15f,
                 "How long (seconds) aggro on a specific player lasts after they hit the bear."
+            );
+            BearMeleeHitRange = cfg.Bind(
+                "Bear",
+                "MeleeHitRange",
+                2.5f,
+                "Radius (units) around the swing hitbox centre that counts as a golf-club/bat hit on a bear."
             );
         }
     }
