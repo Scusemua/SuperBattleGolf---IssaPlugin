@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 926883886
+CRC: 803799851
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 399ee650861a71a2fb136d0b8fc372d5
+    Hash: 0b33e0c8785f32c28b1f1dcab69c6f73
   TypeTreeHash:
     serializedVersion: 2
     Hash: 204d2b41a044283c5aea06451ad7d0da
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: c4138d8f216d592e26320cb6293e400f
+    Hash: 33916e1e9cd13845cbeae04abd530147
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -81,7 +81,8 @@ Assets:
 - Assets/Assets/Material.003.mat
 - Assets/Assets/donut_model.prefab
 - Assets/Assets/missile_icon.png
-- Assets/Assets/sniper_scope_overlay.png
+- Assets/Assets/Materials/Teddy/Material.012.mat
+- Assets/Assets/Materials/Teddy/eyes.mat
 - Assets/Assets/lightning.prefab
 - Assets/Assets/ConfettiBlastRainbow.prefab
 - Assets/Assets/javelin_trail.prefab
@@ -96,7 +97,7 @@ Assets:
 - Assets/Assets/bear.prefab
 - Assets/Assets/sticky_grenade_icon.png
 - Assets/Assets/laser_zone_red.prefab
-- Assets/Assets/predator_missile_tablet_model.prefab
+- Assets/Assets/sniper_scope_overlay.png
 - Assets/Assets/gravity_remote_model.fbx
 - Assets/Assets/WarningExclamation.prefab
 - Assets/Assets/bat_icon.png
@@ -107,9 +108,11 @@ Assets:
 - Assets/Assets/Dark 1.mat
 - Assets/Assets/javelin_target_indicator.prefab
 - Assets/Assets/missile_locked.ogg
-- Assets/Assets/gravity_remote.prefab
+- Assets/Assets/predator_missile_tablet_model.prefab
 - Assets/Assets/javelin_icon.png
 - Assets/Assets/bat_model.prefab
+- Assets/Assets/gravity_remote.prefab
+- Assets/Assets/Materials/Teddy/fabric_white.mat
 - Assets/Assets/intervention.prefab
 - Assets/Assets/gravity_remote_icon.png
 - Assets/Assets/sniper_rifle_icon.png
@@ -119,6 +122,7 @@ Assets:
 - Assets/Assets/bomber_model.prefab
 - Assets/Assets/etfx_explosion_nuke.wav
 - Assets/Assets/smoke_prefab.prefab
+- Assets/Assets/Materials/Teddy/Nose.002.mat
 - Assets/Assets/sniper_scope.png
 - Assets/Assets/Brass.mat
 - Assets/Assets/bomber_icon.png
@@ -133,6 +137,7 @@ Assets:
 - Assets/Assets/stealth_bomber_tablet.prefab
 - Assets/Assets/Grey.mat
 - Assets/Assets/snowball.prefab
+- Assets/Assets/Materials/Teddy/fabric_brown.mat
 - Assets/Assets/NukeExplosionFire.prefab
 - Assets/Assets/ac130_icon.png
 - Assets/Assets/predator_missile_tablet.prefab
@@ -140,4 +145,5 @@ Assets:
 - Assets/Assets/NukeVerticalExplosionFire.prefab
 - Assets/Assets/Glass.mat
 - Assets/Assets/donut_vehicle.prefab
+- Assets/Assets/Materials/Teddy/_FRONT_427414.mat
 Dependencies: []

@@ -84,6 +84,10 @@ namespace IssaPlugin.Items
             _rb.freezeRotation = true; // we rotate the transform directly
             _rb.interpolation = RigidbodyInterpolation.Interpolate;
 
+            // Dynamic Rigidbodies require convex mesh colliders; force convex on all of them.
+            // foreach (var mc in GetComponentsInChildren<MeshCollider>())
+            //     mc.convex = true;
+
             // Aggro notification is handled directly via OnHitByExplosion —
             // no separate event subscription needed.
 

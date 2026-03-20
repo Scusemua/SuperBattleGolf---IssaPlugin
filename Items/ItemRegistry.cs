@@ -161,7 +161,7 @@ namespace IssaPlugin.Items
             dict[DonutItem.DonutItemType] = donutData;
             dict[JavelinItem.JavelinItemType] = javelinData;
             dict[StickyGrenadeItem.StickyGrenadeItemType] = semtexData;
-            dict[BatItem.BatItemType] = batData;
+            dict[BearItem.BearItemType] = bearData;
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[ItemRegistry] Injected {CustomItemDataCache.Count} custom items."
