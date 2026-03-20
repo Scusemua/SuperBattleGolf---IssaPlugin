@@ -928,6 +928,7 @@ namespace IssaPlugin.Patches
                     msg.Position,
                     Quaternion.identity
                 );
+                vfx.transform.localScale = Vector3.one * Configuration.NukeExplosionVfxScale.Value;
                 Object.Destroy(vfx, Configuration.NukeExplosionVfxDuration.Value);
             }
             else
@@ -957,6 +958,14 @@ namespace IssaPlugin.Patches
                 GameManager.CameraGameplaySettings.RocketExplosionScreenshakeSettings,
                 msg.Position
             );
+
+            // Give players a speed boost.
+            var playerMovement = GameManager.LocalPlayerMovement;
+            if (playerMovement != null)
+            {
+                playerMovement.InformDrankCoffee();
+                playerMovement.InformDrankCoffee();
+            }
         }
     }
 

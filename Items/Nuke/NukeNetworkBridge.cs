@@ -99,7 +99,7 @@ namespace IssaPlugin.Items
             behaviour.ExplosionScale = Configuration.NukeExplosionScale.Value;
             behaviour.SkyBlastForce = Configuration.NukeSkyBlastForce.Value;
             behaviour.SkyBlastRadius = Configuration.NukeSkyBlastRadius.Value;
-            behaviour.SkyBlastUpwardModifier = Configuration.NukeSkyBlastUpwardModifier.Value;
+            behaviour.SkyBlastVerticalBias = Configuration.NukeSkyBlastVerticalBias.Value;
 
             IssaPluginPlugin.Log.LogInfo($"[Nuke] Bomb spawned at {spawnPos:F1}.");
 

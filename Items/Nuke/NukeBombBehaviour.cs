@@ -29,7 +29,7 @@ namespace IssaPlugin.Items
         public float ExplosionScale = 8f;
         public float SkyBlastForce = 100f;
         public float SkyBlastRadius = 300f;
-        public float SkyBlastUpwardModifier = 2f;
+        public float SkyBlastVerticalBias = 0.6f;
 
         // ----------------------------------------------------------------
         //  Internal state
@@ -126,40 +126,45 @@ namespace IssaPlugin.Items
                 ServerExplodeMethod?.Invoke(tempRocket, new object[] { pos });
             }
 
-            // Sky blast — a second, much wider force pass that reaches players
-            // across the whole map and sends them flying skyward.
-            int mask = GameManager.LayerSettings.RocketHittablesMask;
-            var colliders = Physics.OverlapSphere(
-                pos,
-                SkyBlastRadius,
-                mask,
-                QueryTriggerInteraction.Ignore
-            );
+            // Sky blast — applies force to every player on the map regardless of
+            // distance.  Direction is still relative to the explosion point so
+            // nearby players fly away differently than distant ones, but the
+            // magnitude is uniform so nobody is too far away to feel it.
             bool excludeThrower =
                 Configuration.NukeExcludeThrower.Value && ThrowerRigidbody != null;
 
+            var allPlayers = new List<PlayerInfo>();
+            if (GameManager.LocalPlayerInfo != null)
+                allPlayers.Add(GameManager.LocalPlayerInfo);
+            var remotes = GameManager.RemotePlayers;
+            if (remotes != null)
+                allPlayers.AddRange(remotes);
+
             var processed = new HashSet<Rigidbody>();
-            foreach (var col in colliders)
+            foreach (var player in allPlayers)
             {
-                var rb = col.GetComponentInParent<Rigidbody>();
+                if (player == null)
+                    continue;
+
+                var rb = player.GetComponentInParent<Rigidbody>();
                 if (rb == null || !processed.Add(rb))
                     continue;
 
                 if (excludeThrower && rb == ThrowerRigidbody)
                     continue;
 
-                rb.AddExplosionForce(
-                    SkyBlastForce,
-                    pos,
-                    SkyBlastRadius,
-                    SkyBlastUpwardModifier,
-                    ForceMode.VelocityChange
-                );
+                // Compute the horizontal direction away from the blast, then lerp
+                // toward Vector3.up by SkyBlastVerticalBias (0 = all outward, 1 = all up).
+                // This gives independent control over how much players go up vs. out.
+                Vector3 toPlayer = rb.position - pos;
+                Vector3 horizontal = new Vector3(toPlayer.x, 0f, toPlayer.z).normalized;
+                Vector3 blastDir = Vector3
+                    .Lerp(horizontal, Vector3.up, SkyBlastVerticalBias)
+                    .normalized;
+                rb.AddForce(blastDir * SkyBlastForce, ForceMode.VelocityChange);
             }
 
-            IssaPluginPlugin.Log.LogInfo(
-                $"[Nuke] Sky blast applied to {processed.Count} rigidbodies within {SkyBlastRadius:F1}m."
-            );
+            IssaPluginPlugin.Log.LogInfo($"[Nuke] Sky blast applied to {processed.Count} players.");
 
             NetworkServer.Destroy(gameObject);
         }

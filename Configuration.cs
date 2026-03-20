@@ -179,8 +179,9 @@ namespace IssaPlugin
         public static ConfigEntry<float> NukeExplosionScale { get; private set; }
         public static ConfigEntry<float> NukeSkyBlastForce { get; private set; }
         public static ConfigEntry<float> NukeSkyBlastRadius { get; private set; }
-        public static ConfigEntry<float> NukeSkyBlastUpwardModifier { get; private set; }
+        public static ConfigEntry<float> NukeSkyBlastVerticalBias { get; private set; }
         public static ConfigEntry<float> NukeExplosionVfxDuration { get; private set; }
+        public static ConfigEntry<float> NukeExplosionVfxScale { get; private set; }
         public static ConfigEntry<bool> NukeExcludeThrower { get; private set; }
 
         // --- Bear ---
@@ -1257,12 +1258,12 @@ namespace IssaPlugin
                     + "cover the whole map so no one escapes."
             );
 
-            NukeSkyBlastUpwardModifier = cfg.Bind(
+            NukeSkyBlastVerticalBias = cfg.Bind(
                 "Nuke",
-                "SkyBlastUpwardModifier",
-                2.0f,
-                "Upward modifier for the sky blast AddExplosionForce call. "
-                    + "Higher values send players more vertically."
+                "SkyBlastVerticalBias",
+                0.6f,
+                "Controls how much of the sky blast force goes upward versus outward (0 = all outward, 1 = all straight up). "
+                    + "The horizontal direction is still relative to the explosion point, so players are pushed away from the blast site."
             );
 
             NukeExplosionVfxDuration = cfg.Bind(
@@ -1270,6 +1271,14 @@ namespace IssaPlugin
                 "ExplosionVfxDuration",
                 8f,
                 "Seconds before the nuke explosion VFX prefab is destroyed on each client."
+            );
+
+            NukeExplosionVfxScale = cfg.Bind(
+                "Nuke",
+                "ExplosionVfxScale",
+                1.0f,
+                "Uniform scale applied to the nuke explosion VFX transform on each client. "
+                    + "Increase this to make the particle systems appear larger."
             );
 
             NukeExcludeThrower = cfg.Bind(
