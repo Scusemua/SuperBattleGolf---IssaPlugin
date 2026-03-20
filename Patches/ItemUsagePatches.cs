@@ -22,142 +22,14 @@ namespace IssaPlugin.Patches
         {
             var equipped = __instance.GetEffectivelyEquippedItem(true);
 
-            if (equipped == BatItem.BatItemType)
-            {
-                shouldEatInput = false;
-                __result = false;
-                return false;
-            }
+            var def = ItemRegistry.GetDefinition(equipped);
+            if (def == null)
+                return true; // not a custom item — run base game logic
 
-            if (equipped == StealthBomberItem.BomberItemType)
-            {
-                shouldEatInput = true;
-                __result = true;
-                __instance.StartCoroutine(StealthBomberItem.BomberRunRoutine(__instance));
-                return false;
-            }
-
-            if (equipped == PredatorMissileItem.MissileItemType)
-            {
-                shouldEatInput = true;
-                __result = true;
-                var bridge = __instance.GetComponent<MissileNetworkBridge>();
-                if (bridge != null)
-                    NetworkClient.Send(new MissileRequestMessage());
-                else
-                    IssaPluginPlugin.Log.LogError("[Missile] No MissileNetworkBridge on player.");
-                return false;
-            }
-
-            if (equipped == AC130Item.AC130ItemType)
-            {
-                shouldEatInput = true;
-                __result = true;
-                var bridge = __instance.GetComponent<AC130NetworkBridge>();
-                if (bridge != null)
-                    NetworkClient.Send(new AC130StartMessage());
-                else
-                    IssaPluginPlugin.Log.LogError("[AC130] No AC130NetworkBridge on player.");
-                return false;
-            }
-
-            if (equipped == FreezeItem.FreezeItemType)
-            {
-                shouldEatInput = true;
-                __result = true;
-                var bridge = __instance.GetComponent<FreezeNetworkBridge>();
-                if (bridge != null)
-                    NetworkClient.Send(new FreezeActivateMessage());
-                else
-                    IssaPluginPlugin.Log.LogError("[Freeze] No FreezeNetworkBridge on player.");
-                return false;
-            }
-
-            if (equipped == LowGravityItem.LowGravityItemType)
-            {
-                shouldEatInput = true;
-                __result = true;
-                var bridge = __instance.GetComponent<LowGravityNetworkBridge>();
-                IssaPluginPlugin.Log.LogInfo(
-                    $"[LowGravity] TryUseItem intercepted. bridge={(bridge != null ? "OK" : "NULL")}, sending LowGravityActivateMessage."
-                );
-                if (bridge != null)
-                    NetworkClient.Send(new LowGravityActivateMessage());
-                else
-                    IssaPluginPlugin.Log.LogError(
-                        "[LowGravity] No LowGravityNetworkBridge on player."
-                    );
-                return false;
-            }
-
-            if (equipped == SniperRifleItem.SniperRifleItemType)
-            {
-                shouldEatInput = true;
-                __result = true;
-                __instance.StartCoroutine(SniperRifleItem.ShootRoutine(__instance));
-                return false;
-            }
-
-            if (equipped == DonutItem.DonutItemType)
-            {
-                shouldEatInput = true;
-                __result = true;
-                var bridge = __instance.GetComponent<DonutNetworkBridge>();
-                if (bridge != null)
-                    NetworkClient.Send(new DonutStartMessage());
-                else
-                    IssaPluginPlugin.Log.LogError("[Donut] No DonutNetworkBridge on player.");
-                return false;
-            }
-
-            if (equipped == JavelinItem.JavelinItemType)
-            {
-                shouldEatInput = true;
-                __result = true;
-                var bridge = __instance.GetComponent<JavelinNetworkBridge>();
-                if (bridge != null)
-                {
-                    bridge.ClientUpdateLockOn();
-                    if (bridge.HasLock && !bridge.IsWaitingForDetonation)
-                        bridge.ClientFire(bridge.ClientLockedTarget);
-                    else if (bridge.IsWaitingForDetonation)
-                        IssaPluginPlugin.Log.LogInfo("[Javelin] Already in-flight, please wait.");
-                    else
-                        IssaPluginPlugin.Log.LogInfo(
-                            "[Javelin] No lock — aim at the ground first."
-                        );
-                }
-                else
-                    IssaPluginPlugin.Log.LogError("[Javelin] No JavelinNetworkBridge on player.");
-                return false;
-            }
-
-            if (equipped == StickyGrenadeItem.StickyGrenadeItemType)
-            {
-                shouldEatInput = true;
-                __result = true;
-                var bridge = __instance.GetComponent<StickyGrenadeNetworkBridge>();
-                if (bridge != null)
-                    bridge.ClientThrow();
-                else
-                    IssaPluginPlugin.Log.LogError(
-                        "[StickyGrenade] No StickyGrenadeNetworkBridge on player."
-                    );
-                return false;
-            }
-            if (equipped == BearItem.BearItemType)
-            {
-                shouldEatInput = true;
-                __result = true;
-                var bridge = __instance.GetComponent<BearNetworkBridge>();
-                if (bridge != null)
-                    NetworkClient.Send(new BearSummonMessage());
-                else
-                    IssaPluginPlugin.Log.LogError("[Bear] No BearNetworkBridge on player.");
-                return false;
-            }
-
-            return true;
+            shouldEatInput = def.ShouldEatInputOnUse;
+            __result = def.UseResult;
+            def.OnUse(__instance);
+            return false;
         }
     }
 
@@ -174,61 +46,26 @@ namespace IssaPlugin.Patches
             var equipped = __instance.GetEffectivelyEquippedItem(true);
             var rightSwitcher = __instance.PlayerInfo.RightHandEquipmentSwitcher;
 
-            if (!ItemRegistry.IsCustomItem(equipped))
+            var def = ItemRegistry.GetDefinition(equipped);
+            if (def == null)
             {
+                // Not a custom item — restore default equipment display.
                 ClearCustomModel(__instance);
                 ShowDefaultEquipment(rightSwitcher);
                 return;
             }
 
-            // Add the lock-on indicator updater when Javelin is equipped.
-            // UpdateEquipmentSwitchers only runs for the local player, so this is safe.
-            if (equipped == JavelinItem.JavelinItemType)
-            {
-                if (__instance.GetComponent<JavelinLockOnIndicator>() == null)
-                    __instance.gameObject.AddComponent<JavelinLockOnIndicator>();
-            }
+            // Per-item equip hook (Javelin lock-on indicator, StickyGrenade arc preview).
+            // Called every frame — implementations must guard with a null check.
+            def.OnEquip(__instance);
 
-            // Show the parabolic arc preview when StickyGrenade is equipped.
-            // The component self-destructs when a different item is equipped.
-            if (equipped == StickyGrenadeItem.StickyGrenadeItemType)
-            {
-                if (__instance.GetComponent<StickyGrenadeTrajectoryPreview>() == null)
-                    __instance.gameObject.AddComponent<StickyGrenadeTrajectoryPreview>();
-            }
+            // Set hand pose from definition.
+            rightSwitcher.SetEquipment(def.EquipmentType);
+            __instance.PlayerInfo.LeftHandEquipmentSwitcher.SetEquipment(EquipmentType.None);
 
-            if (equipped == SniperRifleItem.SniperRifleItemType)
-            {
-                // ElephantGun pose — sniper holds the rifle two-handed like the elephant gun.
-                rightSwitcher.SetEquipment(EquipmentType.ElephantGun);
-                __instance.PlayerInfo.LeftHandEquipmentSwitcher.SetEquipment(EquipmentType.None);
-            }
-            else if (equipped == BatItem.BatItemType)
-            {
-                // Bat uses the golf-swing mechanic, so GolfClub gives the correct hand pose.
-                rightSwitcher.SetEquipment(EquipmentType.GolfClub);
-                __instance.PlayerInfo.LeftHandEquipmentSwitcher.SetEquipment(EquipmentType.None);
-            }
-            else if (
-                equipped == StealthBomberItem.BomberItemType
-                || equipped == PredatorMissileItem.MissileItemType
-                || equipped == AC130Item.AC130ItemType
-                || equipped == FreezeItem.FreezeItemType
-                || equipped == LowGravityItem.LowGravityItemType
-                || equipped == DonutItem.DonutItemType
-                || equipped == JavelinItem.JavelinItemType
-                || equipped == StickyGrenadeItem.StickyGrenadeItemType
-                || equipped == BearItem.BearItemType
-            )
-            {
-                rightSwitcher.SetEquipment(EquipmentType.RocketLauncher);
-                __instance.PlayerInfo.LeftHandEquipmentSwitcher.SetEquipment(EquipmentType.None);
-            }
-
-            // SetEquipment above fires OnEquipmentTypeChanged synchronously, which calls
-            // EnsureCustomModel via OnEquipmentTypeChangedPatch. Call it here too as a
-            // fallback — e.g. when two custom items share the same EquipmentType and the
-            // SyncVar value doesn't change so the hook doesn't fire again.
+            // SetEquipment fires OnEquipmentTypeChanged → EnsureCustomModel via
+            // OnEquipmentTypeChangedPatch. Call it again here as a fallback for items that share
+            // the same EquipmentType (SyncVar unchanged → hook doesn't re-fire).
             EnsureCustomModel(rightSwitcher, __instance, equipped);
         }
 
@@ -300,32 +137,8 @@ namespace IssaPlugin.Patches
             HideDefaultEquipment(rightSwitcher);
         }
 
-        private static GameObject GetPrefabForItem(ItemType type)
-        {
-            if (type == BatItem.BatItemType)
-                return AssetLoader.BatModelPrefab;
-            if (type == StealthBomberItem.BomberItemType)
-                return AssetLoader.BomberTabletPrefab;
-            if (type == PredatorMissileItem.MissileItemType)
-                return AssetLoader.MissileTabletPrefab;
-            if (type == AC130Item.AC130ItemType)
-                return AssetLoader.Ac130TabletPrefab;
-            if (type == FreezeItem.FreezeItemType)
-                return AssetLoader.FreezeModelPrefab;
-            if (type == LowGravityItem.LowGravityItemType)
-                return AssetLoader.LowGravityModelPrefab;
-            if (type == SniperRifleItem.SniperRifleItemType)
-                return AssetLoader.SniperRiflePrefab;
-            if (type == DonutItem.DonutItemType)
-                return AssetLoader.DonutHandheldPrefab;
-            if (type == JavelinItem.JavelinItemType)
-                return AssetLoader.JavelinHandheldPrefab;
-            if (type == StickyGrenadeItem.StickyGrenadeItemType)
-                return AssetLoader.StickyGrenadePrefab;
-            if (type == BearItem.BearItemType)
-                return AssetLoader.TeddyBearPrefab; // held as a visual prop
-            return null;
-        }
+        private static GameObject GetPrefabForItem(ItemType type) =>
+            ItemRegistry.GetDefinition(type)?.HeldModelPrefab;
 
         internal static void ShowDefaultEquipment(EquipmentSwitcher switcher)
         {
@@ -419,12 +232,15 @@ namespace IssaPlugin.Patches
                 return true;
 
             var equipped = inventory.GetEffectivelyEquippedItem(true);
-            if (ItemRegistry.IsCustomItem(equipped) && equipped != BatItem.BatItemType)
+            if (ItemRegistry.IsCustomItem(equipped))
             {
-                __result = false;
-                return false;
+                var def = ItemRegistry.GetDefinition(equipped);
+                if (def?.EquipmentType != EquipmentType.GolfClub)
+                {
+                    __result = false;
+                    return false;
+                }
             }
-
             return true;
         }
     }
@@ -548,23 +364,10 @@ namespace IssaPlugin.Patches
     {
         static void Prefix(ref ItemType equippedItem)
         {
-            if (!ItemRegistry.IsCustomItem(equippedItem))
-            {
+            var def = ItemRegistry.GetDefinition(equippedItem);
+            if (def == null)
                 return;
-            }
-
-            if (equippedItem == SniperRifleItem.SniperRifleItemType)
-            {
-                equippedItem = ItemType.ElephantGun;
-            }
-            else if (equippedItem == JavelinItem.JavelinItemType)
-            {
-                equippedItem = ItemType.RocketLauncher;
-            }
-            else if (equippedItem != BatItem.BatItemType)
-            {
-                equippedItem = ItemType.OrbitalLaser;
-            }
+            equippedItem = def.AnimatorItemType;
         }
     }
 
@@ -579,11 +382,11 @@ namespace IssaPlugin.Patches
             if (!ItemRegistry.IsCustomItem(equippedItem))
                 return;
 
-            if (equippedItem == SniperRifleItem.SniperRifleItemType)
+            if (equippedItem == ItemRegistry.SniperRifleItemType)
                 equippedItem = ItemType.ElephantGun;
-            else if (equippedItem == JavelinItem.JavelinItemType)
+            else if (equippedItem == ItemRegistry.JavelinItemType)
                 equippedItem = ItemType.RocketLauncher;
-            else if (equippedItem == BatItem.BatItemType)
+            else if (equippedItem == ItemRegistry.BaseballBatItemType)
                 equippedItem = ItemType.None; // gives correct hand pose on remote clients
             else
                 equippedItem = ItemType.OrbitalLaser;
@@ -601,23 +404,19 @@ namespace IssaPlugin.Patches
                 return;
 
             var equipped = inventory.GetEffectivelyEquippedItem(true);
+            var def = ItemRegistry.GetDefinition(equipped);
 
-            if (equipped == BatItem.BatItemType)
+            if (def?.EquipmentType == EquipmentType.GolfClub)
             {
                 // Bat shares EquipmentType.GolfClub with regular golf clubs, so
-                // OnEquipmentTypeChanged won't fire on remote clients when switching
-                // from a golf club to the bat (SyncVar value unchanged). Use the
-                // ItemType-level hook here — it always fires for the bat's unique type.
+                // OnEquipmentTypeChanged won't fire on remote clients when switching from a
+                // golf club to the bat. Use the ItemType-level hook — always fires.
                 UpdateEquipmentSwitchersPatch.EnsureCustomModel(rightSwitcher, inventory, equipped);
             }
-            else if (
-                !ItemRegistry.IsCustomItem(equipped)
-                && UpdateEquipmentSwitchersPatch.HasCustomModel(inventory)
-            )
+            else if (def == null && UpdateEquipmentSwitchersPatch.HasCustomModel(inventory))
             {
-                // Switching from bat back to a non-custom item (e.g. golf club): same
-                // EquipmentType, so OnEquipmentTypeChangedPatch won't fire. Clear the
-                // bat model and restore the default equipment mesh.
+                // Switching from a GolfClub custom item back to a standard golf club:
+                // same EquipmentType, so OnEquipmentTypeChangedPatch won't fire. Clear model.
                 UpdateEquipmentSwitchersPatch.ClearCustomModel(inventory);
                 UpdateEquipmentSwitchersPatch.ShowDefaultEquipment(rightSwitcher);
             }

@@ -48,7 +48,7 @@ namespace IssaPlugin.Items
                 return;
 
             var equipped = inventory.GetEffectivelyEquippedItem(true);
-            if (equipped != FreezeItem.FreezeItemType)
+            if (equipped != ItemRegistry.FreezeItemType)
             {
                 IssaPluginPlugin.Log.LogWarning(
                     "[Freeze] Player does not have Freeze item equipped."

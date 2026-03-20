@@ -19,19 +19,8 @@ namespace IssaPlugin.Items
     /// </summary>
     public static class StickyGrenadeItem
     {
-        public static readonly ItemType StickyGrenadeItemType = (ItemType)109;
-
         private static int _useIndex;
 
         public static int NextUseIndex() => Interlocked.Increment(ref _useIndex);
-
-        public static void GiveStickyGrenadeToLocalPlayer()
-        {
-            ItemHelper.GiveItemToLocalPlayer(
-                StickyGrenadeItemType,
-                (int)Configuration.StickyGrenadeUses.Value,
-                "StickyGrenade"
-            );
-        }
     }
 }

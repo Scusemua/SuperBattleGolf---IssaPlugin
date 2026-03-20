@@ -72,45 +72,17 @@ namespace IssaPlugin
             if (keyboard == null)
                 return;
 
-            if (keyboard[Configuration.BaseballBatGiveKey.Value].wasPressedThisFrame)
-                BatItem.GiveBatToLocalPlayer();
-
-            if (keyboard[Configuration.BomberGiveKey.Value].wasPressedThisFrame)
-                StealthBomberItem.GiveBomberToLocalPlayer();
-
-            if (keyboard[Configuration.MissileGiveKey.Value].wasPressedThisFrame)
-                PredatorMissileItem.GiveMissileToLocalPlayer();
-
-            if (keyboard[Configuration.AC130GiveKey.Value].wasPressedThisFrame)
-                AC130Item.GiveAC130ToLocalPlayer();
-
-            if (keyboard[Configuration.FreezeGiveKey.Value].wasPressedThisFrame)
-                FreezeItem.GiveFreezeToLocalPlayer();
-
-            if (keyboard[Configuration.LowGravityGiveKey.Value].wasPressedThisFrame)
-                LowGravityItem.GiveLowGravityToLocalPlayer();
-
-            if (keyboard[Configuration.SniperRifleGiveKey.Value].wasPressedThisFrame)
-                SniperRifleItem.GiveSniperRifleToLocalPlayer();
-
-            if (keyboard[Configuration.DonutGiveKey.Value].wasPressedThisFrame)
-                DonutItem.GiveDonutToLocalPlayer();
-
-            if (keyboard[Configuration.JavelinGiveKey.Value].wasPressedThisFrame)
-                JavelinItem.GiveJavelinToLocalPlayer();
-
-            if (keyboard[Configuration.StickyGrenadeGiveKey.Value].wasPressedThisFrame)
-                StickyGrenadeItem.GiveStickyGrenadeToLocalPlayer();
-
-            if (keyboard[Configuration.BearGiveKey.Value].wasPressedThisFrame)
-                BearItem.GiveBearToLocalPlayer();
+            // Check if player used hotkey to give themself a custom item.
+            foreach (var def in ItemRegistry.AllItems)
+                if (keyboard[def.GiveKey].wasPressedThisFrame)
+                    ItemHelper.GiveItemToLocalPlayer(def.ItemType, def.MaxUses, def.DisplayName);
 
             // Keep the Javelin lock-on target fresh every frame while equipped.
             var localInventory = GameManager.LocalPlayerInventory;
             if (localInventory != null)
             {
                 var equippedItem = localInventory.GetEffectivelyEquippedItem(true);
-                if (equippedItem == JavelinItem.JavelinItemType)
+                if (equippedItem == ItemRegistry.JavelinItemType)
                 {
                     var javelinBridge =
                         NetworkClient.localPlayer?.GetComponent<JavelinNetworkBridge>();
@@ -145,6 +117,9 @@ namespace IssaPlugin
                     b.ServerHoleCleanup();
 
                 foreach (var b in FindObjectsByType<JavelinNetworkBridge>(FindObjectsSortMode.None))
+                    b.ServerHoleCleanup();
+
+                foreach (var b in FindObjectsByType<NukeNetworkBridge>(FindObjectsSortMode.None))
                     b.ServerHoleCleanup();
 
                 FreezeNetworkBridge.ServerHoleCleanup();

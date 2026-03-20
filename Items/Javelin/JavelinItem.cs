@@ -10,8 +10,6 @@ namespace IssaPlugin.Items
     /// </summary>
     public static class JavelinItem
     {
-        public static readonly ItemType JavelinItemType = (ItemType)108;
-
         private static int _useIndex;
 
         public static int NextUseIndex() => Interlocked.Increment(ref _useIndex);
@@ -20,14 +18,5 @@ namespace IssaPlugin.Items
         /// JavelinRocketBehaviour.FixedUpdate has exclusive control over velocity.
         /// Mirrors the ActiveMissileRockets pattern in PredatorMissileItem.
         internal static readonly HashSet<Rocket> ActiveJavelinRockets = new();
-
-        public static void GiveJavelinToLocalPlayer()
-        {
-            ItemHelper.GiveItemToLocalPlayer(
-                JavelinItemType,
-                (int)Configuration.JavelinUses.Value,
-                "Javelin"
-            );
-        }
     }
 }

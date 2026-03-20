@@ -8,19 +8,9 @@ namespace IssaPlugin.Items
 {
     public static class PredatorMissileItem
     {
-        public static readonly ItemType MissileItemType = (ItemType)102;
         private static int _missileUseIndex;
 
         internal static readonly HashSet<Rocket> ActiveMissileRockets = new();
-
-        public static void GiveMissileToLocalPlayer()
-        {
-            ItemHelper.GiveItemToLocalPlayer(
-                MissileItemType,
-                (int)Configuration.MissileUses.Value,
-                "Missile"
-            );
-        }
 
         /// Runs entirely on the server. Spawns the rocket, notifies the
         /// firing client to begin steering, then waits for impact or timeout.

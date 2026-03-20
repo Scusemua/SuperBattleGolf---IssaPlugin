@@ -90,7 +90,7 @@ namespace IssaPlugin.Overlays
             bool sniperEquipped =
                 localInfo?.Inventory != null
                 && localInfo.Inventory.GetEffectivelyEquippedItem(true)
-                    == SniperRifleItem.SniperRifleItemType;
+                    == ItemRegistry.SniperRifleItemType;
 
             bool wantsScope = sniperEquipped && (Mouse.current?.rightButton.isPressed ?? false);
             SniperRifleItem.IsScoped = wantsScope;

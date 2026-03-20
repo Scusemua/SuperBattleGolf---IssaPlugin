@@ -88,116 +88,17 @@ namespace IssaPlugin.Patches
         private static ItemPool.ItemSpawnChance[] BuildCustomEntries()
         {
             var list = new List<ItemPool.ItemSpawnChance>();
-
-            float batWeight = Configuration.BaseballBatSpawnWeight.Value;
-            if (batWeight > 0f)
-                list.Add(
-                    new ItemPool.ItemSpawnChance
-                    {
-                        item = BatItem.BatItemType,
-                        spawnChanceWeight = batWeight,
-                    }
-                );
-
-            float bomberWeight = Configuration.BomberSpawnWeight.Value;
-            if (bomberWeight > 0f)
-                list.Add(
-                    new ItemPool.ItemSpawnChance
-                    {
-                        item = StealthBomberItem.BomberItemType,
-                        spawnChanceWeight = bomberWeight,
-                    }
-                );
-
-            float missileWeight = Configuration.MissileSpawnWeight.Value;
-            if (missileWeight > 0f)
-                list.Add(
-                    new ItemPool.ItemSpawnChance
-                    {
-                        item = PredatorMissileItem.MissileItemType,
-                        spawnChanceWeight = missileWeight,
-                    }
-                );
-
-            float ac130Weight = Configuration.AC130SpawnWeight.Value;
-            if (ac130Weight > 0f)
-                list.Add(
-                    new ItemPool.ItemSpawnChance
-                    {
-                        item = AC130Item.AC130ItemType,
-                        spawnChanceWeight = ac130Weight,
-                    }
-                );
-
-            float freezeWeight = Configuration.FreezeSpawnWeight.Value;
-            if (freezeWeight > 0f)
-                list.Add(
-                    new ItemPool.ItemSpawnChance
-                    {
-                        item = FreezeItem.FreezeItemType,
-                        spawnChanceWeight = freezeWeight,
-                    }
-                );
-
-            float lowGravityWeight = Configuration.LowGravitySpawnWeight.Value;
-            if (lowGravityWeight > 0f)
-                list.Add(
-                    new ItemPool.ItemSpawnChance
-                    {
-                        item = LowGravityItem.LowGravityItemType,
-                        spawnChanceWeight = lowGravityWeight,
-                    }
-                );
-
-            float sniperWeight = Configuration.SniperRifleSpawnWeight.Value;
-            if (sniperWeight > 0f)
-                list.Add(
-                    new ItemPool.ItemSpawnChance
-                    {
-                        item = SniperRifleItem.SniperRifleItemType,
-                        spawnChanceWeight = sniperWeight,
-                    }
-                );
-
-            float donutWeight = Configuration.DonutSpawnWeight.Value;
-            if (donutWeight > 0f)
-                list.Add(
-                    new ItemPool.ItemSpawnChance
-                    {
-                        item = DonutItem.DonutItemType,
-                        spawnChanceWeight = donutWeight,
-                    }
-                );
-
-            float javelinWeight = Configuration.JavelinSpawnWeight.Value;
-            if (javelinWeight > 0f)
-                list.Add(
-                    new ItemPool.ItemSpawnChance
-                    {
-                        item = JavelinItem.JavelinItemType,
-                        spawnChanceWeight = javelinWeight,
-                    }
-                );
-
-            float stickyGrenadeWeight = Configuration.StickyGrenadeSpawnWeight.Value;
-            if (stickyGrenadeWeight > 0f)
-                list.Add(
-                    new ItemPool.ItemSpawnChance
-                    {
-                        item = StickyGrenadeItem.StickyGrenadeItemType,
-                        spawnChanceWeight = stickyGrenadeWeight,
-                    }
-                );
-            float bearWeight = Configuration.BearSpawnWeight.Value;
-            if (bearWeight > 0f)
-                list.Add(
-                    new ItemPool.ItemSpawnChance
-                    {
-                        item = BearItem.BearItemType,
-                        spawnChanceWeight = bearWeight,
-                    }
-                );
-
+            foreach (var itemDefinition in ItemRegistry.AllItems)
+            {
+                if (itemDefinition.SpawnWeight > 0f)
+                    list.Add(
+                        new ItemPool.ItemSpawnChance
+                        {
+                            item = itemDefinition.ItemType,
+                            spawnChanceWeight = itemDefinition.SpawnWeight,
+                        }
+                    );
+            }
             return list.ToArray();
         }
 

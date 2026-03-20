@@ -127,7 +127,7 @@ namespace IssaPlugin.Items
                 return;
 
             var equipped = inventory.GetEffectivelyEquippedItem(true);
-            if (equipped != DonutItem.DonutItemType)
+            if (equipped != ItemRegistry.DonutItemType)
             {
                 IssaPluginPlugin.Log.LogWarning(
                     "[Donut] Player does not have Donut item equipped."
@@ -283,7 +283,8 @@ namespace IssaPlugin.Items
                 Quaternion.identity
             );
 
-            if (rocket == null) {
+            if (rocket == null)
+            {
                 IssaPluginPlugin.Log.LogError("[Donut] Rocket prefab failed to instantiate.");
                 return;
             }

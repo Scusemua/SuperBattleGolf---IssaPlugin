@@ -76,8 +76,7 @@ namespace IssaPlugin.Items
         {
             if (
                 _inventory == null
-                || _inventory.GetEffectivelyEquippedItem(true)
-                    != StickyGrenadeItem.StickyGrenadeItemType
+                || _inventory.GetEffectivelyEquippedItem(true) != ItemRegistry.StickyGrenadeItemType
             )
             {
                 Destroy(this);
@@ -110,8 +109,7 @@ namespace IssaPlugin.Items
 
             // Combine both masks so the arc stops on terrain, walls, players,
             // and vehicles — mirroring the two-phase check in StickyGrenadeBehaviour.
-            int stickMask =
-                ItemHelper.GroundLayerMask | GameManager.LayerSettings.GunHittablesMask;
+            int stickMask = ItemHelper.GroundLayerMask | GameManager.LayerSettings.GunHittablesMask;
 
             _positions[0] = pos;
             int count = 1;

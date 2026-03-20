@@ -21,14 +21,5 @@ namespace IssaPlugin.Items
         private static int _useIndex;
 
         public static int NextUseIndex() => Interlocked.Increment(ref _useIndex);
-
-        public static void GiveBearToLocalPlayer()
-        {
-            ItemHelper.GiveItemToLocalPlayer(
-                BearItemType,
-                (int)Configuration.BearUses.Value,
-                "Bear"
-            );
-        }
     }
 }
