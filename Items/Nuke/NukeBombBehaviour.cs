@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Reflection;
 using Mirror;
 using UnityEngine;
@@ -12,8 +11,9 @@ namespace IssaPlugin.Items
     ///
     /// Detonation spawns a temporary game Rocket at the impact position and
     /// immediately calls ServerExplode on it (triggering the game's standard
-    /// damage + ExplosionScaler bonus knockback), then applies a separate wide-
-    /// radius sky blast that launches everyone on the map into the air.
+    /// damage + ExplosionScaler bonus knockback), then broadcasts
+    /// NukeExplosionMessage so every client applies the sky blast impulse and
+    /// calls TryKnockOut on their own local PlayerMovement.
     /// </summary>
     public class NukeBombBehaviour : MonoBehaviour
     {
@@ -56,7 +56,7 @@ namespace IssaPlugin.Items
                 // sets the prefab Rigidbody to kinematic/no-gravity so it stays
                 // still while held; we take manual control here.
                 _rb.isKinematic = false;
-                _rb.useGravity = false;
+                _rb.useGravity = true;
             }
         }
 
@@ -105,8 +105,18 @@ namespace IssaPlugin.Items
             Vector3 pos = transform.position;
             IssaPluginPlugin.Log.LogInfo($"[Nuke] Bomb detonating at {pos:F1}.");
 
-            // Tell every client to play the explosion VFX + sound.
-            NetworkServer.SendToAll(new NukeExplosionMessage { Position = pos });
+            // Broadcast to every client: spawn VFX/sound, apply sky blast impulse,
+            // and call TryKnockOut on their local PlayerMovement.
+            NetworkServer.SendToAll(
+                new NukeExplosionMessage
+                {
+                    Position = pos,
+                    ThrowerInfo = ThrowerInfo,
+                    ItemUseId = ItemUseId,
+                    SkyBlastForce = SkyBlastForce,
+                    SkyBlastVerticalBias = SkyBlastVerticalBias,
+                }
+            );
 
             // Spawn a temporary game Rocket at the impact position and immediately
             // call ServerExplode.  This lets the game's own damage and
@@ -126,45 +136,7 @@ namespace IssaPlugin.Items
                 ServerExplodeMethod?.Invoke(tempRocket, new object[] { pos });
             }
 
-            // Sky blast — applies force to every player on the map regardless of
-            // distance.  Direction is still relative to the explosion point so
-            // nearby players fly away differently than distant ones, but the
-            // magnitude is uniform so nobody is too far away to feel it.
-            bool excludeThrower =
-                Configuration.NukeExcludeThrower.Value && ThrowerRigidbody != null;
-
-            var allPlayers = new List<PlayerInfo>();
-            if (GameManager.LocalPlayerInfo != null)
-                allPlayers.Add(GameManager.LocalPlayerInfo);
-            var remotes = GameManager.RemotePlayers;
-            if (remotes != null)
-                allPlayers.AddRange(remotes);
-
-            var processed = new HashSet<Rigidbody>();
-            foreach (var player in allPlayers)
-            {
-                if (player == null)
-                    continue;
-
-                var rb = player.GetComponentInParent<Rigidbody>();
-                if (rb == null || !processed.Add(rb))
-                    continue;
-
-                if (excludeThrower && rb == ThrowerRigidbody)
-                    continue;
-
-                // Compute the horizontal direction away from the blast, then lerp
-                // toward Vector3.up by SkyBlastVerticalBias (0 = all outward, 1 = all up).
-                // This gives independent control over how much players go up vs. out.
-                Vector3 toPlayer = rb.position - pos;
-                Vector3 horizontal = new Vector3(toPlayer.x, 0f, toPlayer.z).normalized;
-                Vector3 blastDir = Vector3
-                    .Lerp(horizontal, Vector3.up, SkyBlastVerticalBias)
-                    .normalized;
-                rb.AddForce(blastDir * SkyBlastForce, ForceMode.VelocityChange);
-            }
-
-            IssaPluginPlugin.Log.LogInfo($"[Nuke] Sky blast applied to {processed.Count} players.");
+            IssaPluginPlugin.Log.LogInfo("[Nuke] Detonation complete.");
 
             NetworkServer.Destroy(gameObject);
         }

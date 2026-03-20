@@ -1,4 +1,4 @@
-using System.Data.SqlTypes;
+using System.Collections;
 using HarmonyLib;
 using IssaPlugin.Items;
 using IssaPlugin.Network;
@@ -959,13 +959,60 @@ namespace IssaPlugin.Patches
                 msg.Position
             );
 
+            // Sky blast — apply the impulse and register the knockout on the local
+            // player.  Each client runs this for themselves so TryKnockOut can call
+            // CmdInformKnockedOut back to the server (a [Command] must originate from
+            // the owning client).
+            var localInfo = GameManager.LocalPlayerInfo;
+            if (localInfo == null)
+                return;
+
+            if (Configuration.NukeExcludeThrower.Value && localInfo == msg.ThrowerInfo)
+                return;
+
+            var movement = localInfo.Movement;
+            var rb = localInfo.GetComponentInParent<Rigidbody>();
+            if (movement == null || rb == null)
+                return;
+
+            Vector3 toPlayer = movement.transform.position - msg.Position;
+            Vector3 horizontal = new Vector3(toPlayer.x, 0f, toPlayer.z).normalized;
+            Vector3 blastDir = Vector3
+                .Lerp(horizontal, Vector3.up, msg.SkyBlastVerticalBias)
+                .normalized;
+            Vector3 velocityChange = blastDir * msg.SkyBlastForce;
+
+            rb.AddForce(velocityChange, ForceMode.VelocityChange);
+
+            bool _;
+            movement.TryKnockOut(
+                msg.ThrowerInfo,
+                KnockoutType.Rocket,
+                false, // isLegSweep
+                movement.transform.InverseTransformPoint(msg.Position), // localOrigin
+                toPlayer.magnitude, // distance
+                velocityChange, // used for unground check
+                false, // ignores electromagnetic shield
+                msg.ItemUseId,
+                false, // fromSpecialState
+                true, // canFallbackToUnground
+                out _
+            );
+
             // Give players a speed boost.
             var playerMovement = GameManager.LocalPlayerMovement;
             if (playerMovement != null)
             {
-                playerMovement.InformDrankCoffee();
-                playerMovement.InformDrankCoffee();
+                movement.StartCoroutine(ApplyCoffeeMovementSpeed(movement));
             }
+        }
+
+        internal static IEnumerator ApplyCoffeeMovementSpeed(PlayerMovement movement)
+        {
+            yield return new WaitForSeconds(3);
+            movement.InformDrankCoffee();
+            movement.InformDrankCoffee();
+            movement.InformDrankCoffee();
         }
     }
 

@@ -18,19 +18,37 @@ namespace IssaPlugin.Items
 
     // ── Server → All Clients ─────────────────────────────────────────────
 
-    /// Broadcast to every client when the nuke bomb detonates so each
-    /// client can spawn the explosion VFX and play the impact sound locally.
+    /// Broadcast to every client when the nuke bomb detonates so each client
+    /// can spawn the explosion VFX, play the impact sound, apply the sky blast
+    /// impulse to the local player, and call TryKnockOut.
     public struct NukeExplosionMessage : NetworkMessage
     {
         public Vector3 Position;
+        public PlayerInfo ThrowerInfo;
+        public ItemUseId ItemUseId;
+        public float SkyBlastForce;
+        public float SkyBlastVerticalBias;
     }
 
     public static class NukeExplosionMessageSerialization
     {
-        public static void WriteNukeExplosionMessage(NetworkWriter w, NukeExplosionMessage m) =>
+        public static void WriteNukeExplosionMessage(NetworkWriter w, NukeExplosionMessage m)
+        {
             w.WriteVector3(m.Position);
+            w.WriteNetworkBehaviour(m.ThrowerInfo);
+            w.Write(m.ItemUseId);
+            w.WriteFloat(m.SkyBlastForce);
+            w.WriteFloat(m.SkyBlastVerticalBias);
+        }
 
         public static NukeExplosionMessage ReadNukeExplosionMessage(NetworkReader r) =>
-            new NukeExplosionMessage { Position = r.ReadVector3() };
+            new NukeExplosionMessage
+            {
+                Position = r.ReadVector3(),
+                ThrowerInfo = r.ReadNetworkBehaviour<PlayerInfo>(),
+                ItemUseId = r.Read<ItemUseId>(),
+                SkyBlastForce = r.ReadFloat(),
+                SkyBlastVerticalBias = r.ReadFloat(),
+            };
     }
 }
