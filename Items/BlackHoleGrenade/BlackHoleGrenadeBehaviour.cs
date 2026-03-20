@@ -1,0 +1,300 @@
+using System.Collections.Generic;
+using Mirror;
+using UnityEngine;
+
+namespace IssaPlugin.Items
+{
+    /// <summary>
+    /// Server-only MonoBehaviour attached to the black hole grenade after
+    /// NetworkServer.Spawn().  Drives three phases:
+    ///
+    ///   Flying   — Rigidbody is live; grenade arcs under gravity.  An
+    ///              OverlapSphere poll each FixedUpdate checks for the first
+    ///              solid contact with terrain/ground.
+    ///
+    ///   Suck     — Rigidbody is frozen (isKinematic = true).  Each FixedUpdate
+    ///              finds all non-player Rigidbodies within SuckRadius (golf balls,
+    ///              golf carts, etc.) and applies an inward acceleration that
+    ///              intensifies near the center.  A BlackHoleGrenadeLandedMessage
+    ///              is broadcast once so every client can apply the suction to
+    ///              their own local player.
+    ///
+    ///   Done     — One-shot: finds all non-player Rigidbodies in SuckRadius,
+    ///              applies random outward velocity, broadcasts
+    ///              BlackHoleGrenadeSpitMessage so clients handle their own players,
+    ///              then calls NetworkServer.Destroy.
+    /// </summary>
+    public class BlackHoleGrenadeBehaviour : MonoBehaviour
+    {
+        // ----------------------------------------------------------------
+        //  Configuration (set by BlackHoleGrenadeNetworkBridge before Start)
+        // ----------------------------------------------------------------
+
+        public PlayerInfo ThrowerInfo;
+        public ItemUseId ItemUseId;
+        public float GraceTime = 0.35f;
+        public float SuckDuration = 6f;
+        public float SuckRadius = 35f;
+        /// Suction acceleration (m/s²) at the outer edge of the field.
+        public float SuckForce = 8f;
+        /// Suction acceleration (m/s²) right at the center.
+        public float MaxSuckForce = 40f;
+        public float SpitForce = 35f;
+        public float StickRadius = 0.55f;
+
+        // ----------------------------------------------------------------
+        //  State
+        // ----------------------------------------------------------------
+
+        private enum Phase { Flying, Suck, Done }
+
+        private Phase _phase = Phase.Flying;
+        private Rigidbody _rb;
+        private float _elapsed;
+        private float _suckElapsed;
+        private bool _landedMessageSent;
+
+        // ----------------------------------------------------------------
+        //  Lifecycle
+        // ----------------------------------------------------------------
+
+        private void Start()
+        {
+            if (!NetworkServer.active)
+            {
+                enabled = false;
+                return;
+            }
+
+            _rb = GetComponent<Rigidbody>();
+            if (_rb != null)
+            {
+                _rb.useGravity = true;
+                _rb.isKinematic = false;
+                _rb.freezeRotation = false;
+            }
+        }
+
+        private void FixedUpdate()
+        {
+            if (!NetworkServer.active)
+                return;
+
+            _elapsed += Time.fixedDeltaTime;
+
+            switch (_phase)
+            {
+                case Phase.Flying:
+                    UpdateFlying();
+                    break;
+                case Phase.Suck:
+                    UpdateSuck();
+                    break;
+                case Phase.Done:
+                    break;
+            }
+        }
+
+        // ----------------------------------------------------------------
+        //  Phase: Flying
+        // ----------------------------------------------------------------
+
+        private void UpdateFlying()
+        {
+            if (_elapsed < GraceTime)
+                return;
+
+            // Poll for ground contact using a tight overlap sphere.
+            var groundHits = Physics.OverlapSphere(
+                transform.position,
+                StickRadius * 0.7f,
+                ItemHelper.GroundLayerMask,
+                QueryTriggerInteraction.Ignore
+            );
+
+            foreach (var col in groundHits)
+            {
+                if (col.transform.IsChildOf(transform) || col.transform == transform)
+                    continue;
+
+                Land();
+                return;
+            }
+        }
+
+        private void OnCollisionEnter(Collision collision)
+        {
+            if (_phase != Phase.Flying)
+                return;
+
+            if ((ItemHelper.GroundLayerMask & (1 << collision.gameObject.layer)) != 0)
+                Land();
+        }
+
+        // ----------------------------------------------------------------
+        //  Landing — Flying → Suck transition
+        // ----------------------------------------------------------------
+
+        private void Land()
+        {
+            _phase = Phase.Suck;
+
+            if (_rb != null)
+            {
+                _rb.linearVelocity = Vector3.zero;
+                _rb.angularVelocity = Vector3.zero;
+                _rb.isKinematic = true;
+                _rb.detectCollisions = false;
+            }
+
+            IssaPluginPlugin.Log.LogInfo(
+                $"[BlackHoleGrenade] Landed at {transform.position:F1} — starting suction."
+            );
+        }
+
+        // ----------------------------------------------------------------
+        //  Phase: Suck
+        // ----------------------------------------------------------------
+
+        private void UpdateSuck()
+        {
+            // Broadcast landed message on the first suck frame so clients start
+            // their own suction coroutines.
+            if (!_landedMessageSent)
+            {
+                _landedMessageSent = true;
+                var ni = GetComponent<NetworkIdentity>();
+                NetworkServer.SendToAll(
+                    new BlackHoleGrenadeLandedMessage
+                    {
+                        BlackHoleNetId = ni != null ? ni.netId : 0u,
+                        BlackHolePosition = transform.position,
+                        ThrowerInfo = ThrowerInfo,
+                        SuckDuration = SuckDuration,
+                        SuckRadius = SuckRadius,
+                        SuckForce = SuckForce,
+                        MaxSuckForce = MaxSuckForce,
+                    }
+                );
+            }
+
+            ApplySuctionToNonPlayers();
+
+            _suckElapsed += Time.fixedDeltaTime;
+            if (_suckElapsed >= SuckDuration)
+                Spit();
+        }
+
+        // ----------------------------------------------------------------
+        //  Suction (server-side, non-player physics objects only)
+        // ----------------------------------------------------------------
+
+        private void ApplySuctionToNonPlayers()
+        {
+            Vector3 center = transform.position;
+
+            // RocketHittablesMask covers golf balls, golf carts, and other hittable
+            // objects in addition to players.  We filter out players so clients
+            // handle their own player physics (mirrors the nuke's sky-blast pattern).
+            var hits = Physics.OverlapSphere(
+                center,
+                SuckRadius,
+                GameManager.LayerSettings.RocketHittablesMask,
+                QueryTriggerInteraction.Ignore
+            );
+
+            var seen = new HashSet<Rigidbody>();
+
+            foreach (var col in hits)
+            {
+                // Skip self
+                if (col.transform.IsChildOf(transform) || col.transform == transform)
+                    continue;
+
+                // Skip players — clients handle their own player physics
+                if (col.GetComponentInParent<PlayerInfo>() != null)
+                    continue;
+
+                var rb = col.GetComponentInParent<Rigidbody>();
+                if (rb == null || seen.Contains(rb))
+                    continue;
+                seen.Add(rb);
+
+                Vector3 toCenter = center - rb.position;
+                float dist = toCenter.magnitude;
+                if (dist < 0.01f)
+                    continue;
+
+                // Intensity scales from SuckForce at the edge to MaxSuckForce at center.
+                float t = Mathf.Clamp01(1f - (dist / SuckRadius));
+                float intensity = Mathf.Lerp(SuckForce, MaxSuckForce, t);
+
+                rb.AddForce(toCenter.normalized * intensity, ForceMode.Acceleration);
+            }
+        }
+
+        // ----------------------------------------------------------------
+        //  Spit — eject everything and destroy
+        // ----------------------------------------------------------------
+
+        public void Spit()
+        {
+            if (_phase == Phase.Done)
+                return;
+            _phase = Phase.Done;
+
+            Vector3 center = transform.position;
+
+            IssaPluginPlugin.Log.LogInfo(
+                $"[BlackHoleGrenade] Spit phase at {center:F1} — ejecting objects."
+            );
+
+            // Apply random outward velocity to all non-player rigidbodies in range.
+            var hits = Physics.OverlapSphere(
+                center,
+                SuckRadius,
+                GameManager.LayerSettings.RocketHittablesMask,
+                QueryTriggerInteraction.Ignore
+            );
+
+            var seen = new HashSet<Rigidbody>();
+
+            foreach (var col in hits)
+            {
+                if (col.transform.IsChildOf(transform) || col.transform == transform)
+                    continue;
+                if (col.GetComponentInParent<PlayerInfo>() != null)
+                    continue;
+
+                var rb = col.GetComponentInParent<Rigidbody>();
+                if (rb == null || seen.Contains(rb))
+                    continue;
+                seen.Add(rb);
+
+                // Random direction biased upward so objects fly into the air.
+                Vector3 dir = Random.onUnitSphere;
+                dir.y = Mathf.Abs(dir.y) + 0.5f;
+                dir = dir.normalized;
+
+                rb.linearVelocity = dir * SpitForce;
+            }
+
+            // Broadcast to all clients so they apply the spit to their local player.
+            var ni = GetComponent<NetworkIdentity>();
+            NetworkServer.SendToAll(
+                new BlackHoleGrenadeSpitMessage
+                {
+                    BlackHoleNetId = ni != null ? ni.netId : 0u,
+                    BlackHolePosition = center,
+                    SpitRadius = SuckRadius,
+                    SpitForce = SpitForce,
+                    ThrowerInfo = ThrowerInfo,
+                    ItemUseId = ItemUseId,
+                }
+            );
+
+            IssaPluginPlugin.Log.LogInfo("[BlackHoleGrenade] Spit complete — destroying.");
+            NetworkServer.Destroy(gameObject);
+        }
+    }
+}

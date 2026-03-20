@@ -610,6 +610,39 @@ namespace IssaPlugin.Patches
                 NukeMessageHandlers.HandleNukeExplosion
             );
 
+            // ── BlackHoleGrenade Messages ─────────────────────────────────────
+
+            // Client → Server
+            Writer<BlackHoleGrenadeThrowMessage>.write =
+                BlackHoleGrenadeThrowMessageSerialization.WriteBlackHoleGrenadeThrowMessage;
+            Reader<BlackHoleGrenadeThrowMessage>.read =
+                BlackHoleGrenadeThrowMessageSerialization.ReadBlackHoleGrenadeThrowMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<BlackHoleGrenadeThrowMessage>(
+                    (conn, msg) =>
+                    {
+                        conn.identity?.GetComponent<BlackHoleGrenadeNetworkBridge>()
+                            ?.ServerHandleThrow(msg.ThrowOrigin, msg.ThrowVelocity);
+                    }
+                );
+
+            // Server → All Clients
+            Writer<BlackHoleGrenadeLandedMessage>.write =
+                BlackHoleGrenadeLandedMessageSerialization.WriteBlackHoleGrenadeLandedMessage;
+            Reader<BlackHoleGrenadeLandedMessage>.read =
+                BlackHoleGrenadeLandedMessageSerialization.ReadBlackHoleGrenadeLandedMessage;
+            NetworkClient.RegisterHandler<BlackHoleGrenadeLandedMessage>(
+                BlackHoleGrenadeMessageHandlers.HandleBlackHoleGrenadeLanded
+            );
+
+            Writer<BlackHoleGrenadeSpitMessage>.write =
+                BlackHoleGrenadeSpitMessageSerialization.WriteBlackHoleGrenadeSpitMessage;
+            Reader<BlackHoleGrenadeSpitMessage>.read =
+                BlackHoleGrenadeSpitMessageSerialization.ReadBlackHoleGrenadeSpitMessage;
+            NetworkClient.RegisterHandler<BlackHoleGrenadeSpitMessage>(
+                BlackHoleGrenadeMessageHandlers.HandleBlackHoleGrenadeSpit
+            );
+
             // ── Spawn-weight sync (server → all clients) ─────────────────────
             Writer<SpawnWeightsMessage>.write =
                 SpawnWeightsMessageSerialization.WriteSpawnWeightsMessage;
@@ -747,6 +780,7 @@ namespace IssaPlugin.Patches
             RegisterPrefab(AssetLoader.BearPrefab);
             RegisterPrefab(AssetLoader.TeddyBearPrefab);
             RegisterPrefab(AssetLoader.NukeBombPrefab);
+            RegisterPrefab(AssetLoader.BlackHoleGrenadePrefab);
         }
 
         private static void RegisterPrefab(GameObject prefab)
@@ -1034,6 +1068,21 @@ namespace IssaPlugin.Patches
                 return;
 
             item.ServerPickup(inventory);
+        }
+    }
+
+    /// BlackHoleGrenade NetworkMessage handlers — kept in a separate (non-patch) class so
+    /// the Harmony analyser does not misidentify the 'msg' parameters as patch parameters.
+    static class BlackHoleGrenadeMessageHandlers
+    {
+        internal static void HandleBlackHoleGrenadeLanded(BlackHoleGrenadeLandedMessage msg)
+        {
+            BlackHoleGrenadeNetworkBridge.HandleBlackHoleGrenadeLanded(msg);
+        }
+
+        internal static void HandleBlackHoleGrenadeSpit(BlackHoleGrenadeSpitMessage msg)
+        {
+            BlackHoleGrenadeNetworkBridge.HandleBlackHoleGrenadeSpit(msg);
         }
     }
 }

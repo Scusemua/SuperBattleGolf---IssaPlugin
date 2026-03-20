@@ -49,6 +49,11 @@ namespace IssaPlugin.Items
         public static Sprite BearIcon { get; private set; }
 
         public static Sprite NukeIcon { get; private set; }
+        public static Sprite BlackHoleGrenadeIcon { get; private set; }
+
+        /// The networked black hole grenade projectile.
+        /// Falls back to a runtime-built sphere if 'black_hole_grenade.prefab' is absent.
+        public static GameObject BlackHoleGrenadePrefab { get; private set; }
 
         /// The model the player holds while the Nuke item is equipped.
         public static GameObject NuclearDetonatorPrefab { get; private set; }
@@ -240,6 +245,40 @@ namespace IssaPlugin.Items
             NukeExplosionVfxPrefab =
                 Load<GameObject>("nuke_explosion.prefab") ?? MaydayExplosionVfxPrefab;
             NukeExplosionClip = MaydayImpactClip;
+
+            BlackHoleGrenadeIcon = LoadSprite("black_hole_grenade_icon.png");
+
+            BlackHoleGrenadePrefab = Load<GameObject>("black_hole_grenade.prefab");
+            if (BlackHoleGrenadePrefab != null)
+            {
+                EnsureNetworkIdentity(BlackHoleGrenadePrefab, 0xB14C0001u);
+                DisableRigidbody(BlackHoleGrenadePrefab);
+            }
+            else
+            {
+                // Fallback: build a minimal networked sphere so the item works even
+                // without a dedicated bundle asset.  Artists can replace this later.
+                IssaPluginPlugin.Log.LogWarning(
+                    "[Assets] black_hole_grenade.prefab not found — using fallback sphere."
+                );
+                BlackHoleGrenadePrefab = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                BlackHoleGrenadePrefab.name = "BlackHoleGrenade_Fallback";
+                BlackHoleGrenadePrefab.transform.localScale = Vector3.one * 0.4f;
+                var bhRb =
+                    BlackHoleGrenadePrefab.GetComponent<Rigidbody>()
+                    ?? BlackHoleGrenadePrefab.AddComponent<Rigidbody>();
+                bhRb.isKinematic = true;
+                bhRb.useGravity = false;
+                // Disable the collider so the template sitting at origin doesn't
+                // interfere with in-scene physics.  Spawned instances re-enable it via
+                // BlackHoleGrenadeBehaviour (Rigidbody is already kinematic/no-gravity).
+                var bhCol = BlackHoleGrenadePrefab.GetComponent<SphereCollider>();
+                if (bhCol)
+                    bhCol.enabled = false;
+                EnsureNetworkIdentity(BlackHoleGrenadePrefab, 0xB14C0001u);
+                BlackHoleGrenadePrefab.AddComponent<NetworkTransformReliable>();
+                GameObject.DontDestroyOnLoad(BlackHoleGrenadePrefab);
+            }
 
             DroppedCustomItemPrefab = Load<GameObject>("DroppedCustomItem.prefab");
             if (DroppedCustomItemPrefab != null)

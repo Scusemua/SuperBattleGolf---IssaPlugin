@@ -184,6 +184,22 @@ namespace IssaPlugin
         public static ConfigEntry<float> NukeExplosionVfxScale { get; private set; }
         public static ConfigEntry<bool> NukeExcludeThrower { get; private set; }
 
+        // --- Black Hole Grenade ---
+        public static ConfigEntry<Key> BlackHoleGrenadeGiveKey { get; private set; }
+        public static ConfigEntry<float> BlackHoleGrenadeUses { get; private set; }
+        public static ConfigEntry<float> BlackHoleGrenadeSpawnWeight { get; private set; }
+        public static ConfigEntry<float> BlackHoleGrenadeThrowSpeed { get; private set; }
+        public static ConfigEntry<float> BlackHoleGrenadeMaxThrowSpeed { get; private set; }
+        public static ConfigEntry<float> BlackHoleGrenadeLobAngle { get; private set; }
+        public static ConfigEntry<float> BlackHoleGrenadeGraceTime { get; private set; }
+        public static ConfigEntry<float> BlackHoleGrenadeSuckDuration { get; private set; }
+        public static ConfigEntry<float> BlackHoleGrenadeSuckRadius { get; private set; }
+        public static ConfigEntry<float> BlackHoleGrenadeSuckForce { get; private set; }
+        public static ConfigEntry<float> BlackHoleGrenadeMaxSuckForce { get; private set; }
+        public static ConfigEntry<float> BlackHoleGrenadeSpitForce { get; private set; }
+        public static ConfigEntry<float> BlackHoleGrenadeSpitVfxScale { get; private set; }
+        public static ConfigEntry<bool> BlackHoleGrenadeExcludeThrower { get; private set; }
+
         // --- Bear ---
         public static ConfigEntry<Key> BearGiveKey { get; private set; }
         public static ConfigEntry<float> BearUses { get; private set; }
@@ -1286,6 +1302,106 @@ namespace IssaPlugin
                 "ExcludeThrower",
                 false,
                 "If true, the sky blast does not apply force to the player who activated the nuke."
+            );
+
+            // --- Black Hole Grenade ---
+            BlackHoleGrenadeGiveKey = cfg.Bind(
+                "BlackHoleGrenade",
+                "GiveKey",
+                Key.Numpad7,
+                "Debug key to add the Black Hole Grenade to your inventory."
+            );
+
+            BlackHoleGrenadeUses = cfg.Bind(
+                "BlackHoleGrenade",
+                "Uses",
+                1f,
+                "Number of uses per Black Hole Grenade pickup."
+            );
+
+            BlackHoleGrenadeSpawnWeight = cfg.Bind(
+                "ItemBoxSpawns",
+                "BlackHoleGrenadeWeight",
+                0.8f,
+                "Spawn weight for the Black Hole Grenade in item boxes. Set to 0 to disable."
+            );
+
+            BlackHoleGrenadeThrowSpeed = cfg.Bind(
+                "BlackHoleGrenade",
+                "ThrowSpeed",
+                20f,
+                "Initial throw speed in m/s."
+            );
+
+            BlackHoleGrenadeMaxThrowSpeed = cfg.Bind(
+                "BlackHoleGrenade",
+                "MaxThrowSpeed",
+                30f,
+                "Server-side clamp on throw speed to prevent exploits."
+            );
+
+            BlackHoleGrenadeLobAngle = cfg.Bind(
+                "BlackHoleGrenade",
+                "LobAngle",
+                0.4f,
+                "Upward component added to the throw direction to create an arc. "
+                    + "0 = flat, 1 = 45° upward."
+            );
+
+            BlackHoleGrenadeGraceTime = cfg.Bind(
+                "BlackHoleGrenade",
+                "GraceTime",
+                0.35f,
+                "Seconds after throwing before the grenade can stick to the ground."
+            );
+
+            BlackHoleGrenadeSuckDuration = cfg.Bind(
+                "BlackHoleGrenade",
+                "SuckDuration",
+                6f,
+                "How many seconds the suction phase lasts before spitting."
+            );
+
+            BlackHoleGrenadeSuckRadius = cfg.Bind(
+                "BlackHoleGrenade",
+                "SuckRadius",
+                35f,
+                "Radius in units of the suction field."
+            );
+
+            BlackHoleGrenadeSuckForce = cfg.Bind(
+                "BlackHoleGrenade",
+                "SuckForce",
+                8f,
+                "Suction acceleration (m/s²) applied at the outer edge of the suction field."
+            );
+
+            BlackHoleGrenadeMaxSuckForce = cfg.Bind(
+                "BlackHoleGrenade",
+                "MaxSuckForce",
+                40f,
+                "Suction acceleration (m/s²) applied right at the center of the black hole."
+            );
+
+            BlackHoleGrenadeSpitForce = cfg.Bind(
+                "BlackHoleGrenade",
+                "SpitForce",
+                35f,
+                "Speed (m/s) at which objects and players are ejected during the spit phase."
+            );
+
+            BlackHoleGrenadeSpitVfxScale = cfg.Bind(
+                "BlackHoleGrenade",
+                "SpitVfxScale",
+                3f,
+                "Scale of the explosion VFX played on all clients when the black hole collapses."
+            );
+
+            BlackHoleGrenadeExcludeThrower = cfg.Bind(
+                "BlackHoleGrenade",
+                "ExcludeThrower",
+                false,
+                "If true, the player who threw the grenade is not affected by suction or spit."
             );
 
             // --- Bear ---
