@@ -15,6 +15,10 @@ namespace IssaPlugin.Items
 {
     public static class ItemRegistry
     {
+        // Static initialization order note: AllItems is a static field initializer that only
+        // instantiates the definition objects; it does not call any abstract members. Properties like
+        // MaxUses, SpawnWeight, and GiveKey are evaluated lazily at call time, after Configuration
+        // is fully initialized. So, there is no static initialization ordering risk.
         public static IReadOnlyList<CustomItemDefinition> AllItems { get; } =
             new List<CustomItemDefinition>
             {
@@ -30,6 +34,9 @@ namespace IssaPlugin.Items
                 new StickyGrenadeItemDefinition(),
                 new BearItemDefinition(),
             };
+
+        public static CustomItemDefinition GetDefinition(ItemType type) =>
+            AllItems.FirstOrDefault(d => d.ItemType == type);
 
         private static readonly FieldInfo SlotsField = AccessTools.Field(
             typeof(PlayerInventory),
@@ -49,47 +56,9 @@ namespace IssaPlugin.Items
         private static readonly Dictionary<ItemType, ItemData> CustomItemDataCache =
             new Dictionary<ItemType, ItemData>();
 
-        public static bool IsCustomItem(ItemType type)
-        {
-            return type == BatItem.BatItemType
-                || type == StealthBomberItem.BomberItemType
-                || type == PredatorMissileItem.MissileItemType
-                || type == AC130Item.AC130ItemType
-                || type == FreezeItem.FreezeItemType
-                || type == LowGravityItem.LowGravityItemType
-                || type == SniperRifleItem.SniperRifleItemType
-                || type == DonutItem.DonutItemType
-                || type == JavelinItem.JavelinItemType
-                || type == StickyGrenadeItem.StickyGrenadeItemType
-                || type == BearItem.BearItemType;
-        }
+        public static bool IsCustomItem(ItemType type) => AllItems.Any(d => d.ItemType == type);
 
-        public static int GetMaxUses(ItemType type)
-        {
-            if (type == BatItem.BatItemType)
-                return (int)Configuration.BaseballBatUses.Value;
-            if (type == StealthBomberItem.BomberItemType)
-                return (int)Configuration.BomberUses.Value;
-            if (type == PredatorMissileItem.MissileItemType)
-                return (int)Configuration.MissileUses.Value;
-            if (type == AC130Item.AC130ItemType)
-                return (int)Configuration.AC130Uses.Value;
-            if (type == FreezeItem.FreezeItemType)
-                return (int)Configuration.FreezeUses.Value;
-            if (type == LowGravityItem.LowGravityItemType)
-                return (int)Configuration.LowGravityUses.Value;
-            if (type == SniperRifleItem.SniperRifleItemType)
-                return (int)Configuration.SniperRifleUses.Value;
-            if (type == DonutItem.DonutItemType)
-                return (int)Configuration.DonutUses.Value;
-            if (type == JavelinItem.JavelinItemType)
-                return (int)Configuration.JavelinUses.Value;
-            if (type == StickyGrenadeItem.StickyGrenadeItemType)
-                return (int)Configuration.StickyGrenadeUses.Value;
-            if (type == BearItem.BearItemType)
-                return (int)Configuration.BearUses.Value;
-            return 1;
-        }
+        public static int GetMaxUses(ItemType type) => GetDefinition(type)?.MaxUses ?? 1;
 
         internal static ItemData GetOrCreateItemData(ItemType type)
         {
@@ -127,67 +96,29 @@ namespace IssaPlugin.Items
         {
             var dict = (Dictionary<ItemType, ItemData>)AllItemDataField.GetValue(collection);
             if (dict == null)
-            {
-                IssaPluginPlugin.Log.LogError("[ItemRegistry] allItemData field is null!");
+            { /* log error */
                 return;
             }
 
-            var batData = GetOrCreateItemData(BatItem.BatItemType);
-            var bomberData = GetOrCreateItemData(StealthBomberItem.BomberItemType);
-            var missileData = GetOrCreateItemData(PredatorMissileItem.MissileItemType);
-            var ac130Data = GetOrCreateItemData(AC130Item.AC130ItemType);
-            var freezeData = GetOrCreateItemData(FreezeItem.FreezeItemType);
-            var lowGravityData = GetOrCreateItemData(LowGravityItem.LowGravityItemType);
-            var sniperRifleData = GetOrCreateItemData(SniperRifleItem.SniperRifleItemType);
-            var donutData = GetOrCreateItemData(DonutItem.DonutItemType);
-            var javelinData = GetOrCreateItemData(JavelinItem.JavelinItemType);
-            var semtexData = GetOrCreateItemData(StickyGrenadeItem.StickyGrenadeItemType);
-            var bearData = GetOrCreateItemData(BearItem.BearItemType);
+            // Resolve both fallback sprites before the loop.
+            Sprite rocketFallbackIcon = dict.TryGetValue(ItemType.RocketLauncher, out var rd)
+                ? rd.Icon
+                : null;
+            Sprite pistolFallbackIcon = dict.TryGetValue(ItemType.DuelingPistol, out var pd)
+                ? pd.Icon
+                : null;
 
-            Sprite rocketFallbackIcon = null;
-            if (
-                dict.TryGetValue(ItemType.RocketLauncher, out var rocketData)
-                && rocketData.Icon != null
-            )
-                rocketFallbackIcon = rocketData.Icon;
+            foreach (var def in AllItems)
+            {
+                var data = GetOrCreateItemData(def.ItemType);
+                Sprite fallback = def.UseRocketIconFallback
+                    ? rocketFallbackIcon
+                    : pistolFallbackIcon;
+                IconProperty.SetValue(data, def.Icon ?? fallback);
+                dict[def.ItemType] = data;
+            }
 
-            Sprite pistolFallbackIcon = null;
-            if (
-                dict.TryGetValue(ItemType.DuelingPistol, out var pistolData)
-                && pistolData.Icon != null
-            )
-                pistolFallbackIcon = pistolData.Icon;
-
-            IconProperty.SetValue(batData, AssetLoader.BatIcon ?? pistolFallbackIcon);
-            IconProperty.SetValue(bomberData, AssetLoader.BomberIcon ?? rocketFallbackIcon);
-            IconProperty.SetValue(missileData, AssetLoader.MissileIcon ?? rocketFallbackIcon);
-            IconProperty.SetValue(ac130Data, AssetLoader.AC130Icon ?? rocketFallbackIcon);
-            IconProperty.SetValue(freezeData, AssetLoader.FreezeIcon ?? rocketFallbackIcon);
-            IconProperty.SetValue(lowGravityData, AssetLoader.LowGravityIcon ?? rocketFallbackIcon);
-            IconProperty.SetValue(
-                sniperRifleData,
-                AssetLoader.SniperRifleIcon ?? pistolFallbackIcon
-            );
-            IconProperty.SetValue(donutData, AssetLoader.DonutIcon ?? rocketFallbackIcon);
-            IconProperty.SetValue(javelinData, AssetLoader.JavelinIcon ?? rocketFallbackIcon);
-            IconProperty.SetValue(semtexData, AssetLoader.StickyGrenadeIcon ?? rocketFallbackIcon);
-            IconProperty.SetValue(bearData, AssetLoader.BearIcon ?? rocketFallbackIcon);
-
-            dict[BatItem.BatItemType] = batData;
-            dict[StealthBomberItem.BomberItemType] = bomberData;
-            dict[PredatorMissileItem.MissileItemType] = missileData;
-            dict[AC130Item.AC130ItemType] = ac130Data;
-            dict[FreezeItem.FreezeItemType] = freezeData;
-            dict[LowGravityItem.LowGravityItemType] = lowGravityData;
-            dict[SniperRifleItem.SniperRifleItemType] = sniperRifleData;
-            dict[DonutItem.DonutItemType] = donutData;
-            dict[JavelinItem.JavelinItemType] = javelinData;
-            dict[StickyGrenadeItem.StickyGrenadeItemType] = semtexData;
-            dict[BearItem.BearItemType] = bearData;
-
-            IssaPluginPlugin.Log.LogInfo(
-                $"[ItemRegistry] Injected {CustomItemDataCache.Count} custom items."
-            );
+            IssaPluginPlugin.Log.LogInfo($"[ItemRegistry] Injected {AllItems.Count} custom items.");
         }
 
         /// Adds entries to the Unity Localization "Data" StringTable at runtime
