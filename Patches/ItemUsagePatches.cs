@@ -142,6 +142,17 @@ namespace IssaPlugin.Patches
                     );
                 return false;
             }
+            if (equipped == BearItem.BearItemType)
+            {
+                shouldEatInput = true;
+                __result = true;
+                var bridge = __instance.GetComponent<BearNetworkBridge>();
+                if (bridge != null)
+                    NetworkClient.Send(new BearSummonMessage());
+                else
+                    IssaPluginPlugin.Log.LogError("[Bear] No BearNetworkBridge on player.");
+                return false;
+            }
 
             return true;
         }
@@ -204,6 +215,7 @@ namespace IssaPlugin.Patches
                 || equipped == DonutItem.DonutItemType
                 || equipped == JavelinItem.JavelinItemType
                 || equipped == StickyGrenadeItem.StickyGrenadeItemType
+                || equipped == BearItem.BearItemType
             )
             {
                 rightSwitcher.SetEquipment(EquipmentType.RocketLauncher);
@@ -307,6 +319,8 @@ namespace IssaPlugin.Patches
                 return AssetLoader.JavelinHandheldPrefab;
             if (type == StickyGrenadeItem.StickyGrenadeItemType)
                 return AssetLoader.StickyGrenadePrefab;
+            if (type == BearItem.BearItemType)
+                return AssetLoader.BearPrefab; // held as a visual prop
             return null;
         }
 
@@ -545,6 +559,7 @@ namespace IssaPlugin.Patches
                 equippedItem = ItemType.RocketLauncher;
             }
             else if (equippedItem != BatItem.BatItemType)
+                equippedItem = ItemType.OrbitalLaser;
             {
                 equippedItem = ItemType.OrbitalLaser;
             }

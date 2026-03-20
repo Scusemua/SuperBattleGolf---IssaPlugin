@@ -35,6 +35,7 @@ namespace IssaPlugin.Patches
                 StickyGrenadeItem.StickyGrenadeItemType,
                 1
             ),
+            (new[] { "bear", "bears" }, BearItem.BearItemType, 1),
         };
 
         /// <summary>

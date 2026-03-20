@@ -169,6 +169,30 @@ namespace IssaPlugin
         public static ConfigEntry<float> StealthBomberExplosionScale { get; private set; }
         public static ConfigEntry<float> JavelinExplosionScale { get; private set; }
 
+        // --- Bear ---
+        public static ConfigEntry<Key> BearGiveKey { get; private set; }
+        public static ConfigEntry<float> BearUses { get; private set; }
+        public static ConfigEntry<float> BearSpawnWeight { get; private set; }
+        public static ConfigEntry<float> BearCount { get; private set; }
+        public static ConfigEntry<float> BearSpawnRadius { get; private set; }
+        public static ConfigEntry<float> BearSessionDuration { get; private set; }
+        public static ConfigEntry<float> BearWalkSpeed { get; private set; }
+        public static ConfigEntry<float> BearRunSpeed { get; private set; }
+        public static ConfigEntry<float> BearChargeSpeed { get; private set; }
+        public static ConfigEntry<float> BearTurnSpeed { get; private set; }
+        public static ConfigEntry<float> BearWanderRadius { get; private set; }
+        public static ConfigEntry<float> BearChargeRange { get; private set; }
+        public static ConfigEntry<float> BearAttackRange { get; private set; }
+        public static ConfigEntry<float> BearAttackCooldown { get; private set; }
+        public static ConfigEntry<float> BearAttackAnimationDuration { get; private set; }
+        public static ConfigEntry<float> BearSpawnAnimationDuration { get; private set; }
+        public static ConfigEntry<float> BearDeathAnimationDuration { get; private set; }
+        public static ConfigEntry<float> BearStunDuration { get; private set; }
+        public static ConfigEntry<float> BearEnrageDuration { get; private set; }
+        public static ConfigEntry<float> BearEnrageSpeedMultiplier { get; private set; }
+        public static ConfigEntry<float> BearHitsToKill { get; private set; }
+        public static ConfigEntry<float> BearMaxClimbHeight { get; private set; }
+
         public static void Initialize(ConfigFile cfg)
         {
             // --- Baseball Bat ---
@@ -1140,6 +1164,130 @@ namespace IssaPlugin
                 "StickyGrenadeScale",
                 4.0f,
                 "Multiplier for StickyGrenade explosions. Affects blast radius, knockback, and VFX size."
+            );
+
+            // --- Bear ---
+            BearGiveKey = cfg.Bind(
+                "Bear",
+                "GiveKey",
+                Key.Numpad5,
+                "Debug key to add the Bear item to your inventory."
+            );
+            BearUses = cfg.Bind("Bear", "Uses", 1f, "Number of uses per Bear item pickup.");
+            BearSpawnWeight = cfg.Bind(
+                "ItemBoxSpawns",
+                "BearWeight",
+                2f,
+                "Spawn weight for the Bear item in item boxes. Set to 0 to disable."
+            );
+            BearCount = cfg.Bind("Bear", "BearCount", 2f, "Number of bears spawned per item use.");
+            BearSpawnRadius = cfg.Bind(
+                "Bear",
+                "SpawnRadius",
+                15f,
+                "Radius around the player within which bears spawn."
+            );
+            BearSessionDuration = cfg.Bind(
+                "Bear",
+                "SessionDuration",
+                60f,
+                "Seconds before all remaining bears are forcibly despawned."
+            );
+            BearWalkSpeed = cfg.Bind(
+                "Bear",
+                "WalkSpeed",
+                4f,
+                "Bear movement speed while wandering or obstructed (units/sec)."
+            );
+            BearRunSpeed = cfg.Bind(
+                "Bear",
+                "RunSpeed",
+                9f,
+                "Bear movement speed while pursuing a target (units/sec)."
+            );
+            BearChargeSpeed = cfg.Bind(
+                "Bear",
+                "ChargeSpeed",
+                14f,
+                "Bear movement speed during the committed charge phase (units/sec)."
+            );
+            BearTurnSpeed = cfg.Bind(
+                "Bear",
+                "TurnSpeed",
+                6f,
+                "How quickly the bear rotates to face its movement direction."
+            );
+            BearWanderRadius = cfg.Bind(
+                "Bear",
+                "WanderRadius",
+                12f,
+                "Radius of the area the bear wanders within when idle."
+            );
+            BearChargeRange = cfg.Bind(
+                "Bear",
+                "ChargeRange",
+                10f,
+                "Distance at which the bear commits to a charge attack (units)."
+            );
+            BearAttackRange = cfg.Bind(
+                "Bear",
+                "AttackRange",
+                2.8f,
+                "Distance at which the bear's attack swing connects (units)."
+            );
+            BearAttackCooldown = cfg.Bind(
+                "Bear",
+                "AttackCooldown",
+                1.8f,
+                "Seconds between the end of one attack and the start of the next pursuit."
+            );
+            BearAttackAnimationDuration = cfg.Bind(
+                "Bear",
+                "AttackAnimationDuration",
+                1.2f,
+                "Total duration of the attack animation. Hit is applied at 55% of this value."
+            );
+            BearSpawnAnimationDuration = cfg.Bind(
+                "Bear",
+                "SpawnAnimationDuration",
+                2.0f,
+                "Duration of the Buff/spawn-in animation before the bear begins hunting."
+            );
+            BearDeathAnimationDuration = cfg.Bind(
+                "Bear",
+                "DeathAnimationDuration",
+                2.5f,
+                "How long the death animation plays before the bear is destroyed."
+            );
+            BearStunDuration = cfg.Bind(
+                "Bear",
+                "StunDuration",
+                2.0f,
+                "Seconds the bear is stunned after being hit by an explosion."
+            );
+            BearEnrageDuration = cfg.Bind(
+                "Bear",
+                "EnrageDuration",
+                5f,
+                "Seconds the bear runs at enrage speed after recovering from a stun."
+            );
+            BearEnrageSpeedMultiplier = cfg.Bind(
+                "Bear",
+                "EnrageSpeedMultiplier",
+                1.5f,
+                "Speed multiplier applied to RunSpeed during enrage."
+            );
+            BearHitsToKill = cfg.Bind(
+                "Bear",
+                "HitsToKill",
+                2f,
+                "Rocket/explosion hits required to kill a bear. 0 = invincible."
+            );
+            BearMaxClimbHeight = cfg.Bind(
+                "Bear",
+                "MaxClimbHeight",
+                6f,
+                "Max height difference (units) before a target is considered unreachable."
             );
         }
     }

@@ -44,6 +44,9 @@ namespace IssaPlugin.Items
         public static GameObject DonutLaserZoneRed { get; private set; }
         public static GameObject StickyGrenadePrefab { get; private set; }
 
+        public static GameObject BearPrefab { get; private set; }
+        public static Sprite BearIcon { get; private set; }
+
         public static GameObject ConfettiBlastRainbow { get; private set; }
 
         public static GameObject BloodSplatterPrefab { get; private set; }
@@ -155,6 +158,15 @@ namespace IssaPlugin.Items
             EnsureNetworkIdentity(StickyGrenadePrefab, 0x5E47EC01u);
             if (StickyGrenadePrefab != null)
                 StickyGrenadePrefab.AddComponent<StickyGrenadeClientSetup>();
+
+            BearIcon = LoadSprite("bear_icon.png");
+            BearPrefab = Load<GameObject>("bear.prefab");
+            if (BearPrefab != null)
+            {
+                EnsureNetworkIdentity(BearPrefab, 0xBEA00001u);
+                BearPrefab.AddComponent<BearClientSetup>();
+                DisableRigidbody(BearPrefab); // BearBehaviour re-enables in Start()
+            }
 
             DonutHandheldPrefab = Load<GameObject>("donut_model.prefab");
             JavelinHandheldPrefab = Load<GameObject>("javelin_rocket_launcher.prefab");

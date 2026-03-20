@@ -593,9 +593,97 @@ namespace IssaPlugin.Patches
             NetworkClient.RegisterHandler<SpawnWeightsMessage>(
                 SpawnWeightsSyncer.HandleSpawnWeights
             );
+
+            // ══════════════════════════════════════════════════════════════════════════
+            //  BEAR MESSAGES
+            // ══════════════════════════════════════════════════════════════════════════
+
+            // ── Client → Server ───────────────────────────────────────────────────────
+
+            // Player activates Bear item
+            Writer<BearSummonMessage>.write = BearSummonMessageSerialization.WriteBearSummonMessage;
+            Reader<BearSummonMessage>.read = BearSummonMessageSerialization.ReadBearSummonMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<BearSummonMessage>(
+                    (conn, msg) =>
+                    {
+                        conn.identity?.GetComponent<BearNetworkBridge>()?.ServerSummonBears();
+                    }
+                );
+
+            // Player is locked onto a bear and wants the next rocket to home toward it
+            Writer<BearPrepareHomingMessage>.write =
+                BearPrepareHomingMessageSerialization.WriteBearPrepareHomingMessage;
+            Reader<BearPrepareHomingMessage>.read =
+                BearPrepareHomingMessageSerialization.ReadBearPrepareHomingMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<BearPrepareHomingMessage>(
+                    (conn, msg) =>
+                    {
+                        conn.identity?.GetComponent<BearNetworkBridge>()?.ServerPrepareBearRocket();
+                    }
+                );
+
+            // ── Server → All Clients ─────────────────────────────────────────────────
+
+            // Bear AI state changed (drives Animator on all clients)
+            Writer<BearStateMessage>.write = BearStateMessageSerialization.WriteBearStateMessage;
+            Reader<BearStateMessage>.read = BearStateMessageSerialization.ReadBearStateMessage;
+            NetworkClient.RegisterHandler<BearStateMessage>(BearNetworkBridge.HandleBearState);
+
+            // Bear landed a hit on a player (camera shake on all clients)
+            Writer<BearAttackImpactMessage>.write =
+                BearAttackImpactMessageSerialization.WriteBearAttackImpactMessage;
+            Reader<BearAttackImpactMessage>.read =
+                BearAttackImpactMessageSerialization.ReadBearAttackImpactMessage;
+            NetworkClient.RegisterHandler<BearAttackImpactMessage>(
+                BearNetworkBridge.HandleBearAttackImpact
+            );
+
+            // Entire session ended (cleanup on all clients)
+            Writer<BearSessionEndMessage>.write =
+                BearSessionEndMessageSerialization.WriteBearSessionEndMessage;
+            Reader<BearSessionEndMessage>.read =
+                BearSessionEndMessageSerialization.ReadBearSessionEndMessage;
+            NetworkClient.RegisterHandler<BearSessionEndMessage>(
+                BearNetworkBridge.HandleBearSessionEnd
+            );
+
+            // ── Server → Owning Client only (TargetRpc replacements) ─────────────────
+            // These arrive via connectionToClient.Send() so only the summoning player
+            // receives them. On the client side they are registered as normal
+            // NetworkClient.RegisterHandler entries — Mirror routes them to the local
+            // player automatically because the server addressed them to that connection.
+
+            // Show bear HUD when session starts
+            Writer<BearOverlayBeginMessage>.write =
+                BearOverlayBeginMessageSerialization.WriteBearOverlayBeginMessage;
+            Reader<BearOverlayBeginMessage>.read =
+                BearOverlayBeginMessageSerialization.ReadBearOverlayBeginMessage;
+            NetworkClient.RegisterHandler<BearOverlayBeginMessage>(
+                BearNetworkBridge.HandleBearOverlayBegin
+            );
+
+            // Decrement pip count when a bear dies
+            Writer<BearKilledClientMessage>.write =
+                BearKilledClientMessageSerialization.WriteBearKilledClientMessage;
+            Reader<BearKilledClientMessage>.read =
+                BearKilledClientMessageSerialization.ReadBearKilledClientMessage;
+            NetworkClient.RegisterHandler<BearKilledClientMessage>(
+                BearNetworkBridge.HandleBearKilledClient
+            );
+
+            // Hide bear HUD when session ends
+            Writer<BearOverlayEndMessage>.write =
+                BearOverlayEndMessageSerialization.WriteBearOverlayEndMessage;
+            Reader<BearOverlayEndMessage>.read =
+                BearOverlayEndMessageSerialization.ReadBearOverlayEndMessage;
+            NetworkClient.RegisterHandler<BearOverlayEndMessage>(
+                BearNetworkBridge.HandleBearOverlayEnd
+            );
         }
 
-        private static void RegisterHandlers() { }
+        public static void ResetRegistration() => _registered = false;
 
         private static void RegisterPrefabs()
         {
@@ -615,6 +703,7 @@ namespace IssaPlugin.Patches
             RegisterPrefab(AssetLoader.SniperRiflePrefab);
             RegisterPrefab(AssetLoader.BloodSplatterPrefab);
             RegisterPrefab(AssetLoader.StickyGrenadePrefab);
+            RegisterPrefab(AssetLoader.BearPrefab);
         }
 
         private static void RegisterPrefab(GameObject prefab)
@@ -646,6 +735,18 @@ namespace IssaPlugin.Patches
         }
 
         // Registration delegates point into AC130MessageHandlers below.
+    }
+
+    /// Resets the registration flag when the client disconnects so that all
+    /// Writer/Reader delegates and NetworkServer handlers are re-registered
+    /// on the next connect (fixes silent message loss on reconnect).
+    [HarmonyPatch]
+    static class NetworkManagerUnregisterPatch
+    {
+        static System.Reflection.MethodBase TargetMethod() =>
+            AccessTools.Method(typeof(BNetworkManager), "OnStopClient");
+
+        static void Postfix() => NetworkManagerRegisterPrefabsPatch.ResetRegistration();
     }
 
     /// AC130 NetworkMessage handlers — kept in a separate (non-patch) class so

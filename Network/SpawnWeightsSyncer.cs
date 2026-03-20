@@ -41,6 +41,7 @@ namespace IssaPlugin
                 Donut = Configuration.DonutSpawnWeight.Value,
                 Javelin = Configuration.JavelinSpawnWeight.Value,
                 StickyGrenade = Configuration.StickyGrenadeSpawnWeight.Value,
+                Bear = Configuration.BearSpawnWeight.Value,
             };
 
             if (WeightsEqual(msg, _lastSent))
@@ -71,7 +72,8 @@ namespace IssaPlugin
             && a.Sniper == b.Sniper
             && a.Donut == b.Donut
             && a.Javelin == b.Javelin
-            && a.StickyGrenade == b.StickyGrenade;
+            && a.StickyGrenade == b.StickyGrenade
+            && a.Bear == b.Bear;
 
         /// Called on each client when a SpawnWeightsMessage arrives from the host.
         internal static void HandleSpawnWeights(SpawnWeightsMessage msg)
@@ -90,6 +92,7 @@ namespace IssaPlugin
             Configuration.DonutSpawnWeight.Value = msg.Donut;
             Configuration.JavelinSpawnWeight.Value = msg.Javelin;
             Configuration.StickyGrenadeSpawnWeight.Value = msg.StickyGrenade;
+            Configuration.BearSpawnWeight.Value = msg.Bear;
 
             IssaPluginPlugin.Log.LogDebug(
                 $"[SpawnWeights] Received from host — Bat={msg.Bat} Bomber={msg.Bomber} "

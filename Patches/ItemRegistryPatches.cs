@@ -188,6 +188,15 @@ namespace IssaPlugin.Patches
                         spawnChanceWeight = stickyGrenadeWeight,
                     }
                 );
+            float bearWeight = Configuration.BearSpawnWeight.Value;
+            if (bearWeight > 0f)
+                list.Add(
+                    new ItemPool.ItemSpawnChance
+                    {
+                        item = BearItem.BearItemType,
+                        spawnChanceWeight = bearWeight,
+                    }
+                );
 
             return list.ToArray();
         }

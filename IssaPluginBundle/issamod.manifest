@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 2425484416
+CRC: 2621328929
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: c73554cf6252ca36c4991f5f05fcb7fa
+    Hash: 828231b8cbe9b1a6ea67e1bfaf81f15f
   TypeTreeHash:
     serializedVersion: 2
-    Hash: f3672b0c1f82247490603e54482e422d
+    Hash: 204d2b41a044283c5aea06451ad7d0da
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 9022ce6febcbf09f58aa304fcc169250
+    Hash: 1d327a3f823dbfe66f82212f581e6eff
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -35,11 +35,15 @@ ClassTypes:
   Script: {instanceID: 0}
 - Class: 65
   Script: {instanceID: 0}
+- Class: 74
+  Script: {instanceID: 0}
 - Class: 82
   Script: {instanceID: 0}
 - Class: 83
   Script: {instanceID: 0}
 - Class: 90
+  Script: {instanceID: 0}
+- Class: 91
   Script: {instanceID: 0}
 - Class: 95
   Script: {instanceID: 0}
@@ -56,6 +60,8 @@ ClassTypes:
 - Class: 134
   Script: {instanceID: 0}
 - Class: 135
+  Script: {instanceID: 0}
+- Class: 137
   Script: {instanceID: 0}
 - Class: 198
   Script: {instanceID: 0}
@@ -86,15 +92,18 @@ Assets:
 - Assets/Assets/sticky_grenade.prefab
 - Assets/Assets/Material.001.mat
 - Assets/Assets/bomber_proxy.prefab
+- Assets/Assets/bear.prefab
 - Assets/Assets/sticky_grenade_icon.png
 - Assets/Assets/laser_zone_red.prefab
 - Assets/Assets/predator_missile_tablet_model.prefab
 - Assets/Assets/gravity_remote_model.fbx
 - Assets/Assets/WarningExclamation.prefab
 - Assets/Assets/bat_icon.png
+- Assets/Blink/Art/Animals/Stylized/Bear/Bear_Prefabs/BearAnimator.controller
 - Assets/Assets/big_plane.ogg
-- Assets/Assets/Dark 1.mat
 - Assets/Assets/Dark 2.mat
+- Assets/Assets/bear_icon.png
+- Assets/Assets/Dark 1.mat
 - Assets/Assets/javelin_target_indicator.prefab
 - Assets/Assets/missile_locked.ogg
 - Assets/Assets/gravity_remote.prefab
@@ -104,6 +113,7 @@ Assets:
 - Assets/Assets/gravity_remote_icon.png
 - Assets/Assets/sniper_rifle_icon.png
 - Assets/Assets/freeze_effect_icon.png
+- Assets/Blink/Art/Animals/Stylized/Bear/Bear_Prefabs/Bear_4.prefab
 - Assets/Assets/DroppedCustomItem.prefab
 - Assets/Assets/bomber_model.prefab
 - Assets/Assets/etfx_explosion_nuke.wav
