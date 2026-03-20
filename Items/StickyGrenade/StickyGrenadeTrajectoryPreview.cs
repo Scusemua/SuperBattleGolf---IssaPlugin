@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
@@ -22,6 +23,13 @@ namespace IssaPlugin.Items
         private const float RingRadius = 0.55f; // matches StickyGrenadeStickRadius default
         private const float RingSurfaceOffset = 0.06f; // lift off surface to avoid z-fighting
 
+        // Configurable fields — set immediately after AddComponent to override defaults.
+        // StickyGrenadeItemDefinition leaves these at their defaults; other items
+        // (e.g. BlackHoleGrenadeItemDefinition) override them before the first Update.
+        public ItemType TargetItemType;
+        public Func<float> ThrowSpeed;
+        public Func<float> LobAngle;
+
         private LineRenderer _line;
         private LineRenderer _ring;
         private PlayerInventory _inventory;
@@ -31,6 +39,11 @@ namespace IssaPlugin.Items
         private void Awake()
         {
             _inventory = GetComponent<PlayerInventory>();
+
+            // Defaults match the sticky grenade so existing callers need no changes.
+            TargetItemType = ItemRegistry.StickyGrenadeItemType;
+            ThrowSpeed = () => Configuration.StickyGrenadeThrowSpeed.Value;
+            LobAngle = () => Configuration.StickyGrenadeLobAngle.Value;
 
             _line = gameObject.AddComponent<LineRenderer>();
             _line.useWorldSpace = true;
@@ -76,7 +89,7 @@ namespace IssaPlugin.Items
         {
             if (
                 _inventory == null
-                || _inventory.GetEffectivelyEquippedItem(true) != ItemRegistry.StickyGrenadeItemType
+                || _inventory.GetEffectivelyEquippedItem(true) != TargetItemType
             )
             {
                 Destroy(this);
@@ -104,8 +117,8 @@ namespace IssaPlugin.Items
             Vector3 forward = cam.transform.forward;
             Vector3 pos = cam.transform.position + forward * 1.2f + Vector3.up * 0.3f;
             Vector3 vel =
-                (forward + Vector3.up * Configuration.StickyGrenadeLobAngle.Value).normalized
-                * Configuration.StickyGrenadeThrowSpeed.Value;
+                (forward + Vector3.up * LobAngle()).normalized
+                * ThrowSpeed();
 
             // Combine both masks so the arc stops on terrain, walls, players,
             // and vehicles — mirroring the two-phase check in StickyGrenadeBehaviour.

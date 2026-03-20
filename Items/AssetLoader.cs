@@ -55,6 +55,10 @@ namespace IssaPlugin.Items
         /// Falls back to a runtime-built sphere if 'black_hole_grenade.prefab' is absent.
         public static GameObject BlackHoleGrenadePrefab { get; private set; }
 
+        /// Local-only visual spawned on all clients during the suction phase.
+        /// Not networked — each client instantiates and destroys its own copy.
+        public static GameObject BlackHoleVfxPrefab { get; private set; }
+
         /// The model the player holds while the Nuke item is equipped.
         public static GameObject NuclearDetonatorPrefab { get; private set; }
 
@@ -248,6 +252,15 @@ namespace IssaPlugin.Items
 
             BlackHoleGrenadeIcon = LoadSprite("black_hole_grenade_icon.png");
 
+            BlackHoleVfxPrefab = Load<GameObject>("black_hole.prefab");
+            if (BlackHoleVfxPrefab != null)
+            {
+                // Strip Mirror network components so the VFX can be instantiated
+                // as a local-only object without a network context.
+                StripNetworkComponents(BlackHoleVfxPrefab);
+                GameObject.DontDestroyOnLoad(BlackHoleVfxPrefab);
+            }
+
             BlackHoleGrenadePrefab = Load<GameObject>("black_hole_grenade.prefab");
             if (BlackHoleGrenadePrefab != null)
             {
@@ -276,7 +289,6 @@ namespace IssaPlugin.Items
                 if (bhCol)
                     bhCol.enabled = false;
                 EnsureNetworkIdentity(BlackHoleGrenadePrefab, 0xB14C0001u);
-                BlackHoleGrenadePrefab.AddComponent<NetworkTransformReliable>();
                 GameObject.DontDestroyOnLoad(BlackHoleGrenadePrefab);
             }
 

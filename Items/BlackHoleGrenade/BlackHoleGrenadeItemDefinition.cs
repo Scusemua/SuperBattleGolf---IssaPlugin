@@ -15,6 +15,18 @@ namespace IssaPlugin.Items
         public override float SpawnWeight => Configuration.BlackHoleGrenadeSpawnWeight.Value;
         public override Key GiveKey => Configuration.BlackHoleGrenadeGiveKey.Value;
 
+        public override void OnEquip(PlayerInventory inventory)
+        {
+            var preview = inventory.GetComponent<StickyGrenadeTrajectoryPreview>();
+            if (preview == null)
+            {
+                preview = inventory.gameObject.AddComponent<StickyGrenadeTrajectoryPreview>();
+                preview.TargetItemType = ItemRegistry.BlackHoleGrenadeItemType;
+                preview.ThrowSpeed = () => Configuration.BlackHoleGrenadeThrowSpeed.Value;
+                preview.LobAngle = () => Configuration.BlackHoleGrenadeLobAngle.Value;
+            }
+        }
+
         public override void OnUse(PlayerInventory inventory)
         {
             var bridge = inventory.GetComponent<BlackHoleGrenadeNetworkBridge>();

@@ -150,8 +150,12 @@ namespace IssaPlugin.Items
         // Tracks active suction coroutines keyed by the black hole's netId.
         // Each coroutine runs on the local PlayerMovement.
         private static readonly Dictionary<uint, (Coroutine coroutine, PlayerMovement movement)>
-            s_activeSuctions =
-                new Dictionary<uint, (Coroutine, PlayerMovement)>();
+            s_activeSuctions = [];
+
+        // Tracks the local-only VFX instance spawned during the suction phase,
+        // keyed by the black hole's netId.  Destroyed when the spit fires or the
+        // suction coroutine times out.
+        private static readonly Dictionary<uint, GameObject> s_activeVfx = [];
 
         /// Called on every client when the black hole grenade lands.
         public static void HandleBlackHoleGrenadeLanded(BlackHoleGrenadeLandedMessage msg)
@@ -184,6 +188,17 @@ namespace IssaPlugin.Items
             );
 
             s_activeSuctions[msg.BlackHoleNetId] = (coroutine, movement);
+
+            // Spawn the local-only black hole VFX at the landed position.
+            if (AssetLoader.BlackHoleVfxPrefab != null)
+            {
+                var vfx = Instantiate(
+                    AssetLoader.BlackHoleVfxPrefab,
+                    msg.BlackHolePosition,
+                    Quaternion.identity
+                );
+                s_activeVfx[msg.BlackHoleNetId] = vfx;
+            }
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[BlackHoleGrenade] Client: suction started (netId={msg.BlackHoleNetId})."
@@ -320,6 +335,13 @@ namespace IssaPlugin.Items
                 entry.movement.StopCoroutine(entry.coroutine);
 
             s_activeSuctions.Remove(netId);
+
+            if (s_activeVfx.TryGetValue(netId, out var vfxInstance))
+            {
+                if (vfxInstance != null)
+                    Destroy(vfxInstance);
+                s_activeVfx.Remove(netId);
+            }
         }
 
         private static void PlaySpitVfx(Vector3 position)

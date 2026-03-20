@@ -1,6 +1,6 @@
 # IssaPlugin
 
-![IssaMod Logo](icon_256.png)
+<img src="icon.png" width="256" height="256" />
 
 Adds **11 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
 
@@ -209,6 +209,10 @@ Assets used in the project:
 -   "Militar explosive detonator"\
     (https://skfb.ly/o9YWC) by Oscar Royo 
     Licensed under Creative Commons Attribution 4.0
+
+-   "Jinx Bomb - Arcane"\
+    (https://skfb.ly/oytAV) by KangaroOz 3D 
+    Licensed under CC Attribution-NonCommercial-ShareAlike
 
 ---
 

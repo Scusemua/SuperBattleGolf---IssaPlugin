@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 2209105190
+CRC: 3056346718
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 111768e0f9f4ec2a3a799b54bec47014
+    Hash: affefc993d018efff23b670bbb11f798
   TypeTreeHash:
     serializedVersion: 2
-    Hash: 628bd9afde8f252c71d6346ea3e5018a
+    Hash: 6493fbf56e1f26bdd331687cf4dacef6
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 477dac61229b0f3df4e0d4a9786c75a9
+    Hash: 30c76d5d4ac18504dacc02306922c3ba
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -58,6 +58,8 @@ ClassTypes:
 - Class: 115
   Script: {instanceID: 0}
 - Class: 135
+  Script: {instanceID: 0}
+- Class: 136
   Script: {instanceID: 0}
 - Class: 137
   Script: {instanceID: 0}
@@ -114,6 +116,7 @@ Assets:
 - Assets/Assets/Materials/Teddy/fabric_white.mat
 - Assets/Assets/intervention.prefab
 - Assets/Assets/gravity_remote_icon.png
+- Assets/Assets/black_hole.prefab
 - Assets/Assets/sniper_rifle_icon.png
 - Assets/Assets/freeze_effect_icon.png
 - Assets/Blink/Art/Animals/Stylized/Bear/Bear_Prefabs/Bear_4.prefab
@@ -125,6 +128,7 @@ Assets:
 - Assets/Assets/sniper_scope.png
 - Assets/Assets/Brass.mat
 - Assets/Assets/nuclear_bomb.prefab
+- Assets/Assets/black_hole_grenade.prefab
 - Assets/Assets/bomber_icon.png
 - Assets/Assets/plane_falling.ogg
 - Assets/Assets/spike_ball_icon.png
@@ -146,6 +150,7 @@ Assets:
 - Assets/Assets/NukeVerticalExplosionFire.prefab
 - Assets/Assets/Glass.mat
 - Assets/Assets/donut_vehicle.prefab
+- Assets/Assets/black_hole_grenade_icon.png
 - Assets/Assets/Materials/Teddy/_FRONT_427414.mat
 - Assets/Assets/nuke_icon.png
 Dependencies: []
