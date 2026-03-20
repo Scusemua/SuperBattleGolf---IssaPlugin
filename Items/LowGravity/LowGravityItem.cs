@@ -2,8 +2,6 @@ namespace IssaPlugin.Items
 {
     public static class LowGravityItem
     {
-        public static readonly ItemType LowGravityItemType = (ItemType)105;
-
         /// <summary>
         /// True on all clients while low gravity is active. Set by LowGravityNetworkBridge via RPC.
         /// </summary>
@@ -12,7 +10,7 @@ namespace IssaPlugin.Items
         public static void GiveLowGravityToLocalPlayer()
         {
             ItemHelper.GiveItemToLocalPlayer(
-                LowGravityItemType,
+                ItemRegistry.LowGravityItemType,
                 (int)Configuration.LowGravityUses.Value,
                 "LowGravity"
             );

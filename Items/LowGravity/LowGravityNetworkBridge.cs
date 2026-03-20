@@ -53,10 +53,10 @@ namespace IssaPlugin.Items
 
             var equipped = inventory.GetEffectivelyEquippedItem(true);
             IssaPluginPlugin.Log.LogInfo(
-                $"[LowGravity] Equipped item on server: {(int)equipped} (expected {(int)LowGravityItem.LowGravityItemType})"
+                $"[LowGravity] Equipped item on server: {(int)equipped} (expected {(int)ItemRegistry.LowGravityItemType})"
             );
 
-            if (equipped != LowGravityItem.LowGravityItemType)
+            if (equipped != ItemRegistry.LowGravityItemType)
             {
                 IssaPluginPlugin.Log.LogWarning(
                     "[LowGravity] Player does not have Low Gravity item equipped."

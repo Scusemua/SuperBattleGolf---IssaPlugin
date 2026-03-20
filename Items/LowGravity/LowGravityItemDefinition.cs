@@ -6,7 +6,7 @@ namespace IssaPlugin.Items
 {
     public class LowGravityItemDefinition : CustomItemDefinition
     {
-        public override ItemType ItemType => LowGravityItem.LowGravityItemType;
+        public override ItemType ItemType => ItemRegistry.LowGravityItemType;
         public override string DisplayName => "Low Gravity";
         public override string[] ConsoleAliases => new[] { "lowgravity", "gravity" };
         public override Sprite Icon => AssetLoader.LowGravityIcon;

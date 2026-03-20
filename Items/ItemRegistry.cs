@@ -22,6 +22,7 @@ namespace IssaPlugin.Items
         public static readonly ItemType AC130ItemType = (ItemType)103;
 
         public static readonly ItemType FreezeItemType = (ItemType)104;
+        public static readonly ItemType LowGravityItemType = (ItemType)105;
 
         // Static initialization order note: AllItems is a static field initializer that only
         // instantiates the definition objects; it does not call any abstract members. Properties like
