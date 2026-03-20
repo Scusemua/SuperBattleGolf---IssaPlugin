@@ -652,6 +652,15 @@ namespace IssaPlugin.Patches
                 BearNetworkBridge.HandleBearSessionEnd
             );
 
+            // Bear hit by gun or melee — spawn blood splatter on all clients
+            Writer<BearHitVfxMessage>.write =
+                BearHitVfxMessageSerialization.WriteBearHitVfxMessage;
+            Reader<BearHitVfxMessage>.read =
+                BearHitVfxMessageSerialization.ReadBearHitVfxMessage;
+            NetworkClient.RegisterHandler<BearHitVfxMessage>(msg =>
+                BloodSplatterHelper.SpawnBloodSplatter(msg.HitPoint, msg.AttackerOrigin)
+            );
+
             // ── Server → Owning Client only (TargetRpc replacements) ─────────────────
             // These arrive via connectionToClient.Send() so only the summoning player
             // receives them. On the client side they are registered as normal

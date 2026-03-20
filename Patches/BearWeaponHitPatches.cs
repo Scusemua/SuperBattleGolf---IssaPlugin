@@ -111,6 +111,16 @@ namespace IssaPlugin.Patches
                 receiver.OnHit?.Invoke();
                 BearExplosionAttackerContext.CurrentAttacker = null;
 
+                // Blood splatter on all clients: origin is the swinging player,
+                // hit point is the bear's approximate chest position.
+                NetworkServer.SendToAll(
+                    new BearHitVfxMessage
+                    {
+                        HitPoint = receiver.transform.position + Vector3.up * 1f,
+                        AttackerOrigin = playerInfo.transform.position,
+                    }
+                );
+
                 IssaPluginPlugin.Log.LogInfo(
                     $"[Bear] Hit by melee swing from {playerInfo.PlayerId.PlayerName}."
                 );
@@ -158,6 +168,12 @@ namespace IssaPlugin.Patches
             BearExplosionAttackerContext.CurrentAttacker = attacker;
             receiver.OnHit?.Invoke();
             BearExplosionAttackerContext.CurrentAttacker = null;
+
+            // Blood splatter on all clients: origin is the barrel end, hit point
+            // is the exact raycast contact point on the bear's collider.
+            NetworkServer.SendToAll(
+                new BearHitVfxMessage { HitPoint = hit.point, AttackerOrigin = origin }
+            );
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[Bear] Hit by gun shot from {attacker?.PlayerId.PlayerName}."

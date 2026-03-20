@@ -93,6 +93,33 @@ namespace IssaPlugin.Items
     }
 
     /// <summary>
+    /// Broadcast to all clients whenever a bear is hit by a gun or melee weapon.
+    /// Each client spawns a blood splatter at <see cref="HitPoint"/> aimed from
+    /// <see cref="AttackerOrigin"/> (barrel end for guns, player position for melee).
+    /// </summary>
+    public struct BearHitVfxMessage : NetworkMessage
+    {
+        public Vector3 HitPoint;
+        public Vector3 AttackerOrigin;
+    }
+
+    public static class BearHitVfxMessageSerialization
+    {
+        public static void WriteBearHitVfxMessage(NetworkWriter writer, BearHitVfxMessage msg)
+        {
+            writer.WriteVector3(msg.HitPoint);
+            writer.WriteVector3(msg.AttackerOrigin);
+        }
+
+        public static BearHitVfxMessage ReadBearHitVfxMessage(NetworkReader reader) =>
+            new BearHitVfxMessage
+            {
+                HitPoint = reader.ReadVector3(),
+                AttackerOrigin = reader.ReadVector3(),
+            };
+    }
+
+    /// <summary>
     /// Broadcast to all clients when all bears from a session have died or
     /// the session timeout expires, so clients can clean up any local VFX.
     /// </summary>

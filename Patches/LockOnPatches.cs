@@ -19,7 +19,8 @@ namespace IssaPlugin.Patches
         public static bool IsCustomTarget(LockOnTarget t) =>
             t.GetComponent<AC130GunshipMarker>() != null
             || t.GetComponent<BomberMarker>() != null
-            || t.GetComponent<DonutMarker>() != null;
+            || t.GetComponent<DonutMarker>() != null
+            || t.GetComponent<BearMarker>() != null;
     }
 
     // ====================================================================
@@ -86,12 +87,14 @@ namespace IssaPlugin.Patches
         private static bool _wasTargetingGunship;
         private static bool _wasTargetingBomber;
         private static bool _wasTargetingDonut;
+        private static bool _wasTargetingBear;
 
         internal static void ResetTargetingState()
         {
             _wasTargetingGunship = false;
             _wasTargetingBomber = false;
             _wasTargetingDonut = false;
+            _wasTargetingBear = false;
         }
 
         static MethodBase TargetMethod() =>
@@ -121,6 +124,11 @@ namespace IssaPlugin.Patches
                 __result
                 && bestLockOnTarget != null
                 && bestLockOnTarget.GetComponent<DonutMarker>() != null;
+
+            bool nowTargetingBear =
+                __result
+                && bestLockOnTarget != null
+                && bestLockOnTarget.GetComponent<BearMarker>() != null;
 
             // ---- Bomber fallback detection ----
             // The proxy's BomberProxyBehaviour is server-only, so the client-side
@@ -210,6 +218,13 @@ namespace IssaPlugin.Patches
 
             if (nowTargetingDonut)
                 NetworkClient.Send(new DonutPrepareHomingMessage());
+
+            // ---- Donut ----
+            if (nowTargetingBear && !_wasTargetingBear)
+                IssaPluginPlugin.Log.LogInfo("[LockOn] Locked onto Bear.");
+
+            if (nowTargetingBear)
+                NetworkClient.Send(new BearPrepareHomingMessage());
 
             _wasTargetingGunship = nowTargetingGunship;
             _wasTargetingBomber = nowTargetingBomber;
