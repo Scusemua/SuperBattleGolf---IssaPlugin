@@ -203,17 +203,14 @@ namespace IssaPlugin.Items
                 if (addEntryMethod == null)
                     return false;
 
-                addEntryMethod.Invoke(table, new object[] { "ITEM_100", "Baseball Bat" });
-                addEntryMethod.Invoke(table, new object[] { "ITEM_101", "Stealth Bomber" });
-                addEntryMethod.Invoke(table, new object[] { "ITEM_102", "Predator Missile" });
-                addEntryMethod.Invoke(table, new object[] { "ITEM_103", "AC130 Gunship" });
-                addEntryMethod.Invoke(table, new object[] { "ITEM_104", "Freeze World" });
-                addEntryMethod.Invoke(table, new object[] { "ITEM_105", "Low Gravity" });
-                addEntryMethod.Invoke(table, new object[] { "ITEM_106", "M200 Intervention" });
-                addEntryMethod.Invoke(table, new object[] { "ITEM_107", "Donut" });
-                addEntryMethod.Invoke(table, new object[] { "ITEM_108", "Javelin" });
-                addEntryMethod.Invoke(table, new object[] { "ITEM_109", "StickyGrenade" });
-                addEntryMethod.Invoke(table, new object[] { "ITEM_110", "Bear" });
+                // Why this works: each XxxItem.XxxItemType is defined as (ItemType)NNN (e.g.
+                // BatItemType = (ItemType)100), so (int)def.ItemType produces the same integer that was
+                // previously hardcoded. This is an invariant of how custom item IDs are assigned.
+                foreach (var def in AllItems)
+                    addEntryMethod.Invoke(
+                        table,
+                        new object[] { "ITEM_" + (int)def.ItemType, def.DisplayName }
+                    );
 
                 IssaPluginPlugin.Log.LogInfo(
                     "[ItemRegistry] Custom item names registered in string table."
