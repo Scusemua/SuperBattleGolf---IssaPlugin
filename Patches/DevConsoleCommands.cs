@@ -16,25 +16,53 @@ namespace IssaPlugin.Patches
         // Accepted names for each item (all checked case-insensitively).
         private static readonly (string[] Names, ItemType Type, int Uses)[] _customItems =
         {
-            (new[] { "ac130" }, AC130Item.AC130ItemType, 1),
-            (new[] { "stealthbomber", "bomber" }, StealthBomberItem.BomberItemType, 1),
-            (new[] { "predatormissile", "missile" }, PredatorMissileItem.MissileItemType, 1),
-            (new[] { "baseballbat", "bat" }, BatItem.BatItemType, 1),
-            (new[] { "freezeworld", "freeze" }, FreezeItem.FreezeItemType, 1),
-            (new[] { "lowgravity", "gravity" }, LowGravityItem.LowGravityItemType, 1),
+            (new[] { "ac130" }, AC130Item.AC130ItemType, (int)Configuration.AC130Uses.Value),
+            (
+                new[] { "stealthbomber", "bomber" },
+                StealthBomberItem.BomberItemType,
+                (int)Configuration.BomberUses.Value
+            ),
+            (
+                new[] { "predatormissile", "missile" },
+                PredatorMissileItem.MissileItemType,
+                (int)Configuration.MissileUses.Value
+            ),
+            (
+                new[] { "baseballbat", "bat" },
+                BatItem.BatItemType,
+                (int)Configuration.BaseballBatUses.Value
+            ),
+            (
+                new[] { "freezeworld", "freeze" },
+                FreezeItem.FreezeItemType,
+                (int)Configuration.FreezeUses.Value
+            ),
+            (
+                new[] { "lowgravity", "gravity" },
+                LowGravityItem.LowGravityItemType,
+                (int)Configuration.LowGravityUses.Value
+            ),
             (
                 new[] { "m200", "sniper", "sniper_rifle", "intervention" },
                 SniperRifleItem.SniperRifleItemType,
-                1
+                (int)Configuration.SniperRifleUses.Value
             ),
-            (new[] { "donut", "Donut" }, DonutItem.DonutItemType, 1),
-            (new[] { "javelin", "Javelin" }, JavelinItem.JavelinItemType, 1),
+            (
+                new[] { "donut", "Donut" },
+                DonutItem.DonutItemType,
+                (int)Configuration.DonutUses.Value
+            ),
+            (
+                new[] { "javelin", "Javelin" },
+                JavelinItem.JavelinItemType,
+                (int)Configuration.JavelinUses.Value
+            ),
             (
                 new[] { "sticky_grenade", "sticky", "stickygrenade" },
                 StickyGrenadeItem.StickyGrenadeItemType,
-                1
+                (int)Configuration.StickyGrenadeUses.Value
             ),
-            (new[] { "bear", "bears" }, BearItem.BearItemType, 1),
+            (new[] { "bear", "bears" }, BearItem.BearItemType, (int)Configuration.BearUses.Value),
         };
 
         /// <summary>
