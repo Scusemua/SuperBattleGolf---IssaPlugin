@@ -65,7 +65,7 @@ namespace IssaPlugin.Items
             }
 
             float dropHeight = Configuration.NukeDropHeight.Value;
-            Vector3 mapCenter = Vector3.zero;
+            Vector3 mapCenter = inventory.transform.position;
             Vector3 spawnPos = new Vector3(mapCenter.x, mapCenter.y + dropHeight, mapCenter.z);
 
             var bombGo = Object.Instantiate(
