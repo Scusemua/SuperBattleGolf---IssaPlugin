@@ -12,7 +12,7 @@ namespace IssaPlugin.Items
 
     public class AC130FlyBehaviour : MonoBehaviour
     {
-        public Vector3 mapCentre;
+        public Vector3 orbitCenter;
         public float orbitRadius;
         public float altitude;
         public float orbitSpeed;
@@ -113,9 +113,9 @@ namespace IssaPlugin.Items
 
             float rad = currentAngle * Mathf.Deg2Rad;
             Vector3 nextPos = new Vector3(
-                mapCentre.x + Mathf.Cos(rad) * orbitRadius,
-                mapCentre.y + _currentAltitude,
-                mapCentre.z + Mathf.Sin(rad) * orbitRadius
+                orbitCenter.x + Mathf.Cos(rad) * orbitRadius,
+                orbitCenter.y + _currentAltitude,
+                orbitCenter.z + Mathf.Sin(rad) * orbitRadius
             );
 
             Vector3 tangent = new Vector3(-Mathf.Sin(rad), 0f, Mathf.Cos(rad)).normalized;

@@ -20,7 +20,7 @@ namespace IssaPlugin.Items
         // ----------------------------------------------------------------
 
         /// The point the gunship orbits around.
-        public Vector3 mapCentre;
+        public Vector3 orbitCenter;
 
         /// Base FOV when not zooming.
         public float baseFov = 60f;
@@ -207,13 +207,13 @@ namespace IssaPlugin.Items
 
             // Sit the camera at the gunship's position, nudged slightly toward
             // the map centre so it doesn't clip through the plane geometry.
-            Vector3 nudge = (mapCentre - transform.position).normalized * 3f;
+            Vector3 nudge = (orbitCenter - transform.position).normalized * 3f;
             _gunshipCam.transform.position = transform.position + nudge;
 
             // ----------------------------------------------------------------
             //  Neutral look direction: gunship → map centre.
             // ----------------------------------------------------------------
-            Vector3 toCenter = mapCentre - transform.position;
+            Vector3 toCenter = orbitCenter - transform.position;
 
             if (toCenter.sqrMagnitude < 0.01f)
                 toCenter = Vector3.down;

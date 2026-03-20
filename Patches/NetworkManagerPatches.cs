@@ -361,7 +361,7 @@ namespace IssaPlugin.Patches
             {
                 NetworkClient
                     .localPlayer?.GetComponent<AC130NetworkBridge>()
-                    ?.ClientBeginAC130(msg.GunshipNetId, msg.MapCentre);
+                    ?.ClientBeginAC130(msg.GunshipNetId, msg.OrbitCenter);
             });
 
             Writer<AC130EndClientMessage>.write =
@@ -831,8 +831,8 @@ namespace IssaPlugin.Patches
             {
                 var mayday = gunship.AddComponent<AC130MaydayBehaviour>();
                 mayday.IsLocalPlayer = false;
-                mayday.MapCentre =
-                    gunship.GetComponent<AC130FlyBehaviour>()?.mapCentre ?? Vector3.zero;
+                mayday.OrbitCenter =
+                    gunship.GetComponent<AC130FlyBehaviour>()?.orbitCenter ?? Vector3.zero;
             }
         }
 

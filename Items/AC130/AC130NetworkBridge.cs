@@ -163,8 +163,8 @@ namespace IssaPlugin.Items
             //  Spawn the gunship on the server so we hold a valid reference
             //  for mayday detection, external destruction, and disconnect cleanup.
             // ----------------------------------------------------------------
-            Vector3 mapCentre = inventory.PlayerInfo.transform.position;
-            GameObject gunshipGo = ServerSpawnGunship(mapCentre);
+            Vector3 playerPos = inventory.PlayerInfo.transform.position;
+            GameObject gunshipGo = ServerSpawnGunship(playerPos);
 
             if (gunshipGo == null)
             {
@@ -210,7 +210,7 @@ namespace IssaPlugin.Items
                 new AC130BeginClientMessage
                 {
                     GunshipNetId = gunshipIdentity.netId,
-                    MapCentre = mapCentre,
+                    OrbitCenter = playerPos,
                 }
             );
             _serverTimeout = StartCoroutine(ServerTimeoutRoutine());
@@ -322,10 +322,10 @@ namespace IssaPlugin.Items
         //  Server → Client
         // ================================================================
 
-        public void ClientBeginAC130(uint gunshipNetId, Vector3 mapCentre)
+        public void ClientBeginAC130(uint gunshipNetId, Vector3 orbitCenter)
         {
             StartCoroutine(
-                RunLocalSession(GetComponent<PlayerInventory>(), gunshipNetId, mapCentre)
+                RunLocalSession(GetComponent<PlayerInventory>(), gunshipNetId, orbitCenter)
             );
         }
 
@@ -388,7 +388,7 @@ namespace IssaPlugin.Items
         private IEnumerator RunLocalSession(
             PlayerInventory inventory,
             uint gunshipNetId,
-            Vector3 mapCentre
+            Vector3 orbitCenter
         )
         {
             LocalSessionActive = true;
@@ -419,7 +419,7 @@ namespace IssaPlugin.Items
                 );
             GameObject gunshipGo = gunshipIdentity?.gameObject;
 
-            var session = new AC130Session(inventory, gunshipGo, mapCentre);
+            var session = new AC130Session(inventory, gunshipGo, orbitCenter);
 
             // ============================================================
             //  Phase 1: Fly-in
@@ -561,7 +561,7 @@ namespace IssaPlugin.Items
                         : session.Elapsed * session.BaseOrbitSpeed;
 
                 Vector3 gunshipPos = AC130Helpers.OrbitPosition(
-                    session.MapCentre,
+                    session.OrbitCenter,
                     currentAngle,
                     session.OrbitRadius,
                     session.Altitude + session.AltitudeOffset
@@ -666,7 +666,7 @@ namespace IssaPlugin.Items
         //  Server: gunship spawning
         // ================================================================
 
-        private static GameObject ServerSpawnGunship(Vector3 mapCentre)
+        private static GameObject ServerSpawnGunship(Vector3 orbitCenter)
         {
             if (AssetLoader.AC130Prefab == null)
             {
@@ -681,7 +681,7 @@ namespace IssaPlugin.Items
             float orbitRadius = Configuration.AC130OrbitRadius.Value;
 
             Vector3 orbitEntry = AC130Helpers.OrbitPosition(
-                mapCentre,
+                orbitCenter,
                 startAngle,
                 orbitRadius,
                 altitude
@@ -707,7 +707,7 @@ namespace IssaPlugin.Items
             var hitReceiver = ac130GameObj.AddComponent<AC130HitReceiver>();
 
             var flyComp = ac130GameObj.AddComponent<AC130FlyBehaviour>();
-            flyComp.mapCentre = mapCentre;
+            flyComp.orbitCenter = orbitCenter;
             flyComp.orbitRadius = orbitRadius;
             flyComp.altitude = altitude;
             flyComp.orbitSpeed = Configuration.AC130OrbitSpeed.Value;
@@ -755,10 +755,10 @@ namespace IssaPlugin.Items
             }
 
             // Stop normal flight — mayday takes over movement.
-            // Capture mapCentre BEFORE destroying the fly component.
+            // Capture orbitCenter BEFORE destroying the fly component.
             var flyComp = _serverGunship.GetComponent<AC130FlyBehaviour>();
-            Vector3 mapCentre =
-                flyComp != null ? flyComp.mapCentre : _serverGunship.transform.position;
+            Vector3 orbitCenter =
+                flyComp != null ? flyComp.orbitCenter : _serverGunship.transform.position;
             if (flyComp != null)
             {
                 flyComp.OnExternallyDestroyed = null; // prevent re-entry
@@ -770,7 +770,7 @@ namespace IssaPlugin.Items
             // Add the authoritative mayday driver on the server.
             var maydayComp = _serverGunship.AddComponent<AC130MaydayBehaviour>();
             maydayComp.IsLocalPlayer = false;
-            maydayComp.MapCentre = mapCentre;
+            maydayComp.OrbitCenter = orbitCenter;
             maydayComp.OnImpact = () => ServerHandleMaydayImpact(_serverGunship.transform.position);
 
             // Owning client gets the cockpit camera.

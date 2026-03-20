@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 1637192276
+CRC: 353577799
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 261e55cd05a27d4bd7470f76d95c98e3
+    Hash: 58af9e5662060836aa368d6a91fab722
   TypeTreeHash:
     serializedVersion: 2
     Hash: 628bd9afde8f252c71d6346ea3e5018a
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 35cf963ce11f1866d72fc326042c0c6f
+    Hash: c98536c3bc71b3939baa2d8441558cd4
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -73,6 +73,7 @@ Assets:
 - Assets/Assets/homerun.ogg
 - Assets/Assets/fire_torch_intense.prefab
 - Assets/Assets/ac130_model.prefab
+- Assets/Assets/nuclear_explosion.prefab
 - Assets/Assets/sticky_grenade_model.prefab
 - Assets/Assets/teddy.prefab
 - Assets/Assets/Materials/sticky_grenade.mat

@@ -194,7 +194,7 @@ namespace IssaPlugin.Items
     public struct AC130BeginClientMessage : NetworkMessage
     {
         public uint GunshipNetId;
-        public Vector3 MapCentre;
+        public Vector3 OrbitCenter;
     }
 
     public static class AC130BeginClientMessageSerialization
@@ -205,7 +205,7 @@ namespace IssaPlugin.Items
         )
         {
             writer.WriteUInt(msg.GunshipNetId);
-            writer.WriteVector3(msg.MapCentre);
+            writer.WriteVector3(msg.OrbitCenter);
         }
 
         public static AC130BeginClientMessage ReadAC130BeginClientMessage(NetworkReader reader)
@@ -213,7 +213,7 @@ namespace IssaPlugin.Items
             return new AC130BeginClientMessage
             {
                 GunshipNetId = reader.ReadUInt(),
-                MapCentre = reader.ReadVector3(),
+                OrbitCenter = reader.ReadVector3(),
             };
         }
     }

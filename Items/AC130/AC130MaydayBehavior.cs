@@ -24,7 +24,7 @@ namespace IssaPlugin.Items
         public bool IsLocalPlayer { get; set; }
 
         /// Assigned on all clients so the dive can aim toward map centre.
-        public Vector3 MapCentre { get; set; }
+        public Vector3 OrbitCenter { get; set; }
 
         /// Callback invoked on the server when the gunship hits the ground.
         /// The server bridge subscribes to this to run explosion / cleanup.
@@ -214,7 +214,7 @@ namespace IssaPlugin.Items
 
             // Build forward direction: pitched down by _diveAngle, biased
             // toward map centre, plus random drift.
-            Vector3 toCenter = (MapCentre - transform.position);
+            Vector3 toCenter = (OrbitCenter - transform.position);
             toCenter.y = 0f;
             if (toCenter.sqrMagnitude < 0.01f)
                 toCenter = transform.forward;

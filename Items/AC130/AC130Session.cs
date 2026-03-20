@@ -25,7 +25,7 @@ namespace IssaPlugin.Items
         public float Cooldown;
 
         // Scene objects
-        public readonly Vector3 MapCentre;
+        public readonly Vector3 OrbitCenter;
         public readonly GameObject PivotGo;
         public readonly GameObject GunshipVisual;
         public readonly AC130FlyBehaviour FlyComp;
@@ -41,9 +41,9 @@ namespace IssaPlugin.Items
         /// Constructs a client-side session wrapping a gunship GameObject
         /// that was already spawned on the server.
         /// </summary>
-        public AC130Session(PlayerInventory inventory, GameObject gunshipGo, Vector3 mapCentre)
+        public AC130Session(PlayerInventory inventory, GameObject gunshipGo, Vector3 orbitCenter)
         {
-            MapCentre = mapCentre;
+            OrbitCenter = orbitCenter;
             Altitude = Configuration.AC130Altitude.Value;
             OrbitRadius = Configuration.AC130OrbitRadius.Value;
             Duration = Configuration.AC130Duration.Value;
@@ -60,7 +60,7 @@ namespace IssaPlugin.Items
             SavedDisablePhysics = OrbitModule?.disablePhysics ?? false;
 
             PivotGo = new GameObject("AC130Pivot");
-            PivotGo.transform.position = mapCentre;
+            PivotGo.transform.position = orbitCenter;
 
             if (gunshipGo != null)
             {
@@ -71,7 +71,7 @@ namespace IssaPlugin.Items
                 GunshipCam =
                     gunshipGo.GetComponent<AC130GunshipCamera>()
                     ?? gunshipGo.AddComponent<AC130GunshipCamera>();
-                GunshipCam.mapCentre = mapCentre;
+                GunshipCam.orbitCenter = orbitCenter;
                 GunshipCam.baseFov = Configuration.AC130BaseFov.Value;
                 GunshipCam.yawLimit = Configuration.AC130YawLimit.Value;
                 GunshipCam.pitchLimit = Configuration.AC130PitchLimit.Value;
