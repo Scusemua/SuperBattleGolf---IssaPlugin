@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 2621328929
+CRC: 926883886
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 828231b8cbe9b1a6ea67e1bfaf81f15f
+    Hash: 399ee650861a71a2fb136d0b8fc372d5
   TypeTreeHash:
     serializedVersion: 2
     Hash: 204d2b41a044283c5aea06451ad7d0da
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 1d327a3f823dbfe66f82212f581e6eff
+    Hash: c4138d8f216d592e26320cb6293e400f
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -76,6 +76,7 @@ Assets:
 - Assets/Assets/fire_torch_intense.prefab
 - Assets/Assets/ac130_model.prefab
 - Assets/Assets/sticky_grenade_model.prefab
+- Assets/Assets/teddy.prefab
 - Assets/Assets/Materials/sticky_grenade.mat
 - Assets/Assets/Material.003.mat
 - Assets/Assets/donut_model.prefab

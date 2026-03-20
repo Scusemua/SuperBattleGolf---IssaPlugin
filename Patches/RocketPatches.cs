@@ -28,6 +28,11 @@ namespace IssaPlugin.Patches
     {
         static void Postfix(Rocket __instance, Vector3 worldPosition)
         {
+            // Only process rockets spawned by custom mod items — skip standard
+            // game rockets so they can't accidentally shoot down the AC130/bomber.
+            if (!ExplosionScaler.IsRegistered(__instance))
+                return;
+
             var hits = Physics.OverlapSphere(
                 worldPosition,
                 8f,

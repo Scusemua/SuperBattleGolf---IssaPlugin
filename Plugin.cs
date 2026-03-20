@@ -49,6 +49,7 @@ namespace IssaPlugin
             gameObject.AddComponent<LowGravityOverlay>();
             gameObject.AddComponent<LowGravityHandler>();
             gameObject.AddComponent<SniperScopeOverlay>();
+            gameObject.AddComponent<BearOverlay>();
 
             Log.LogInfo("IssaPlugin by Scusemua has loaded.");
         }
@@ -100,6 +101,9 @@ namespace IssaPlugin
             if (keyboard[Configuration.StickyGrenadeGiveKey.Value].wasPressedThisFrame)
                 StickyGrenadeItem.GiveStickyGrenadeToLocalPlayer();
 
+            if (keyboard[Configuration.BearGiveKey.Value].wasPressedThisFrame)
+                BearItem.GiveBearToLocalPlayer();
+
             // Keep the Javelin lock-on target fresh every frame while equipped.
             var localInventory = GameManager.LocalPlayerInventory;
             if (localInventory != null)
@@ -136,6 +140,12 @@ namespace IssaPlugin
                 foreach (var b in FindObjectsByType<DonutNetworkBridge>(FindObjectsSortMode.None))
                     b.ServerHoleCleanup();
 
+                foreach (var b in FindObjectsByType<BearNetworkBridge>(FindObjectsSortMode.None))
+                    b.ServerHoleCleanup();
+
+                foreach (var b in FindObjectsByType<JavelinNetworkBridge>(FindObjectsSortMode.None))
+                    b.ServerHoleCleanup();
+
                 FreezeNetworkBridge.ServerHoleCleanup();
                 LowGravityNetworkBridge.ServerHoleCleanup();
             }
@@ -150,6 +160,8 @@ namespace IssaPlugin
 
             // Cancel any in-progress Stealth Bomber targeting UI.
             StealthBomberItem.CancelTargeting();
+
+            BearLockOnDetectionPatch.Reset();
 
             // ── Shared lock-on detection state ───────────────────────────────
             GunshipLockOnDetectionPatch.ResetTargetingState();

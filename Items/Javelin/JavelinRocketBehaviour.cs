@@ -61,11 +61,6 @@ namespace IssaPlugin.Items
             BindingFlags.NonPublic | BindingFlags.Instance
         );
 
-        private static readonly FieldInfo DistanceTravelledField = typeof(Rocket).GetField(
-            "distanceTravelled",
-            BindingFlags.NonPublic | BindingFlags.Instance
-        );
-
         // ----------------------------------------------------------------
         //  Unity lifecycle
         // ----------------------------------------------------------------
@@ -99,8 +94,9 @@ namespace IssaPlugin.Items
             if (_exploded || _rocket == null)
                 return;
 
-            // Prevent Rocket's own range-limit from firing.
-            DistanceTravelledField?.SetValue(_rocket, 0f);
+            // Note: Rocket.OnFixedBUpdate is suppressed for Javelin rockets via
+            // RocketFixedBUpdatePatch, so distanceTravelled is never read by the
+            // game and the reflection reset is not needed here.
 
             switch (_phase)
             {

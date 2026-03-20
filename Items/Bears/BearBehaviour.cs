@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Reflection;
 using Mirror;
 using UnityEngine;
 
@@ -9,7 +8,8 @@ namespace IssaPlugin.Items
     /// Attached server-side to each spawned bear GameObject immediately after
     /// NetworkServer.Spawn(). Drives the full AI loop:
     ///
-    ///   FixedUpdate  →  UpdateTimers → UpdateStateMachine → MoveAndOrient
+    ///   FixedUpdate: decrement state timer → UpdateStateMachine (which calls
+    ///   per-state movement and transition logic).
     ///
     /// All physics and game-state mutations happen here on the server.
     /// Clients receive BearStateMessage on state changes and follow via NetworkTransform.
@@ -51,17 +51,15 @@ namespace IssaPlugin.Items
 
         // Obstacle avoidance context steering
         private const int ContextRayCount = 8;
-        private static readonly float[] _interest = new float[ContextRayCount];
-        private static readonly float[] _danger = new float[ContextRayCount];
+        private const float AngleStep = 360f / ContextRayCount;
+        private readonly float[] _interest = new float[ContextRayCount];
+        private readonly float[] _danger = new float[ContextRayCount];
 
         // Layer masks (cached)
         private int _obstacleMask;
 
-        // Reflected ServerExplode in case we need to trigger a death explosion
-        private static readonly MethodInfo ServerExplodeMethod = typeof(Rocket).GetMethod(
-            "ServerExplode",
-            BindingFlags.NonPublic | BindingFlags.Instance
-        );
+        // Destroy guard — prevents repeated NetworkServer.Destroy calls in Dead state
+        private bool _destroying;
 
         // ── Unity lifecycle ───────────────────────────────────────────────────
 
@@ -86,18 +84,11 @@ namespace IssaPlugin.Items
             _rb.freezeRotation = true; // we rotate the transform directly
             _rb.interpolation = RigidbodyInterpolation.Interpolate;
 
-            // Wire up the hit-receiver aggro notification
-            if (HitReceiver != null)
-                HitReceiver.OnBearHitByPlayer += OnHitByPlayer;
+            // Aggro notification is handled directly via OnHitByExplosion —
+            // no separate event subscription needed.
 
             // Start in Spawning state
             TransitionTo(BearAIState.Spawning);
-        }
-
-        private void OnDestroy()
-        {
-            if (HitReceiver != null)
-                HitReceiver.OnBearHitByPlayer -= OnHitByPlayer;
         }
 
         private void FixedUpdate()
@@ -163,9 +154,13 @@ namespace IssaPlugin.Items
                     break;
 
                 case BearAIState.Dead:
-                    // NetworkServer.Destroy will remove the GameObject, propagating
-                    // destruction to all clients automatically
-                    NetworkServer.Destroy(gameObject);
+                    // Guard prevents repeated Destroy calls across multiple FixedUpdate
+                    // ticks before Unity processes the pending destroy.
+                    if (!_destroying)
+                    {
+                        _destroying = true;
+                        NetworkServer.Destroy(gameObject);
+                    }
                     break;
             }
         }
@@ -321,7 +316,7 @@ namespace IssaPlugin.Items
 
             for (int i = 0; i < ContextRayCount; i++)
             {
-                float angle = i * (360f / ContextRayCount);
+                float angle = i * AngleStep;
                 Vector3 dir = Quaternion.Euler(0f, angle, 0f) * Vector3.forward;
 
                 // Interest: alignment with desired direction
@@ -347,7 +342,7 @@ namespace IssaPlugin.Items
             if (_interest[best] <= 0f)
                 return GetLeastDangerousDirection();
 
-            float bestAngle = best * (360f / ContextRayCount);
+            float bestAngle = best * AngleStep;
             return (Quaternion.Euler(0f, bestAngle, 0f) * Vector3.forward).normalized;
         }
 
@@ -365,7 +360,7 @@ namespace IssaPlugin.Items
                 }
             }
 
-            float angle = leastDanger * (360f / ContextRayCount);
+            float angle = leastDanger * AngleStep;
             return (Quaternion.Euler(0f, angle, 0f) * Vector3.forward).normalized;
         }
 
@@ -388,7 +383,6 @@ namespace IssaPlugin.Items
         {
             const float GroundCheckLift = 0.5f;
             const float GroundCheckDist = 4f;
-            const float GroundStickForce = 20f;
 
             Vector3 moveVelocity = worldDir * speed;
 
@@ -406,12 +400,25 @@ namespace IssaPlugin.Items
                 Vector3 surfaceDir = Vector3.ProjectOnPlane(worldDir, hit.normal).normalized;
                 moveVelocity = surfaceDir * speed;
 
-                // Keep bear pressed to terrain
-                _rb.AddForce(Vector3.down * GroundStickForce, ForceMode.Acceleration);
+                // Snap Y velocity toward terrain surface rather than accumulating
+                // AddForce, which would grow unboundedly on flat ground.
+                float targetY = hit.point.y + 0.1f;
+                float yVel = Mathf.Clamp(
+                    (targetY - transform.position.y) / Time.fixedDeltaTime,
+                    -10f,
+                    10f
+                );
+                _rb.linearVelocity = new Vector3(moveVelocity.x, yVel, moveVelocity.z);
             }
-
-            // Preserve vertical velocity (gravity, slope traversal)
-            _rb.linearVelocity = new Vector3(moveVelocity.x, _rb.linearVelocity.y, moveVelocity.z);
+            else
+            {
+                // Airborne: preserve gravity-driven Y velocity
+                _rb.linearVelocity = new Vector3(
+                    moveVelocity.x,
+                    _rb.linearVelocity.y,
+                    moveVelocity.z
+                );
+            }
 
             // Smoothly rotate to face movement direction
             if (worldDir.sqrMagnitude > 0.01f)
@@ -474,24 +481,23 @@ namespace IssaPlugin.Items
         {
             float heightDiff = targetPos.y - transform.position.y;
 
-            // Target is significantly above us
-            if (heightDiff > Configuration.BearMaxClimbHeight.Value)
-            {
-                // Check if there's a walkable slope in the target's direction
-                Vector3 toTarget = (targetPos - transform.position).normalized;
-                Vector3 slopeCheck = Vector3.Lerp(toTarget, Vector3.up, 0.5f).normalized;
+            // Within climbable height — always reachable
+            if (Mathf.Abs(heightDiff) <= Configuration.BearMaxClimbHeight.Value)
+                return true;
 
-                // If the slope-direction ray hits nothing, there's open air — unreachable cliff
-                if (
-                    !Physics.Raycast(
-                        transform.position + Vector3.up,
-                        slopeCheck,
-                        8f,
-                        ItemHelper.GroundLayerMask
-                    )
+            // Ray from bear toward target: if terrain blocks it before arrival,
+            // the height gap is likely a cliff rather than a walkable slope.
+            Vector3 toTarget = targetPos - transform.position;
+            float dist = toTarget.magnitude;
+            if (
+                Physics.Raycast(
+                    transform.position + Vector3.up * 0.5f,
+                    toTarget.normalized,
+                    dist * 0.8f,
+                    ItemHelper.GroundLayerMask
                 )
-                    return false;
-            }
+            )
+                return false;
 
             return true;
         }
@@ -621,6 +627,7 @@ namespace IssaPlugin.Items
 
                 case BearAIState.AttackCooldown:
                     _stateTimer = Configuration.BearAttackCooldown.Value;
+                    _currentTarget = null;
                     ZeroVelocity();
                     break;
 
@@ -676,26 +683,22 @@ namespace IssaPlugin.Items
 
         // ── Helpers ───────────────────────────────────────────────────────────
 
+        private static readonly List<PlayerInfo> _playerScratchpad = [];
+
         private static List<PlayerInfo> GetActivePlayers()
         {
-            // Combine local player + remote players into a single list.
-            // GameManager.RemotePlayers returns remote PlayerInfos; LocalPlayerInfo is separate.
-            var players = new List<PlayerInfo>();
+            // Reuse a static scratch list to avoid per-FixedUpdate allocations.
+            // Safe because FixedUpdate runs single-threaded on the Unity main thread.
+            _playerScratchpad.Clear();
 
             if (GameManager.LocalPlayerInfo != null)
-                players.Add(GameManager.LocalPlayerInfo);
+                _playerScratchpad.Add(GameManager.LocalPlayerInfo);
 
             var remotes = GameManager.RemotePlayers;
             if (remotes != null)
-                players.AddRange(remotes);
+                _playerScratchpad.AddRange(remotes);
 
-            return players;
-        }
-
-        // Called by BearHitReceiver event
-        private void OnHitByPlayer(PlayerInfo attacker)
-        {
-            _selector.NotifyHitBy(attacker);
+            return _playerScratchpad;
         }
     }
 }

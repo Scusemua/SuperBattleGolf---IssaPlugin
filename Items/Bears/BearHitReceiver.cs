@@ -1,4 +1,3 @@
-using System;
 using Mirror;
 using UnityEngine;
 
@@ -14,15 +13,12 @@ namespace IssaPlugin.Items
     /// mod-only rockets — until then, this will also trigger on base-game rockets,
     /// which may actually be desirable for bear hunting).
     ///
-    /// OnBearHitByPlayer is raised so BearBehaviour can update the aggro table.
     /// OnHitsExceeded is raised (from CustomHittable) to trigger death.
+    /// NOTE: CustomHittable.OnHitsExceeded is used as a plain Action delegate here —
+    /// the base class does not auto-invoke it; the subclass calls it directly in HandleHit.
     /// </summary>
     public class BearHitReceiver : CustomHittable
     {
-        /// Raised on the server when the bear takes a hit from an explosion.
-        /// The PlayerInfo is the owner of the rocket that hit the bear, if known.
-        public event Action<PlayerInfo> OnBearHitByPlayer;
-
         /// Back-reference to the driving behaviour component so we can call
         /// OnHitByExplosion / OnKilled without requiring another GetComponent call.
         public BearBehaviour Behaviour { get; set; }
@@ -54,11 +50,8 @@ namespace IssaPlugin.Items
             IssaPluginPlugin.Log.LogInfo($"[Bear] Hit {HitCount}/{HitsRequired}.");
 
             // Try to resolve the attacking player from the most recent explosion.
-            // The explosion patch stores the attacker via PlayerInfo on the Rocket;
-            // we surface it here for the aggro system.
-            // NOTE: GetCurrentAttacker() is a best-effort lookup — see implementation below.
+            // The explosion patch stores the attacker via BearExplosionAttackerContext.
             PlayerInfo attacker = TryGetCurrentAttacker();
-            OnBearHitByPlayer?.Invoke(attacker);
 
             if (HitCount >= HitsRequired)
             {
@@ -66,10 +59,9 @@ namespace IssaPlugin.Items
                 OnHitsExceeded?.Invoke();
                 return;
             }
-            else
-            {
-                Behaviour?.OnHitByExplosion(attacker);
-            }
+
+            // OnHitByExplosion handles both aggro (NotifyHitBy) and stun transition.
+            Behaviour?.OnHitByExplosion(attacker);
         }
 
         /// <summary>

@@ -31,7 +31,7 @@ namespace IssaPlugin.Items
 
         // Transform whose position is repeatedly set to the raycast
         // to the ground by the Donut.
-        private static Transform donutLaserTarget = new Transform();
+        private static Transform donutLaserTarget = null;
 
         /// Server-side reference to the active Donut GameObject.
         public static GameObject ActiveDonut => _activeSessionBridge?._serverDonut;
@@ -80,6 +80,11 @@ namespace IssaPlugin.Items
         private float _localLastLaserTime;
 
         private bool _canMove; // Can't move while shooting
+
+        // Rate-limiting for DonutMoveMessage: send at most 20 Hz and only when changed.
+        private const float InputSendInterval = 0.05f;
+        private Vector3 _lastSentMoveDir;
+        private float _moveSendTimer;
 
         // ================================================================
         //  Mirror lifecycle
@@ -559,7 +564,16 @@ namespace IssaPlugin.Items
                         worldMoveDir.Normalize();
                 }
 
-                NetworkClient.Send(new DonutMoveMessage { WorldMoveDir = worldMoveDir });
+                // Rate-limit movement sends: only send when direction changed or
+                // timer expires (20 Hz cap), matching the AC130 flight input pattern.
+                bool moveChanged = (worldMoveDir - _lastSentMoveDir).sqrMagnitude > 0.001f;
+                _moveSendTimer -= Time.deltaTime;
+                if (moveChanged || _moveSendTimer <= 0f)
+                {
+                    NetworkClient.Send(new DonutMoveMessage { WorldMoveDir = worldMoveDir });
+                    _lastSentMoveDir = worldMoveDir;
+                    _moveSendTimer = InputSendInterval;
+                }
 
                 // Left click → fire laser.
                 if (

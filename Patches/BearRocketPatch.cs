@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
 using IssaPlugin.Items;
@@ -33,6 +34,9 @@ namespace IssaPlugin.Patches
     [HarmonyPatch(typeof(Rocket), "ServerExplode")]
     static class BearRocketExplosionPatch
     {
+        // ── Reusable dedup set — cleared per explosion, never reallocated ─────
+        private static readonly HashSet<GameObject> _notifiedBears = new HashSet<GameObject>();
+
         // ── Cached reflection fields ──────────────────────────────────────────
 
         /// <summary>
@@ -41,11 +45,11 @@ namespace IssaPlugin.Patches
         /// any of the candidate names.
         /// </summary>
         private static FieldInfo _launcherField;
-        private static bool      _launcherFieldSearched;
+        private static bool _launcherFieldSearched;
 
         private static readonly string[] LauncherFieldCandidates =
         {
-            "launcher",        // most likely from decompiled source
+            "launcher", // most likely from decompiled source
             "_launcher",
             "launcherInfo",
             "playerInfo",
@@ -56,7 +60,8 @@ namespace IssaPlugin.Patches
 
         static void Prefix(Rocket __instance)
         {
-            if (!NetworkServer.active) return;
+            if (!NetworkServer.active)
+                return;
 
             // Resolve the launcher field once
             if (!_launcherFieldSearched)
@@ -67,8 +72,13 @@ namespace IssaPlugin.Patches
                 foreach (var name in LauncherFieldCandidates)
                 {
                     var fi = typeof(Rocket).GetField(name, flags);
-                    if (fi != null && (fi.FieldType == typeof(PlayerInfo)
-                                      || fi.FieldType.IsSubclassOf(typeof(PlayerInfo))))
+                    if (
+                        fi != null
+                        && (
+                            fi.FieldType == typeof(PlayerInfo)
+                            || fi.FieldType.IsSubclassOf(typeof(PlayerInfo))
+                        )
+                    )
                     {
                         _launcherField = fi;
                         IssaPluginPlugin.Log.LogInfo(
@@ -81,8 +91,8 @@ namespace IssaPlugin.Patches
                 if (_launcherField == null)
                     IssaPluginPlugin.Log.LogWarning(
                         "[BearRocketPatch] Could not find Rocket launcher field. "
-                        + "Bear aggro will not track rocket attackers. "
-                        + "Check decompiled Rocket source and update LauncherFieldCandidates."
+                            + "Bear aggro will not track rocket attackers. "
+                            + "Check decompiled Rocket source and update LauncherFieldCandidates."
                     );
             }
 
@@ -94,7 +104,8 @@ namespace IssaPlugin.Patches
 
         static void Postfix(Rocket __instance, Vector3 worldPosition)
         {
-            if (!NetworkServer.active) return;
+            if (!NetworkServer.active)
+                return;
 
             try
             {
@@ -108,15 +119,16 @@ namespace IssaPlugin.Patches
 
                 // De-duplicate by bear root GameObject so compound colliders
                 // (body + head + paw) don't trigger multiple hits for one explosion.
-                var notified = new System.Collections.Generic.HashSet<GameObject>();
+                _notifiedBears.Clear();
 
                 foreach (var col in hits)
                 {
                     var receiver = col.GetComponentInParent<BearHitReceiver>();
-                    if (receiver == null) continue;
+                    if (receiver == null)
+                        continue;
 
-                    // Use the receiver's own GameObject as the dedup key
-                    if (!notified.Add(receiver.gameObject)) continue;
+                    if (!_notifiedBears.Add(receiver.gameObject))
+                        continue;
 
                     IssaPluginPlugin.Log.LogInfo(
                         $"[Bear] Rocket exploded near bear at {worldPosition} — hit registered."

@@ -11,7 +11,7 @@ namespace IssaPlugin.Items
     /// is baked onto the prefab — analogous to AC130ClientSetup and DonutClientSetup.
     ///
     /// The BearAnimatorDriver (client-side state visualisation) is added here.
-    /// BearBehaviour (server-side AI) is added by BearNetworkBridge.ServerStartBears()
+    /// BearBehaviour (server-side AI) is added by BearNetworkBridge.ServerSummonBears()
     /// AFTER NetworkServer.Spawn so it only exists on the server.
     /// </summary>
     public class BearClientSetup : MonoBehaviour

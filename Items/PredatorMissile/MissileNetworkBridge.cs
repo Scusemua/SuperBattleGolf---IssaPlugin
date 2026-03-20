@@ -48,6 +48,12 @@ namespace IssaPlugin.Items
         {
             if (_activeRocket == null)
                 return;
+            // Clamp magnitude so a modified client cannot teleport the rocket
+            // by sending an arbitrarily large velocity vector.
+            float maxSpeed =
+                Configuration.MissileFallSpeed.Value
+                + Configuration.MissileSteerSpeed.Value * 1.5f;
+            velocity = Vector3.ClampMagnitude(velocity, maxSpeed);
             var rb = _activeRocket.GetComponent<Rigidbody>();
             if (rb != null)
                 rb.linearVelocity = velocity;

@@ -190,12 +190,16 @@ namespace IssaPlugin.Items
                 _serverTimeout = null;
             }
 
-            foreach (var bear in _activeBears)
+            // Copy then clear BEFORE destroying so WatchBear coroutines that wake
+            // from the forced destroy see an empty list and do not re-enter.
+            var toDestroy = new List<GameObject>(_activeBears);
+            _activeBears.Clear();
+
+            foreach (var bear in toDestroy)
             {
                 if (bear != null)
                     NetworkServer.Destroy(bear);
             }
-            _activeBears.Clear();
 
             // Broadcast session-end to all clients (VFX / audio cleanup)
             NetworkServer.SendToAll(new BearSessionEndMessage());
@@ -263,6 +267,9 @@ namespace IssaPlugin.Items
         }
 
         /// Received by all clients when the session ends.
+        /// Currently only logs — reserved for future client-side VFX / audio cleanup.
+        /// If no VFX is ever added, remove this message and its registration in
+        /// NetworkManagerPatches_BearAdditions.cs to reduce network overhead.
         public static void HandleBearSessionEnd(BearSessionEndMessage msg)
         {
             IssaPluginPlugin.Log.LogInfo("[Bear] Session ended (all clients).");

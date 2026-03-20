@@ -32,5 +32,10 @@ namespace IssaPlugin.Items
                 return scale;
             return 1f;
         }
+
+        /// Returns true if this rocket was spawned by a custom mod item.
+        /// Used by RocketPatches to skip standard game rockets.
+        public static bool IsRegistered(Rocket rocket) =>
+            rocket != null && _scales.ContainsKey(rocket);
     }
 }

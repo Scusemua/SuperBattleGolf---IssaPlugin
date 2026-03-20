@@ -35,6 +35,7 @@ namespace IssaPlugin.Items
         // ================================================================
 
         private bool _serverRoutineActive;
+        private Coroutine _serverRoutine;
 
         // ================================================================
         //  Mirror lifecycle
@@ -138,7 +139,7 @@ namespace IssaPlugin.Items
             }
 
             _serverRoutineActive = true;
-            StartCoroutine(ServerFireRoutine(inventory, targetPosition));
+            _serverRoutine = StartCoroutine(ServerFireRoutine(inventory, targetPosition));
         }
 
         // ================================================================
@@ -229,7 +230,32 @@ namespace IssaPlugin.Items
                 connectionToClient.Send(new JavelinDetonatedMessage());
 
             _serverRoutineActive = false;
+            _serverRoutine = null;
             IssaPluginPlugin.Log.LogInfo("[Javelin] Server routine complete.");
+        }
+
+        // ================================================================
+        //  Hole-transition cleanup  (server only)
+        // ================================================================
+
+        /// <summary>
+        /// Called by Plugin.OnMatchStateChanged on every hole transition.
+        /// Stops the in-flight coroutine so _serverRoutineActive does not
+        /// permanently block new Javelin uses after a hole ends mid-flight.
+        /// </summary>
+        public void ServerHoleCleanup()
+        {
+            if (!_serverRoutineActive)
+                return;
+
+            if (_serverRoutine != null)
+            {
+                StopCoroutine(_serverRoutine);
+                _serverRoutine = null;
+            }
+
+            _serverRoutineActive = false;
+            IssaPluginPlugin.Log.LogInfo("[Javelin] Server state cleared on hole transition.");
         }
 
         // ================================================================

@@ -192,6 +192,11 @@ namespace IssaPlugin
         public static ConfigEntry<float> BearEnrageSpeedMultiplier { get; private set; }
         public static ConfigEntry<float> BearHitsToKill { get; private set; }
         public static ConfigEntry<float> BearMaxClimbHeight { get; private set; }
+        public static ConfigEntry<float> BearTargetLockDuration { get; private set; }
+        public static ConfigEntry<float> BearTargetStealThreshold { get; private set; }
+        public static ConfigEntry<float> BearTargetAbandonDistance { get; private set; }
+        public static ConfigEntry<float> BearAggroStealThreshold { get; private set; }
+        public static ConfigEntry<float> BearAggroDuration { get; private set; }
 
         public static void Initialize(ConfigFile cfg)
         {
@@ -1288,6 +1293,36 @@ namespace IssaPlugin
                 "MaxClimbHeight",
                 6f,
                 "Max height difference (units) before a target is considered unreachable."
+            );
+            BearTargetLockDuration = cfg.Bind(
+                "Bear",
+                "TargetLockDuration",
+                8f,
+                "Minimum seconds a bear keeps its target before re-evaluating."
+            );
+            BearTargetStealThreshold = cfg.Bind(
+                "Bear",
+                "TargetStealThreshold",
+                12f,
+                "A new candidate must be this many units closer to steal the lock after the timer expires."
+            );
+            BearTargetAbandonDistance = cfg.Bind(
+                "Bear",
+                "TargetAbandonDistance",
+                65f,
+                "If the locked target moves beyond this distance the lock is dropped immediately."
+            );
+            BearAggroStealThreshold = cfg.Bind(
+                "Bear",
+                "AggroStealThreshold",
+                4f,
+                "A player who hit the bear can steal the lock if at least this many units closer (lower bar than normal steal)."
+            );
+            BearAggroDuration = cfg.Bind(
+                "Bear",
+                "AggroDuration",
+                15f,
+                "How long (seconds) aggro on a specific player lasts after they hit the bear."
             );
         }
     }

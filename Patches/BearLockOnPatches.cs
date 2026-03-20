@@ -66,19 +66,22 @@ namespace IssaPlugin.Patches
     {
         static void Postfix(Rocket __instance, PlayerInfo launcher)
         {
-            if (!NetworkServer.active || launcher == null) return;
+            if (!NetworkServer.active || launcher == null)
+                return;
 
             var bearBridge = launcher.GetComponent<BearNetworkBridge>();
-            if (bearBridge == null || !bearBridge.PendingBearHoming) return;
+            if (bearBridge == null || !bearBridge.PendingBearHoming)
+                return;
 
             // Find the nearest bear to home toward
             var nearestBear = FindNearestBear(__instance.transform.position);
-            if (nearestBear == null) return;
+            if (nearestBear == null)
+                return;
 
             bearBridge.PendingBearHoming = false;
 
-            var homing       = __instance.gameObject.AddComponent<GunshipHomingBehaviour>();
-            homing.Target    = nearestBear.transform;
+            var homing = __instance.gameObject.AddComponent<GunshipHomingBehaviour>();
+            homing.Target = nearestBear.transform;
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[Bear] Rocket homing toward bear at {nearestBear.transform.position}."
@@ -88,13 +91,17 @@ namespace IssaPlugin.Patches
         private static BearMarker FindNearestBear(Vector3 from)
         {
             var bears = Object.FindObjectsByType<BearMarker>(FindObjectsSortMode.None);
-            BearMarker best    = null;
-            float      bestDist = float.MaxValue;
+            BearMarker best = null;
+            float bestDist = float.MaxValue;
 
             foreach (var bear in bears)
             {
                 float d = Vector3.Distance(from, bear.transform.position);
-                if (d < bestDist) { bestDist = d; best = bear; }
+                if (d < bestDist)
+                {
+                    bestDist = d;
+                    best = bear;
+                }
             }
 
             return best;
@@ -128,7 +135,8 @@ namespace IssaPlugin.Patches
             ref LockOnTarget bestLockOnTarget
         )
         {
-            if (!__instance.isOwned) return;
+            if (!__instance.isOwned)
+                return;
 
             bool nowTargetingBear =
                 __result
@@ -145,18 +153,18 @@ namespace IssaPlugin.Patches
                     var lot = nearestBear.GetComponent<LockOnTarget>();
                     if (lot != null)
                     {
-                        __result          = true;
-                        bestLockOnTarget  = lot;
-                        nowTargetingBear  = true;
+                        __result = true;
+                        bestLockOnTarget = lot;
+                        nowTargetingBear = true;
                     }
                 }
             }
 
             if (nowTargetingBear && !_wasTargetingBear)
+            {
                 IssaPluginPlugin.Log.LogInfo("[LockOn] Locked onto bear.");
-
-            if (nowTargetingBear)
                 NetworkClient.Send(new BearPrepareHomingMessage());
+            }
 
             _wasTargetingBear = nowTargetingBear;
         }
@@ -164,20 +172,21 @@ namespace IssaPlugin.Patches
         private static BearMarker FindNearestBearInView()
         {
             var cam = Camera.main;
-            if (cam == null) return null;
+            if (cam == null)
+                return null;
 
             var bears = Object.FindObjectsByType<BearMarker>(FindObjectsSortMode.None);
-            BearMarker best     = null;
-            float      bestDot  = 0.7f; // minimum forward alignment
+            BearMarker best = null;
+            float bestDot = 0.7f; // minimum forward alignment
 
             foreach (var bear in bears)
             {
                 Vector3 toTarget = (bear.transform.position - cam.transform.position).normalized;
-                float   dot      = Vector3.Dot(toTarget, cam.transform.forward);
+                float dot = Vector3.Dot(toTarget, cam.transform.forward);
                 if (dot > bestDot)
                 {
                     bestDot = dot;
-                    best    = bear;
+                    best = bear;
                 }
             }
 

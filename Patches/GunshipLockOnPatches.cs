@@ -186,24 +186,24 @@ namespace IssaPlugin.Patches
 
             // ---- Gunship ----
             if (nowTargetingGunship && !_wasTargetingGunship)
+            {
                 IssaPluginPlugin.Log.LogInfo("[LockOn] Locked onto AC130 gunship.");
-
-            if (nowTargetingGunship)
                 NetworkClient.Send(new AC130PrepareHomingMessage());
+            }
 
             // ---- Bomber ----
             if (nowTargetingBomber && !_wasTargetingBomber)
+            {
                 IssaPluginPlugin.Log.LogInfo("[LockOn] Locked onto stealth bomber.");
-
-            if (nowTargetingBomber)
                 NetworkClient.Send(new BomberPrepareHomingMessage());
+            }
 
             // ---- Donut ----
             if (nowTargetingDonut && !_wasTargetingDonut)
+            {
                 IssaPluginPlugin.Log.LogInfo("[LockOn] Locked onto Donut.");
-
-            if (nowTargetingDonut)
                 NetworkClient.Send(new DonutPrepareHomingMessage());
+            }
 
             _wasTargetingGunship = nowTargetingGunship;
             _wasTargetingBomber = nowTargetingBomber;
