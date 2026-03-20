@@ -15,15 +15,6 @@ namespace IssaPlugin.Items
         // ItemUseId, so it's safe to remain static.
         private static int _useIndex;
 
-        public static void GiveAC130ToLocalPlayer()
-        {
-            ItemHelper.GiveItemToLocalPlayer(
-                ItemRegistry.AC130ItemType,
-                (int)Configuration.AC130Uses.Value,
-                "AC130"
-            );
-        }
-
         // ----------------------------------------------------------------
         //  Input handlers
         //  Called each frame by AC130NetworkBridge.RunLocalSession.

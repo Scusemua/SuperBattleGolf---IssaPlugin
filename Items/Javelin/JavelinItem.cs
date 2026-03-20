@@ -20,14 +20,5 @@ namespace IssaPlugin.Items
         /// JavelinRocketBehaviour.FixedUpdate has exclusive control over velocity.
         /// Mirrors the ActiveMissileRockets pattern in PredatorMissileItem.
         internal static readonly HashSet<Rocket> ActiveJavelinRockets = new();
-
-        public static void GiveJavelinToLocalPlayer()
-        {
-            ItemHelper.GiveItemToLocalPlayer(
-                JavelinItemType,
-                (int)Configuration.JavelinUses.Value,
-                "Javelin"
-            );
-        }
     }
 }

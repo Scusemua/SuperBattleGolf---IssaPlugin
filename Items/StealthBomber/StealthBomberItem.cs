@@ -47,15 +47,6 @@ namespace IssaPlugin.Items
             public float Length;
         }
 
-        public static void GiveBomberToLocalPlayer()
-        {
-            ItemHelper.GiveItemToLocalPlayer(
-                ItemRegistry.StealthBomberItemType,
-                (int)Configuration.BomberUses.Value,
-                "Bomber"
-            );
-        }
-
         private static void SetCurrentItemUse(PlayerInventory inventory, ItemUseType type)
         {
             ItemHelper.SetCurrentItemUse(inventory, type);

@@ -17,15 +17,6 @@ namespace IssaPlugin.Items
         /// <summary>True on the local client while the scope is being held (right-click).</summary>
         public static bool IsScoped { get; set; }
 
-        public static void GiveSniperRifleToLocalPlayer()
-        {
-            ItemHelper.GiveItemToLocalPlayer(
-                ItemRegistry.SniperRifleItemType,
-                (int)Configuration.SniperRifleUses.Value,
-                "SniperRifle"
-            );
-        }
-
         // ── Reflected private/internal methods on PlayerInventory ────────────
 
         private static readonly MethodInfo TryParseFirearmRaycastResultsMethod =
