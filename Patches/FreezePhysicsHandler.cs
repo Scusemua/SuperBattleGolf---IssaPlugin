@@ -23,21 +23,24 @@ namespace IssaPlugin.Patches
         private PhysicsMaterial _iceMat;
         private readonly Dictionary<Collider, PhysicsMaterial> _originalMaterials = new();
         private readonly Dictionary<Collider, PhysicsMaterial> _originalBallMaterials = new();
-        private readonly Dictionary<WheelCollider, (WheelFrictionCurve fwd, WheelFrictionCurve side)> _savedWheelFriction = new();
+        private readonly Dictionary<
+            WheelCollider,
+            (WheelFrictionCurve fwd, WheelFrictionCurve side)
+        > _savedWheelFriction = new();
         private bool _freezeApplied;
 
         private static readonly int TerrainLayer = LayerMask.NameToLayer("Terrain");
-        private static readonly int DefaultLayer  = LayerMask.NameToLayer("Default");
+        private static readonly int DefaultLayer = LayerMask.NameToLayer("Default");
 
         private void Awake()
         {
             _iceMat = new PhysicsMaterial("IceMat")
             {
-                staticFriction  = 0.02f,
+                staticFriction = 0.02f,
                 dynamicFriction = 0.02f,
-                bounciness      = 0.15f,
+                bounciness = 0.15f,
                 frictionCombine = PhysicsMaterialCombine.Minimum,
-                bounceCombine   = PhysicsMaterialCombine.Maximum,
+                bounceCombine = PhysicsMaterialCombine.Maximum,
             };
         }
 
@@ -49,7 +52,8 @@ namespace IssaPlugin.Patches
                 Destroy(_iceMat);
         }
 
-        private void OnEnable()  => Physics.ContactModifyEvent += OnContactModify;
+        private void OnEnable() => Physics.ContactModifyEvent += OnContactModify;
+
         private void OnDisable() => Physics.ContactModifyEvent -= OnContactModify;
 
         private void Update()
@@ -62,8 +66,10 @@ namespace IssaPlugin.Patches
 
         private bool IsGroundCollider(Collider col)
         {
-            if (col.isTrigger) return false;
-            if (col is TerrainCollider) return true;
+            if (col.isTrigger)
+                return false;
+            if (col is TerrainCollider)
+                return true;
             int layer = col.gameObject.layer;
             return layer == TerrainLayer || layer == DefaultLayer;
         }
@@ -73,13 +79,14 @@ namespace IssaPlugin.Patches
             _freezeApplied = true;
             _originalMaterials.Clear();
 
-            _iceMat.staticFriction  = Configuration.FreezeFriction.Value;
+            _iceMat.staticFriction = Configuration.FreezeFriction.Value;
             _iceMat.dynamicFriction = Configuration.FreezeFriction.Value;
-            _iceMat.bounciness      = Configuration.FreezeBounciness.Value;
+            _iceMat.bounciness = Configuration.FreezeBounciness.Value;
 
             foreach (var col in FindObjectsByType<Collider>(FindObjectsSortMode.None))
             {
-                if (!IsGroundCollider(col)) continue;
+                if (!IsGroundCollider(col))
+                    continue;
                 _originalMaterials[col] = col.sharedMaterial;
                 col.sharedMaterial = _iceMat;
             }
@@ -116,7 +123,8 @@ namespace IssaPlugin.Patches
             foreach (var ball in FindObjectsByType<GolfBall>(FindObjectsSortMode.None))
             {
                 var col = ball.Collider;
-                if (col == null) continue;
+                if (col == null)
+                    continue;
                 _originalBallMaterials[col] = col.sharedMaterial;
                 col.sharedMaterial = _iceMat;
             }
@@ -125,7 +133,8 @@ namespace IssaPlugin.Patches
         private void RestoreBallMaterials()
         {
             foreach (var (col, mat) in _originalBallMaterials)
-                if (col != null) col.sharedMaterial = mat;
+                if (col != null)
+                    col.sharedMaterial = mat;
             _originalBallMaterials.Clear();
         }
 
@@ -148,7 +157,8 @@ namespace IssaPlugin.Patches
         {
             foreach (var (wc, (fwd, side)) in _savedWheelFriction)
             {
-                if (wc == null) continue;
+                if (wc == null)
+                    continue;
                 wc.forwardFriction = fwd;
                 wc.sidewaysFriction = side;
             }
@@ -157,10 +167,11 @@ namespace IssaPlugin.Patches
 
         private void OnContactModify(PhysicsScene scene, NativeArray<ModifiableContactPair> pairs)
         {
-            if (!FreezeItem.IsFrozen) return;
+            if (!FreezeItem.IsFrozen)
+                return;
 
             float friction = Configuration.FreezeFriction.Value;
-            float bounce   = Configuration.FreezeBounciness.Value;
+            float bounce = Configuration.FreezeBounciness.Value;
 
             for (int i = 0; i < pairs.Length; i++)
             {
