@@ -126,31 +126,7 @@ namespace IssaPlugin.Items
             NetworkServer.Destroy(gameObject);
         }
 
-        public static GameObject GetModelPrefabForType(ItemType type)
-        {
-            if (type == BatItem.BatItemType)
-                return AssetLoader.BatModelPrefab;
-            if (type == StealthBomberItem.BomberItemType)
-                return AssetLoader.BomberTabletPrefab;
-            if (type == PredatorMissileItem.MissileItemType)
-                return AssetLoader.MissileTabletPrefab;
-            if (type == AC130Item.AC130ItemType)
-                return AssetLoader.Ac130TabletPrefab;
-            if (type == FreezeItem.FreezeItemType)
-                return AssetLoader.FreezeModelPrefab;
-            if (type == LowGravityItem.LowGravityItemType)
-                return AssetLoader.LowGravityModelPrefab;
-            if (type == SniperRifleItem.SniperRifleItemType)
-                return AssetLoader.SniperRiflePrefab;
-            if (type == DonutItem.DonutItemType)
-                return AssetLoader.DonutHandheldPrefab;
-            if (type == JavelinItem.JavelinItemType)
-                return AssetLoader.JavelinHandheldPrefab;
-            if (type == StickyGrenadeItem.StickyGrenadeItemType)
-                return AssetLoader.StickyGrenadePrefab;
-            if (type == BearItem.BearItemType)
-                return AssetLoader.TeddyBearPrefab;
-            return null;
-        }
+        public static GameObject GetModelPrefabForType(ItemType type) =>
+            ItemRegistry.GetDefinition(type)?.HeldModelPrefab;
     }
 }
