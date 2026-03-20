@@ -87,7 +87,7 @@ namespace IssaPlugin.Items
                 ItemType.RocketLauncher
             );
 
-            var rocket = Object.Instantiate(
+            var rocket = GameObject.Instantiate(
                 GameManager.ItemSettings.RocketPrefab,
                 position,
                 worldRotation
@@ -95,9 +95,12 @@ namespace IssaPlugin.Items
 
             if (rocket == null)
             {
-                IssaPluginPlugin.Log.LogError("[AC130] Rocket did not instantiate.");
+                IssaPluginPlugin.Log.LogError("[AC130Item] Rocket did not instantiate.");
                 return;
             }
+
+            // Prevent this rocket from being assigned homing behaviour.
+            rocket.gameObject.AddComponent<CustomSpawnedRocket>();
 
             rocket.ServerInitialize(inventory.PlayerInfo, null, itemUseId);
             NetworkServer.Spawn(rocket.gameObject, (NetworkConnectionToClient)null);

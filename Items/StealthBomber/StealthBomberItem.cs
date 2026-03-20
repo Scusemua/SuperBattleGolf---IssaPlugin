@@ -623,6 +623,9 @@ namespace IssaPlugin.Items
                 return;
             }
 
+            // Prevent this rocket from being assigned homing behaviour.
+            rocket.gameObject.AddComponent<CustomSpawnedRocket>();
+
             rocket.ServerInitialize(inventory.PlayerInfo, null, itemUseId);
             NetworkServer.Spawn(rocket.gameObject, (NetworkConnectionToClient)null);
 

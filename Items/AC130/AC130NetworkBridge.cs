@@ -41,7 +41,7 @@ namespace IssaPlugin.Items
 
         /// <summary>
         /// Set by CmdPrepareGunshipRocket when the owning client has the gunship
-        /// locked on. Consumed by GunshipRocketHomingPatch when the next rocket spawns.
+        /// locked on. Consumed by RocketHomingPatch when the next rocket spawns.
         /// </summary>
         public bool PendingGunshipHoming;
 
@@ -270,7 +270,7 @@ namespace IssaPlugin.Items
         public void ServerPrepareGunshipRocket()
         {
             // No ActiveGunship null-guard here — mirrors ServerPrepareBomberRocket which
-            // also sets the flag unconditionally. GunshipRocketHomingPatch verifies the
+            // also sets the flag unconditionally. RocketHomingPatch verifies the
             // AC130GunshipMarker exists in the scene before attaching homing, so if no
             // gunship is present the flag is set but safely ignored at fire time.
             // The old guard (if ActiveGunship == null) return) caused homing to silently
@@ -822,7 +822,15 @@ namespace IssaPlugin.Items
             );
 
             if (rocket == null)
+            {
+                IssaPluginPlugin.Log.LogError(
+                    "[AC130NetworkBridge] Rocket prefab failed to instantiate."
+                );
                 return;
+            }
+
+            // Prevent this rocket from being assigned homing behaviour.
+            rocket.gameObject.AddComponent<CustomSpawnedRocket>();
 
             var itemUseId = new ItemUseId(
                 inventory.PlayerInfo.PlayerId.Guid,

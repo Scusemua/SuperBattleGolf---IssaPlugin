@@ -19,7 +19,7 @@ namespace IssaPlugin.Items
 
         /// <summary>
         /// Set by CmdPrepareBomberRocket when the owning client has the bomber
-        /// locked on. Consumed by GunshipRocketHomingPatch when the next rocket spawns.
+        /// locked on. Consumed by RocketHomingPatch when the next rocket spawns.
         /// </summary>
         public bool PendingBomberHoming;
 

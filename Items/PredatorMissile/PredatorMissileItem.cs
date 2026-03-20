@@ -60,6 +60,9 @@ namespace IssaPlugin.Items
                 yield break;
             }
 
+            // Prevent this rocket from being assigned homing behaviour.
+            rocket.gameObject.AddComponent<CustomSpawnedRocket>();
+
             rocket.ServerInitialize(playerInfo, null, itemUseId);
             NetworkServer.Spawn(rocket.gameObject, (NetworkConnectionToClient)null);
             ActiveMissileRockets.Add(rocket);

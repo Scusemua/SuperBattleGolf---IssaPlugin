@@ -243,14 +243,14 @@ namespace IssaPlugin.Patches
     //  is reused as-is for both the gunship and the bomber proxy.
     // ====================================================================
     [HarmonyPatch(typeof(Rocket), "ServerInitialize")]
-    static class GunshipRocketHomingPatch
+    static class RocketHomingPatch
     {
         static void Postfix(Rocket __instance, PlayerInfo launcher)
         {
-            if (!NetworkServer.active)
+            if (!NetworkServer.active || launcher == null)
                 return;
-            if (launcher == null)
-                return;
+            if (__instance.GetComponent<CustomSpawnedRocket>() != null)
+                return; // AC130/Bomber bomb. Don't home-in on those.
 
             // ---- AC130 gunship homing ----
             var ac130Bridge = launcher.GetComponent<AC130NetworkBridge>();

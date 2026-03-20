@@ -174,6 +174,9 @@ namespace IssaPlugin.Items
                 yield break;
             }
 
+            // Prevent this rocket from being assigned homing behaviour.
+            rocket.gameObject.AddComponent<CustomSpawnedRocket>();
+
             rocket.ServerInitialize(playerInfo, null, itemUseId);
             NetworkServer.Spawn(rocket.gameObject, (NetworkConnectionToClient)null);
 
@@ -198,9 +201,7 @@ namespace IssaPlugin.Items
             yield return null;
 
             // Tell all clients to attach the trail VFX to the rocket.
-            NetworkServer.SendToAll(
-                new JavelinRocketTrailMessage { RocketNetId = rocket.netId }
-            );
+            NetworkServer.SendToAll(new JavelinRocketTrailMessage { RocketNetId = rocket.netId });
 
             // Notify the firing client the rocket is in the air.
             connectionToClient.Send(new JavelinLaunchedMessage());

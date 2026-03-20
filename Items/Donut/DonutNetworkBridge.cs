@@ -283,8 +283,13 @@ namespace IssaPlugin.Items
                 Quaternion.identity
             );
 
-            if (rocket == null)
+            if (rocket == null) {
+                IssaPluginPlugin.Log.LogError("[Donut] Rocket prefab failed to instantiate.");
                 return;
+            }
+
+            // Prevent this rocket from being assigned homing behaviour.
+            rocket.gameObject.AddComponent<CustomSpawnedRocket>();
 
             var itemUseId = new ItemUseId(
                 inventory.PlayerInfo.PlayerId.Guid,
