@@ -138,7 +138,6 @@ namespace IssaPlugin.Items
             JavelinIcon = LoadSprite("javelin_icon.png");
             StickyGrenadeIcon = LoadSprite("spike_ball_icon.png");
             BearIcon = LoadSprite("bear_icon.png");
-
             NukeIcon = LoadSprite("nuke_icon.png");
 
             SniperScopeTexture = LoadTexture2D("sniper_scope.png");
@@ -189,14 +188,17 @@ namespace IssaPlugin.Items
                 DisableRigidbody(BearPrefab); // BearBehaviour re-enables in Start()
             }
 
-            NuclearDetonatorPrefab = Load<GameObject>("nuke_handheld.prefab");
+            NuclearDetonatorPrefab = Load<GameObject>("nuclear_detonator.prefab");
             if (NuclearDetonatorPrefab != null)
                 DisableRigidbody(NuclearDetonatorPrefab);
 
-            NukeBombPrefab = Load<GameObject>("nuke_bomb.prefab");
+            NukeBombPrefab = Load<GameObject>("nuclear_bomb.prefab");
             if (NukeBombPrefab != null)
             {
                 EnsureNetworkIdentity(NukeBombPrefab, 0xF1550001u);
+                // Ensure position is synced to clients every tick.  If the bundle
+                // prefab already has NetworkTransformReliable this is a no-op.
+                EnsureNetworkTransform(NukeBombPrefab);
                 // Rigidbody starts kinematic; NukeBombBehaviour.Start() re-enables it.
                 DisableRigidbody(NukeBombPrefab);
             }
@@ -236,8 +238,10 @@ namespace IssaPlugin.Items
             MaydayFireTrailPrefab = Load<GameObject>("fire_torch_intense.prefab");
             MaydayExplosionVfxPrefab = Load<GameObject>("NukeVerticalExplosionFire.prefab");
 
-            // Nuke explosion VFX + sound reuse assets already loaded above.
-            NukeExplosionVfxPrefab = MaydayExplosionVfxPrefab;
+            // Nuke-specific explosion VFX — load from a dedicated prefab first,
+            // fall back to NukeVerticalExplosionFire if it isn't in the bundle yet.
+            NukeExplosionVfxPrefab =
+                Load<GameObject>("nuke_explosion.prefab") ?? MaydayExplosionVfxPrefab;
             NukeExplosionClip = MaydayImpactClip;
 
             DroppedCustomItemPrefab = Load<GameObject>("DroppedCustomItem.prefab");
@@ -321,6 +325,24 @@ namespace IssaPlugin.Items
 
             rb.isKinematic = true;
             rb.useGravity = false;
+        }
+
+        /// Ensures the prefab has a NetworkTransformReliable so Mirror syncs its
+        /// position/rotation to all clients each tick.  All other moving networked
+        /// prefabs (Bear, Donut, StickyGrenade, BomberProxy) bake this in via the
+        /// Unity editor; this helper adds it programmatically as a safe fallback for
+        /// prefabs built without it.
+        private static void EnsureNetworkTransform(GameObject prefab)
+        {
+            if (prefab == null)
+                return;
+            if (prefab.GetComponent<NetworkTransformReliable>() != null)
+                return;
+
+            prefab.AddComponent<NetworkTransformReliable>();
+            IssaPluginPlugin.Log.LogInfo(
+                $"[Assets] Added NetworkTransformReliable to {prefab.name}."
+            );
         }
 
         /// Destroys Mirror network tick components from a prefab that will only

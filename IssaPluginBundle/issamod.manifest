@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 1206368988
+CRC: 3414501151
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: da029c68e11740b1ac9b2e7807e90239
+    Hash: 95758a23fe1eb15b641e316af4d53974
   TypeTreeHash:
     serializedVersion: 2
     Hash: 628bd9afde8f252c71d6346ea3e5018a
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 4f7d2be6a36dc5a1e4140f266b145e08
+    Hash: 5948fad818a6109923d6a80d10a53b76
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -123,7 +123,7 @@ Assets:
 - Assets/Assets/Materials/Teddy/Nose.002.mat
 - Assets/Assets/sniper_scope.png
 - Assets/Assets/Brass.mat
-- Assets/Assets/nuke.prefab
+- Assets/Assets/nuclear_bomb.prefab
 - Assets/Assets/bomber_icon.png
 - Assets/Assets/plane_falling.ogg
 - Assets/Assets/spike_ball_icon.png

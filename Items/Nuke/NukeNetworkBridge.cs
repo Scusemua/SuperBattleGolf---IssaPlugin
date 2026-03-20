@@ -68,20 +68,6 @@ namespace IssaPlugin.Items
             Vector3 mapCenter = Vector3.zero;
             Vector3 spawnPos = new Vector3(mapCenter.x, mapCenter.y + dropHeight, mapCenter.z);
 
-            // Raycast downward from the spawn point to find the actual ground Y so
-            // NukeBombBehaviour knows exactly when to detonate.
-            float targetY = mapCenter.y;
-            if (
-                Physics.Raycast(
-                    spawnPos,
-                    Vector3.down,
-                    out RaycastHit groundHit,
-                    dropHeight + 50f,
-                    ItemHelper.GroundLayerMask
-                )
-            )
-                targetY = groundHit.point.y;
-
             var bombGo = Object.Instantiate(
                 AssetLoader.NukeBombPrefab,
                 spawnPos,
@@ -106,7 +92,6 @@ namespace IssaPlugin.Items
 
             // Attach the server-side falling + detonation behaviour.
             var behaviour = bombGo.AddComponent<NukeBombBehaviour>();
-            behaviour.TargetY = targetY;
             behaviour.ThrowerInfo = playerInfo;
             behaviour.ItemUseId = itemUseId;
             behaviour.DropSpeed = Configuration.NukeDropSpeed.Value;
@@ -115,9 +100,7 @@ namespace IssaPlugin.Items
             behaviour.SkyBlastRadius = Configuration.NukeSkyBlastRadius.Value;
             behaviour.SkyBlastUpwardModifier = Configuration.NukeSkyBlastUpwardModifier.Value;
 
-            IssaPluginPlugin.Log.LogInfo(
-                $"[Nuke] Bomb spawned at {spawnPos:F1}, targeting groundY={targetY:F1}."
-            );
+            IssaPluginPlugin.Log.LogInfo($"[Nuke] Bomb spawned at {spawnPos:F1}.");
 
             // Wait for the bomb to be destroyed by NukeBombBehaviour.Detonate(),
             // with a generous timeout in case something goes wrong.
