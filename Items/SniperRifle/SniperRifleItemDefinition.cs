@@ -5,7 +5,7 @@ namespace IssaPlugin.Items
 {
     public class SniperRifleItemDefinition : CustomItemDefinition
     {
-        public override ItemType ItemType => SniperRifleItem.SniperRifleItemType;
+        public override ItemType ItemType => ItemRegistry.SniperRifleItemType;
         public override string DisplayName => "M200 Intervention";
         public override string[] ConsoleAliases =>
             new[] { "m200", "sniper", "sniper_rifle", "intervention" };

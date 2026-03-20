@@ -14,15 +14,13 @@ namespace IssaPlugin.Items
     /// </summary>
     public static class SniperRifleItem
     {
-        public static readonly ItemType SniperRifleItemType = (ItemType)106;
-
         /// <summary>True on the local client while the scope is being held (right-click).</summary>
         public static bool IsScoped { get; set; }
 
         public static void GiveSniperRifleToLocalPlayer()
         {
             ItemHelper.GiveItemToLocalPlayer(
-                SniperRifleItemType,
+                ItemRegistry.SniperRifleItemType,
                 (int)Configuration.SniperRifleUses.Value,
                 "SniperRifle"
             );
@@ -169,7 +167,7 @@ namespace IssaPlugin.Items
                 var useId = (ItemUseId)(
                     IncrementAndGetCurrentItemUseIdMethod?.Invoke(
                         inventory,
-                        new object[] { SniperRifleItemType }
+                        new object[] { ItemRegistry.SniperRifleItemType }
                     ) ?? default(ItemUseId)
                 );
 

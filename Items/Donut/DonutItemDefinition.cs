@@ -6,7 +6,7 @@ namespace IssaPlugin.Items
 {
     public class DonutItemDefinition : CustomItemDefinition
     {
-        public override ItemType ItemType => DonutItem.DonutItemType;
+        public override ItemType ItemType => ItemRegistry.DonutItemType;
         public override string DisplayName => "Donut";
         public override string[] ConsoleAliases => new[] { "donut" };
         public override Sprite Icon => AssetLoader.DonutIcon;

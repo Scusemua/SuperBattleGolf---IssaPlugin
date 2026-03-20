@@ -382,7 +382,7 @@ namespace IssaPlugin.Patches
             if (!ItemRegistry.IsCustomItem(equippedItem))
                 return;
 
-            if (equippedItem == SniperRifleItem.SniperRifleItemType)
+            if (equippedItem == ItemRegistry.SniperRifleItemType)
                 equippedItem = ItemType.ElephantGun;
             else if (equippedItem == JavelinItem.JavelinItemType)
                 equippedItem = ItemType.RocketLauncher;

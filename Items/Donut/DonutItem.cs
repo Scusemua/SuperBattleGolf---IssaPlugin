@@ -6,12 +6,10 @@ namespace IssaPlugin.Items
     /// </summary>
     public static class DonutItem
     {
-        public static readonly ItemType DonutItemType = (ItemType)107;
-
         public static void GiveDonutToLocalPlayer()
         {
             ItemHelper.GiveItemToLocalPlayer(
-                DonutItemType,
+                ItemRegistry.DonutItemType,
                 (int)Configuration.DonutUses.Value,
                 "Donut"
             );

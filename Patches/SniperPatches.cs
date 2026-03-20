@@ -39,7 +39,7 @@ namespace IssaPlugin.Patches
                 return;
             if (__result != ItemType.None)
                 return;
-            if (__instance.GetEffectivelyEquippedItem(true) == SniperRifleItem.SniperRifleItemType)
+            if (__instance.GetEffectivelyEquippedItem(true) == ItemRegistry.SniperRifleItemType)
             {
                 __result = ItemType.ElephantGun;
             }
@@ -51,7 +51,7 @@ namespace IssaPlugin.Patches
     /// than UpdateIsAimingItem resets it after SniperGetEffectivelyEquippedItemPatch
     /// has already made the base game handle it correctly.
     ///
-    /// 
+    ///
     /// In the normal path this Postfix is a no-op (currentlyAiming == shouldAim).
     /// </summary>
     [HarmonyPatch(typeof(PlayerInventory), "UpdateIsAimingItem")]
@@ -64,7 +64,7 @@ namespace IssaPlugin.Patches
 
         static void Postfix(PlayerInventory __instance)
         {
-            if (__instance.GetEffectivelyEquippedItem(true) != SniperRifleItem.SniperRifleItemType)
+            if (__instance.GetEffectivelyEquippedItem(true) != ItemRegistry.SniperRifleItemType)
                 return;
 
             bool shouldAim = Mouse.current?.rightButton.isPressed ?? false;
