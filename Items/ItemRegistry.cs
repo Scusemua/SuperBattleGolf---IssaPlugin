@@ -1,14 +1,36 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using BepInEx;
+using BepInEx.Logging;
 using HarmonyLib;
+using IssaPlugin.Items;
+using IssaPlugin.Overlays;
+using IssaPlugin.Patches;
 using Mirror;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace IssaPlugin.Items
 {
     public static class ItemRegistry
     {
+        public static IReadOnlyList<CustomItemDefinition> AllItems { get; } =
+            new List<CustomItemDefinition>
+            {
+                new BatItemDefinition(),
+                new StealthBomberItemDefinition(),
+                new PredatorMissileItemDefinition(),
+                new AC130ItemDefinition(),
+                new FreezeItemDefinition(),
+                new LowGravityItemDefinition(),
+                new SniperRifleItemDefinition(),
+                new DonutItemDefinition(),
+                new JavelinItemDefinition(),
+                new StickyGrenadeItemDefinition(),
+                new BearItemDefinition(),
+            };
+
         private static readonly FieldInfo SlotsField = AccessTools.Field(
             typeof(PlayerInventory),
             "slots"
