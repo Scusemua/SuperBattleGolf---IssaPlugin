@@ -196,9 +196,6 @@ namespace IssaPlugin.Items
             if (NukeBombPrefab != null)
             {
                 EnsureNetworkIdentity(NukeBombPrefab, 0xF1550001u);
-                // Ensure position is synced to clients every tick.  If the bundle
-                // prefab already has NetworkTransformReliable this is a no-op.
-                EnsureNetworkTransform(NukeBombPrefab);
                 // Rigidbody starts kinematic; NukeBombBehaviour.Start() re-enables it.
                 DisableRigidbody(NukeBombPrefab);
             }
@@ -325,24 +322,6 @@ namespace IssaPlugin.Items
 
             rb.isKinematic = true;
             rb.useGravity = false;
-        }
-
-        /// Ensures the prefab has a NetworkTransformReliable so Mirror syncs its
-        /// position/rotation to all clients each tick.  All other moving networked
-        /// prefabs (Bear, Donut, StickyGrenade, BomberProxy) bake this in via the
-        /// Unity editor; this helper adds it programmatically as a safe fallback for
-        /// prefabs built without it.
-        private static void EnsureNetworkTransform(GameObject prefab)
-        {
-            if (prefab == null)
-                return;
-            if (prefab.GetComponent<NetworkTransformReliable>() != null)
-                return;
-
-            prefab.AddComponent<NetworkTransformReliable>();
-            IssaPluginPlugin.Log.LogInfo(
-                $"[Assets] Added NetworkTransformReliable to {prefab.name}."
-            );
         }
 
         /// Destroys Mirror network tick components from a prefab that will only
