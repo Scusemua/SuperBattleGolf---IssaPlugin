@@ -214,6 +214,7 @@ namespace IssaPlugin.Items
                 _rb.linearVelocity = Vector3.zero;
                 _rb.angularVelocity = Vector3.zero;
                 _rb.isKinematic = true;
+                _rb.detectCollisions = false;
             }
 
             _stickyTarget = target;
@@ -283,17 +284,27 @@ namespace IssaPlugin.Items
 
             if (tempRocket != null)
             {
-                // Build a minimal ItemUseId — the thrower's info was stored at throw time
-                var useId = new ItemUseId(
-                    (ulong)(ThrowerInfo?.PlayerId.Guid ?? 0UL),
-                    StickyGrenadeItem.NextUseIndex(),
-                    ItemType.RocketLauncher
-                );
-                tempRocket.ServerInitialize(ThrowerInfo, null, useId);
-                NetworkServer.Spawn(tempRocket.gameObject);
+                if (ThrowerInfo == null)
+                {
+                    // Thrower disconnected mid-fuse — skip the rocket path to avoid
+                    // passing null PlayerInfo into ServerInitialize (would crash the server).
+                    // VFX is already broadcast via StickyGrenadeDetonatedMessage above.
+                    Object.Destroy(tempRocket.gameObject);
+                }
+                else
+                {
+                    // Build a minimal ItemUseId — the thrower's info was stored at throw time
+                    var useId = new ItemUseId(
+                        (ulong)ThrowerInfo.PlayerId.Guid,
+                        StickyGrenadeItem.NextUseIndex(),
+                        ItemType.RocketLauncher
+                    );
+                    tempRocket.ServerInitialize(ThrowerInfo, null, useId);
+                    NetworkServer.Spawn(tempRocket.gameObject);
 
-                ExplosionScaler.Register(tempRocket, ExplosionScale);
-                RocketServerExplode?.Invoke(tempRocket, new object[] { blastPos });
+                    ExplosionScaler.Register(tempRocket, ExplosionScale);
+                    RocketServerExplode?.Invoke(tempRocket, new object[] { blastPos });
+                }
             }
 
             NetworkServer.Destroy(gameObject);
