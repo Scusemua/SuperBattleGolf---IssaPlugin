@@ -10,8 +10,6 @@ namespace IssaPlugin.Items
     /// </summary>
     public static class JavelinItem
     {
-        public static readonly ItemType JavelinItemType = (ItemType)108;
-
         private static int _useIndex;
 
         public static int NextUseIndex() => Interlocked.Increment(ref _useIndex);

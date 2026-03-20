@@ -82,7 +82,7 @@ namespace IssaPlugin
             if (localInventory != null)
             {
                 var equippedItem = localInventory.GetEffectivelyEquippedItem(true);
-                if (equippedItem == JavelinItem.JavelinItemType)
+                if (equippedItem == ItemRegistry.JavelinItemType)
                 {
                     var javelinBridge =
                         NetworkClient.localPlayer?.GetComponent<JavelinNetworkBridge>();

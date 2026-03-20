@@ -36,8 +36,11 @@ namespace IssaPlugin.Items
         private void Update()
         {
             // Self-destruct when the Javelin is no longer equipped.
-            if (_inventory == null || _bridge == null ||
-                _inventory.GetEffectivelyEquippedItem(true) != JavelinItem.JavelinItemType)
+            if (
+                _inventory == null
+                || _bridge == null
+                || _inventory.GetEffectivelyEquippedItem(true) != ItemRegistry.JavelinItemType
+            )
             {
                 Destroy(this);
                 return;

@@ -5,7 +5,7 @@ namespace IssaPlugin.Items
 {
     public class JavelinItemDefinition : CustomItemDefinition
     {
-        public override ItemType ItemType => JavelinItem.JavelinItemType;
+        public override ItemType ItemType => ItemRegistry.JavelinItemType;
         public override string DisplayName => "Javelin";
         public override string[] ConsoleAliases => new[] { "javelin" };
         public override Sprite Icon => AssetLoader.JavelinIcon;

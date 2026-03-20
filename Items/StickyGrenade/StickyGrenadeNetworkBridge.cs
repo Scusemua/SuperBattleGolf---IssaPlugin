@@ -44,7 +44,7 @@ namespace IssaPlugin.Items
             }
 
             var equipped = inventory.GetEffectivelyEquippedItem(true);
-            if (equipped != StickyGrenadeItem.StickyGrenadeItemType)
+            if (equipped != ItemRegistry.StickyGrenadeItemType)
             {
                 IssaPluginPlugin.Log.LogWarning(
                     "[StickyGrenade] Player does not have StickyGrenade equipped."

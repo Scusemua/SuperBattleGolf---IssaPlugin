@@ -5,7 +5,7 @@ namespace IssaPlugin.Items
 {
     public class StickyGrenadeItemDefinition : CustomItemDefinition
     {
-        public override ItemType ItemType => StickyGrenadeItem.StickyGrenadeItemType;
+        public override ItemType ItemType => ItemRegistry.StickyGrenadeItemType;
         public override string DisplayName => "Sticky Grenade";
         public override string[] ConsoleAliases =>
             new[] { "sticky_grenade", "sticky", "stickygrenade" };

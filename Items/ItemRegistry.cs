@@ -25,6 +25,8 @@ namespace IssaPlugin.Items
         public static readonly ItemType LowGravityItemType = (ItemType)105;
         public static readonly ItemType SniperRifleItemType = (ItemType)106;
         public static readonly ItemType DonutItemType = (ItemType)107;
+        public static readonly ItemType JavelinItemType = (ItemType)108;
+        public static readonly ItemType StickyGrenadeItemType = (ItemType)109;
 
         // Static initialization order note: AllItems is a static field initializer that only
         // instantiates the definition objects; it does not call any abstract members. Properties like
