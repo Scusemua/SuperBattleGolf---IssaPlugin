@@ -181,6 +181,7 @@ namespace IssaPlugin
         public static ConfigEntry<float> NukeSkyBlastRadius { get; private set; }
         public static ConfigEntry<float> NukeSkyBlastUpwardModifier { get; private set; }
         public static ConfigEntry<float> NukeExplosionVfxDuration { get; private set; }
+        public static ConfigEntry<bool> NukeExcludeThrower { get; private set; }
 
         // --- Bear ---
         public static ConfigEntry<Key> BearGiveKey { get; private set; }
@@ -1269,6 +1270,13 @@ namespace IssaPlugin
                 "ExplosionVfxDuration",
                 8f,
                 "Seconds before the nuke explosion VFX prefab is destroyed on each client."
+            );
+
+            NukeExcludeThrower = cfg.Bind(
+                "Nuke",
+                "ExcludeThrower",
+                false,
+                "If true, the sky blast does not apply force to the player who activated the nuke."
             );
 
             // --- Bear ---

@@ -93,6 +93,7 @@ namespace IssaPlugin.Items
             // Attach the server-side falling + detonation behaviour.
             var behaviour = bombGo.AddComponent<NukeBombBehaviour>();
             behaviour.ThrowerInfo = playerInfo;
+            behaviour.ThrowerRigidbody = GetComponentInParent<Rigidbody>();
             behaviour.ItemUseId = itemUseId;
             behaviour.DropSpeed = Configuration.NukeDropSpeed.Value;
             behaviour.ExplosionScale = Configuration.NukeExplosionScale.Value;

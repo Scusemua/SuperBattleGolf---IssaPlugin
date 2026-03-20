@@ -22,6 +22,7 @@ namespace IssaPlugin.Items
         // ----------------------------------------------------------------
 
         public PlayerInfo ThrowerInfo;
+        public Rigidbody ThrowerRigidbody;
         public ItemUseId ItemUseId;
         public float DropSpeed = 80f;
         public float GroundProximityDistance = 3f;
@@ -134,11 +135,17 @@ namespace IssaPlugin.Items
                 mask,
                 QueryTriggerInteraction.Ignore
             );
+            bool excludeThrower =
+                Configuration.NukeExcludeThrower.Value && ThrowerRigidbody != null;
+
             var processed = new HashSet<Rigidbody>();
             foreach (var col in colliders)
             {
                 var rb = col.GetComponentInParent<Rigidbody>();
                 if (rb == null || !processed.Add(rb))
+                    continue;
+
+                if (excludeThrower && rb == ThrowerRigidbody)
                     continue;
 
                 rb.AddExplosionForce(
