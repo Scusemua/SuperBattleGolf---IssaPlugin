@@ -1,5 +1,7 @@
 # IssaPlugin
 
+![IssaMod Logo](ThunderStore/icon_256.png)
+
 A **BepInEx mod for Super Battle Golf** that adds chaotic, weaponized gameplay through custom items (airstrikes, missiles, weapons, and physics modifiers), world modifiers, and cinematic strike abilities.
 
 ------------------------------------------------------------------------
