@@ -94,6 +94,7 @@ namespace IssaPlugin
         public static ConfigEntry<float> FreezeFriction { get; private set; }
         public static ConfigEntry<float> FreezeBounciness { get; private set; }
         public static ConfigEntry<float> FreezeCartSidewaysStiffness { get; private set; }
+        public static ConfigEntry<float> FreezeGripRadius { get; private set; }
         public static ConfigEntry<float> FreezeSpawnWeight { get; private set; }
 
         // --- Low Gravity ---
@@ -591,6 +592,13 @@ namespace IssaPlugin
                 "CartSidewaysStiffness",
                 0.15f,
                 "Sideways friction stiffness for golf cart wheel colliders while frozen (0 = no grip, 1 = normal). Lower values cause more drift."
+            );
+
+            FreezeGripRadius = cfg.Bind(
+                "FreezeWorld",
+                "GripRadius",
+                1.5f,
+                "Distance (metres) from the local player's own ball within which normal traction is restored, allowing them to stop and take a shot."
             );
 
             FreezeSpawnWeight = cfg.Bind(
