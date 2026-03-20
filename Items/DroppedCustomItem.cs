@@ -148,6 +148,8 @@ namespace IssaPlugin.Items
                 return AssetLoader.JavelinHandheldPrefab;
             if (type == StickyGrenadeItem.StickyGrenadeItemType)
                 return AssetLoader.StickyGrenadePrefab;
+            if (type == BearItem.BearItemType)
+                return AssetLoader.TeddyBearPrefab;
             return null;
         }
     }

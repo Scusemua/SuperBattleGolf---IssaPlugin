@@ -320,7 +320,7 @@ namespace IssaPlugin.Patches
             if (type == StickyGrenadeItem.StickyGrenadeItemType)
                 return AssetLoader.StickyGrenadePrefab;
             if (type == BearItem.BearItemType)
-                return AssetLoader.BearPrefab; // held as a visual prop
+                return AssetLoader.TeddyBearPrefab; // held as a visual prop
             return null;
         }
 

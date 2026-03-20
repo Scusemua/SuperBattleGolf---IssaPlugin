@@ -45,6 +45,7 @@ namespace IssaPlugin.Items
         public static GameObject StickyGrenadePrefab { get; private set; }
 
         public static GameObject BearPrefab { get; private set; }
+        public static GameObject TeddyBearPrefab { get; private set; }
         public static Sprite BearIcon { get; private set; }
 
         public static GameObject ConfettiBlastRainbow { get; private set; }
@@ -119,6 +120,7 @@ namespace IssaPlugin.Items
             DonutIcon = LoadSprite("donut_icon.png");
             JavelinIcon = LoadSprite("javelin_icon.png");
             StickyGrenadeIcon = LoadSprite("spike_ball_icon.png");
+            BearIcon = LoadSprite("bear_icon.png");
 
             SniperScopeTexture = LoadTexture2D("sniper_scope.png");
 
@@ -159,7 +161,7 @@ namespace IssaPlugin.Items
             if (StickyGrenadePrefab != null)
                 StickyGrenadePrefab.AddComponent<StickyGrenadeClientSetup>();
 
-            BearIcon = LoadSprite("bear_icon.png");
+            TeddyBearPrefab = Load<GameObject>("teddy.prefab");
             BearPrefab = Load<GameObject>("bear.prefab");
             if (BearPrefab != null)
             {
@@ -188,6 +190,7 @@ namespace IssaPlugin.Items
             DisableRigidbody(SniperRiflePrefab);
             DisableRigidbody(DonutHandheldPrefab);
             DisableRigidbody(JavelinHandheldPrefab);
+            DisableRigidbody(TeddyBearPrefab);
 
             // AudioClips must be loaded by asset name without the file extension.
             // Unity compiles audio into its own internal format at bundle-build

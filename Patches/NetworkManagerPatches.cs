@@ -704,6 +704,7 @@ namespace IssaPlugin.Patches
             RegisterPrefab(AssetLoader.BloodSplatterPrefab);
             RegisterPrefab(AssetLoader.StickyGrenadePrefab);
             RegisterPrefab(AssetLoader.BearPrefab);
+            RegisterPrefab(AssetLoader.TeddyBearPrefab);
         }
 
         private static void RegisterPrefab(GameObject prefab)
