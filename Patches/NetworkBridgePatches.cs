@@ -34,6 +34,8 @@ namespace IssaPlugin.Patches
                 __instance.gameObject.AddComponent<StickyGrenadeNetworkBridge>();
             if (!__instance.GetComponent<BearNetworkBridge>())
                 __instance.gameObject.AddComponent<BearNetworkBridge>();
+            if (!__instance.GetComponent<NukeNetworkBridge>())
+                __instance.gameObject.AddComponent<NukeNetworkBridge>();
 
             IssaPluginPlugin.Log.LogInfo(
                 "[Network] Bridge components injected onto player object."

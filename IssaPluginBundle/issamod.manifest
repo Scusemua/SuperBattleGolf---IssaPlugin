@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 3940259275
+CRC: 1206368988
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: d5ca36fa79530448b1dc94df778fb20a
+    Hash: da029c68e11740b1ac9b2e7807e90239
   TypeTreeHash:
     serializedVersion: 2
     Hash: 628bd9afde8f252c71d6346ea3e5018a
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 1fdbe0cca21fcebac9c4d38ef7e7a7d6
+    Hash: 4f7d2be6a36dc5a1e4140f266b145e08
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -123,6 +123,7 @@ Assets:
 - Assets/Assets/Materials/Teddy/Nose.002.mat
 - Assets/Assets/sniper_scope.png
 - Assets/Assets/Brass.mat
+- Assets/Assets/nuke.prefab
 - Assets/Assets/bomber_icon.png
 - Assets/Assets/plane_falling.ogg
 - Assets/Assets/spike_ball_icon.png
@@ -140,8 +141,10 @@ Assets:
 - Assets/Assets/ac130_icon.png
 - Assets/Assets/predator_missile_tablet.prefab
 - Assets/Assets/blood_splatter_critical.prefab
+- Assets/Assets/nuclear_detonator.prefab
 - Assets/Assets/NukeVerticalExplosionFire.prefab
 - Assets/Assets/Glass.mat
 - Assets/Assets/donut_vehicle.prefab
 - Assets/Assets/Materials/Teddy/_FRONT_427414.mat
+- Assets/Assets/nuke_icon.png
 Dependencies: []

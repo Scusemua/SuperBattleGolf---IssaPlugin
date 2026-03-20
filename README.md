@@ -90,7 +90,7 @@ Examples include:
 1.  Install **BepInEx** into your Super Battle Golf directory.
 2.  Download the latest release of **IssaPlugin**.
 3.  Place the compiled plugin DLL inside:
-    `BepInEx/plugins/`
+    BepInEx/plugins/
 
 4.  Launch the game.
 
@@ -108,7 +108,7 @@ BepInEx will automatically load the plugin.
 
 Update the paths in:
 
-    `IssaPlugin.csproj`
+    IssaPlugin.csproj
 
 to point to your local copies of:
 
@@ -127,11 +127,11 @@ These can be found in the game's local files, specifically in `steamapps/common/
 
 ### 3. Build
 
-    `dotnet build`
+    dotnet build
 
 The compiled plugin will appear in:
 
-    `bin/Debug/netstandard2.1/`
+    bin/Debug/netstandard2.1/
 
 ------------------------------------------------------------------------
 
@@ -175,7 +175,7 @@ The compiled plugin will appear in:
 Some behavior can be configured through the generated BepInEx config
 file:
 
-    `BepInEx/config/IssaPlugin.cfg`
+    BepInEx/config/IssaPlugin.cfg
 
 Options may include:
 
@@ -199,4 +199,8 @@ Assets used in the project:
 
 -   "M200 Intervention (Low-poly)"\
     https://skfb.ly/prrWy\
+    Licensed under Creative Commons Attribution 4.0
+
+-   "Militar explosive detonator"\
+    (https://skfb.ly/o9YWC) by Oscar Royo 
     Licensed under Creative Commons Attribution 4.0

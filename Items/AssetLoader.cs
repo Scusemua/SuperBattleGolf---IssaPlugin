@@ -48,6 +48,23 @@ namespace IssaPlugin.Items
         public static GameObject TeddyBearPrefab { get; private set; }
         public static Sprite BearIcon { get; private set; }
 
+        public static Sprite NukeIcon { get; private set; }
+
+        /// The model the player holds while the Nuke item is equipped.
+        public static GameObject NuclearDetonatorPrefab { get; private set; }
+
+        /// The networked bomb object that falls from the sky.
+        /// Requires NetworkIdentity + NetworkTransform in the bundle.
+        public static GameObject NukeBombPrefab { get; private set; }
+
+        /// VFX prefab spawned on all clients when the nuke detonates.
+        /// Reuses NukeVerticalExplosionFire.prefab already present in the bundle.
+        public static GameObject NukeExplosionVfxPrefab { get; private set; }
+
+        /// Impact sound played on all clients at detonation.
+        /// Reuses etfx_explosion_nuke.wav already present in the bundle.
+        public static AudioClip NukeExplosionClip { get; private set; }
+
         public static GameObject ConfettiBlastRainbow { get; private set; }
 
         public static GameObject BloodSplatterPrefab { get; private set; }
@@ -122,6 +139,8 @@ namespace IssaPlugin.Items
             StickyGrenadeIcon = LoadSprite("spike_ball_icon.png");
             BearIcon = LoadSprite("bear_icon.png");
 
+            NukeIcon = LoadSprite("nuke_icon.png");
+
             SniperScopeTexture = LoadTexture2D("sniper_scope.png");
 
             if (SniperScopeTexture == null)
@@ -170,6 +189,18 @@ namespace IssaPlugin.Items
                 DisableRigidbody(BearPrefab); // BearBehaviour re-enables in Start()
             }
 
+            NuclearDetonatorPrefab = Load<GameObject>("nuke_handheld.prefab");
+            if (NuclearDetonatorPrefab != null)
+                DisableRigidbody(NuclearDetonatorPrefab);
+
+            NukeBombPrefab = Load<GameObject>("nuke_bomb.prefab");
+            if (NukeBombPrefab != null)
+            {
+                EnsureNetworkIdentity(NukeBombPrefab, 0xF1550001u);
+                // Rigidbody starts kinematic; NukeBombBehaviour.Start() re-enables it.
+                DisableRigidbody(NukeBombPrefab);
+            }
+
             DonutHandheldPrefab = Load<GameObject>("donut_model.prefab");
             JavelinHandheldPrefab = Load<GameObject>("javelin_rocket_launcher.prefab");
             JavelinTargetIndicatorPrefab = Load<GameObject>("javelin_target_indicator.prefab");
@@ -204,6 +235,10 @@ namespace IssaPlugin.Items
             MaydaySmokeTrailPrefab = Load<GameObject>("smoke_prefab.prefab");
             MaydayFireTrailPrefab = Load<GameObject>("fire_torch_intense.prefab");
             MaydayExplosionVfxPrefab = Load<GameObject>("NukeVerticalExplosionFire.prefab");
+
+            // Nuke explosion VFX + sound reuse assets already loaded above.
+            NukeExplosionVfxPrefab = MaydayExplosionVfxPrefab;
+            NukeExplosionClip = MaydayImpactClip;
 
             DroppedCustomItemPrefab = Load<GameObject>("DroppedCustomItem.prefab");
             if (DroppedCustomItemPrefab != null)

@@ -119,6 +119,9 @@ namespace IssaPlugin
                 foreach (var b in FindObjectsByType<JavelinNetworkBridge>(FindObjectsSortMode.None))
                     b.ServerHoleCleanup();
 
+                foreach (var b in FindObjectsByType<NukeNetworkBridge>(FindObjectsSortMode.None))
+                    b.ServerHoleCleanup();
+
                 FreezeNetworkBridge.ServerHoleCleanup();
                 LowGravityNetworkBridge.ServerHoleCleanup();
             }

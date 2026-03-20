@@ -169,6 +169,18 @@ namespace IssaPlugin
         public static ConfigEntry<float> StealthBomberExplosionScale { get; private set; }
         public static ConfigEntry<float> JavelinExplosionScale { get; private set; }
 
+        // --- Nuke ---
+        public static ConfigEntry<Key> NukeGiveKey { get; private set; }
+        public static ConfigEntry<float> NukeUses { get; private set; }
+        public static ConfigEntry<float> NukeSpawnWeight { get; private set; }
+        public static ConfigEntry<float> NukeDropHeight { get; private set; }
+        public static ConfigEntry<float> NukeDropSpeed { get; private set; }
+        public static ConfigEntry<float> NukeExplosionScale { get; private set; }
+        public static ConfigEntry<float> NukeSkyBlastForce { get; private set; }
+        public static ConfigEntry<float> NukeSkyBlastRadius { get; private set; }
+        public static ConfigEntry<float> NukeSkyBlastUpwardModifier { get; private set; }
+        public static ConfigEntry<float> NukeExplosionVfxDuration { get; private set; }
+
         // --- Bear ---
         public static ConfigEntry<Key> BearGiveKey { get; private set; }
         public static ConfigEntry<float> BearUses { get; private set; }
@@ -1179,6 +1191,76 @@ namespace IssaPlugin
                 "StickyGrenadeScale",
                 4.0f,
                 "Multiplier for StickyGrenade explosions. Affects blast radius, knockback, and VFX size."
+            );
+
+            // --- Nuke ---
+            NukeGiveKey = cfg.Bind(
+                "Nuke",
+                "GiveKey",
+                Key.Numpad6,
+                "Debug key to add the Nuke to your inventory."
+            );
+
+            NukeUses = cfg.Bind("Nuke", "Uses", 1f, "Number of uses per Nuke pickup.");
+
+            NukeSpawnWeight = cfg.Bind(
+                "ItemBoxSpawns",
+                "NukeWeight",
+                0.5f,
+                "Spawn weight for the Nuke in item boxes. Set to 0 to disable."
+            );
+
+            NukeDropHeight = cfg.Bind(
+                "Nuke",
+                "DropHeight",
+                300f,
+                "Units above the map centre at which the nuke bomb spawns."
+            );
+
+            NukeDropSpeed = cfg.Bind(
+                "Nuke",
+                "DropSpeed",
+                80f,
+                "Downward speed of the falling nuke bomb in units per second."
+            );
+
+            NukeExplosionScale = cfg.Bind(
+                "Explosions",
+                "NukeScale",
+                8.0f,
+                "Explosion scale multiplier for the Nuke's detonation rocket. "
+                    + "Affects blast radius, knockback force, and VFX size."
+            );
+
+            NukeSkyBlastForce = cfg.Bind(
+                "Nuke",
+                "SkyBlastForce",
+                100f,
+                "Extra upward impulse force applied to all rigidbodies within SkyBlastRadius "
+                    + "after detonation. Stacks on top of the standard explosion knockback."
+            );
+
+            NukeSkyBlastRadius = cfg.Bind(
+                "Nuke",
+                "SkyBlastRadius",
+                300f,
+                "Radius (units) of the secondary sky blast. Should be large enough to "
+                    + "cover the whole map so no one escapes."
+            );
+
+            NukeSkyBlastUpwardModifier = cfg.Bind(
+                "Nuke",
+                "SkyBlastUpwardModifier",
+                2.0f,
+                "Upward modifier for the sky blast AddExplosionForce call. "
+                    + "Higher values send players more vertically."
+            );
+
+            NukeExplosionVfxDuration = cfg.Bind(
+                "Nuke",
+                "ExplosionVfxDuration",
+                8f,
+                "Seconds before the nuke explosion VFX prefab is destroyed on each client."
             );
 
             // --- Bear ---

@@ -588,6 +588,28 @@ namespace IssaPlugin.Patches
                 StickyGrenadeNetworkBridge.HandleStickyGrenadeDetonated
             );
 
+            // ── Nuke Messages ─────────────────────────────────────────────────
+
+            // Client → Server
+            Writer<NukeFireMessage>.write = NukeFireMessageSerialization.WriteNukeFireMessage;
+            Reader<NukeFireMessage>.read = NukeFireMessageSerialization.ReadNukeFireMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<NukeFireMessage>(
+                    (conn, msg) =>
+                    {
+                        conn.identity?.GetComponent<NukeNetworkBridge>()?.ServerHandleFire();
+                    }
+                );
+
+            // Server → All Clients
+            Writer<NukeExplosionMessage>.write =
+                NukeExplosionMessageSerialization.WriteNukeExplosionMessage;
+            Reader<NukeExplosionMessage>.read =
+                NukeExplosionMessageSerialization.ReadNukeExplosionMessage;
+            NetworkClient.RegisterHandler<NukeExplosionMessage>(
+                NukeMessageHandlers.HandleNukeExplosion
+            );
+
             // ── Spawn-weight sync (server → all clients) ─────────────────────
             Writer<SpawnWeightsMessage>.write =
                 SpawnWeightsMessageSerialization.WriteSpawnWeightsMessage;
@@ -724,6 +746,7 @@ namespace IssaPlugin.Patches
             RegisterPrefab(AssetLoader.StickyGrenadePrefab);
             RegisterPrefab(AssetLoader.BearPrefab);
             RegisterPrefab(AssetLoader.TeddyBearPrefab);
+            RegisterPrefab(AssetLoader.NukeBombPrefab);
         }
 
         private static void RegisterPrefab(GameObject prefab)
@@ -888,6 +911,52 @@ namespace IssaPlugin.Patches
                 Quaternion.identity
             );
             Object.Destroy(vfx, Configuration.JavelinExplosionVfxDuration.Value);
+        }
+    }
+
+    /// Nuke NetworkMessage handlers — kept in a separate (non-patch) class so
+    /// the Harmony analyser does not misidentify the 'msg' parameters as patch parameters.
+    static class NukeMessageHandlers
+    {
+        internal static void HandleNukeExplosion(NukeExplosionMessage msg)
+        {
+            // Explosion VFX — reuse the nuke fire prefab already in the bundle.
+            if (AssetLoader.NukeExplosionVfxPrefab != null)
+            {
+                var vfx = Object.Instantiate(
+                    AssetLoader.NukeExplosionVfxPrefab,
+                    msg.Position,
+                    Quaternion.identity
+                );
+                Object.Destroy(vfx, Configuration.NukeExplosionVfxDuration.Value);
+            }
+            else
+            {
+                // Fallback to the pooled rocket explosion if the prefab isn't loaded.
+                VfxManager.PlayPooledVfxLocalOnly(
+                    VfxType.RocketLauncherRocketExplosion,
+                    msg.Position,
+                    Quaternion.identity,
+                    Vector3.one * Configuration.NukeExplosionScale.Value
+                );
+            }
+
+            // Impact sound.
+            if (AssetLoader.NukeExplosionClip != null)
+            {
+                var go = new GameObject("Nuke_Sound");
+                var src = go.AddComponent<AudioSource>();
+                src.clip = AssetLoader.NukeExplosionClip;
+                src.spatialBlend = 0f;
+                src.volume = 1f;
+                src.Play();
+                Object.Destroy(go, AssetLoader.NukeExplosionClip.length + 0.1f);
+            }
+
+            CameraModuleController.Shake(
+                GameManager.CameraGameplaySettings.RocketExplosionScreenshakeSettings,
+                msg.Position
+            );
         }
     }
 
