@@ -18,8 +18,6 @@ namespace IssaPlugin.Items
     /// </summary>
     public static class BearItem
     {
-        public static readonly ItemType BearItemType = (ItemType)110;
-
         private static int _useIndex;
 
         public static int NextUseIndex() => Interlocked.Increment(ref _useIndex);

@@ -63,7 +63,7 @@ namespace IssaPlugin.Items
                 return;
 
             var equipped = inventory.GetEffectivelyEquippedItem(true);
-            if (equipped != BearItem.BearItemType)
+            if (equipped != ItemRegistry.BearItemType)
             {
                 IssaPluginPlugin.Log.LogWarning("[Bear] Player does not have Bear item equipped.");
                 return;
