@@ -186,24 +186,30 @@ namespace IssaPlugin.Patches
 
             // ---- Gunship ----
             if (nowTargetingGunship && !_wasTargetingGunship)
-            {
                 IssaPluginPlugin.Log.LogInfo("[LockOn] Locked onto AC130 gunship.");
+
+            // Send every frame while locked on, not just the rising edge.
+            // On a listen server, NetworkClient.Send() is buffered and processed
+            // at end-of-frame. If the player fires in the same frame they first
+            // lock on, ServerInitialize runs before the message is processed and
+            // PendingGunshipHoming would be false. Sending each frame guarantees
+            // the flag is set from the previous frame before any rocket fires.
+            if (nowTargetingGunship)
                 NetworkClient.Send(new AC130PrepareHomingMessage());
-            }
 
             // ---- Bomber ----
             if (nowTargetingBomber && !_wasTargetingBomber)
-            {
                 IssaPluginPlugin.Log.LogInfo("[LockOn] Locked onto stealth bomber.");
+
+            if (nowTargetingBomber)
                 NetworkClient.Send(new BomberPrepareHomingMessage());
-            }
 
             // ---- Donut ----
             if (nowTargetingDonut && !_wasTargetingDonut)
-            {
                 IssaPluginPlugin.Log.LogInfo("[LockOn] Locked onto Donut.");
+
+            if (nowTargetingDonut)
                 NetworkClient.Send(new DonutPrepareHomingMessage());
-            }
 
             _wasTargetingGunship = nowTargetingGunship;
             _wasTargetingBomber = nowTargetingBomber;
