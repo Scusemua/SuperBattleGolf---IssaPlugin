@@ -562,7 +562,6 @@ namespace IssaPlugin.Patches
                 equippedItem = ItemType.RocketLauncher;
             }
             else if (equippedItem != BatItem.BatItemType)
-                equippedItem = ItemType.OrbitalLaser;
             {
                 equippedItem = ItemType.OrbitalLaser;
             }
