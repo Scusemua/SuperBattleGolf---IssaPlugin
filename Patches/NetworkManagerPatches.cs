@@ -653,12 +653,19 @@ namespace IssaPlugin.Patches
             );
 
             // Bear hit by gun or melee — spawn blood splatter on all clients
-            Writer<BearHitVfxMessage>.write =
-                BearHitVfxMessageSerialization.WriteBearHitVfxMessage;
-            Reader<BearHitVfxMessage>.read =
-                BearHitVfxMessageSerialization.ReadBearHitVfxMessage;
+            Writer<BearHitVfxMessage>.write = BearHitVfxMessageSerialization.WriteBearHitVfxMessage;
+            Reader<BearHitVfxMessage>.read = BearHitVfxMessageSerialization.ReadBearHitVfxMessage;
             NetworkClient.RegisterHandler<BearHitVfxMessage>(msg =>
                 BloodSplatterHelper.SpawnBloodSplatter(msg.HitPoint, msg.AttackerOrigin)
+            );
+
+            // Bear HP changed — update world-space health bar on all clients
+            Writer<BearHPUpdateMessage>.write =
+                BearHPUpdateMessageSerialization.WriteBearHPUpdateMessage;
+            Reader<BearHPUpdateMessage>.read =
+                BearHPUpdateMessageSerialization.ReadBearHPUpdateMessage;
+            NetworkClient.RegisterHandler<BearHPUpdateMessage>(
+                IssaPlugin.Overlays.BearHealthBarOverlay.HandleBearHPUpdate
             );
 
             // ── Server → Owning Client only (TargetRpc replacements) ─────────────────

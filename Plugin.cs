@@ -50,6 +50,7 @@ namespace IssaPlugin
             gameObject.AddComponent<LowGravityHandler>();
             gameObject.AddComponent<SniperScopeOverlay>();
             gameObject.AddComponent<BearOverlay>();
+            gameObject.AddComponent<BearHealthBarOverlay>();
 
             Log.LogInfo("IssaPlugin by Scusemua has loaded.");
         }

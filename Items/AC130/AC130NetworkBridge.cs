@@ -269,10 +269,13 @@ namespace IssaPlugin.Items
         /// </summary>
         public void ServerPrepareGunshipRocket()
         {
-            // Use the global static so ANY player can flag homing, not just the
-            // AC130 owner (whose _serverGunship is non-null only on their own bridge).
-            if (ActiveGunship == null)
-                return;
+            // No ActiveGunship null-guard here — mirrors ServerPrepareBomberRocket which
+            // also sets the flag unconditionally. GunshipRocketHomingPatch verifies the
+            // AC130GunshipMarker exists in the scene before attaching homing, so if no
+            // gunship is present the flag is set but safely ignored at fire time.
+            // The old guard (if ActiveGunship == null) return) caused homing to silently
+            // fail during fly-out because ReleaseGlobalLock() nulls _activeSessionBridge
+            // before the gunship is destroyed.
             PendingGunshipHoming = true;
         }
 

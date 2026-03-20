@@ -3,18 +3,16 @@ using UnityEngine;
 
 namespace IssaPlugin.Items
 {
-    /// <summary>
     /// Attached server-side to a Rocket when a player fires the rocket launcher
-    /// while locked onto the AC130 gunship. Steers the rocket toward the gunship
+    /// while locked onto a custom item. Steers the rocket toward the item
     /// Transform each FixedUpdate using the same RotateTowards logic the base
     /// game uses for player-to-player homing.
     ///
     /// Mirrors the rocket's velocity direction only — speed is preserved.
     /// Destroyed automatically when the rocket's GameObject is destroyed.
-    /// </summary>
-    public class GunshipHomingBehaviour : MonoBehaviour
+    public class RocketHomingBehaviour : MonoBehaviour
     {
-        /// <summary>The gunship Transform to home toward. Set immediately after AddComponent.</summary>
+        /// The item Transform to home toward. Set immediately after AddComponent.
         public Transform Target;
 
         private Rigidbody _rb;
@@ -23,7 +21,7 @@ namespace IssaPlugin.Items
         {
             _rb = GetComponent<Rigidbody>();
             if (_rb == null)
-                IssaPluginPlugin.Log.LogWarning("[GunshipHoming] No Rigidbody on rocket.");
+                IssaPluginPlugin.Log.LogWarning("[RocketHomingBehaviour] No Rigidbody on rocket.");
         }
 
         private void FixedUpdate()
@@ -36,7 +34,8 @@ namespace IssaPlugin.Items
             Vector3 toTarget = Target.position - _rb.worldCenterOfMass;
             float distToTarget = toTarget.magnitude;
 
-            // The gunship has no physics collider, so the rocket never collides with it.
+            // The custom item may not have a physics collider,
+            // in which case the rocket never collides with it.
             // Detonate via proximity fuse when close enough.
             float proximityFuse = Configuration.AC130RocketProximityFuse.Value;
             if (distToTarget <= proximityFuse)

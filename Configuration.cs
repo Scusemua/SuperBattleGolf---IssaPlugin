@@ -190,7 +190,16 @@ namespace IssaPlugin
         public static ConfigEntry<float> BearStunDuration { get; private set; }
         public static ConfigEntry<float> BearEnrageDuration { get; private set; }
         public static ConfigEntry<float> BearEnrageSpeedMultiplier { get; private set; }
-        public static ConfigEntry<float> BearHitsToKill { get; private set; }
+        public static ConfigEntry<float> BearMaxHP { get; private set; }
+        public static ConfigEntry<float> BearDamageDuelingPistol { get; private set; }
+        public static ConfigEntry<float> BearDamageElephantGun { get; private set; }
+        public static ConfigEntry<float> BearDamageRocketDirect { get; private set; }
+        public static ConfigEntry<float> BearDamageRocketExplosion { get; private set; }
+        public static ConfigEntry<float> BearDamageGolfClub { get; private set; }
+        public static ConfigEntry<float> BearDamageBaseballBat { get; private set; }
+        public static ConfigEntry<float> BearDamageOrbitalLaser { get; private set; }
+        public static ConfigEntry<float> BearMeleeKnockbackForce { get; private set; }
+        public static ConfigEntry<float> BearBatKnockbackForce { get; private set; }
         public static ConfigEntry<float> BearMaxClimbHeight { get; private set; }
         public static ConfigEntry<float> BearTargetLockDuration { get; private set; }
         public static ConfigEntry<float> BearTargetStealThreshold { get; private set; }
@@ -1283,11 +1292,65 @@ namespace IssaPlugin
                 1.5f,
                 "Speed multiplier applied to RunSpeed during enrage."
             );
-            BearHitsToKill = cfg.Bind(
+            BearMaxHP = cfg.Bind(
                 "Bear",
-                "HitsToKill",
-                2f,
-                "Hits required to kill a bear (rockets, guns, and melee all count). 0 = invincible."
+                "MaxHP",
+                100f,
+                "Maximum HP for a bear. Each hit reduces HP by the weapon's damage value; bear dies at 0."
+            );
+            BearDamageDuelingPistol = cfg.Bind(
+                "Bear",
+                "DamageDuelingPistol",
+                25f,
+                "HP damage dealt to a bear by a dueling pistol shot."
+            );
+            BearDamageElephantGun = cfg.Bind(
+                "Bear",
+                "DamageElephantGun",
+                50f,
+                "HP damage dealt to a bear by an elephant gun shot."
+            );
+            BearDamageRocketDirect = cfg.Bind(
+                "Bear",
+                "DamageRocketDirect",
+                100f,
+                "HP damage dealt to a bear by a direct rocket hit (explosion centre within 1.5 units)."
+            );
+            BearDamageRocketExplosion = cfg.Bind(
+                "Bear",
+                "DamageRocketExplosion",
+                35f,
+                "HP damage dealt to a bear by rocket splash damage (not a direct hit)."
+            );
+            BearDamageGolfClub = cfg.Bind(
+                "Bear",
+                "DamageGolfClub",
+                25f,
+                "HP damage dealt to a bear by a golf club swing."
+            );
+            BearDamageBaseballBat = cfg.Bind(
+                "Bear",
+                "DamageBaseballBat",
+                40f,
+                "HP damage dealt to a bear by a baseball bat swing."
+            );
+            BearDamageOrbitalLaser = cfg.Bind(
+                "Bear",
+                "DamageOrbitalLaser",
+                100f,
+                "HP damage dealt to a bear by the orbital laser."
+            );
+            BearMeleeKnockbackForce = cfg.Bind(
+                "Bear",
+                "MeleeKnockbackForce",
+                12f,
+                "Impulse force applied to a bear's rigidbody when hit by a golf club swing."
+            );
+            BearBatKnockbackForce = cfg.Bind(
+                "Bear",
+                "BatKnockbackForce",
+                22f,
+                "Impulse force applied to a bear's rigidbody when hit by a baseball bat swing."
             );
             BearMaxClimbHeight = cfg.Bind(
                 "Bear",

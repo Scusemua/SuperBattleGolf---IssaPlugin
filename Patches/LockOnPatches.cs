@@ -236,10 +236,10 @@ namespace IssaPlugin.Patches
     //  Patch 4: Rocket.ServerInitialize (postfix)
     //
     //  When a rocket is spawned on the server, check if the launcher's
-    //  bridge has a pending homing flag. If so, attach GunshipHomingBehaviour
+    //  bridge has a pending homing flag. If so, attach RocketHomingBehaviour
     //  toward the appropriate target and clear the flag.
     //
-    //  GunshipHomingBehaviour is generic (just needs a Transform Target) and
+    //  RocketHomingBehaviour is generic (just needs a Transform Target) and
     //  is reused as-is for both the gunship and the bomber proxy.
     // ====================================================================
     [HarmonyPatch(typeof(Rocket), "ServerInitialize")]
@@ -260,7 +260,7 @@ namespace IssaPlugin.Patches
                 if (gunshipMarker != null)
                 {
                     ac130Bridge.PendingGunshipHoming = false;
-                    var homing = __instance.gameObject.AddComponent<GunshipHomingBehaviour>();
+                    var homing = __instance.gameObject.AddComponent<RocketHomingBehaviour>();
                     homing.Target = gunshipMarker.transform;
                     IssaPluginPlugin.Log.LogInfo(
                         $"[LockOn] Rocket homing toward gunship at {gunshipMarker.transform.position}."
@@ -276,7 +276,7 @@ namespace IssaPlugin.Patches
                 if (bomberMarker != null)
                 {
                     bomberBridge.PendingBomberHoming = false;
-                    var homing = __instance.gameObject.AddComponent<GunshipHomingBehaviour>();
+                    var homing = __instance.gameObject.AddComponent<RocketHomingBehaviour>();
                     homing.Target = bomberMarker.transform;
                     IssaPluginPlugin.Log.LogInfo(
                         $"[LockOn] Rocket homing toward bomber at {bomberMarker.transform.position}."
@@ -292,10 +292,26 @@ namespace IssaPlugin.Patches
                 if (donutMarker != null)
                 {
                     donutBridge.PendingDonutHoming = false;
-                    var homing = __instance.gameObject.AddComponent<GunshipHomingBehaviour>();
+                    var homing = __instance.gameObject.AddComponent<RocketHomingBehaviour>();
                     homing.Target = donutMarker.transform;
                     IssaPluginPlugin.Log.LogInfo(
                         $"[LockOn] Rocket homing toward Donut at {donutMarker.transform.position}."
+                    );
+                }
+            }
+
+            // ---- Bear homing ----
+            var bearBridge = launcher.GetComponent<BearNetworkBridge>();
+            if (bearBridge != null && bearBridge.PendingBearHoming)
+            {
+                var bearMarker = Object.FindFirstObjectByType<BearMarker>();
+                if (bearMarker != null)
+                {
+                    bearBridge.PendingBearHoming = false;
+                    var homing = __instance.gameObject.AddComponent<RocketHomingBehaviour>();
+                    homing.Target = bearMarker.transform;
+                    IssaPluginPlugin.Log.LogInfo(
+                        $"[LockOn] Rocket homing toward Bear at {bearMarker.transform.position}."
                     );
                 }
             }

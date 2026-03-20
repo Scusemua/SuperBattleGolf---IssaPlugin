@@ -32,6 +32,11 @@ namespace IssaPlugin.Items
         /// locate the visual and switch it to crash behaviour.
         public static GameObject ActiveBomberVisual { get; set; }
 
+        /// Instance IDs of rockets that were dropped by the bombing run itself.
+        /// Used by Patch_Rocket_ServerExplode to prevent a bomber's own bombs
+        /// from counting as a hit on the bomber's own proxy.
+        internal static readonly HashSet<int> ActiveBomberDropRocketIds = new();
+
         private class TargetingResult
         {
             public BombingStripInfo? Strip;
@@ -622,6 +627,7 @@ namespace IssaPlugin.Items
             NetworkServer.Spawn(rocket.gameObject, (NetworkConnectionToClient)null);
 
             ExplosionScaler.Register(rocket, Configuration.StealthBomberExplosionScale.Value);
+            ActiveBomberDropRocketIds.Add(rocket.GetInstanceID());
         }
     }
 }

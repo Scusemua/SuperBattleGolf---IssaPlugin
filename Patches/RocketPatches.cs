@@ -35,6 +35,12 @@ namespace IssaPlugin.Patches
                 QueryTriggerInteraction.Collide
             );
 
+            // Remove returns true if the ID was present, cleaning up the set at the
+            // same time. Bombing-run rockets must not count as hits on their own proxy.
+            bool isBomberDrop = StealthBomberItem.ActiveBomberDropRocketIds.Remove(
+                __instance.GetInstanceID()
+            );
+
             foreach (var hit in hits)
             {
                 var ac130HitReceiver = hit.GetComponentInParent<AC130HitReceiver>();
@@ -46,11 +52,14 @@ namespace IssaPlugin.Patches
                     ac130HitReceiver.OnHit?.Invoke();
                 }
 
-                var stealthBomberProxy = hit.GetComponentInParent<BomberProxyBehaviour>();
-                if (stealthBomberProxy != null)
+                if (!isBomberDrop)
                 {
-                    stealthBomberProxy.LastHitWorldPos = worldPosition;
-                    stealthBomberProxy.OnHit();
+                    var stealthBomberProxy = hit.GetComponentInParent<BomberProxyBehaviour>();
+                    if (stealthBomberProxy != null)
+                    {
+                        stealthBomberProxy.LastHitWorldPos = worldPosition;
+                        stealthBomberProxy.OnHit();
+                    }
                 }
 
                 var donutHitReceiver = hit.GetComponentInParent<DonutHitReceiver>();
