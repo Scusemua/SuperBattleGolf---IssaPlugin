@@ -231,7 +231,7 @@ namespace IssaPlugin.Items
                 float bonusForceMult = 1.0f;
                 if (col.GetComponentInParent<GolfCartInfo>() != null)
                 {
-                    bonusForceMult = 2.0f;
+                    bonusForceMult = Configuration.BlackHoleGrenadeBonusGolfCartForceMultiplier.Value;
                 }
 
                 // Quadratic falloff — matches the client-side curve so proximity
