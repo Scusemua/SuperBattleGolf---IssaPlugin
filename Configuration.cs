@@ -200,6 +200,11 @@ namespace IssaPlugin
         public static ConfigEntry<float> BlackHoleGrenadeSpitVfxScale { get; private set; }
         public static ConfigEntry<float> BlackHoleGrenadeKnockdownRadius { get; private set; }
         public static ConfigEntry<bool> BlackHoleGrenadeExcludeThrower { get; private set; }
+        public static ConfigEntry<float> BlackHoleGrenadeBonusGolfCartForceMultiplier
+        {
+            get;
+            private set;
+        }
 
         // --- Bear ---
         public static ConfigEntry<Key> BearGiveKey { get; private set; }
@@ -1411,6 +1416,13 @@ namespace IssaPlugin
                 "ExcludeThrower",
                 false,
                 "If true, the player who threw the grenade is not affected by suction or spit."
+            );
+
+            BlackHoleGrenadeBonusGolfCartForceMultiplier = cfg.Bind(
+                "BlackHoleGrenade",
+                "BonusGolfCartForceMultiplier",
+                2.0f,
+                "Additional force multiplier applied to golf carts."
             );
 
             // --- Bear ---

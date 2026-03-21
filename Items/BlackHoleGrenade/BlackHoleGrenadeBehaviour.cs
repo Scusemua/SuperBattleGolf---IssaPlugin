@@ -168,7 +168,7 @@ namespace IssaPlugin.Items
                     new BlackHoleGrenadeLandedMessage
                     {
                         BlackHoleNetId = ni != null ? ni.netId : 0u,
-                        BlackHolePosition = transform.position,
+                        BlackHolePosition = new Vector3(transform.position.x, transform.position.y + 5f, transform.position.z),
                         ThrowerInfo = ThrowerInfo,
                         SuckDuration = SuckDuration,
                         SuckRadius = SuckRadius,
@@ -192,6 +192,7 @@ namespace IssaPlugin.Items
         private void ApplySuctionToNonPlayers()
         {
             Vector3 center = transform.position;
+            Vector3 blackHolePos = new Vector3(center.x, center.y + 5f, center.z);
 
             // Use ~0 (all layers) so golf balls, golf carts, dropped items, and
             // anything else with a Rigidbody are caught regardless of their layer.
@@ -199,7 +200,7 @@ namespace IssaPlugin.Items
             // (e.g. golf balls are typically on Default or a dedicated ball layer).
             // The Rigidbody null-check and player filter below handle exclusions.
             var hits = Physics.OverlapSphere(
-                center,
+                blackHolePos,
                 SuckRadius,
                 ~0,
                 QueryTriggerInteraction.Ignore
@@ -217,21 +218,27 @@ namespace IssaPlugin.Items
                 if (col.GetComponentInParent<PlayerInfo>() != null)
                     continue;
 
-                var rb = col.GetComponentInParent<Rigidbody>();
-                if (rb == null || rb.isKinematic || seen.Contains(rb))
+                var rb = col.attachedRigidbody;
+                if (rb == null || seen.Contains(rb))
                     continue;
                 seen.Add(rb);
 
-                Vector3 toCenter = center - rb.position;
+                Vector3 toCenter = blackHolePos - rb.position;
                 float dist = toCenter.magnitude;
                 if (dist < 0.01f)
                     continue;
+                
+                float bonusForceMult = 1.0f;
+                if (col.GetComponentInParent<GolfCartInfo>() != null)
+                {
+                    bonusForceMult = 2.0f;
+                }
 
                 // Quadratic falloff — matches the client-side curve so proximity
                 // scaling feels consistent for all object types.
                 float t = 1f - dist / SuckRadius;
                 t *= t;
-                float intensity = Mathf.Lerp(SuckForce, MaxSuckForce, t);
+                float intensity = Mathf.Lerp(SuckForce, MaxSuckForce, t) * bonusForceMult;
 
                 rb.AddForce(toCenter.normalized * intensity, ForceMode.Acceleration);
             }
@@ -270,8 +277,8 @@ namespace IssaPlugin.Items
                 if (col.GetComponentInParent<PlayerInfo>() != null)
                     continue;
 
-                var rb = col.GetComponentInParent<Rigidbody>();
-                if (rb == null || rb.isKinematic || seen.Contains(rb))
+                var rb = col.attachedRigidbody;
+                if (rb == null || seen.Contains(rb))
                     continue;
                 seen.Add(rb);
 
