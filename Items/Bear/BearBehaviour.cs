@@ -61,6 +61,10 @@ namespace IssaPlugin.Items
         // Destroy guard — prevents repeated NetworkServer.Destroy calls in Dead state
         private bool _destroying;
 
+        // Set by BlackHoleGrenadeBehaviour each physics tick while this bear is in
+        // suction range.  Prevents MoveInDirection from overwriting the applied force.
+        private float _blackHoleSuppressedUntil;
+
         // ── Unity lifecycle ───────────────────────────────────────────────────
 
         private void Start()
@@ -119,6 +123,11 @@ namespace IssaPlugin.Items
 
         private void UpdateStateMachine()
         {
+            // While a black hole is actively pulling this bear, suppress all AI
+            // velocity writes so the applied force can move the bear freely.
+            if (Time.fixedTime < _blackHoleSuppressedUntil)
+                return;
+
             switch (_state)
             {
                 case BearAIState.Spawning:
@@ -578,6 +587,28 @@ namespace IssaPlugin.Items
             TransitionTo(BearAIState.Stunned);
 
             IssaPluginPlugin.Log.LogInfo("[Bear] Bear stunned by explosion.");
+        }
+
+        /// <summary>
+        /// Called each physics tick by BlackHoleGrenadeBehaviour while this bear is
+        /// within suction range.  Extends the AI suppression window so MoveInDirection
+        /// does not overwrite the suction force applied to the Rigidbody.
+        /// </summary>
+        public void NotifyBlackHoleSuction()
+        {
+            // Two fixed ticks ahead prevents a gap if the black hole's FixedUpdate
+            // runs just before ours in the same frame.
+            _blackHoleSuppressedUntil = Time.fixedTime + Time.fixedDeltaTime * 2f;
+        }
+
+        /// <summary>
+        /// Called by BlackHoleGrenadeBehaviour immediately before applying the spit
+        /// velocity.  Suppresses AI movement for long enough that the bear actually
+        /// flies rather than having its velocity overwritten on the next FixedUpdate.
+        /// </summary>
+        public void NotifyBlackHoleSpitLaunch()
+        {
+            _blackHoleSuppressedUntil = Time.fixedTime + 2f;
         }
 
         /// <summary>

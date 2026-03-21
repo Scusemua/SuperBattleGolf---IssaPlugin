@@ -248,6 +248,10 @@ namespace IssaPlugin.Items
                 float intensity = Mathf.Lerp(SuckForce, MaxSuckForce, t) * bonusForceMult;
 
                 rb.AddForce(toCenter.normalized * intensity, ForceMode.Acceleration);
+
+                // Suppress the bear's AI velocity writes so the suction force is
+                // not overwritten by MoveInDirection on the bear's next FixedUpdate.
+                rb.GetComponent<BearBehaviour>()?.NotifyBlackHoleSuction();
             }
         }
 
@@ -293,6 +297,10 @@ namespace IssaPlugin.Items
                 Vector3 dir = Random.onUnitSphere;
                 dir.y = Mathf.Abs(dir.y) + 0.5f;
                 dir = dir.normalized;
+
+                // Suppress the bear's AI for long enough that the spit velocity
+                // carries before MoveInDirection can overwrite it.
+                rb.GetComponent<BearBehaviour>()?.NotifyBlackHoleSpitLaunch();
 
                 rb.linearVelocity = dir * SpitForce;
             }
