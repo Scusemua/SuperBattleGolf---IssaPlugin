@@ -193,13 +193,15 @@ namespace IssaPlugin.Items
         {
             Vector3 center = transform.position;
 
-            // RocketHittablesMask covers golf balls, golf carts, and other hittable
-            // objects in addition to players.  We filter out players so clients
-            // handle their own player physics (mirrors the nuke's sky-blast pattern).
+            // Use ~0 (all layers) so golf balls, golf carts, dropped items, and
+            // anything else with a Rigidbody are caught regardless of their layer.
+            // RocketHittablesMask / GunHittablesMask do not cover all relevant layers
+            // (e.g. golf balls are typically on Default or a dedicated ball layer).
+            // The Rigidbody null-check and player filter below handle exclusions.
             var hits = Physics.OverlapSphere(
                 center,
                 SuckRadius,
-                GameManager.LayerSettings.RocketHittablesMask,
+                ~0,
                 QueryTriggerInteraction.Ignore
             );
 
@@ -216,7 +218,7 @@ namespace IssaPlugin.Items
                     continue;
 
                 var rb = col.GetComponentInParent<Rigidbody>();
-                if (rb == null || seen.Contains(rb))
+                if (rb == null || rb.isKinematic || seen.Contains(rb))
                     continue;
                 seen.Add(rb);
 
@@ -225,8 +227,10 @@ namespace IssaPlugin.Items
                 if (dist < 0.01f)
                     continue;
 
-                // Intensity scales from SuckForce at the edge to MaxSuckForce at center.
-                float t = Mathf.Clamp01(1f - (dist / SuckRadius));
+                // Quadratic falloff — matches the client-side curve so proximity
+                // scaling feels consistent for all object types.
+                float t = 1f - dist / SuckRadius;
+                t *= t;
                 float intensity = Mathf.Lerp(SuckForce, MaxSuckForce, t);
 
                 rb.AddForce(toCenter.normalized * intensity, ForceMode.Acceleration);
@@ -253,7 +257,7 @@ namespace IssaPlugin.Items
             var hits = Physics.OverlapSphere(
                 center,
                 SuckRadius,
-                GameManager.LayerSettings.RocketHittablesMask,
+                ~0,
                 QueryTriggerInteraction.Ignore
             );
 
@@ -267,7 +271,7 @@ namespace IssaPlugin.Items
                     continue;
 
                 var rb = col.GetComponentInParent<Rigidbody>();
-                if (rb == null || seen.Contains(rb))
+                if (rb == null || rb.isKinematic || seen.Contains(rb))
                     continue;
                 seen.Add(rb);
 

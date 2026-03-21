@@ -180,6 +180,7 @@ namespace IssaPlugin.Items
                 SuctionCoroutine(
                     msg.BlackHoleNetId,
                     msg.BlackHolePosition,
+                    msg.ThrowerInfo,
                     msg.SuckRadius,
                     msg.SuckForce,
                     msg.MaxSuckForce,
@@ -280,6 +281,7 @@ namespace IssaPlugin.Items
         private static IEnumerator SuctionCoroutine(
             uint blackHoleNetId,
             Vector3 blackHolePos,
+            PlayerInfo throwerInfo,
             float radius,
             float baseForce,
             float maxForce,
@@ -290,6 +292,8 @@ namespace IssaPlugin.Items
             // Add a small buffer so the coroutine outlives the server suck phase
             // and the spit message arrives before the timeout kills it.
             float timeout = duration + 3f;
+
+            float knockdownCooldown = 0f;
 
             while (elapsed < timeout)
             {
@@ -305,12 +309,69 @@ namespace IssaPlugin.Items
 
                     if (dist < radius && dist > 0.01f)
                     {
-                        float t = Mathf.Clamp01(1f - (dist / radius));
-                        float intensity = Mathf.Lerp(baseForce, maxForce, t);
-                        rb.AddForce(
-                            toCenter.normalized * intensity,
-                            ForceMode.Acceleration
-                        );
+                        Vector3 dir = toCenter.normalized;
+
+                        // Quadratic falloff: stays gentle at the edge but builds
+                        // rapidly as the player nears the center, making the
+                        // proximity difference clearly perceptible.
+                        float t = 1f - dist / radius;
+                        t *= t;
+                        float targetSpeed = Mathf.Lerp(baseForce, maxForce, t);
+
+                        // Enforce a minimum toward-center speed rather than just
+                        // adding acceleration.  Player movement systems typically
+                        // set rb.linearVelocity directly each FixedUpdate, which
+                        // overwrites accumulated AddForce values before they take
+                        // effect.  By measuring the existing toward-center component
+                        // and only adding the deficit as VelocityChange, the pull
+                        // wins regardless of when in the frame order it runs.
+                        float currentTowardCenter = Vector3.Dot(rb.linearVelocity, dir);
+                        if (currentTowardCenter < targetSpeed)
+                            rb.AddForce(
+                                dir * (targetSpeed - currentTowardCenter),
+                                ForceMode.VelocityChange
+                            );
+
+                        // Knock the player down once they enter the knockdown radius,
+                        // then respect a cooldown so we don't hammer the server every frame.
+                        float knockdownRadius =
+                            Configuration.BlackHoleGrenadeKnockdownRadius.Value;
+                        knockdownCooldown -= Time.fixedDeltaTime;
+                        if (
+                            knockdownRadius > 0f
+                            && dist < knockdownRadius
+                            && knockdownCooldown <= 0f
+                        )
+                        {
+                            var movement = localInfo.Movement;
+                            if (movement != null)
+                            {
+                                // Small inward impulse so the knockdown direction matches
+                                // the pull rather than feeling random.
+                                Vector3 knockVelocity = dir * Mathf.Min(targetSpeed, 8f);
+                                bool _;
+                                movement.TryKnockOut(
+                                    throwerInfo,
+                                    KnockoutType.Rocket,
+                                    false,
+                                    movement.transform.InverseTransformPoint(blackHolePos),
+                                    dist,
+                                    knockVelocity,
+                                    false,
+                                    new ItemUseId(
+                                        throwerInfo.PlayerId.Guid,
+                                        BlackHoleGrenadeItem.NextUseIndex(),
+                                        ItemType.RocketLauncher
+                                    ),
+                                    false,
+                                    true,
+                                    out _
+                                );
+                                // Cooldown long enough to cover a typical knockout duration
+                                // so we don't re-trigger before the player stands back up.
+                                knockdownCooldown = 3f;
+                            }
+                        }
                     }
                 }
 

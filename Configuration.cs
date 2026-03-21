@@ -198,6 +198,7 @@ namespace IssaPlugin
         public static ConfigEntry<float> BlackHoleGrenadeMaxSuckForce { get; private set; }
         public static ConfigEntry<float> BlackHoleGrenadeSpitForce { get; private set; }
         public static ConfigEntry<float> BlackHoleGrenadeSpitVfxScale { get; private set; }
+        public static ConfigEntry<float> BlackHoleGrenadeKnockdownRadius { get; private set; }
         public static ConfigEntry<bool> BlackHoleGrenadeExcludeThrower { get; private set; }
 
         // --- Bear ---
@@ -1395,6 +1396,14 @@ namespace IssaPlugin
                 "SpitVfxScale",
                 3f,
                 "Scale of the explosion VFX played on all clients when the black hole collapses."
+            );
+
+            BlackHoleGrenadeKnockdownRadius = cfg.Bind(
+                "BlackHoleGrenade",
+                "KnockdownRadius",
+                15f,
+                "Distance from the black hole at which a player gets knocked down. "
+                    + "Must be less than SuckRadius. Set to 0 to disable."
             );
 
             BlackHoleGrenadeExcludeThrower = cfg.Bind(

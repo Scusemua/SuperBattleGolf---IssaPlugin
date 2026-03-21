@@ -247,7 +247,7 @@ namespace IssaPlugin.Items
             // Nuke-specific explosion VFX — load from a dedicated prefab first,
             // fall back to NukeVerticalExplosionFire if it isn't in the bundle yet.
             NukeExplosionVfxPrefab =
-                Load<GameObject>("nuke_explosion.prefab") ?? MaydayExplosionVfxPrefab;
+                Load<GameObject>("nuclear_explosion.prefab") ?? MaydayExplosionVfxPrefab;
             NukeExplosionClip = MaydayImpactClip;
 
             BlackHoleGrenadeIcon = LoadSprite("black_hole_grenade_icon.png");
