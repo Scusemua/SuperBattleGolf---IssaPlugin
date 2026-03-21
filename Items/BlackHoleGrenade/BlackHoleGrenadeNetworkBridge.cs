@@ -251,20 +251,22 @@ namespace IssaPlugin.Items
 
             rb.AddForce(velocityChange, ForceMode.VelocityChange);
 
-            bool _;
-            movement.TryKnockOut(
-                msg.ThrowerInfo,
-                KnockoutType.Rocket,
-                false,
-                movement.transform.InverseTransformPoint(msg.BlackHolePosition),
-                dist,
-                velocityChange,
-                false,
-                msg.ItemUseId,
-                false,
-                true,
-                out _
-            );
+            if (!localInfo.ActiveGolfCartSeat.IsValid() /* not in golf cart */) {
+                bool _;
+                movement.TryKnockOut(
+                    msg.ThrowerInfo,
+                    KnockoutType.Rocket,
+                    false,
+                    movement.transform.InverseTransformPoint(msg.BlackHolePosition),
+                    dist,
+                    velocityChange,
+                    false,
+                    msg.ItemUseId,
+                    false,
+                    true,
+                    out _
+                );
+            }
 
             PlaySpitVfx(msg.BlackHolePosition);
 
@@ -344,7 +346,7 @@ namespace IssaPlugin.Items
                         )
                         {
                             var movement = localInfo.Movement;
-                            if (movement != null)
+                            if (movement != null && !localInfo.ActiveGolfCartSeat.IsValid() /*not in golf cart*/) 
                             {
                                 // Small inward impulse so the knockdown direction matches
                                 // the pull rather than feeling random.
