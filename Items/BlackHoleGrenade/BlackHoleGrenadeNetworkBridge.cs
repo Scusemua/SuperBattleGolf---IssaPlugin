@@ -237,7 +237,14 @@ namespace IssaPlugin.Items
 
             var movement = localInfo.Movement;
             var rb = localInfo.GetComponentInParent<Rigidbody>();
-            if (movement == null || rb == null)
+
+            // When in a golf cart, spit the cart instead (driver has authority).
+            var spitSeat = localInfo.ActiveGolfCartSeat;
+            Rigidbody spitTarget = spitSeat.IsValid() && spitSeat.golfCart != null
+                ? spitSeat.golfCart.AsEntity.Rigidbody
+                : rb;
+
+            if (movement == null || spitTarget == null)
             {
                 PlaySpitVfx(msg.BlackHolePosition);
                 return;
@@ -249,7 +256,7 @@ namespace IssaPlugin.Items
             dir = dir.normalized;
             Vector3 velocityChange = dir * msg.SpitForce;
 
-            rb.AddForce(velocityChange, ForceMode.VelocityChange);
+            spitTarget.AddForce(velocityChange, ForceMode.VelocityChange);
 
             if (!localInfo.ActiveGolfCartSeat.IsValid() /* not in golf cart */) {
                 bool _;
@@ -304,12 +311,29 @@ namespace IssaPlugin.Items
                     yield break;
 
                 var rb = localInfo.GetComponentInParent<Rigidbody>();
-                if (rb != null)
-                {
-                    Vector3 toCenter = blackHolePos - rb.position;
-                    float dist = toCenter.magnitude;
 
-                    if (dist < radius && dist > 0.01f)
+                Vector3 playerPos = rb != null ? rb.position : localInfo.transform.position;
+                Vector3 toCenter = blackHolePos - playerPos;
+                float dist = toCenter.magnitude;
+
+                // When the player is in a golf cart the server applies suction
+                // directly to the cart's Rigidbody (a server-authoritative object).
+                // The player follows the cart, so we skip client-side force here to
+                // avoid fighting the NetworkTransform sync.
+                var seat = localInfo.ActiveGolfCartSeat;
+                bool inCart = seat.IsValid();
+
+                if (dist < radius && dist > 0.01f)
+                {
+                    // When the player is in a golf cart the driver's client has
+                    // authority over the cart's Rigidbody, so apply force to the
+                    // cart rather than to the player.  The server skips occupied
+                    // carts, so there is no double-application.
+                    Rigidbody forceTarget = inCart && seat.golfCart != null
+                        ? seat.golfCart.AsEntity.Rigidbody
+                        : rb;
+
+                    if (forceTarget != null)
                     {
                         Vector3 dir = toCenter.normalized;
 
@@ -327,54 +351,65 @@ namespace IssaPlugin.Items
                         // effect.  By measuring the existing toward-center component
                         // and only adding the deficit as VelocityChange, the pull
                         // wins regardless of when in the frame order it runs.
-                        float currentTowardCenter = Vector3.Dot(rb.linearVelocity, dir);
+                        float currentTowardCenter = Vector3.Dot(forceTarget.linearVelocity, dir);
                         if (currentTowardCenter < targetSpeed)
-                            rb.AddForce(
+                            forceTarget.AddForce(
                                 dir * (targetSpeed - currentTowardCenter),
                                 ForceMode.VelocityChange
                             );
-
-                        // Knock the player down once they enter the knockdown radius,
-                        // then respect a cooldown so we don't hammer the server every frame.
-                        float knockdownRadius =
-                            Configuration.BlackHoleGrenadeKnockdownRadius.Value;
-                        knockdownCooldown -= Time.fixedDeltaTime;
-                        if (
-                            knockdownRadius > 0f
-                            && dist < knockdownRadius
-                            && knockdownCooldown <= 0f
-                        )
-                        {
-                            var movement = localInfo.Movement;
-                            if (movement != null && !localInfo.ActiveGolfCartSeat.IsValid() /*not in golf cart*/) 
-                            {
-                                // Small inward impulse so the knockdown direction matches
-                                // the pull rather than feeling random.
-                                Vector3 knockVelocity = dir * Mathf.Min(targetSpeed, 8f);
-                                bool _;
-                                movement.TryKnockOut(
-                                    throwerInfo,
-                                    KnockoutType.Rocket,
-                                    false,
-                                    movement.transform.InverseTransformPoint(blackHolePos),
-                                    dist,
-                                    knockVelocity,
-                                    false,
-                                    new ItemUseId(
-                                        throwerInfo.PlayerId.Guid,
-                                        BlackHoleGrenadeItem.NextUseIndex(),
-                                        ItemType.RocketLauncher
-                                    ),
-                                    false,
-                                    true,
-                                    out _
-                                );
-                                // Cooldown long enough to cover a typical knockout duration
-                                // so we don't re-trigger before the player stands back up.
-                                knockdownCooldown = 3f;
-                            }
-                        }
                     }
+                }
+
+                if (dist >= radius || dist <= 0.01f)
+                {
+                    elapsed += Time.fixedDeltaTime;
+                    yield return new WaitForFixedUpdate();
+                    continue;
+                }
+
+                // Knock the player down once they enter the knockdown radius,
+                // then respect a cooldown so we don't hammer the server every frame.
+                float knockdownRadius =
+                    Configuration.BlackHoleGrenadeKnockdownRadius.Value;
+                knockdownCooldown -= Time.fixedDeltaTime;
+                if (
+                    knockdownRadius > 0f
+                    && dist < knockdownRadius
+                    && knockdownCooldown <= 0f
+                    && localInfo.Movement != null
+                    && !inCart
+                )
+                {
+                    var movement = localInfo.Movement;
+
+                    float tKnock = 1f - dist / radius;
+                    tKnock *= tKnock;
+                    float knockSpeed = Mathf.Min(Mathf.Lerp(baseForce, maxForce, tKnock), 8f);
+                    // Small inward impulse so the knockdown direction matches
+                    // the pull rather than feeling random.
+                    Vector3 knockVelocity = toCenter.normalized * knockSpeed;
+                    bool _;
+                    movement.TryKnockOut(
+                        throwerInfo,
+                        KnockoutType.Rocket,
+                        false,
+                        movement.transform.InverseTransformPoint(blackHolePos),
+                        dist,
+                        knockVelocity,
+                        false,
+                        new ItemUseId(
+                            throwerInfo.PlayerId.Guid,
+                            BlackHoleGrenadeItem.NextUseIndex(),
+                            ItemType.RocketLauncher
+                        ),
+                        false,
+                        true,
+                        out _
+                    );
+
+                    // Cooldown long enough to cover a typical knockout duration
+                    // so we don't re-trigger before the player stands back up.
+                    knockdownCooldown = 3f;
                 }
 
                 elapsed += Time.fixedDeltaTime;

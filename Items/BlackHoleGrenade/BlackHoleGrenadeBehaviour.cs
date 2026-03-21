@@ -214,8 +214,15 @@ namespace IssaPlugin.Items
                 if (col.transform.IsChildOf(transform) || col.transform == transform)
                     continue;
 
-                // Skip players — clients handle their own player physics
+                // Skip players — clients handle their own player physics.
                 if (col.GetComponentInParent<PlayerInfo>() != null)
+                    continue;
+
+                // Skip golf carts that have a driver: the driver's client has
+                // authority over the cart's Rigidbody and handles suction itself.
+                // Empty carts (no driver) are server-authoritative, so handle them here.
+                var cart = col.GetComponentInParent<GolfCartInfo>();
+                if (cart != null && cart.NetworkdriverSeatReserver != null)
                     continue;
 
                 var rb = col.attachedRigidbody;
