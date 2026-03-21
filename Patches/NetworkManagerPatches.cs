@@ -962,7 +962,7 @@ namespace IssaPlugin.Patches
                     msg.Position,
                     Quaternion.identity
                 );
-                vfx.transform.localScale = Vector3.one * msg.NukeExplosionVfxScale.Value;
+                vfx.transform.localScale = Vector3.one * msg.NukeExplosionVfxScale;
                 Object.Destroy(vfx, Configuration.NukeExplosionVfxDuration.Value);
             }
             else
@@ -972,7 +972,7 @@ namespace IssaPlugin.Patches
                     VfxType.RocketLauncherRocketExplosion,
                     msg.Position,
                     Quaternion.identity,
-                    Vector3.one * msg.NukeExplosionScale.Value
+                    Vector3.one * msg.NukeExplosionVfxScale
                 );
             }
 
