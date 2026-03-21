@@ -301,6 +301,7 @@ namespace IssaPlugin.Items
                     SpitForce = SpitForce,
                     ThrowerInfo = ThrowerInfo,
                     ItemUseId = ItemUseId,
+                    BlackHoleGrenadeSpitVfxScale = Configuration.BlackHoleGrenadeSpitVfxScale.Value,
                 }
             );
 

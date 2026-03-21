@@ -28,6 +28,7 @@ namespace IssaPlugin.Items
         public ItemUseId ItemUseId;
         public float SkyBlastForce;
         public float SkyBlastVerticalBias;
+        public float NukeExplosionVfxScale;
     }
 
     public static class NukeExplosionMessageSerialization
@@ -39,6 +40,7 @@ namespace IssaPlugin.Items
             w.Write(m.ItemUseId);
             w.WriteFloat(m.SkyBlastForce);
             w.WriteFloat(m.SkyBlastVerticalBias);
+            w.WriteFloat(m.NukeExplosionVfxScale);
         }
 
         public static NukeExplosionMessage ReadNukeExplosionMessage(NetworkReader r) =>
@@ -49,6 +51,7 @@ namespace IssaPlugin.Items
                 ItemUseId = r.Read<ItemUseId>(),
                 SkyBlastForce = r.ReadFloat(),
                 SkyBlastVerticalBias = r.ReadFloat(),
+                NukeExplosionVfxScale = r.ReadFloat(),
             };
     }
 }

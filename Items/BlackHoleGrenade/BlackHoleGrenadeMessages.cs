@@ -100,6 +100,7 @@ namespace IssaPlugin.Items
         public float SpitForce;
         public PlayerInfo ThrowerInfo;
         public ItemUseId ItemUseId;
+        public float BlackHoleGrenadeSpitVfxScale;
     }
 
     public static class BlackHoleGrenadeSpitMessageSerialization
@@ -115,6 +116,7 @@ namespace IssaPlugin.Items
             writer.WriteFloat(msg.SpitForce);
             writer.WriteNetworkBehaviour(msg.ThrowerInfo);
             writer.Write(msg.ItemUseId);
+            writer.Write(msg.BlackHoleGrenadeSpitVfxScale);
         }
 
         public static BlackHoleGrenadeSpitMessage ReadBlackHoleGrenadeSpitMessage(
@@ -128,6 +130,7 @@ namespace IssaPlugin.Items
                 SpitForce = reader.ReadFloat(),
                 ThrowerInfo = reader.ReadNetworkBehaviour<PlayerInfo>(),
                 ItemUseId = reader.Read<ItemUseId>(),
+                BlackHoleGrenadeSpitVfxScale = reader.ReadFloat(),
             };
     }
 }
