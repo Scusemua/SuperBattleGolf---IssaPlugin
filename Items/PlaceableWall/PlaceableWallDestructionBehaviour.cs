@@ -68,6 +68,11 @@ namespace IssaPlugin.Items {
                 Destroy(childTransform.gameObject, debrisLifetime);
             }
 
+            // Notify the wall root so it can clean up pillars/glued bricks once
+            // all chunks are gone.  Must be called before Destroy since the parent
+            // link is severed when the object is destroyed.
+            GetComponentInParent<PlaceableWallBehaviour>()?.OnChunkDeformed();
+
             // Destroy this chunk of the wall.
             Destroy(gameObject);
         }
