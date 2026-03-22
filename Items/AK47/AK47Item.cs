@@ -14,7 +14,7 @@ namespace IssaPlugin.Items
     /// Local-only — no NetworkBridge needed.
     /// ItemType 114.
     /// </summary>
-    public static class SubMachineGunItem
+    public static class AK47Item
     {
         // Prevents a second coroutine starting if OnUse is called while already firing
         // (e.g. if the game re-calls TryUseItem while held).
@@ -54,18 +54,21 @@ namespace IssaPlugin.Items
             _isFiring = true;
             ItemHelper.SetCurrentItemUse(inventory, ItemUseType.Regular);
 
+            // Play the shot sound once per trigger pull — calling it per-bullet exceeds
+            // the game's rate limiter for the elephant gun shot sound and flags cheating.
+            inventory.PlayerInfo.PlayerAudio.PlayElephantGunShotForAllClients();
+
             do
             {
                 int slot = inventory.EquippedItemIndex;
                 DoShoot(inventory);
-                inventory.PlayerInfo.PlayerAudio.PlayElephantGunShotForAllClients();
                 ItemHelper.DecrementAndRemove(inventory, slot);
 
                 // Stop if uses were exhausted (item removed from inventory).
-                if (inventory.GetEffectivelyEquippedItem(true) != ItemRegistry.SubMachineGunItemType)
+                if (inventory.GetEffectivelyEquippedItem(true) != ItemRegistry.AK47ItemType)
                     break;
 
-                yield return new WaitForSeconds(Configuration.SubMachineGunFireRate.Value);
+                yield return new WaitForSeconds(Configuration.AK47FireRate.Value);
 
             } while (Mouse.current != null && Mouse.current.leftButton.isPressed);
 
@@ -79,7 +82,7 @@ namespace IssaPlugin.Items
         {
             Vector3 barrelEnd = inventory.GetElephantGunBarrelEndPosition();
 
-            float maxAimDist = Configuration.SubMachineGunMaxAimingDistance.Value;
+            float maxAimDist = Configuration.AK47MaxAimingDistance.Value;
             Vector3 aimPoint = inventory.GetFirearmAimPoint(
                 maxAimDist,
                 GameManager.LayerSettings.GunHittablesMask,
@@ -96,11 +99,11 @@ namespace IssaPlugin.Items
                 );
             }
 
-            float inaccuracy = Configuration.SubMachineGunInaccuracy.Value;
+            float inaccuracy = Configuration.AK47Inaccuracy.Value;
             Vector3 dir = (aimPoint - barrelEnd).RandomlyRotatedDeg(inaccuracy);
             Ray ray = new Ray(barrelEnd, dir);
 
-            float maxShot = Configuration.SubMachineGunMaxShotDistance.Value;
+            float maxShot = Configuration.AK47MaxShotDistance.Value;
             int layerMask = GameManager.LayerSettings.GunHittablesMask;
             int hitCount = Physics.RaycastNonAlloc(
                 ray,
@@ -156,7 +159,7 @@ namespace IssaPlugin.Items
                 var useId = (ItemUseId)(
                     IncrementAndGetCurrentItemUseIdMethod?.Invoke(
                         inventory,
-                        new object[] { ItemRegistry.SubMachineGunItemType }
+                        new object[] { ItemRegistry.AK47ItemType }
                     ) ?? default(ItemUseId)
                 );
 

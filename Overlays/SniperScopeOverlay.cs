@@ -71,15 +71,14 @@ namespace IssaPlugin.Overlays
             // wins the frame for rendering and networking without fighting the physics step.
             if (!SniperRifleItem.IsScoped)
             {
-                if (Camera.main != null)
-                    GameManager
-                        .LocalPlayerInfo
-                        ?.Movement
-                        ?.transform.rotation = Quaternion.LookRotation(
-                            Camera.main.transform.forward.normalized
-                        );
                 return;
             }
+
+            CorrectAimRotation();
+        }
+
+        private void CorrectAimRotation()
+        {
             var li = GameManager.LocalPlayerInfo;
             if (li?.Movement == null)
                 return;
@@ -92,6 +91,17 @@ namespace IssaPlugin.Overlays
                 return;
             li.Movement.transform.rotation =
                 Quaternion.LookRotation(fwd.normalized) * Quaternion.Euler(0f, 65f, 0f);
+        }
+
+        private void FixLookRotationAfterScope()
+        {
+            if (Camera.main != null)
+                GameManager
+                    .LocalPlayerInfo
+                    ?.Movement
+                    ?.transform.rotation = Quaternion.LookRotation(
+                        Camera.main.transform.forward.normalized
+                    );
         }
 
         private void Update()
@@ -116,6 +126,7 @@ namespace IssaPlugin.Overlays
                         + $"  IsHoldingAimSwing={localInfo.Input?.IsHoldingAimSwing}"
                 );
                 localInfo.PlayerAudio.PlayGunAimForAllClients(ItemType.ElephantGun);
+                CorrectAimRotation();
             }
 
             if (sniperEquipped && !wantsScope && _prevScoped)
@@ -125,6 +136,7 @@ namespace IssaPlugin.Overlays
                     $"[Sniper] Scope EXIT — charYaw={rot.y:F1}"
                         + $"  IsAimingItem={localInfo.Inventory.IsAimingItem}"
                 );
+                FixLookRotationAfterScope();
             }
 
             _prevScoped = wantsScope;

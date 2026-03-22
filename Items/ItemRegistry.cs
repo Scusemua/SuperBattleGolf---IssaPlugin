@@ -27,7 +27,7 @@ namespace IssaPlugin.Items
         public static readonly ItemType NukeItemType = (ItemType)111;
         public static readonly ItemType BlackHoleGrenadeItemType = (ItemType)112;
         public static readonly ItemType PlaceableWallItemType = (ItemType)113;
-        public static readonly ItemType SubMachineGunItemType = (ItemType)114;
+        public static readonly ItemType AK47ItemType = (ItemType)114;
 
         // Static initialization order note: AllItems is a static field initializer that only
         // instantiates the definition objects; it does not call any abstract members. Properties like
@@ -50,7 +50,7 @@ namespace IssaPlugin.Items
                 new NukeItemDefinition(),
                 new BlackHoleGrenadeItemDefinition(),
                 new PlaceableWallItemDefinition(),
-                new SubMachineGunItemDefinition(),
+                new AK47ItemDefinition(),
             };
 
         private static IReadOnlyDictionary<int, CustomItemDefinition> _customItemDefinitionMap;

@@ -12,13 +12,15 @@ namespace IssaPlugin.Overlays
     /// Rendered with GL.QUADS for a fixed-pixel-width ring regardless of circle size.
     /// A black shadow ring is drawn first for visibility against bright backgrounds.
     /// </summary>
-    public class SubMachineGunCrosshairOverlay : MonoBehaviour
+    public class AK47CrosshairOverlay : MonoBehaviour
     {
         private Material _mat;
 
         private const int Segments = 64;
         private const float LineWidth = 2f; // ring thickness in pixels
         private const float ShadowOffset = 1f; // shadow displacement in pixels
+
+        private bool aimingIn;
 
         private void Awake()
         {
@@ -48,17 +50,23 @@ namespace IssaPlugin.Overlays
                 return;
 
             // Only show while the SMG is equipped.
-            if (
-                localInfo.Inventory.GetEffectivelyEquippedItem(true)
-                != ItemRegistry.SubMachineGunItemType
-            )
+            if (localInfo.Inventory.GetEffectivelyEquippedItem(true) != ItemRegistry.AK47ItemType)
                 return;
 
             // Only show while aiming in (right-click held).
             if (Mouse.current == null || !Mouse.current.rightButton.isPressed)
+            {
+                if (aimingIn)
+                {
+                    FixLookRotationAfterScope();
+                }
+                aimingIn = false;
                 return;
+            }
 
-            float inaccuracy = Configuration.SubMachineGunInaccuracy.Value;
+            aimingIn = true;
+
+            float inaccuracy = Configuration.AK47Inaccuracy.Value;
             if (inaccuracy <= 0f || _mat == null)
                 return;
 
@@ -90,6 +98,18 @@ namespace IssaPlugin.Overlays
             DrawRing(cx, cy, screenRadius, new Color(1f, 1f, 1f, 0.9f));
 
             GL.PopMatrix();
+            CorrectAimRotation();
+        }
+
+        private void FixLookRotationAfterScope()
+        {
+            if (Camera.main != null)
+                GameManager
+                    .LocalPlayerInfo
+                    ?.Movement
+                    ?.transform.rotation = Quaternion.LookRotation(
+                        Camera.main.transform.forward.normalized
+                    );
         }
 
         private void LateUpdate()
@@ -103,32 +123,23 @@ namespace IssaPlugin.Overlays
             // Only show while the SMG is equipped.
             if (
                 GameManager.LocalPlayerInfo?.Inventory.GetEffectivelyEquippedItem(true)
-                != ItemRegistry.SubMachineGunItemType
+                != ItemRegistry.AK47ItemType
             )
             {
-                if (Camera.main != null)
-                    GameManager
-                        .LocalPlayerInfo
-                        ?.Movement
-                        ?.transform.rotation = Quaternion.LookRotation(
-                            Camera.main.transform.forward.normalized
-                        );
                 return;
             }
 
             // Only show while aiming in (right-click held).
             if (Mouse.current == null || !Mouse.current.rightButton.isPressed)
             {
-                if (Camera.main != null)
-                    GameManager
-                        .LocalPlayerInfo
-                        ?.Movement
-                        ?.transform.rotation = Quaternion.LookRotation(
-                            Camera.main.transform.forward.normalized
-                        );
                 return;
             }
 
+            CorrectAimRotation();
+        }
+
+        private void CorrectAimRotation()
+        {
             var li = GameManager.LocalPlayerInfo;
             if (li?.Movement == null)
                 return;

@@ -229,13 +229,13 @@ namespace IssaPlugin
         public static ConfigEntry<float> PlaceableWallDamageBaseballBat { get; private set; }
 
         // --- Sub-Machine Gun ---
-        public static ConfigEntry<Key> SubMachineGunGiveKey { get; private set; }
-        public static ConfigEntry<float> SubMachineGunUses { get; private set; }
-        public static ConfigEntry<float> SubMachineGunSpawnWeight { get; private set; }
-        public static ConfigEntry<float> SubMachineGunFireRate { get; private set; }
-        public static ConfigEntry<float> SubMachineGunInaccuracy { get; private set; }
-        public static ConfigEntry<float> SubMachineGunMaxAimingDistance { get; private set; }
-        public static ConfigEntry<float> SubMachineGunMaxShotDistance { get; private set; }
+        public static ConfigEntry<Key> AK47GiveKey { get; private set; }
+        public static ConfigEntry<float> AK47Uses { get; private set; }
+        public static ConfigEntry<float> AK47SpawnWeight { get; private set; }
+        public static ConfigEntry<float> AK47FireRate { get; private set; }
+        public static ConfigEntry<float> AK47Inaccuracy { get; private set; }
+        public static ConfigEntry<float> AK47MaxAimingDistance { get; private set; }
+        public static ConfigEntry<float> AK47MaxShotDistance { get; private set; }
 
         // --- Bear ---
         public static ConfigEntry<Key> BearGiveKey { get; private set; }
@@ -1570,44 +1570,44 @@ namespace IssaPlugin
             );
 
             // --- Sub-Machine Gun ---
-            SubMachineGunGiveKey = cfg.Bind(
-                "SubMachineGun",
+            AK47GiveKey = cfg.Bind(
+                "AK47",
                 "GiveKey",
                 Key.M,
                 "Debug key to add the Sub-Machine Gun to your inventory."
             );
-            SubMachineGunUses = cfg.Bind(
-                "SubMachineGun",
+            AK47Uses = cfg.Bind(
+                "AK47",
                 "Uses",
                 30f,
                 "Total bullets per Sub-Machine Gun pickup. Each shot consumes one use."
             );
-            SubMachineGunSpawnWeight = cfg.Bind(
+            AK47SpawnWeight = cfg.Bind(
                 "ItemBoxSpawns",
-                "SubMachineGunWeight",
+                "AK47Weight",
                 2f,
                 "Spawn weight for the Sub-Machine Gun in item boxes. Set to 0 to disable."
             );
-            SubMachineGunFireRate = cfg.Bind(
-                "SubMachineGun",
+            AK47FireRate = cfg.Bind(
+                "AK47",
                 "FireRate",
                 0.08f,
                 "Seconds between each bullet in the burst."
             );
-            SubMachineGunInaccuracy = cfg.Bind(
-                "SubMachineGun",
+            AK47Inaccuracy = cfg.Bind(
+                "AK47",
                 "Inaccuracy",
                 22f,
                 "Random spread angle (degrees) applied to each bullet. Higher = less accurate."
             );
-            SubMachineGunMaxAimingDistance = cfg.Bind(
-                "SubMachineGun",
+            AK47MaxAimingDistance = cfg.Bind(
+                "AK47",
                 "MaxAimingDistance",
                 500f,
                 "Max distance used when computing the aim point for each bullet."
             );
-            SubMachineGunMaxShotDistance = cfg.Bind(
-                "SubMachineGun",
+            AK47MaxShotDistance = cfg.Bind(
+                "AK47",
                 "MaxShotDistance",
                 500f,
                 "Max raycast distance for each bullet."

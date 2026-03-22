@@ -6,23 +6,6 @@ using UnityEngine;
 namespace IssaPlugin.Patches
 {
     [HarmonyPatch]
-    static class GetEffectivelyEquippedItemPatch
-    {
-        static MethodBase TargetMethod() =>
-            AccessTools.Method(typeof(PlayerInventory), "GetEffectivelyEquippedItem");
-
-        static void Postfix(
-            PlayerInventory __instance,
-            bool ignoreEquipmentHiding,
-            ref ItemType __result
-        )
-        {
-            if (!ignoreEquipmentHiding && ItemRegistry.IsCustomItem(__result))
-                __result = ItemType.None;
-        }
-    }
-
-    [HarmonyPatch]
     static class HitWithGolfSwingInternalPatch
     {
         internal static bool BatActive;

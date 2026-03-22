@@ -69,8 +69,8 @@ namespace IssaPlugin.Items
 
         public static Sprite WallIcon { get; private set; }
 
-        public static Sprite SubMachineGunIcon { get; private set; }
-        public static GameObject SubMachineGunPrefab { get; private set; }
+        public static Sprite AK47Icon { get; private set; }
+        public static GameObject AK47Prefab { get; private set; }
 
         /// Local-only non-networked copy of WallPrefab used as the placement ghost.
         /// Network components and physics are stripped so it can be instantiated freely
@@ -388,10 +388,10 @@ namespace IssaPlugin.Items
             }
 
             // --- Sub-Machine Gun ---
-            SubMachineGunIcon = LoadSprite("ak47_icon.png");
-            SubMachineGunPrefab = Load<GameObject>("ak47.prefab");
-            if (SubMachineGunPrefab != null)
-                DisableRigidbody(SubMachineGunPrefab);
+            AK47Icon = LoadSprite("ak47_icon.png");
+            AK47Prefab = Load<GameObject>("ak47.prefab");
+            if (AK47Prefab != null)
+                DisableRigidbody(AK47Prefab);
 
             IssaPluginPlugin.Log.LogInfo("[Assets] IssaPluginBundle loaded.");
         }

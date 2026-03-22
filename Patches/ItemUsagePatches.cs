@@ -4,6 +4,7 @@ using HarmonyLib;
 using IssaPlugin.Items;
 using Mirror;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace IssaPlugin.Patches
 {
@@ -371,6 +372,91 @@ namespace IssaPlugin.Patches
         }
     }
 
+    /// <summary>
+    /// Makes GetEffectivelyEquippedItem(false) return ItemType.ElephantGun for the
+    /// sniper rifle and AK47.
+    ///
+    /// GetEffectivelyEquippedItem(false) returns None for all custom items because
+    /// the game's visual hiding system doesn't know about them.  Every rotation and
+    /// aim system downstream keys off this value:
+    ///
+    ///   • UpdateIsAimingItem / ShouldAim  — returns false for None  → IsAimingItem
+    ///     never set by the base game
+    ///   • InformIsAimingItemChanged        — sees None → uses golf-swing rotation
+    ///     mode (body offset CCW from camera), not gun-aim mode (body faces camera)
+    ///
+    /// Returning ElephantGun makes both systems behave exactly as they do for the
+    /// elephant gun: IsAimingItem becomes true naturally and the character faces the
+    /// camera's aim direction rather than the swing direction.
+    ///
+    /// The recursive call to GetEffectivelyEquippedItem(true) inside the Postfix is
+    /// safe: the Postfix exits immediately when ignoreEquipmentHiding is true, so
+    /// there is no infinite recursion.
+    /// </summary>
+    [HarmonyPatch(typeof(PlayerInventory), "GetEffectivelyEquippedItem")]
+    static class GetEffectivelyEquippedItemPatch
+    {
+        static void Postfix(
+            PlayerInventory __instance,
+            bool ignoreEquipmentHiding,
+            ref ItemType __result
+        )
+        {
+            if (ignoreEquipmentHiding)
+                return;
+            if (!ignoreEquipmentHiding && ItemRegistry.IsCustomItem(__result))
+                __result = ItemType.None;
+            if (
+                __instance.GetEffectivelyEquippedItem(true) == ItemRegistry.SniperRifleItemType
+                || __instance.GetEffectivelyEquippedItem(true) == ItemRegistry.AK47ItemType
+            )
+                __result = ItemType.ElephantGun;
+        }
+    }
+
+    /// <summary>
+    /// Safety-net Postfix: corrects IsAimingItem for the sniper and AK47 if something other
+    /// than UpdateIsAimingItem resets it after GetEffectivelyEquippedItemPatch
+    /// has already made the base game handle it correctly.
+    ///
+    ///
+    /// In the normal path this Postfix is a no-op (currentlyAiming == shouldAim).
+    /// </summary>
+    [HarmonyPatch(typeof(PlayerInventory), "UpdateIsAimingItem")]
+    static class UpdateIsAimingItemPatch
+    {
+        private static readonly PropertyInfo IsAimingItemProp = typeof(PlayerInventory).GetProperty(
+            "IsAimingItem",
+            BindingFlags.Public | BindingFlags.Instance
+        );
+
+        static void Postfix(PlayerInventory __instance)
+        {
+            if (
+                __instance.GetEffectivelyEquippedItem(true) != ItemRegistry.SniperRifleItemType
+                && __instance.GetEffectivelyEquippedItem(true) != ItemRegistry.AK47ItemType
+            )
+                return;
+
+            bool shouldAim = Mouse.current?.rightButton.isPressed ?? false;
+            bool currentlyAiming = (bool)(IsAimingItemProp?.GetValue(__instance) ?? false);
+            bool isHoldingAimSwing = __instance.PlayerInfo?.Input?.IsHoldingAimSwing ?? false;
+
+            IssaPluginPlugin.Log.LogInfo(
+                $"[Sniper/AK47] UpdateIsAimingItem Postfix — shouldAim={shouldAim} currentlyAiming={currentlyAiming} IsHoldingAimSwing={isHoldingAimSwing}"
+            );
+
+            if (currentlyAiming == shouldAim)
+                return;
+
+            IssaPluginPlugin.Log.LogInfo(
+                $"[Sniper/AK47] Correcting IsAimingItem: {currentlyAiming}→{shouldAim}, calling InformIsAimingItemChanged"
+            );
+            __instance.PlayerInfo.SetIsAimingItem(shouldAim);
+            __instance.PlayerInfo.Movement.InformIsAimingItemChanged();
+        }
+    }
+
     /// Redirects the runtime animator controller lookup to OrbitalLaser when a
     /// non-bat custom item is equipped. Without this, GameManager.AllItems fails
     /// to find ItemData for our custom item types and logs an error.
@@ -382,14 +468,18 @@ namespace IssaPlugin.Patches
             if (!ItemRegistry.IsCustomItem(equippedItem))
                 return;
 
-            if (equippedItem == ItemRegistry.SniperRifleItemType)
-                equippedItem = ItemType.ElephantGun;
-            else if (equippedItem == ItemRegistry.JavelinItemType)
-                equippedItem = ItemType.RocketLauncher;
-            else if (equippedItem == ItemRegistry.BaseballBatItemType)
-                equippedItem = ItemType.None; // gives correct hand pose on remote clients
-            else
-                equippedItem = ItemType.OrbitalLaser;
+            equippedItem = ItemRegistry
+                .CustomItemDefinitionMap[(int)equippedItem]
+                .AnimatorChangedItemType;
+
+            // if (equippedItem == ItemRegistry.SniperRifleItemType)
+            //     equippedItem = ItemType.ElephantGun;
+            // else if (equippedItem == ItemRegistry.JavelinItemType)
+            //     equippedItem = ItemType.RocketLauncher;
+            // else if (equippedItem == ItemRegistry.BaseballBatItemType)
+            //     equippedItem = ItemType.None; // gives correct hand pose on remote clients
+            // else
+            //     equippedItem = ItemType.OrbitalLaser;
         }
 
         static void Postfix(PlayerAnimatorIo __instance)
