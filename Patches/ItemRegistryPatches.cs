@@ -87,6 +87,12 @@ namespace IssaPlugin.Patches
 
         private static ItemPool.ItemSpawnChance[] BuildCustomEntries()
         {
+            if (!Configuration.CustomItemSpawnsEnabled.Value)
+            {
+                // If they're disabled altogether, then we'll just return an empty list.
+                return [];
+            }
+
             var list = new List<ItemPool.ItemSpawnChance>();
             foreach (var itemDefinition in ItemRegistry.AllItems)
             {

@@ -4,6 +4,7 @@ namespace IssaPlugin.Network
 {
     public struct SpawnWeightsMessage : NetworkMessage
     {
+        public bool CustomItemSpawnsEnabled;
         public float Bat;
         public float Bomber;
         public float Missile;
@@ -21,6 +22,7 @@ namespace IssaPlugin.Network
     {
         public static void WriteSpawnWeightsMessage(NetworkWriter writer, SpawnWeightsMessage msg)
         {
+            writer.WriteBool(msg.CustomItemSpawnsEnabled);
             writer.WriteFloat(msg.Bat);
             writer.WriteFloat(msg.Bomber);
             writer.WriteFloat(msg.Missile);
@@ -38,6 +40,7 @@ namespace IssaPlugin.Network
         {
             return new SpawnWeightsMessage
             {
+                CustomItemSpawnsEnabled = reader.ReadBool(),
                 Bat = reader.ReadFloat(),
                 Bomber = reader.ReadFloat(),
                 Missile = reader.ReadFloat(),

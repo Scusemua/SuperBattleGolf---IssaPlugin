@@ -5,6 +5,10 @@ namespace IssaPlugin
 {
     public static class Configuration
     {
+        // Master kill-switch for allowing custom items to be spawned without
+        // having to set all spawn weights to 0.
+        public static ConfigEntry<bool> CustomItemSpawnsEnabled { get; private set; }
+
         // --- Baseball Bat ---
         public static ConfigEntry<float> BaseballBatPowerMultiplier { get; private set; }
         public static ConfigEntry<float> BaseballBatUses { get; private set; }
@@ -218,6 +222,8 @@ namespace IssaPlugin
 
         public static ConfigEntry<float> PlaceableWallTorsionMultiplier { get; private set; }
         public static ConfigEntry<float> PlaceableWallRotationStep { get; private set; }
+        public static ConfigEntry<float> PlaceableWallDebrisLifetime { get; private set; }
+        public static ConfigEntry<float> PlaceableWallRocketExplosionForce { get; private set; }
 
         // --- Bear ---
         public static ConfigEntry<Key> BearGiveKey { get; private set; }
@@ -260,6 +266,13 @@ namespace IssaPlugin
 
         public static void Initialize(ConfigFile cfg)
         {
+            CustomItemSpawnsEnabled = cfg.Bind(
+                "IssaPlugin",
+                "Enabled",
+                true,
+                "Master kill-switch for allowing custom items to be spawned without having to set all spawn weights to 0."
+            );
+
             // --- Baseball Bat ---
             BaseballBatPowerMultiplier = cfg.Bind(
                 "BaseballBat",
@@ -1506,6 +1519,20 @@ namespace IssaPlugin
                 45f,
                 "Degrees the wall rotates per scroll-wheel tick during the placement preview. "
                     + "Scroll up rotates clockwise, scroll down rotates counter-clockwise."
+            );
+
+            PlaceableWallDebrisLifetime = cfg.Bind(
+                "PlaceableWall",
+                "DebrisLifetime",
+                30f,
+                "Seconds before detached wall debris (bricks/pillars) are automatically destroyed."
+            );
+
+            PlaceableWallRocketExplosionForce = cfg.Bind(
+                "PlaceableWall",
+                "RocketExplosionForce",
+                600f,
+                "Impulse force (per brick) applied by a rocket explosion to detached wall debris."
             );
 
             // --- Bear ---

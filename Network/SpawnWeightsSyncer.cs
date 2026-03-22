@@ -31,6 +31,7 @@ namespace IssaPlugin
         {
             var msg = new SpawnWeightsMessage
             {
+                CustomItemSpawnsEnabled = Configuration.CustomItemSpawnsEnabled.Value,
                 Bat = Configuration.BaseballBatSpawnWeight.Value,
                 Bomber = Configuration.BomberSpawnWeight.Value,
                 Missile = Configuration.MissileSpawnWeight.Value,
@@ -82,6 +83,7 @@ namespace IssaPlugin
             if (NetworkServer.active)
                 return;
 
+            Configuration.CustomItemSpawnsEnabled.Value = msg.CustomItemSpawnsEnabled;
             Configuration.BaseballBatSpawnWeight.Value = msg.Bat;
             Configuration.BomberSpawnWeight.Value = msg.Bomber;
             Configuration.MissileSpawnWeight.Value = msg.Missile;
@@ -95,7 +97,7 @@ namespace IssaPlugin
             Configuration.BearSpawnWeight.Value = msg.Bear;
 
             IssaPluginPlugin.Log.LogDebug(
-                $"[SpawnWeights] Received from host — Bat={msg.Bat} Bomber={msg.Bomber} "
+                $"[SpawnWeights] Received from host: CustomItemSpawnsEnabled={msg.CustomItemSpawnsEnabled} Bat={msg.Bat} Bomber={msg.Bomber} "
                     + $"Missile={msg.Missile} AC130={msg.AC130} Freeze={msg.Freeze} "
                     + $"LowGravity={msg.LowGravity} Sniper={msg.Sniper} Donut={msg.Donut} Javelin={msg.Javelin} StickyGrenade={msg.StickyGrenade}"
             );
