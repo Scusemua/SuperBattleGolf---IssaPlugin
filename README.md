@@ -4,6 +4,8 @@
 
 Adds **11 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
 
+To download and/or install the mod, please check out the GitHub releases or the mod's [ThunderStore page](https://thunderstore.io/c/super-battle-golf/).
+
 ## Items
 
 ### 🛩️ AC-130 Gunship
