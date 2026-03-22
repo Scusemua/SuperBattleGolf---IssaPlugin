@@ -130,9 +130,7 @@ namespace IssaPlugin
                     b.ServerHoleCleanup();
 
                 foreach (
-                    var b in FindObjectsByType<PlaceableWallNetworkBridge>(
-                        FindObjectsSortMode.None
-                    )
+                    var b in FindObjectsByType<PlaceableWallNetworkBridge>(FindObjectsSortMode.None)
                 )
                     b.ServerHoleCleanup();
 
@@ -150,8 +148,6 @@ namespace IssaPlugin
 
             // Cancel any in-progress Stealth Bomber targeting UI.
             StealthBomberItem.CancelTargeting();
-
-            BearLockOnDetectionPatch.Reset();
 
             // ── Shared lock-on detection state ───────────────────────────────
             GunshipLockOnDetectionPatch.ResetTargetingState();

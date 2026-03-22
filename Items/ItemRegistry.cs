@@ -2,15 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using BepInEx;
-using BepInEx.Logging;
 using HarmonyLib;
 using IssaPlugin.Items;
-using IssaPlugin.Overlays;
-using IssaPlugin.Patches;
 using Mirror;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace IssaPlugin.Items
 {

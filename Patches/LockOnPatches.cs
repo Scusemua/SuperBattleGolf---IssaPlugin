@@ -306,13 +306,13 @@ namespace IssaPlugin.Patches
             if (bearBridge != null && bearBridge.PendingBearHoming)
             {
                 var nearestBear = FindNearestBear(__instance.transform.position);
-                if (bearMarker != null)
+                if (nearestBear != null)
                 {
                     bearBridge.PendingBearHoming = false;
                     var homing = __instance.gameObject.AddComponent<RocketHomingBehaviour>();
-                    homing.Target = bearMarker.transform;
+                    homing.Target = nearestBear.transform;
                     IssaPluginPlugin.Log.LogInfo(
-                        $"[LockOn] Rocket homing toward Bear at {bearMarker.transform.position}."
+                        $"[LockOn] Rocket homing toward Bear at {nearestBear.transform.position}."
                     );
                 }
             }
