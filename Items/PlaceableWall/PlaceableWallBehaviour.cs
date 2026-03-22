@@ -23,8 +23,16 @@ namespace IssaPlugin.Items
         internal void OnChunkDeformed()
         {
             _activeChunks--;
+            IssaPluginPlugin.Log.LogWarning(
+                $"[PlaceableWall] Chunk deformed. Number of active chunks remaining: {_activeChunks}."
+            );
             if (_activeChunks <= 0)
+            {
+                IssaPluginPlugin.Log.LogWarning(
+                    $"[PlaceableWall] No more active chunks remaining. Cleaning up wall."
+                );
                 Destroy(gameObject, Configuration.PlaceableWallDebrisLifetime.Value);
+            }
         }
     }
 }
