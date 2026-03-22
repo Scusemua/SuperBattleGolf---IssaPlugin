@@ -218,6 +218,11 @@ namespace IssaPlugin.Items
                 if (col.GetComponentInParent<PlayerInfo>() != null)
                     continue;
 
+                // Skip golf balls if the config says not to affect them.
+                if (!Configuration.BlackHoleGrenadeAffectsGolfBalls.Value &&
+                    col.GetComponentInParent<GolfBall>() != null)
+                    continue;
+
                 // Skip golf carts that have a driver: the driver's client has
                 // authority over the cart's Rigidbody and handles suction itself.
                 // Empty carts (no driver) are server-authoritative, so handle them here.
@@ -286,6 +291,9 @@ namespace IssaPlugin.Items
                 if (col.transform.IsChildOf(transform) || col.transform == transform)
                     continue;
                 if (col.GetComponentInParent<PlayerInfo>() != null)
+                    continue;
+                if (!Configuration.BlackHoleGrenadeAffectsGolfBalls.Value &&
+                    col.GetComponentInParent<GolfBall>() != null)
                     continue;
 
                 var rb = col.attachedRigidbody;

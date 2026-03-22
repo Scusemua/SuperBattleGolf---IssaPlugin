@@ -209,6 +209,7 @@ namespace IssaPlugin
             get;
             private set;
         }
+        public static ConfigEntry<bool> BlackHoleGrenadeAffectsGolfBalls { get; private set; }
 
         // --- Placeable Wall ---
         public static ConfigEntry<Key> PlaceableWallGiveKey { get; private set; }
@@ -1455,6 +1456,13 @@ namespace IssaPlugin
                 "BonusGolfCartForceMultiplier",
                 2.0f,
                 "Additional force multiplier applied to golf carts."
+            );
+
+            BlackHoleGrenadeAffectsGolfBalls = cfg.Bind(
+                "BlackHoleGrenade",
+                "AffectsGolfBalls",
+                true,
+                "If true, the black hole grenade sucks in and spits out golf balls. Set to false to leave golf balls unaffected."
             );
 
             // --- Placeable Wall ---
