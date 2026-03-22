@@ -72,6 +72,11 @@ namespace IssaPlugin.Items
             "slots"
         );
 
+        private static readonly FieldInfo AllItemField = AccessTools.Field(
+            typeof(ItemCollection),
+            "items"
+        );
+
         private static readonly FieldInfo AllItemDataField = AccessTools.Field(
             typeof(ItemCollection),
             "allItemData"
@@ -89,8 +94,9 @@ namespace IssaPlugin.Items
 
         public static int GetMaxUses(ItemType type) => GetDefinition(type)?.MaxUses ?? 1;
 
-        internal static ItemData GetOrCreateItemData(ItemType type)
+        internal static ItemData GetOrCreateItemData(CustomItemDefinition def)
         {
+            ItemType type = def.ItemType;
             if (CustomItemDataCache.TryGetValue(type, out var cached))
             {
                 AccessTools
@@ -103,8 +109,8 @@ namespace IssaPlugin.Items
             var t = typeof(ItemData);
             AccessTools.Property(t, "Type").SetValue(data, type);
             AccessTools.Property(t, "MaxUses").SetValue(data, GetMaxUses(type));
-            AccessTools.Property(t, "Icon").SetValue(data, null);
-            AccessTools.Property(t, "Prefab").SetValue(data, null);
+            AccessTools.Property(t, "Icon").SetValue(data, def.Icon);
+            AccessTools.Property(t, "Prefab").SetValue(data, def.HeldModelPrefab);
             AccessTools.Property(t, "AnimatorOverrideController").SetValue(data, null);
             AccessTools.Property(t, "IsExplosive").SetValue(data, false);
             AccessTools.Property(t, "NonAimUse").SetValue(data, ItemNonAimingUse.None);
@@ -125,9 +131,23 @@ namespace IssaPlugin.Items
         {
             var dict = (Dictionary<ItemType, ItemData>)AllItemDataField.GetValue(collection);
             if (dict == null)
-            { /* log error */
+            {
+                IssaPluginPlugin.Log.LogError($"[ItemRegistry] Could not inject custom items: could not find 'allItemData' field.");
                 return;
             }
+
+            var oldArray = (ItemData[])AllItemField.GetValue(collection);
+            if (dict == null)
+            {
+                IssaPluginPlugin.Log.LogError($"[ItemRegistry] Could not inject custom items: could not find 'items' field.");
+                return;
+            }
+
+            int oldSize = oldArray.Length;
+            int newSize = oldSize + AllItems.Count;
+            Type elementType = oldArray.GetType().GetElementType();
+            ItemData[] newArray = (ItemData[])Array.CreateInstance(elementType, newSize);
+            Array.Copy(oldArray, newArray, oldArray.Length);
 
             // Resolve both fallback sprites before the loop.
             Sprite rocketFallbackIcon = dict.TryGetValue(ItemType.RocketLauncher, out var rd)
@@ -137,16 +157,19 @@ namespace IssaPlugin.Items
                 ? pd.Icon
                 : null;
 
-            foreach (var def in AllItems)
+            for (int i = 0; i < AllItems.Count; i++) 
             {
-                var data = GetOrCreateItemData(def.ItemType);
-                Sprite fallback = def.UseRocketIconFallback
+                CustomItemDefinition def = AllItems[i];
+                var data = GetOrCreateItemData(def);
+                Sprite fallbackIcon = def.UseRocketIconFallback
                     ? rocketFallbackIcon
                     : pistolFallbackIcon;
-                IconProperty.SetValue(data, def.Icon ?? fallback);
+                IconProperty.SetValue(data, def.Icon ?? fallbackIcon);
                 dict[def.ItemType] = data;
+                newArray.SetValue(data, oldSize + i);
             }
 
+            AllItemField.SetValue(collection, newArray);
             IssaPluginPlugin.Log.LogInfo($"[ItemRegistry] Injected {AllItems.Count} custom items.");
         }
 

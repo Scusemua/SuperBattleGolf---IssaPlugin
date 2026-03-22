@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
-using IssaPlugin.Network;
 using IssaPlugin.Items;
+using IssaPlugin.Network;
 using Mirror;
 using UnityEngine;
 
@@ -19,7 +19,7 @@ namespace IssaPlugin
         // Sentinel: impossible weight value so the first check always triggers a sync.
         private static SpawnWeightsMessage _lastSent = new SpawnWeightsMessage
         {
-            ItemSpawnWeights = {},
+            ItemSpawnWeights = null,
         };
 
         private IEnumerator Start()
@@ -63,8 +63,8 @@ namespace IssaPlugin
         private static bool ShouldUpdateWeights(SpawnWeightsMessage a, SpawnWeightsMessage b)
         {
             // If one or both have null spawn weights, then return true.
-            if (a.ItemSpawnWeights != null || b.ItemSpawnWeights != null)
-                return true; 
+            if (a.ItemSpawnWeights == null || b.ItemSpawnWeights == null)
+                return true;
 
             if (a.ItemSpawnWeights.Count != b.ItemSpawnWeights.Count)
             {
@@ -82,7 +82,7 @@ namespace IssaPlugin
                     IssaPluginPlugin.Log.LogError(
                         $"SpawnWeightsMessage is missing entry for item type ${itemType}"
                     );
-                    return true; 
+                    return true;
                 }
 
                 if (a.ItemSpawnWeights[itemType] != b.ItemSpawnWeights[itemType])
