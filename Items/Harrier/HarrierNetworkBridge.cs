@@ -1,0 +1,325 @@
+using System.Collections;
+using Mirror;
+using UnityEngine;
+
+namespace IssaPlugin.Items
+{
+    /// <summary>
+    /// Attached to every player object via NetworkBridgePatches.
+    ///
+    /// Flow:
+    ///   1. Client presses use → sends HarrierRequestMessage.
+    ///   2. Server receives it → ServerHandleRequest() starts ServerHarrierRoutine.
+    ///   3. Server spawns the Harrier prefab and attaches HarrierBehaviour.
+    ///   4. Harrier flies in autonomously, fires rockets at players, then flies out.
+    ///   5. All clients receive HarrierBeginClientMessage / HarrierEndClientMessage.
+    ///
+    /// The Harrier is fully server-authoritative — no client input is ever sent after
+    /// the initial use request. Per-player guard prevents stacking; there is no global
+    /// one-at-a-time lock, so two players can each summon their own Harrier.
+    /// </summary>
+    public class HarrierNetworkBridge : NetworkBridgeBase
+    {
+        // ================================================================
+        //  Server state
+        // ================================================================
+
+        /// <summary>
+        /// Set by the server message handler for HarrierPrepareHomingMessage while
+        /// the owning client has the Harrier locked on. Consumed by RocketHomingPatch
+        /// when the next player-fired rocket spawns.
+        /// </summary>
+        public bool PendingHarrierHoming;
+
+        private bool _serverRoutineActive;
+        private Coroutine _serverRoutine;
+        private GameObject _serverHarrier;
+
+        // ================================================================
+        //  Client state (local client only)
+        // ================================================================
+
+        /// <summary>True on the local client while any Harrier session is active.</summary>
+        public bool LocalSessionActive { get; private set; }
+
+        // ================================================================
+        //  Mirror lifecycle
+        // ================================================================
+
+        public override void OnStopServer()
+        {
+            if (_serverRoutineActive)
+                ForceServerCleanup();
+        }
+
+        // ================================================================
+        //  Server — entry point
+        // ================================================================
+
+        public void ServerHandleRequest()
+        {
+            if (_serverRoutineActive)
+            {
+                IssaPluginPlugin.Log.LogWarning(
+                    "[Harrier] Session already active for this player — ignoring."
+                );
+                return;
+            }
+
+            var inventory = GetComponent<PlayerInventory>();
+            if (inventory == null)
+            {
+                IssaPluginPlugin.Log.LogError("[Harrier] No PlayerInventory on bridge object.");
+                return;
+            }
+
+            _serverRoutine = StartCoroutine(ServerHarrierRoutine(inventory));
+        }
+
+        // ================================================================
+        //  Server coroutine
+        // ================================================================
+
+        private IEnumerator ServerHarrierRoutine(PlayerInventory inventory)
+        {
+            _serverRoutineActive = true;
+            ItemHelper.ConsumeEquippedItem(inventory);
+
+            // ── Choose hover position ────────────────────────────────────
+            Vector3 mapCenter = ComputeMapCenter();
+            float altitude = Configuration.HarrierAltitude.Value;
+            Vector3 hoverPos = new Vector3(mapCenter.x, mapCenter.y + altitude, mapCenter.z);
+
+            // Approach from a random horizontal direction.
+            float approachAngle = Random.value * 360f * Mathf.Deg2Rad;
+            Vector3 approachDir = new Vector3(
+                Mathf.Cos(approachAngle), 0f, Mathf.Sin(approachAngle)
+            );
+            float approachDist = Configuration.HarrierApproachDistance.Value;
+            Vector3 spawnPos = hoverPos + approachDir * approachDist;
+            // Fly-out destination: continue beyond the hover point in the same direction.
+            Vector3 flyOutPos = hoverPos + approachDir * (approachDist * 1.5f);
+
+            // ── Spawn harrier ────────────────────────────────────────────
+            GameObject harrierGo = SpawnHarrierObject(spawnPos, hoverPos);
+            if (harrierGo == null)
+            {
+                IssaPluginPlugin.Log.LogError("[Harrier] Failed to spawn harrier object.");
+                _serverRoutineActive = false;
+                yield break;
+            }
+
+            _serverHarrier = harrierGo;
+
+            // Attach the movement driver (server-only; not replicated to clients).
+            var behaviour = harrierGo.AddComponent<HarrierBehaviour>();
+            behaviour.HoverTarget    = hoverPos;
+            behaviour.FlyOutTarget   = flyOutPos;
+            behaviour.ApproachSpeed  = Configuration.HarrierApproachSpeed.Value;
+            behaviour.DriftSpeed     = Configuration.HarrierDriftSpeed.Value;
+            behaviour.HoverRadius    = Configuration.HarrierHoverRadius.Value;
+
+            IssaPluginPlugin.Log.LogInfo(
+                $"[Harrier] Jet spawned at {spawnPos:F0}, heading to {hoverPos:F0}."
+            );
+
+            NetworkServer.SendToAll(new HarrierBeginClientMessage { HoverCenter = mapCenter });
+
+            // ── Wait for fly-in ──────────────────────────────────────────
+            float flyInTimeout = approachDist / Mathf.Max(
+                Configuration.HarrierApproachSpeed.Value, 1f
+            ) + 8f;
+            float elapsed = 0f;
+
+            while (harrierGo != null && behaviour != null
+                   && !behaviour.HasArrived && elapsed < flyInTimeout)
+            {
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            if (harrierGo == null || behaviour == null)
+            {
+                IssaPluginPlugin.Log.LogWarning(
+                    "[Harrier] Jet destroyed before arriving — aborting session."
+                );
+                ForceServerCleanup();
+                yield break;
+            }
+
+            IssaPluginPlugin.Log.LogInfo("[Harrier] Jet arrived — beginning attack phase.");
+
+            // ── Attack phase ─────────────────────────────────────────────
+            float duration      = Configuration.HarrierDuration.Value;
+            float fireInterval  = Configuration.HarrierFireInterval.Value;
+            bool  friendlyFire  = Configuration.HarrierFriendlyFire.Value;
+
+            float sessionElapsed = 0f;
+            // Stagger the first shot by half an interval so the jet isn't
+            // firing before it has fully settled into its hover position.
+            float fireCooldown = fireInterval * 0.5f;
+
+            while (sessionElapsed < duration && harrierGo != null)
+            {
+                sessionElapsed += Time.deltaTime;
+                fireCooldown   -= Time.deltaTime;
+
+                if (fireCooldown <= 0f)
+                {
+                    fireCooldown = fireInterval;
+                    HarrierItem.FireAtRandomTarget(
+                        inventory,
+                        harrierGo.transform.position,
+                        friendlyFire
+                    );
+                }
+
+                yield return null;
+            }
+
+            // ── Fly-out phase ────────────────────────────────────────────
+            if (harrierGo != null && behaviour != null)
+            {
+                behaviour.BeginFlyOut();
+                IssaPluginPlugin.Log.LogInfo("[Harrier] Beginning fly-out.");
+
+                float flyOutTimeout = 12f;
+                elapsed = 0f;
+                while (harrierGo != null && behaviour != null
+                       && !behaviour.IsComplete && elapsed < flyOutTimeout)
+                {
+                    elapsed += Time.deltaTime;
+                    yield return null;
+                }
+            }
+
+            // ── Cleanup ──────────────────────────────────────────────────
+            if (harrierGo != null)
+                NetworkServer.Destroy(harrierGo);
+
+            NetworkServer.SendToAll(new HarrierEndClientMessage());
+
+            _serverHarrier = null;
+            _serverRoutineActive = false;
+            _serverRoutine = null;
+
+            IssaPluginPlugin.Log.LogInfo("[Harrier] Session complete.");
+        }
+
+        // ================================================================
+        //  Helpers
+        // ================================================================
+
+        /// <summary>
+        /// Returns the centroid of all connected players at ground level (y = 0).
+        /// Falls back to world origin if no players are found.
+        /// </summary>
+        private static Vector3 ComputeMapCenter()
+        {
+            var players = Object.FindObjectsByType<PlayerInventory>(FindObjectsSortMode.None);
+            if (players.Length == 0)
+                return Vector3.zero;
+
+            Vector3 sum = Vector3.zero;
+            foreach (var p in players)
+                sum += p.transform.position;
+
+            Vector3 centroid = sum / players.Length;
+            centroid.y = 0f; // Altitude is added separately.
+            return centroid;
+        }
+
+        /// <summary>
+        /// Instantiates the Harrier prefab, ensures it has a Rigidbody, faces toward
+        /// the hover point, and spawns it on the network.
+        /// AssetLoader.Load() always sets HarrierPrefab (bundle asset or fallback primitive),
+        /// so this should never encounter a null prefab after startup.
+        /// </summary>
+        private static GameObject SpawnHarrierObject(Vector3 spawnPos, Vector3 hoverPos)
+        {
+            if (AssetLoader.HarrierPrefab == null)
+            {
+                IssaPluginPlugin.Log.LogError("[Harrier] HarrierPrefab is null — was AssetLoader.Load() called?");
+                return null;
+            }
+
+            var harrierGo = Object.Instantiate(
+                AssetLoader.HarrierPrefab, spawnPos, Quaternion.identity
+            );
+
+            if (harrierGo == null)
+                return null;
+
+            // Ensure the Rigidbody exists and is kinematic (HarrierBehaviour will use it).
+            var rigidBody = harrierGo.GetComponent<Rigidbody>();
+            if (rigidBody == null)
+            {
+                rigidBody = harrierGo.AddComponent<Rigidbody>();
+                rigidBody.isKinematic = true;
+                rigidBody.useGravity  = false;
+            }
+
+            // Orient toward the hover point on spawn.
+            Vector3 toHover = hoverPos - spawnPos;
+            if (toHover.sqrMagnitude > 0.01f)
+                harrierGo.transform.rotation = Quaternion.LookRotation(toHover.normalized);
+
+            NetworkServer.Spawn(harrierGo);
+            return harrierGo;
+        }
+
+        private void ForceServerCleanup()
+        {
+            if (_serverRoutine != null)
+            {
+                StopCoroutine(_serverRoutine);
+                _serverRoutine = null;
+            }
+
+            if (_serverHarrier != null)
+            {
+                NetworkServer.Destroy(_serverHarrier);
+                _serverHarrier = null;
+            }
+
+            _serverRoutineActive = false;
+        }
+
+        // ================================================================
+        //  Client handlers
+        // ================================================================
+
+        public static void ClientHandleBegin(HarrierBeginClientMessage msg)
+        {
+            IssaPluginPlugin.Log.LogInfo(
+                $"[Harrier] Inbound — hover center {msg.HoverCenter:F0}."
+            );
+            var local = NetworkClient.localPlayer?.GetComponent<HarrierNetworkBridge>();
+            if (local != null)
+                local.LocalSessionActive = true;
+        }
+
+        public static void ClientHandleEnd(HarrierEndClientMessage msg)
+        {
+            IssaPluginPlugin.Log.LogInfo("[Harrier] Session ended.");
+            var local = NetworkClient.localPlayer?.GetComponent<HarrierNetworkBridge>();
+            if (local != null)
+                local.LocalSessionActive = false;
+        }
+
+        // ================================================================
+        //  Hole-transition cleanup
+        // ================================================================
+
+        public override void ServerHoleCleanup()
+        {
+            if (_serverRoutineActive)
+                ForceServerCleanup();
+        }
+
+        public override void ClientHoleCleanup()
+        {
+            LocalSessionActive = false;
+        }
+    }
+}

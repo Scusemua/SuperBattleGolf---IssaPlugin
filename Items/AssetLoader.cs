@@ -72,6 +72,16 @@ namespace IssaPlugin.Items
         public static Sprite AK47Icon { get; private set; }
         public static GameObject AK47Prefab { get; private set; }
 
+        public static Sprite HarrierIcon { get; private set; }
+
+        /// <summary>
+        /// The networked Harrier Jet object spawned by HarrierNetworkBridge.
+        /// Requires NetworkIdentity + NetworkTransform in the bundle.
+        /// Falls back to a runtime capsule if 'harrier_jet.prefab' is absent.
+        /// </summary>
+        public static GameObject HarrierPrefab { get; private set; }
+        public static GameObject HarrierTabletPrefab { get; private set; }
+
         /// Local-only non-networked copy of WallPrefab used as the placement ghost.
         /// Network components and physics are stripped so it can be instantiated freely
         /// on the client without Mirror context.
@@ -392,6 +402,22 @@ namespace IssaPlugin.Items
             AK47Prefab = Load<GameObject>("ak47.prefab");
             if (AK47Prefab != null)
                 DisableRigidbody(AK47Prefab);
+
+            // --- Harrier Jet ---
+            HarrierIcon = LoadSprite("harrier_icon.png");
+
+            HarrierPrefab = Load<GameObject>("harrier.prefab");
+            if (HarrierPrefab != null)
+            {
+                EnsureNetworkIdentity(HarrierPrefab, 0xA7700001u);
+                DisableRigidbody(HarrierPrefab);
+                HarrierPrefab.AddComponent<HarrierClientSetup>();
+            }
+            HarrierTabletPrefab = Load<GameObject>("harrier_tablet.prefab");
+            if (HarrierTabletPrefab != null)
+            {
+                DisableRigidbody(HarrierTabletPrefab);
+            }
 
             IssaPluginPlugin.Log.LogInfo("[Assets] IssaPluginBundle loaded.");
         }

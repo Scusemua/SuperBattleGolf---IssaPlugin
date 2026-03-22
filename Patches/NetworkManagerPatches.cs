@@ -860,6 +860,48 @@ namespace IssaPlugin.Patches
             NetworkClient.RegisterHandler<BearOverlayEndMessage>(
                 BearNetworkBridge.HandleBearOverlayEnd
             );
+
+            Writer<HarrierRequestMessage>.write =
+                HarrierRequestMessageSerialization.WriteHarrierRequestMessage;
+            Reader<HarrierRequestMessage>.read =
+                HarrierRequestMessageSerialization.ReadHarrierRequestMessage;
+            NetworkServer.RegisterHandler<HarrierRequestMessage>(
+                (conn, msg) =>
+                {
+                    conn.identity?.GetComponent<HarrierNetworkBridge>()?.ServerHandleRequest();
+                }
+            );
+
+            Writer<HarrierPrepareHomingMessage>.write =
+                HarrierPrepareHomingMessageSerialization.WriteHarrierPrepareHomingMessage;
+            Reader<HarrierPrepareHomingMessage>.read =
+                HarrierPrepareHomingMessageSerialization.ReadHarrierPrepareHomingMessage;
+            NetworkServer.RegisterHandler<HarrierPrepareHomingMessage>(
+                (conn, msg) =>
+                {
+                    var bridge = conn.identity?.GetComponent<HarrierNetworkBridge>();
+                    if (bridge != null)
+                        bridge.PendingHarrierHoming = true;
+                }
+            );
+
+            Writer<HarrierBeginClientMessage>.write =
+                HarrierBeginClientMessageSerialization.WriteHarrierBeginClientMessage;
+            Reader<HarrierBeginClientMessage>.read =
+                HarrierBeginClientMessageSerialization.ReadHarrierBeginClientMessage;
+            NetworkClient.RegisterHandler<HarrierBeginClientMessage>(msg =>
+            {
+                HarrierNetworkBridge.ClientHandleBegin(msg);
+            });
+
+            Writer<HarrierEndClientMessage>.write =
+                HarrierEndClientMessageSerialization.WriteHarrierEndClientMessage;
+            Reader<HarrierEndClientMessage>.read =
+                HarrierEndClientMessageSerialization.ReadHarrierEndClientMessage;
+            NetworkClient.RegisterHandler<HarrierEndClientMessage>(msg =>
+            {
+                HarrierNetworkBridge.ClientHandleEnd(msg);
+            });
         }
 
         public static void ResetRegistration() => _registered = false;
@@ -887,6 +929,7 @@ namespace IssaPlugin.Patches
             RegisterPrefab(AssetLoader.NukeBombPrefab);
             RegisterPrefab(AssetLoader.BlackHoleGrenadePrefab);
             RegisterPrefab(AssetLoader.WallPrefab);
+            RegisterPrefab(AssetLoader.HarrierPrefab);
         }
 
         private static void RegisterPrefab(GameObject prefab)

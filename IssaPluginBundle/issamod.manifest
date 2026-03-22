@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 578144108
+CRC: 2167535167
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 9bd800de2878200a3e0bdfd7f31d9b2d
+    Hash: 8e30566ac522fc16c8390e310237ec2e
   TypeTreeHash:
     serializedVersion: 2
     Hash: 82d52513d6b19822b87b688cdb5147d6
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 95babd298d93984fe43699fa96482ebf
+    Hash: 05e9fe9467979a5e45b8da01263769d7
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -77,7 +77,7 @@ Assets:
 - Assets/Assets/ac130_model.prefab
 - Assets/Assets/Materials/sticky_grenade.mat
 - Assets/Assets/missile_icon.png
-- Assets/Assets/Materials/Teddy/Material.012.mat
+- Assets/Assets/harrier.prefab
 - Assets/Assets/Materials/Teddy/eyes.mat
 - Assets/Assets/bomber_proxy.prefab
 - Assets/Assets/ConfettiBlastRainbow.prefab
@@ -86,6 +86,7 @@ Assets:
 - Assets/Assets/donut_icon.png
 - Assets/Assets/predator_missile_tablet_model.prefab
 - Assets/Assets/predator_missile_ready.ogg
+- Assets/Assets/Materials/Teddy/Material.012.mat
 - Assets/Assets/gravity_remote_model.fbx
 - Assets/Assets/bear.prefab
 - Assets/Assets/Dark 1.mat
@@ -102,6 +103,7 @@ Assets:
 - Assets/Assets/bomber_model.prefab
 - Assets/Assets/etfx_explosion_nuke.wav
 - Assets/Assets/Materials/Teddy/Nose.002.mat
+- Assets/Assets/sports_car.prefab
 - Assets/Assets/bomber_icon.png
 - Assets/Assets/plane_falling.ogg
 - Assets/Assets/wall.prefab
@@ -130,7 +132,9 @@ Assets:
 - Assets/Assets/bear_icon.png
 - Assets/Assets/WarningExclamation.prefab
 - Assets/Blink/Art/Animals/Stylized/Bear/Bear_Prefabs/BearAnimator.controller
+- Assets/Assets/harrier_tablet.prefab
 - Assets/Assets/uzi_icon_v2.png
+- Assets/Assets/sports_car_handheld.prefab
 - Assets/Assets/gravity_remote_icon.png
 - Assets/Assets/black_hole.prefab
 - Assets/Assets/sniper_rifle_icon.png
@@ -142,6 +146,8 @@ Assets:
 - Assets/Assets/Brass.mat
 - Assets/Assets/nuclear_bomb.prefab
 - Assets/Assets/black_hole_grenade.prefab
+- Assets/Assets/sports_car_icon.png
+- Assets/Assets/harrier_icon.png
 - Assets/Assets/spike_ball_icon.png
 - Assets/Assets/ac130_tablet_model.prefab
 - Assets/Assets/javelin_rocket_launcher.prefab

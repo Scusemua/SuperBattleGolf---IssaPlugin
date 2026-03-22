@@ -237,6 +237,21 @@ namespace IssaPlugin
         public static ConfigEntry<float> AK47MaxAimingDistance { get; private set; }
         public static ConfigEntry<float> AK47MaxShotDistance { get; private set; }
 
+        // --- Harrier Jet ---
+        public static ConfigEntry<Key> HarrierGiveKey { get; private set; }
+        public static ConfigEntry<float> HarrierUses { get; private set; }
+        public static ConfigEntry<float> HarrierSpawnWeight { get; private set; }
+        public static ConfigEntry<float> HarrierAltitude { get; private set; }
+        public static ConfigEntry<float> HarrierDuration { get; private set; }
+        public static ConfigEntry<float> HarrierFireInterval { get; private set; }
+        public static ConfigEntry<float> HarrierApproachDistance { get; private set; }
+        public static ConfigEntry<float> HarrierApproachSpeed { get; private set; }
+        public static ConfigEntry<float> HarrierDriftSpeed { get; private set; }
+        public static ConfigEntry<float> HarrierHoverRadius { get; private set; }
+        public static ConfigEntry<float> HarrierExplosionScale { get; private set; }
+        public static ConfigEntry<float> HarrierRocketJitter { get; private set; }
+        public static ConfigEntry<bool> HarrierFriendlyFire { get; private set; }
+
         // --- Bear ---
         public static ConfigEntry<Key> BearGiveKey { get; private set; }
         public static ConfigEntry<float> BearUses { get; private set; }
@@ -1478,7 +1493,7 @@ namespace IssaPlugin
             PlaceableWallGiveKey = cfg.Bind(
                 "PlaceableWall",
                 "GiveKey",
-                Key.Numpad6,
+                Key.Numpad8,
                 "Debug key to add the Placeable Wall to your inventory."
             );
 
@@ -1573,7 +1588,7 @@ namespace IssaPlugin
             AK47GiveKey = cfg.Bind(
                 "AK47",
                 "GiveKey",
-                Key.M,
+                Key.NumpadPlus,
                 "Debug key to add the Sub-Machine Gun to your inventory."
             );
             AK47Uses = cfg.Bind(
@@ -1591,13 +1606,13 @@ namespace IssaPlugin
             AK47FireRate = cfg.Bind(
                 "AK47",
                 "FireRate",
-                0.08f,
+                0.06f,
                 "Seconds between each bullet in the burst."
             );
             AK47Inaccuracy = cfg.Bind(
                 "AK47",
                 "Inaccuracy",
-                22f,
+                4f,
                 "Random spread angle (degrees) applied to each bullet. Higher = less accurate."
             );
             AK47MaxAimingDistance = cfg.Bind(
@@ -1611,6 +1626,86 @@ namespace IssaPlugin
                 "MaxShotDistance",
                 500f,
                 "Max raycast distance for each bullet."
+            );
+
+            // --- Harrier Jet ---
+            HarrierGiveKey = cfg.Bind(
+                "HarrierJet",
+                "GiveKey",
+                Key.Numpad9,
+                "Debug key to add the Harrier Jet to your inventory."
+            );
+            HarrierUses = cfg.Bind(
+                "HarrierJet",
+                "Uses",
+                1f,
+                "Number of Harrier Jet uses per pickup."
+            );
+            HarrierSpawnWeight = cfg.Bind(
+                "ItemBoxSpawns",
+                "HarrierJetWeight",
+                1f,
+                "Spawn weight for the Harrier Jet in item boxes. Set to 0 to disable."
+            );
+            HarrierAltitude = cfg.Bind(
+                "HarrierJet",
+                "Altitude",
+                80f,
+                "Height above the map centre the Harrier hovers at while attacking."
+            );
+            HarrierDuration = cfg.Bind(
+                "HarrierJet",
+                "Duration",
+                30f,
+                "How many seconds the Harrier remains on-station before flying out."
+            );
+            HarrierFireInterval = cfg.Bind(
+                "HarrierJet",
+                "FireInterval",
+                2.5f,
+                "Seconds between each autonomous rocket fired by the Harrier."
+            );
+            HarrierApproachDistance = cfg.Bind(
+                "HarrierJet",
+                "ApproachDistance",
+                600f,
+                "How far away the Harrier spawns before flying in to its hover point."
+            );
+            HarrierApproachSpeed = cfg.Bind(
+                "HarrierJet",
+                "ApproachSpeed",
+                100f,
+                "Speed in units per second during fly-in and fly-out."
+            );
+            HarrierDriftSpeed = cfg.Bind(
+                "HarrierJet",
+                "DriftSpeed",
+                8f,
+                "Units per second the Harrier drifts toward the player concentration centroid."
+            );
+            HarrierHoverRadius = cfg.Bind(
+                "HarrierJet",
+                "HoverRadius",
+                30f,
+                "Maximum distance the Harrier can drift from its initial hover centre."
+            );
+            HarrierExplosionScale = cfg.Bind(
+                "HarrierJet",
+                "ExplosionScale",
+                1.5f,
+                "Scale multiplier applied to each rocket explosion from the Harrier."
+            );
+            HarrierRocketJitter = cfg.Bind(
+                "HarrierJet",
+                "RocketJitter",
+                4f,
+                "Angular spread in degrees applied to each rocket. Higher = less accurate."
+            );
+            HarrierFriendlyFire = cfg.Bind(
+                "HarrierJet",
+                "FriendlyFire",
+                false,
+                "If false, the Harrier will not target the player who summoned it."
             );
 
             // --- Bear ---

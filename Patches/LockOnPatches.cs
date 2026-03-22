@@ -20,7 +20,8 @@ namespace IssaPlugin.Patches
             t.GetComponent<AC130GunshipMarker>() != null
             || t.GetComponent<BomberMarker>() != null
             || t.GetComponent<DonutMarker>() != null
-            || t.GetComponent<BearMarker>() != null;
+            || t.GetComponent<BearMarker>() != null
+            || t.GetComponent<HarrierMarker>() != null;
     }
 
     // ====================================================================
@@ -88,6 +89,7 @@ namespace IssaPlugin.Patches
         private static bool _wasTargetingBomber;
         private static bool _wasTargetingDonut;
         private static bool _wasTargetingBear;
+        private static bool _wasTargetingHarrier;
 
         internal static void ResetTargetingState()
         {
@@ -95,6 +97,7 @@ namespace IssaPlugin.Patches
             _wasTargetingBomber = false;
             _wasTargetingDonut = false;
             _wasTargetingBear = false;
+            _wasTargetingHarrier = false;
         }
 
         static MethodBase TargetMethod() =>
@@ -129,6 +132,11 @@ namespace IssaPlugin.Patches
                 __result
                 && bestLockOnTarget != null
                 && bestLockOnTarget.GetComponent<BearMarker>() != null;
+
+            bool nowTargetingHarrier =
+                __result
+                && bestLockOnTarget != null
+                && bestLockOnTarget.GetComponent<HarrierMarker>() != null;
 
             // ---- Bomber fallback detection ----
             // The proxy's BomberProxyBehaviour is server-only, so the client-side
@@ -192,6 +200,35 @@ namespace IssaPlugin.Patches
                 }
             }
 
+            // ---- Harrier fallback detection ----
+            // Same approach as AC130: HarrierBehaviour is server-only, so the
+            // HarrierMarker's Entity may not register with LockOnTargetManager on
+            // clients. Find the marker directly and inject it when aimed toward the jet.
+            if (!nowTargetingHarrier)
+            {
+                var harrierMarker = Object.FindFirstObjectByType<HarrierMarker>();
+                if (harrierMarker != null)
+                {
+                    var lot = harrierMarker.GetComponent<LockOnTarget>();
+                    if (lot != null)
+                    {
+                        var cam = Camera.main;
+                        if (cam != null)
+                        {
+                            Vector3 toJet = (
+                                harrierMarker.transform.position - cam.transform.position
+                            ).normalized;
+                            if (Vector3.Dot(toJet, cam.transform.forward) > 0.7f)
+                            {
+                                __result = true;
+                                bestLockOnTarget = lot;
+                                nowTargetingHarrier = true;
+                            }
+                        }
+                    }
+                }
+            }
+
             // ---- Gunship ----
             if (nowTargetingGunship && !_wasTargetingGunship)
                 IssaPluginPlugin.Log.LogInfo("[LockOn] Locked onto AC130 gunship.");
@@ -226,10 +263,18 @@ namespace IssaPlugin.Patches
             if (nowTargetingBear)
                 NetworkClient.Send(new BearPrepareHomingMessage());
 
+            // ---- Harrier ----
+            if (nowTargetingHarrier && !_wasTargetingHarrier)
+                IssaPluginPlugin.Log.LogInfo("[LockOn] Locked onto Harrier Jet.");
+
+            if (nowTargetingHarrier)
+                NetworkClient.Send(new HarrierPrepareHomingMessage());
+
             _wasTargetingGunship = nowTargetingGunship;
             _wasTargetingBomber = nowTargetingBomber;
             _wasTargetingDonut = nowTargetingDonut;
             _wasTargetingBear = nowTargetingBear;
+            _wasTargetingHarrier = nowTargetingHarrier;
         }
     }
 
@@ -313,6 +358,22 @@ namespace IssaPlugin.Patches
                     homing.Target = nearestBear.transform;
                     IssaPluginPlugin.Log.LogInfo(
                         $"[LockOn] Rocket homing toward Bear at {nearestBear.transform.position}."
+                    );
+                }
+            }
+
+            // ---- Harrier homing ----
+            var harrierBridge = launcher.GetComponent<HarrierNetworkBridge>();
+            if (harrierBridge != null && harrierBridge.PendingHarrierHoming)
+            {
+                var harrierMarker = Object.FindFirstObjectByType<HarrierMarker>();
+                if (harrierMarker != null)
+                {
+                    harrierBridge.PendingHarrierHoming = false;
+                    var homing = __instance.gameObject.AddComponent<RocketHomingBehaviour>();
+                    homing.Target = harrierMarker.transform;
+                    IssaPluginPlugin.Log.LogInfo(
+                        $"[LockOn] Rocket homing toward Harrier at {harrierMarker.transform.position}."
                     );
                 }
             }
