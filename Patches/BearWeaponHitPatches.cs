@@ -201,10 +201,14 @@ namespace IssaPlugin.Patches
                 ).normalized;
                 knockDir = (knockDir + Vector3.up * 0.5f).normalized;
 
+                // DealDamage first: it calls OnHitByExplosion → TransitionTo(Stunned)
+                // → ZeroVelocity(), which clears any prior velocity.  The knockback
+                // impulse is then applied on top of that clean zero so it isn't
+                // immediately cancelled by the state transition.
                 BearExplosionAttackerContext.CurrentAttacker = playerInfo;
-                receiver.Behaviour?.ApplyMeleeKnockback(knockDir, knockbackForce);
                 receiver.DealDamage(damage);
                 BearExplosionAttackerContext.CurrentAttacker = null;
+                receiver.Behaviour?.ApplyMeleeKnockback(knockDir, knockbackForce);
 
                 NetworkServer.SendToAll(
                     new BearHitVfxMessage

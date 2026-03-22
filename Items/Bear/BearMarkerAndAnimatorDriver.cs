@@ -198,7 +198,14 @@ namespace IssaPlugin.Items
                     // Step 2: Immediately set Stunned Loop bool — this queues the
                     //         looping stun state. The AnyState→Stunned Loop transition
                     //         fires as soon as Hit Front's exit puts us back at Combat Idle.
+                    //
+                    // CrossFadeInFixedTime is also called to force-interrupt attack
+                    // animations that use HasExitTime and would otherwise block the
+                    // AnyState→GetHitFront trigger until the attack clip finishes.
                     ClearMovementBools();
+                    foreach (var t in AttackTriggers)
+                        _animator.ResetTrigger(t);
+                    _animator.CrossFadeInFixedTime("Hit Front", 0.05f);
                     _animator.SetTrigger(TrigGetHitFront);
                     _animator.SetBool(BoolStunnedLoop, true);
                     break;

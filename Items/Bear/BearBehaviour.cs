@@ -192,7 +192,7 @@ namespace IssaPlugin.Items
 
         private void UpdateIdle()
         {
-            _currentTarget = _selector.SelectTarget(transform.position, GetActivePlayers());
+            _currentTarget = _selector.SelectTarget(transform.position, GetTargetablePlayers());
 
             if (_currentTarget != null)
                 TransitionTo(BearAIState.Pursuing);
@@ -202,7 +202,7 @@ namespace IssaPlugin.Items
 
         private void UpdateWander()
         {
-            _currentTarget = _selector.SelectTarget(transform.position, GetActivePlayers());
+            _currentTarget = _selector.SelectTarget(transform.position, GetTargetablePlayers());
 
             if (_currentTarget != null)
             {
@@ -215,7 +215,7 @@ namespace IssaPlugin.Items
 
         private void UpdatePursuing()
         {
-            _currentTarget = _selector.SelectTarget(transform.position, GetActivePlayers());
+            _currentTarget = _selector.SelectTarget(transform.position, GetTargetablePlayers());
 
             if (_currentTarget == null)
             {
@@ -302,7 +302,7 @@ namespace IssaPlugin.Items
             }
 
             // Enraged: same as pursuing but faster, re-uses same target lock
-            _currentTarget = _selector.SelectTarget(transform.position, GetActivePlayers());
+            _currentTarget = _selector.SelectTarget(transform.position, GetTargetablePlayers());
 
             if (_currentTarget == null)
             {
@@ -721,6 +721,7 @@ namespace IssaPlugin.Items
         // ── Helpers ───────────────────────────────────────────────────────────
 
         private static readonly List<PlayerInfo> _playerScratchpad = [];
+        private static readonly List<PlayerInfo> _targetableScratchpad = [];
 
         private static List<PlayerInfo> GetActivePlayers()
         {
@@ -736,6 +737,24 @@ namespace IssaPlugin.Items
                 _playerScratchpad.AddRange(remotes);
 
             return _playerScratchpad;
+        }
+
+        /// <summary>
+        /// Returns the list of players that this bear is allowed to target.
+        /// When <see cref="Configuration.BearFriendlyFire"/> is false, the
+        /// summoner is excluded so bears never turn on the player who deployed them.
+        /// </summary>
+        private List<PlayerInfo> GetTargetablePlayers()
+        {
+            var all = GetActivePlayers();
+            if (Configuration.BearFriendlyFire.Value || SummonerInfo == null)
+                return all;
+
+            _targetableScratchpad.Clear();
+            foreach (var p in all)
+                if (p != SummonerInfo)
+                    _targetableScratchpad.Add(p);
+            return _targetableScratchpad;
         }
     }
 }
