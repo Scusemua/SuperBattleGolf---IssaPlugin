@@ -217,6 +217,7 @@ namespace IssaPlugin
         public static ConfigEntry<float> PlaceableWallVelocityImpactFactor { get; private set; }
 
         public static ConfigEntry<float> PlaceableWallTorsionMultiplier { get; private set; }
+        public static ConfigEntry<float> PlaceableWallRotationStep { get; private set; }
 
         // --- Bear ---
         public static ConfigEntry<Key> BearGiveKey { get; private set; }
@@ -620,7 +621,10 @@ namespace IssaPlugin
                 "FreezeWorld",
                 "Bounciness",
                 0.2f,
-                "Surface bounciness applied to all physics contacts during a freeze."
+                new ConfigDescription(
+                    "Surface bounciness applied to all physics contacts during a freeze.",
+                    new AcceptableValueRange<float>(0.0f, 1.0f)
+                )
             );
 
             FreezeCartSidewaysStiffness = cfg.Bind(
@@ -1494,6 +1498,14 @@ namespace IssaPlugin
                 "TorsionMultiplier",
                 0.002f,
                 "Degree to which torque (spin) damages the bricks of the placeable wall. Default: 0.002."
+            );
+
+            PlaceableWallRotationStep = cfg.Bind(
+                "PlaceableWall",
+                "RotationStep",
+                45f,
+                "Degrees the wall rotates per scroll-wheel tick during the placement preview. "
+                    + "Scroll up rotates clockwise, scroll down rotates counter-clockwise."
             );
 
             // --- Bear ---

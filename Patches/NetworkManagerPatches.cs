@@ -653,7 +653,11 @@ namespace IssaPlugin.Patches
                     (conn, msg) =>
                     {
                         conn.identity?.GetComponent<PlaceableWallNetworkBridge>()
-                            ?.ServerHandlePlacement(msg.RayOrigin, msg.RayDirection);
+                            ?.ServerHandlePlacement(
+                                msg.RayOrigin,
+                                msg.RayDirection,
+                                msg.ExtraYawDegrees
+                            );
                     }
                 );
 

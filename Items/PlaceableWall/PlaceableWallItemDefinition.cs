@@ -20,5 +20,13 @@ namespace IssaPlugin.Items
         {
             inventory.GetComponent<PlaceableWallNetworkBridge>()?.ClientPlace();
         }
+
+        // Called every frame for the local player while this item is equipped.
+        // Adds the preview component once; it removes itself when the item is unequipped.
+        public override void OnEquip(PlayerInventory inventory)
+        {
+            if (inventory.GetComponent<PlaceableWallPlacementPreview>() == null)
+                inventory.gameObject.AddComponent<PlaceableWallPlacementPreview>();
+        }
     }
 }

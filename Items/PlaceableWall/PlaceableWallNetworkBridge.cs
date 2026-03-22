@@ -28,18 +28,22 @@ namespace IssaPlugin.Items
                 return;
             }
 
+            // Pick up the accumulated R-key rotation from the preview component if present.
+            float extraYaw = GetComponent<PlaceableWallPlacementPreview>()?.CurrentRotationOffset ?? 0f;
+
             NetworkClient.Send(
                 new PlaceWallMessage
                 {
                     RayOrigin = cam.transform.position,
                     RayDirection = cam.transform.forward,
+                    ExtraYawDegrees = extraYaw,
                 }
             );
         }
 
         // ── Server handler ───────────────────────────────────────────────
 
-        public void ServerHandlePlacement(Vector3 rayOrigin, Vector3 rayDirection)
+        public void ServerHandlePlacement(Vector3 rayOrigin, Vector3 rayDirection, float extraYawDegrees = 0f)
         {
             var inventory = GetComponent<PlayerInventory>();
             if (inventory == null)
@@ -81,24 +85,25 @@ namespace IssaPlugin.Items
 
             Vector3 placePos = hit.point;
 
-            // Reject if the placement centre is too close to the hole.
-            if (!IsValidPlacement(placePos))
+            // Compute final rotation before validation so we can use it for the
+            // player-overlap OverlapBox (same box the server will actually spawn).
+            Vector3 cameraXZ = Vector3.ProjectOnPlane(rayDirection, Vector3.up);
+            if (cameraXZ.sqrMagnitude < 0.001f)
+                cameraXZ = Vector3.forward; // straight-down look fallback
+            Quaternion baseRotation = Quaternion.LookRotation(-cameraXZ.normalized, Vector3.up);
+            Quaternion wallRotation = baseRotation * Quaternion.Euler(0f, extraYawDegrees, 0f);
+
+            // Reject placement if it would cover the hole or overlap any player.
+            if (!IsValidPlacement(placePos, wallRotation))
             {
                 IssaPluginPlugin.Log.LogInfo(
-                    $"[PlaceableWall] Placement at {placePos} rejected: too close to the hole."
+                    $"[PlaceableWall] Placement at {placePos} rejected (hole or player overlap)."
                 );
                 return;
             }
 
             // Consume item only after all validation passes.
             ItemHelper.ConsumeEquippedItem(inventory);
-
-            // Orient the wall so it faces back toward the placing player.
-            // The wall runs perpendicular to the camera's XZ direction.
-            Vector3 cameraXZ = Vector3.ProjectOnPlane(rayDirection, Vector3.up);
-            if (cameraXZ.sqrMagnitude < 0.001f)
-                cameraXZ = Vector3.forward; // straight-down look fallback
-            Quaternion wallRotation = Quaternion.LookRotation(-cameraXZ.normalized, Vector3.up);
 
             var wallGo = Object.Instantiate(AssetLoader.WallPrefab, placePos, wallRotation);
             if (wallGo == null)
@@ -147,23 +152,50 @@ namespace IssaPlugin.Items
 
         // ── Placement validation ─────────────────────────────────────────
 
-        private static bool IsValidPlacement(Vector3 position)
+        private static bool IsValidPlacement(Vector3 position, Quaternion rotation)
         {
+            // ── Hole distance check ──────────────────────────────────────
             float minDist = Configuration.PlaceableWallMinHoleDistance.Value;
-            if (minDist <= 0f)
-                return true;
+            if (minDist > 0f)
+            {
+                var mainHole = GolfHoleManager.MainHole;
+                if (mainHole != null)
+                {
+                    Vector3 holePos = mainHole.transform.position;
+                    float xzDist = new Vector2(
+                        position.x - holePos.x,
+                        position.z - holePos.z
+                    ).magnitude;
+                    if (xzDist < minDist)
+                        return false;
+                }
+            }
 
-            var mainHole = GolfHoleManager.MainHole;
-            if (mainHole == null)
-                return true;
+            // ── Player overlap check ─────────────────────────────────────
+            // Use the wall prefab's scale to size the OverlapBox, matching the
+            // preview component's check so the server and client agree.
+            Vector3 scale =
+                AssetLoader.WallPrefab != null
+                    ? AssetLoader.WallPrefab.transform.localScale
+                    : new Vector3(4f, 3f, 0.3f);
+            Vector3 halfExtents = scale * 0.45f;
+            Vector3 boxCenter = position + Vector3.up * halfExtents.y;
 
-            Vector3 holePos = mainHole.transform.position;
-            float xzDist = new Vector2(
-                position.x - holePos.x,
-                position.z - holePos.z
-            ).magnitude;
+            var overlaps = Physics.OverlapBox(
+                boxCenter,
+                halfExtents,
+                rotation,
+                Physics.AllLayers,
+                QueryTriggerInteraction.Ignore
+            );
 
-            return xzDist >= minDist;
+            foreach (var col in overlaps)
+            {
+                if (col.GetComponentInParent<PlayerMovement>() != null)
+                    return false;
+            }
+
+            return true;
         }
 
         // ── Hole cleanup ─────────────────────────────────────────────────

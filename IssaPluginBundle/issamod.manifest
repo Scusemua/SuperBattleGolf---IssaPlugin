@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 788849034
+CRC: 2487530196
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 7a52870dbb5e4744c321bd37dbebf316
+    Hash: 4aa424d51984a0145c11fcb40d3cdb06
   TypeTreeHash:
     serializedVersion: 2
-    Hash: 21d74eb5e1d2405ddd7c608115c39ad5
+    Hash: 82d52513d6b19822b87b688cdb5147d6
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 826472e559e31d7cf4fb322ccc13176a
+    Hash: d8f81868d2f6ef1dc99822f01707ced0
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -50,15 +50,11 @@ ClassTypes:
 - Class: 108
   Script: {instanceID: 0}
 - Class: 114
-  Script: {fileID: 11500000, guid: 77bf4647e36d9ca42b762b0a665e9ce8, type: 3}
-- Class: 114
   Script: {fileID: 11500000, guid: 2f54e17d705a2894d88787e24190ebfa, type: 3}
 - Class: 114
   Script: {fileID: 11500000, guid: 9b91ecbcc199f4492b9a91e820070131, type: 3}
 - Class: 114
   Script: {fileID: 11500000, guid: 8ff3ba0becae47b8b9381191598957c8, type: 3}
-- Class: 114
-  Script: {fileID: 11500000, guid: 5fea29bb7c508c244a1f805a5fd3fc4d, type: 3}
 - Class: 115
   Script: {instanceID: 0}
 - Class: 134
@@ -77,88 +73,90 @@ ClassTypes:
   Script: {instanceID: 0}
 SerializeReferenceClassIdentifiers: []
 Assets:
-- Assets/Assets/ac130_above.ogg
 - Assets/Assets/homerun.ogg
-- Assets/Assets/fire_torch_intense.prefab
 - Assets/Assets/ac130_model.prefab
-- Assets/Assets/nuclear_explosion.prefab
 - Assets/Assets/sticky_grenade_model.prefab
-- Assets/Assets/teddy.prefab
 - Assets/Assets/Materials/sticky_grenade.mat
-- Assets/Assets/Material.003.mat
-- Assets/Assets/donut_model.prefab
 - Assets/Assets/missile_icon.png
 - Assets/Assets/Materials/Teddy/Material.012.mat
 - Assets/Assets/Materials/Teddy/eyes.mat
-- Assets/Assets/lightning.prefab
+- Assets/Assets/bomber_proxy.prefab
 - Assets/Assets/ConfettiBlastRainbow.prefab
-- Assets/Assets/javelin_trail.prefab
-- Assets/Assets/stealth_bomber_tablet_model.prefab
-- Assets/Assets/donut_icon.png
-- Assets/Assets/ac130_tablet.prefab
-- Assets/Assets/jet_plane_flyby.ogg
-- Assets/Assets/predator_missile_ready.ogg
 - Assets/Assets/sticky_grenade.prefab
 - Assets/Assets/Material.001.mat
-- Assets/Assets/bomber_proxy.prefab
-- Assets/Assets/bear.prefab
-- Assets/Assets/sticky_grenade_icon.png
-- Assets/Assets/laser_zone_red.prefab
+- Assets/Assets/donut_icon.png
 - Assets/Assets/sniper_scope_overlay.png
+- Assets/Assets/predator_missile_ready.ogg
+- Assets/Assets/sticky_grenade_icon.png
+- Assets/Assets/bear.prefab
 - Assets/Assets/gravity_remote_model.fbx
-- Assets/Assets/WarningExclamation.prefab
-- Assets/Assets/bat_icon.png
-- Assets/Blink/Art/Animals/Stylized/Bear/Bear_Prefabs/BearAnimator.controller
+- Assets/Assets/predator_missile_tablet_model.prefab
 - Assets/Assets/big_plane.ogg
-- Assets/Assets/Dark 2.mat
-- Assets/Assets/bear_icon.png
+- Assets/Assets/bat_icon.png
 - Assets/Assets/Dark 1.mat
+- Assets/Assets/Dark 2.mat
 - Assets/Assets/javelin_target_indicator.prefab
 - Assets/Assets/missile_locked.ogg
-- Assets/Assets/predator_missile_tablet_model.prefab
-- Assets/Assets/javelin_icon.png
 - Assets/Assets/bat_model.prefab
-- Assets/Assets/gravity_remote.prefab
+- Assets/Assets/javelin_icon.png
 - Assets/Assets/Materials/Teddy/fabric_white.mat
 - Assets/Assets/intervention.prefab
+- Assets/Assets/bomber_model.prefab
+- Assets/Assets/etfx_explosion_nuke.wav
+- Assets/Assets/Materials/Teddy/Nose.002.mat
+- Assets/Assets/bomber_icon.png
+- Assets/Assets/plane_falling.ogg
+- Assets/Assets/wall.prefab
+- Assets/Assets/spike_ball.prefab
+- Assets/Assets/Material.002.mat
+- Assets/Assets/stealth_bomber_tablet.prefab
+- Assets/Assets/predator_missile_tablet.prefab
+- Assets/Assets/NukeVerticalExplosionFire.prefab
+- Assets/Assets/nuke_icon.png
+- Assets/Assets/ac130_above.ogg
+- Assets/Assets/fire_torch_intense.prefab
+- Assets/Assets/nuclear_explosion.prefab
+- Assets/Assets/teddy.prefab
+- Assets/Assets/Material.003.mat
+- Assets/Assets/donut_model.prefab
+- Assets/Assets/gravity_remote.prefab
+- Assets/Assets/lightning.prefab
+- Assets/Assets/javelin_trail.prefab
+- Assets/Assets/stealth_bomber_tablet_model.prefab
+- Assets/Assets/ac130_tablet.prefab
+- Assets/Assets/jet_plane_flyby.ogg
+- Assets/Assets/laser_zone_red.prefab
+- Assets/Assets/bear_icon.png
+- Assets/Assets/WarningExclamation.prefab
+- Assets/Blink/Art/Animals/Stylized/Bear/Bear_Prefabs/BearAnimator.controller
 - Assets/Assets/gravity_remote_icon.png
 - Assets/Assets/black_hole.prefab
 - Assets/Assets/sniper_rifle_icon.png
 - Assets/Assets/freeze_effect_icon.png
 - Assets/Blink/Art/Animals/Stylized/Bear/Bear_Prefabs/Bear_4.prefab
 - Assets/Assets/DroppedCustomItem.prefab
-- Assets/Assets/bomber_model.prefab
-- Assets/Assets/etfx_explosion_nuke.wav
 - Assets/Assets/smoke_prefab.prefab
-- Assets/Assets/Materials/Teddy/Nose.002.mat
 - Assets/Assets/sniper_scope.png
 - Assets/Assets/Brass.mat
 - Assets/Assets/nuclear_bomb.prefab
 - Assets/Assets/black_hole_grenade.prefab
-- Assets/Assets/bomber_icon.png
-- Assets/Assets/plane_falling.ogg
-- Assets/Assets/wall.prefab
 - Assets/Assets/spike_ball_icon.png
 - Assets/Assets/ac130_tablet_model.prefab
 - Assets/Assets/javelin_rocket_launcher.prefab
 - Assets/Assets/smoke_trail_prefab.prefab
 - Assets/Assets/brick.prefab
-- Assets/Assets/spike_ball.prefab
-- Assets/Assets/Material.002.mat
+- Assets/Assets/wall_ghost_preview.prefab
 - Assets/Assets/ac130_impact_vfx.prefab
-- Assets/Assets/stealth_bomber_tablet.prefab
-- Assets/Assets/Grey.mat
 - Assets/Assets/snowball.prefab
+- Assets/Assets/Grey.mat
 - Assets/Assets/Materials/Teddy/fabric_brown.mat
 - Assets/Assets/NukeExplosionFire.prefab
 - Assets/Assets/ac130_icon.png
-- Assets/Assets/predator_missile_tablet.prefab
 - Assets/Assets/blood_splatter_critical.prefab
 - Assets/Assets/nuclear_detonator.prefab
-- Assets/Assets/NukeVerticalExplosionFire.prefab
 - Assets/Assets/Glass.mat
 - Assets/Assets/donut_vehicle.prefab
+- Assets/Assets/wall_icon.png
 - Assets/Assets/black_hole_grenade_icon.png
 - Assets/Assets/Materials/Teddy/_FRONT_427414.mat
-- Assets/Assets/nuke_icon.png
 Dependencies: []

@@ -69,6 +69,11 @@ namespace IssaPlugin.Items
 
         public static Sprite WallIcon { get; private set; }
 
+        /// Local-only non-networked copy of WallPrefab used as the placement ghost.
+        /// Network components and physics are stripped so it can be instantiated freely
+        /// on the client without Mirror context.
+        public static GameObject WallGhostPrefab { get; private set; }
+
         /// The model the player holds while the Nuke item is equipped.
         public static GameObject NuclearDetonatorPrefab { get; private set; }
 
@@ -356,6 +361,27 @@ namespace IssaPlugin.Items
                 wallRb.useGravity = false;
                 EnsureNetworkIdentity(WallPrefab, 0x4411000Au);
                 GameObject.DontDestroyOnLoad(WallPrefab);
+            }
+
+            // Build the ghost template from WallPrefab.
+            // Instantiate at load time (before any network session is active) so
+            // DestroyImmediate on Mirror components is safe and has no side-effects.
+            if (WallPrefab != null)
+            {
+                WallGhostPrefab = GameObject.Instantiate(WallPrefab);
+                WallGhostPrefab.name = "PlaceableWall_GhostTemplate";
+                StripNetworkComponents(WallGhostPrefab);
+                // Disable physics — ghost is purely visual.
+                foreach (var rb in WallGhostPrefab.GetComponentsInChildren<Rigidbody>(true))
+                {
+                    rb.isKinematic = true;
+                    rb.detectCollisions = false;
+                }
+                foreach (var col in WallGhostPrefab.GetComponentsInChildren<Collider>(true))
+                    col.enabled = false;
+                WallGhostPrefab.SetActive(false);
+                GameObject.DontDestroyOnLoad(WallGhostPrefab);
+                IssaPluginPlugin.Log.LogInfo("[Assets] WallGhostPrefab created from WallPrefab.");
             }
 
             IssaPluginPlugin.Log.LogInfo("[Assets] IssaPluginBundle loaded.");
