@@ -216,6 +216,10 @@ Assets used in the project:
     (https://skfb.ly/oytAV) by KangaroOz 3D 
     Licensed under CC Attribution-NonCommercial-ShareAlike
 
+-   "Low Poly Convertible Cartoony Car"\
+    (https://skfb.ly/oOMEx) by the.snajp 
+    Licensed under Creative Commons Attribution.
+
 ---
 
 *IssaPlugin is a fan-made mod and is not affiliated with Brimstone or Oro Interactive.*

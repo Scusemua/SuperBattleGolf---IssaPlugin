@@ -670,6 +670,22 @@ namespace IssaPlugin.Patches
                 PlaceableWallMessageHandlers.HandleWallDestroyed
             );
 
+            // ── Sports Car Messages ───────────────────────────────────────
+
+            // Client → Server
+            Writer<SportsCarActivateMessage>.write =
+                SportsCarActivateMessageSerialization.WriteSportsCarActivateMessage;
+            Reader<SportsCarActivateMessage>.read =
+                SportsCarActivateMessageSerialization.ReadSportsCarActivateMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<SportsCarActivateMessage>(
+                    (conn, msg) =>
+                    {
+                        conn.identity?.GetComponent<SportsCarNetworkBridge>()
+                            ?.ServerSpawnSportsCar();
+                    }
+                );
+
             // ── Spawn-weight sync (server → all clients) ─────────────────────
             Writer<SpawnWeightsMessage>.write =
                 SpawnWeightsMessageSerialization.WriteSpawnWeightsMessage;

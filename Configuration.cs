@@ -237,6 +237,13 @@ namespace IssaPlugin
         public static ConfigEntry<float> AK47MaxAimingDistance { get; private set; }
         public static ConfigEntry<float> AK47MaxShotDistance { get; private set; }
 
+        // --- Sports Car ---
+        public static ConfigEntry<Key> SportsCarGiveKey { get; private set; }
+        public static ConfigEntry<float> SportsCarUses { get; private set; }
+        public static ConfigEntry<float> SportsCarSpawnWeight { get; private set; }
+        public static ConfigEntry<float> SportsCarSpeedMultiplier { get; private set; }
+        public static ConfigEntry<float> SportsCarTorqueMultiplier { get; private set; }
+
         // --- Bear ---
         public static ConfigEntry<Key> BearGiveKey { get; private set; }
         public static ConfigEntry<float> BearUses { get; private set; }
@@ -1611,6 +1618,45 @@ namespace IssaPlugin
                 "MaxShotDistance",
                 500f,
                 "Max raycast distance for each bullet."
+            );
+
+            // --- Sports Car ---
+            SportsCarGiveKey = cfg.Bind(
+                "SportsCar",
+                "GiveKey",
+                Key.NumpadPlus,
+                "Debug key to add the Sports Car item to your inventory."
+            );
+
+            SportsCarUses = cfg.Bind(
+                "SportsCar",
+                "Uses",
+                1f,
+                "Number of uses per Sports Car pickup."
+            );
+
+            SportsCarSpawnWeight = cfg.Bind(
+                "ItemBoxSpawns",
+                "SportsCarWeight",
+                2f,
+                "Spawn weight for the Sports Car in item boxes. Set to 0 to disable."
+            );
+
+            SportsCarSpeedMultiplier = cfg.Bind(
+                "SportsCar",
+                "SpeedMultiplier",
+                2.0f,
+                "Multiplier applied to the base golf cart's MaxForwardSpeed and MaxBackwardSpeed. " +
+                "2.0 = twice as fast as a standard golf cart. " +
+                "The global match CartSpeed rule stacks on top."
+            );
+
+            SportsCarTorqueMultiplier = cfg.Bind(
+                "SportsCar",
+                "TorqueMultiplier",
+                2.0f,
+                "Multiplier applied to the base golf cart's acceleration torque. " +
+                "2.0 = reaches top speed roughly twice as quickly."
             );
 
             // --- Bear ---

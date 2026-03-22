@@ -51,6 +51,9 @@ namespace IssaPlugin.Items
         public static Sprite NukeIcon { get; private set; }
         public static Sprite BlackHoleGrenadeIcon { get; private set; }
 
+        public static Sprite SportsCarSprite { get; private set; }
+        public static GameObject SportsCarHandheldPrefab { get; private set; }
+
         /// The networked black hole grenade projectile.
         /// Falls back to a runtime-built sphere if 'black_hole_grenade.prefab' is absent.
         public static GameObject BlackHoleGrenadePrefab { get; private set; }
@@ -166,6 +169,7 @@ namespace IssaPlugin.Items
             StickyGrenadeIcon = LoadSprite("spike_ball_icon.png");
             BearIcon = LoadSprite("bear_icon.png");
             NukeIcon = LoadSprite("nuke_icon.png");
+            SportsCarSprite = LoadSprite("sports_car_icon.png");
 
             SniperScopeTexture = LoadTexture2D("sniper_scope.png");
 
@@ -234,6 +238,8 @@ namespace IssaPlugin.Items
             JavelinTrailVfxPrefab = Load<GameObject>("javelin_trail.prefab");
             DonutLaserZoneRed = Load<GameObject>("laser_zone_red.prefab");
             ConfettiBlastRainbow = Load<GameObject>("ConfettiBlastRainbow.prefab");
+
+            SportsCarHandheldPrefab = Load<GameObject>("sports_car_handheld.prefab");
 
             // StripNetworkComponents(DonutHandheldPrefab);
 

@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 578144108
+CRC: 1220022420
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 9bd800de2878200a3e0bdfd7f31d9b2d
+    Hash: f3f04ec192a375dfd454fea6d6fa722a
   TypeTreeHash:
     serializedVersion: 2
     Hash: 82d52513d6b19822b87b688cdb5147d6
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 95babd298d93984fe43699fa96482ebf
+    Hash: b461695d0914feb453924ef0eb7e9770
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -102,6 +102,7 @@ Assets:
 - Assets/Assets/bomber_model.prefab
 - Assets/Assets/etfx_explosion_nuke.wav
 - Assets/Assets/Materials/Teddy/Nose.002.mat
+- Assets/Assets/sports_car.prefab
 - Assets/Assets/bomber_icon.png
 - Assets/Assets/plane_falling.ogg
 - Assets/Assets/wall.prefab
@@ -131,6 +132,7 @@ Assets:
 - Assets/Assets/WarningExclamation.prefab
 - Assets/Blink/Art/Animals/Stylized/Bear/Bear_Prefabs/BearAnimator.controller
 - Assets/Assets/uzi_icon_v2.png
+- Assets/Assets/sports_car_handheld.prefab
 - Assets/Assets/gravity_remote_icon.png
 - Assets/Assets/black_hole.prefab
 - Assets/Assets/sniper_rifle_icon.png
@@ -142,6 +144,7 @@ Assets:
 - Assets/Assets/Brass.mat
 - Assets/Assets/nuclear_bomb.prefab
 - Assets/Assets/black_hole_grenade.prefab
+- Assets/Assets/sports_car_icon.png
 - Assets/Assets/spike_ball_icon.png
 - Assets/Assets/ac130_tablet_model.prefab
 - Assets/Assets/javelin_rocket_launcher.prefab
