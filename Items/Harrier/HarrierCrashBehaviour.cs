@@ -190,6 +190,20 @@ namespace IssaPlugin.Items
                     transform.position,
                     ExplosionScale
                 );
+            
+            VfxManager.PlayPooledVfxLocalOnly(
+                VfxType.RocketLauncherRocketExplosion,
+                transform.position,
+                Quaternion.identity,
+                Vector3.one * Configuration.AC130MaydayExplosionScale.Value
+            );
+
+            CameraModuleController.Shake(
+                GameManager.CameraGameplaySettings.RocketExplosionScreenshakeSettings,
+                transform.position
+            );
+
+            Destroy(gameObject);
         }
     }
 }
