@@ -164,6 +164,11 @@ namespace IssaPlugin.Items
 
                 // ── Movement states ───────────────────────────────────────────
 
+                case BearAIState.Wander:
+                    ClearMovementBools();
+                    _animator.SetBool(BoolWalkForward, true);
+                    break;
+
                 case BearAIState.Pursuing:
                 case BearAIState.Enraged:
                     // Both use the RunForward state.
