@@ -44,21 +44,24 @@ namespace IssaPlugin.Patches
                 QueryTriggerInteraction.Collide
             );
 
+            float damage = isBat
+                ? Configuration.PlaceableWallDamageBaseballBat.Value
+                : Configuration.PlaceableWallDamageGolfClub.Value;
+
             _hitWalls.Clear();
 
-            // TODO: Might be able to apply force to wall here.
-            // foreach (var col in colliders)
-            // {
-            //     var receiver = col.GetComponentInParent<PlaceableWallHitReceiver>();
-            //     if (receiver == null)
-            //         continue;
+            foreach (var col in colliders)
+            {
+                var chunk = col.GetComponentInParent<PlaceableWallDestructionBehaviour>();
+                if (chunk == null)
+                    continue;
 
-            //     // Guard against compound colliders registering the same wall twice.
-            //     if (!_hitWalls.Add(receiver.gameObject))
-            //         continue;
+                // Guard against compound colliders hitting the same chunk twice.
+                if (!_hitWalls.Add(chunk.gameObject))
+                    continue;
 
-            //     receiver.OnMeleeHit(isBat);
-            // }
+                chunk.ApplyDamage(damage);
+            }
         }
     }
 }

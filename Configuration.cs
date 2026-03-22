@@ -224,6 +224,8 @@ namespace IssaPlugin
         public static ConfigEntry<float> PlaceableWallRotationStep { get; private set; }
         public static ConfigEntry<float> PlaceableWallDebrisLifetime { get; private set; }
         public static ConfigEntry<float> PlaceableWallRocketExplosionForce { get; private set; }
+        public static ConfigEntry<float> PlaceableWallDamageGolfClub { get; private set; }
+        public static ConfigEntry<float> PlaceableWallDamageBaseballBat { get; private set; }
 
         // --- Bear ---
         public static ConfigEntry<Key> BearGiveKey { get; private set; }
@@ -263,6 +265,7 @@ namespace IssaPlugin
         public static ConfigEntry<float> BearAggroStealThreshold { get; private set; }
         public static ConfigEntry<float> BearAggroDuration { get; private set; }
         public static ConfigEntry<float> BearMeleeHitRange { get; private set; }
+        public static ConfigEntry<bool> BearFriendlyFire { get; private set; }
 
         public static void Initialize(ConfigFile cfg)
         {
@@ -1535,6 +1538,20 @@ namespace IssaPlugin
                 "Impulse force (per brick) applied by a rocket explosion to detached wall debris."
             );
 
+            PlaceableWallDamageGolfClub = cfg.Bind(
+                "PlaceableWall",
+                "DamageGolfClub",
+                1f,
+                "Damage dealt to a wall chunk per golf club swing."
+            );
+
+            PlaceableWallDamageBaseballBat = cfg.Bind(
+                "PlaceableWall",
+                "DamageBaseballBat",
+                2f,
+                "Damage dealt to a wall chunk per baseball bat swing."
+            );
+
             // --- Bear ---
             BearGiveKey = cfg.Bind(
                 "Bear",
@@ -1747,6 +1764,12 @@ namespace IssaPlugin
                 "MeleeHitRange",
                 2.5f,
                 "Radius (units) around the swing hitbox centre that counts as a golf-club/bat hit on a bear."
+            );
+            BearFriendlyFire = cfg.Bind(
+                "Bear",
+                "FriendlyFire",
+                false,
+                "If false, bears will not target or attack the player who summoned them."
             );
         }
     }
