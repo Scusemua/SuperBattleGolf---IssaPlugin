@@ -219,7 +219,7 @@ namespace IssaPlugin.Patches
             if (nowTargetingDonut)
                 NetworkClient.Send(new DonutPrepareHomingMessage());
 
-            // ---- Donut ----
+            // ---- Bear ----
             if (nowTargetingBear && !_wasTargetingBear)
                 IssaPluginPlugin.Log.LogInfo("[LockOn] Locked onto Bear.");
 
@@ -305,7 +305,7 @@ namespace IssaPlugin.Patches
             var bearBridge = launcher.GetComponent<BearNetworkBridge>();
             if (bearBridge != null && bearBridge.PendingBearHoming)
             {
-                var bearMarker = Object.FindFirstObjectByType<BearMarker>();
+                var nearestBear = FindNearestBear(__instance.transform.position);
                 if (bearMarker != null)
                 {
                     bearBridge.PendingBearHoming = false;
@@ -316,6 +316,25 @@ namespace IssaPlugin.Patches
                     );
                 }
             }
+        }
+
+        private static BearMarker FindNearestBear(Vector3 from)
+        {
+            var bears = Object.FindObjectsByType<BearMarker>(FindObjectsSortMode.None);
+            BearMarker best = null;
+            float bestDist = float.MaxValue;
+
+            foreach (var bear in bears)
+            {
+                float d = Vector3.Distance(from, bear.transform.position);
+                if (d < bestDist)
+                {
+                    bestDist = d;
+                    best = bear;
+                }
+            }
+
+            return best;
         }
     }
 }
