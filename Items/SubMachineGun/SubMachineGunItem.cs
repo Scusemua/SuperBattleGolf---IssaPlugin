@@ -1,19 +1,27 @@
 using System.Collections;
 using System.Reflection;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace IssaPlugin.Items
 {
     /// <summary>
-    /// Sub-machine gun — fires a rapid burst of inaccurate bullets on use.
-    /// Fires BulletCount shots in sequence with FireRate seconds between each shot.
-    /// Uses the same underlying raycast logic as the SniperRifle but with high default
-    /// inaccuracy and no scoping. Local-only: no NetworkBridge needed.
+    /// Sub-machine gun — rapid-fire while the fire button is held.
+    /// OnUse (triggered once on button-down) starts a coroutine that loops every
+    /// FireRate seconds while left-click is held. Each iteration consumes one use.
+    /// When uses hit 0 the item removes itself; releasing the button exits early.
     ///
+    /// Local-only — no NetworkBridge needed.
     /// ItemType 114.
     /// </summary>
     public static class SubMachineGunItem
     {
+        // Prevents a second coroutine starting if OnUse is called while already firing
+        // (e.g. if the game re-calls TryUseItem while held).
+        private static bool _isFiring;
+
+        // ── Reflected private methods ────────────────────────────────────────────
+
         private static readonly MethodInfo TryParseFirearmRaycastResultsMethod =
             typeof(PlayerInventory).GetMethod(
                 "TryParseFirearmRaycastResults",
@@ -32,29 +40,40 @@ namespace IssaPlugin.Items
                 BindingFlags.NonPublic | BindingFlags.Instance
             );
 
-        public static IEnumerator ShootRoutine(PlayerInventory inventory)
+        // ── Fire loop coroutine ──────────────────────────────────────────────────
+
+        /// <summary>
+        /// Started by OnUse on button-down. Fires immediately, then continues firing
+        /// every FireRate seconds while the left mouse button remains held.
+        /// </summary>
+        public static IEnumerator FireLoop(PlayerInventory inventory)
         {
+            if (_isFiring)
+                yield break;
+
+            _isFiring = true;
             ItemHelper.SetCurrentItemUse(inventory, ItemUseType.Regular);
 
-            int bulletCount = (int)Configuration.SubMachineGunBulletCount.Value;
-            float fireRate = Configuration.SubMachineGunFireRate.Value;
-
-            // Play the shot sound once to signal the burst start.
-            inventory.PlayerInfo.PlayerAudio.PlayElephantGunShotForAllClients();
-
-            for (int i = 0; i < bulletCount; i++)
+            do
             {
+                int slot = inventory.EquippedItemIndex;
                 DoShoot(inventory);
+                inventory.PlayerInfo.PlayerAudio.PlayElephantGunShotForAllClients();
+                ItemHelper.DecrementAndRemove(inventory, slot);
 
-                if (i < bulletCount - 1)
-                    yield return new WaitForSeconds(fireRate);
-            }
+                // Stop if uses were exhausted (item removed from inventory).
+                if (inventory.GetEffectivelyEquippedItem(true) != ItemRegistry.SubMachineGunItemType)
+                    break;
 
-            int slot = inventory.EquippedItemIndex;
-            ItemHelper.DecrementAndRemove(inventory, slot);
+                yield return new WaitForSeconds(Configuration.SubMachineGunFireRate.Value);
+
+            } while (Mouse.current != null && Mouse.current.leftButton.isPressed);
 
             ItemHelper.SetCurrentItemUse(inventory, ItemUseType.None);
+            _isFiring = false;
         }
+
+        // ── Single bullet raycast ────────────────────────────────────────────────
 
         private static void DoShoot(PlayerInventory inventory)
         {

@@ -23,7 +23,9 @@ namespace IssaPlugin.Items
         public override ItemType AnimatorItemType => ItemType.ElephantGun;
         public override ItemType AnimatorChangedItemType => ItemType.ElephantGun;
 
+        // Starts the fire loop coroutine on button-down. The coroutine itself loops
+        // while the button is held, consuming one use per bullet.
         public override void OnUse(PlayerInventory inventory) =>
-            inventory.StartCoroutine(SubMachineGunItem.ShootRoutine(inventory));
+            inventory.StartCoroutine(SubMachineGunItem.FireLoop(inventory));
     }
 }

@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 356290961
+CRC: 578144108
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 89f687e244a9112443f586ab602f87f3
+    Hash: 9bd800de2878200a3e0bdfd7f31d9b2d
   TypeTreeHash:
     serializedVersion: 2
     Hash: 82d52513d6b19822b87b688cdb5147d6
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 1c3bcb65531e62d773c4b42d862c3cef
+    Hash: 95babd298d93984fe43699fa96482ebf
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -75,26 +75,23 @@ SerializeReferenceClassIdentifiers: []
 Assets:
 - Assets/Assets/homerun.ogg
 - Assets/Assets/ac130_model.prefab
-- Assets/Assets/sticky_grenade_model.prefab
 - Assets/Assets/Materials/sticky_grenade.mat
 - Assets/Assets/missile_icon.png
 - Assets/Assets/Materials/Teddy/Material.012.mat
 - Assets/Assets/Materials/Teddy/eyes.mat
 - Assets/Assets/bomber_proxy.prefab
 - Assets/Assets/ConfettiBlastRainbow.prefab
-- Assets/Assets/sticky_grenade.prefab
+- Assets/Assets/sniper_scope_overlay.png
 - Assets/Assets/Material.001.mat
 - Assets/Assets/donut_icon.png
-- Assets/Assets/sniper_scope_overlay.png
-- Assets/Assets/predator_missile_ready.ogg
-- Assets/Assets/sticky_grenade_icon.png
-- Assets/Assets/bear.prefab
-- Assets/Assets/gravity_remote_model.fbx
 - Assets/Assets/predator_missile_tablet_model.prefab
+- Assets/Assets/predator_missile_ready.ogg
+- Assets/Assets/gravity_remote_model.fbx
+- Assets/Assets/bear.prefab
+- Assets/Assets/Dark 1.mat
 - Assets/Assets/big_plane.ogg
 - Assets/Assets/bat_icon.png
 - Assets/Assets/uzi.prefab
-- Assets/Assets/Dark 1.mat
 - Assets/Assets/Dark 2.mat
 - Assets/Assets/javelin_target_indicator.prefab
 - Assets/Assets/missile_locked.ogg
@@ -111,6 +108,7 @@ Assets:
 - Assets/Assets/spike_ball.prefab
 - Assets/Assets/Material.002.mat
 - Assets/Assets/stealth_bomber_tablet.prefab
+- Assets/Assets/ak47_icon.png
 - Assets/Assets/predator_missile_tablet.prefab
 - Assets/Assets/NukeVerticalExplosionFire.prefab
 - Assets/Assets/nuke_icon.png
@@ -127,6 +125,7 @@ Assets:
 - Assets/Assets/stealth_bomber_tablet_model.prefab
 - Assets/Assets/ac130_tablet.prefab
 - Assets/Assets/jet_plane_flyby.ogg
+- Assets/Assets/ak47.prefab
 - Assets/Assets/laser_zone_red.prefab
 - Assets/Assets/bear_icon.png
 - Assets/Assets/WarningExclamation.prefab

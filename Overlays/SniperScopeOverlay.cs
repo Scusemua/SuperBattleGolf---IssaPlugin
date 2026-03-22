@@ -70,7 +70,16 @@ namespace IssaPlugin.Overlays
             // first several frames. LateUpdate runs after all Update() calls, so this
             // wins the frame for rendering and networking without fighting the physics step.
             if (!SniperRifleItem.IsScoped)
+            {
+                if (Camera.main != null)
+                    GameManager
+                        .LocalPlayerInfo
+                        ?.Movement
+                        ?.transform.rotation = Quaternion.LookRotation(
+                            Camera.main.transform.forward.normalized
+                        );
                 return;
+            }
             var li = GameManager.LocalPlayerInfo;
             if (li?.Movement == null)
                 return;
@@ -81,7 +90,8 @@ namespace IssaPlugin.Overlays
             fwd.y = 0f;
             if (fwd.sqrMagnitude < 0.01f)
                 return;
-            li.Movement.transform.rotation = Quaternion.LookRotation(fwd.normalized);
+            li.Movement.transform.rotation =
+                Quaternion.LookRotation(fwd.normalized) * Quaternion.Euler(0f, 65f, 0f);
         }
 
         private void Update()

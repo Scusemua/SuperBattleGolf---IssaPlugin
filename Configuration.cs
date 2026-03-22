@@ -232,7 +232,6 @@ namespace IssaPlugin
         public static ConfigEntry<Key> SubMachineGunGiveKey { get; private set; }
         public static ConfigEntry<float> SubMachineGunUses { get; private set; }
         public static ConfigEntry<float> SubMachineGunSpawnWeight { get; private set; }
-        public static ConfigEntry<float> SubMachineGunBulletCount { get; private set; }
         public static ConfigEntry<float> SubMachineGunFireRate { get; private set; }
         public static ConfigEntry<float> SubMachineGunInaccuracy { get; private set; }
         public static ConfigEntry<float> SubMachineGunMaxAimingDistance { get; private set; }
@@ -1580,20 +1579,14 @@ namespace IssaPlugin
             SubMachineGunUses = cfg.Bind(
                 "SubMachineGun",
                 "Uses",
-                1f,
-                "Number of uses per Sub-Machine Gun pickup."
+                30f,
+                "Total bullets per Sub-Machine Gun pickup. Each shot consumes one use."
             );
             SubMachineGunSpawnWeight = cfg.Bind(
                 "ItemBoxSpawns",
                 "SubMachineGunWeight",
                 2f,
                 "Spawn weight for the Sub-Machine Gun in item boxes. Set to 0 to disable."
-            );
-            SubMachineGunBulletCount = cfg.Bind(
-                "SubMachineGun",
-                "BulletCount",
-                20f,
-                "Number of bullets fired per use."
             );
             SubMachineGunFireRate = cfg.Bind(
                 "SubMachineGun",

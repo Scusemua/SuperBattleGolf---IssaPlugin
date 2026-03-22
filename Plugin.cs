@@ -51,6 +51,7 @@ namespace IssaPlugin
             gameObject.AddComponent<SniperScopeOverlay>();
             gameObject.AddComponent<BearOverlay>();
             gameObject.AddComponent<BearHealthBarOverlay>();
+            gameObject.AddComponent<SubMachineGunCrosshairOverlay>();
 
             Log.LogInfo("IssaPlugin by Scusemua has loaded.");
         }

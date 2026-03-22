@@ -388,8 +388,8 @@ namespace IssaPlugin.Items
             }
 
             // --- Sub-Machine Gun ---
-            SubMachineGunIcon = LoadSprite("uzi_icon_v2.png");
-            SubMachineGunPrefab = Load<GameObject>("uzi.prefab");
+            SubMachineGunIcon = LoadSprite("ak47_icon.png");
+            SubMachineGunPrefab = Load<GameObject>("ak47.prefab");
             if (SubMachineGunPrefab != null)
                 DisableRigidbody(SubMachineGunPrefab);
 

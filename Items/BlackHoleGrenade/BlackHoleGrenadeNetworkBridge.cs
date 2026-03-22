@@ -78,6 +78,13 @@ namespace IssaPlugin.Items
                 rb.useGravity = true;
                 rb.isKinematic = false;
                 rb.linearVelocity = velocity;
+
+                // Spin around the axis perpendicular to the throw so the grenade
+                // tumbles naturally while in flight.
+                Vector3 spinAxis = Vector3.Cross(velocity.normalized, Vector3.up).normalized;
+                if (spinAxis.sqrMagnitude < 0.01f)
+                    spinAxis = Vector3.right;
+                rb.angularVelocity = spinAxis * 10f;
             }
 
             NetworkServer.Spawn(grenadeGo);
