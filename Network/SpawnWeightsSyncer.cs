@@ -43,6 +43,9 @@ namespace IssaPlugin
                 Javelin = Configuration.JavelinSpawnWeight.Value,
                 StickyGrenade = Configuration.StickyGrenadeSpawnWeight.Value,
                 Bear = Configuration.BearSpawnWeight.Value,
+                BlackHoleGrenade = Configuration.BlackHoleGrenadeSpawnWeight.Value,
+                Nuke = Configuration.NukeSpawnWeight.Value,
+                PlaceableWall = Configuration.PlaceableWallSpawnWeight.Value,
             };
 
             if (WeightsEqual(msg, _lastSent))
@@ -58,8 +61,9 @@ namespace IssaPlugin
 
             IssaPluginPlugin.Log.LogDebug(
                 $"[SpawnWeights] Synced — Bat={msg.Bat} Bomber={msg.Bomber} Missile={msg.Missile} "
-                    + $"AC130={msg.AC130} Freeze={msg.Freeze} LowGravity={msg.LowGravity} "
-                    + $"Sniper={msg.Sniper} Donut={msg.Donut} Javelin={msg.Javelin} StickyGrenade={msg.StickyGrenade}"
+                    + $"AC130={msg.AC130} Freeze={msg.Freeze} LowGravity={msg.LowGravity} Nuke={msg.Nuke} "
+                    + $"Sniper={msg.Sniper} Donut={msg.Donut} Javelin={msg.Javelin} StickyGrenade={msg.StickyGrenade} "
+                    + $"PlaceableWall={msg.PlaceableWall} BlackHoleGrenade={msg.BlackHoleGrenade}"
             );
         }
 
@@ -74,7 +78,10 @@ namespace IssaPlugin
             && a.Donut == b.Donut
             && a.Javelin == b.Javelin
             && a.StickyGrenade == b.StickyGrenade
-            && a.Bear == b.Bear;
+            && a.Bear == b.Bear
+            && a.PlaceableWall == b.PlaceableWall
+            && a.BlackHoleGrenade == b.BlackHoleGrenade
+            && a.Nuke == b.Nuke;
 
         /// Called on each client when a SpawnWeightsMessage arrives from the host.
         internal static void HandleSpawnWeights(SpawnWeightsMessage msg)
@@ -95,6 +102,9 @@ namespace IssaPlugin
             Configuration.JavelinSpawnWeight.Value = msg.Javelin;
             Configuration.StickyGrenadeSpawnWeight.Value = msg.StickyGrenade;
             Configuration.BearSpawnWeight.Value = msg.Bear;
+            Configuration.NukeSpawnWeight.Value = msg.Nuke;
+            Configuration.BlackHoleGrenadeSpawnWeight.Value = msg.BlackHoleGrenade;
+            Configuration.PlaceableWallSpawnWeight.Value = msg.PlaceableWall;
 
             IssaPluginPlugin.Log.LogDebug(
                 $"[SpawnWeights] Received from host: CustomItemSpawnsEnabled={msg.CustomItemSpawnsEnabled} Bat={msg.Bat} Bomber={msg.Bomber} "

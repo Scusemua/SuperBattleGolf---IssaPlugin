@@ -11,6 +11,29 @@ namespace IssaPlugin.Items
     /// </summary>
     public struct BearSummonMessage : NetworkMessage { }
 
+    /// <summary>
+    /// Sent by the local client during the swing hit window when a bear is
+    /// detected inside the swing hitbox area.  The server validates the hit
+    /// and applies damage + knockback immediately — without waiting for
+    /// <c>OnFinishedSwinging</c> — eliminating the visible reaction delay.
+    /// </summary>
+    public struct BearSwingHitMessage : NetworkMessage
+    {
+        /// Network identity of the bear that entered the swing hitbox.
+        public uint BearNetId;
+    }
+
+    public static class BearSwingHitMessageSerialization
+    {
+        public static void WriteBearSwingHitMessage(
+            NetworkWriter writer,
+            BearSwingHitMessage msg
+        ) => writer.WriteUInt(msg.BearNetId);
+
+        public static BearSwingHitMessage ReadBearSwingHitMessage(NetworkReader reader) =>
+            new BearSwingHitMessage { BearNetId = reader.ReadUInt() };
+    }
+
     public static class BearSummonMessageSerialization
     {
         public static void WriteBearSummonMessage(NetworkWriter writer, BearSummonMessage msg) { }
