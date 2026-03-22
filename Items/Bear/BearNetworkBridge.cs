@@ -23,7 +23,7 @@ namespace IssaPlugin.Items
     /// Multiple players may have concurrent bear sessions — there is no global lock.
     /// Each BearNetworkBridge instance tracks only its own summoner's bears.
     /// </summary>
-    public class BearNetworkBridge : NetworkBehaviour
+    public class BearNetworkBridge : NetworkBridgeBase
     {
         // ── Server state ──────────────────────────────────────────────────────
 
@@ -217,11 +217,13 @@ namespace IssaPlugin.Items
         /// Called by Plugin.OnMatchStateChanged when a new hole begins.
         /// Destroys any active bears so they don't carry over between holes.
         /// </summary>
-        public void ServerHoleCleanup()
+        public override void ServerHoleCleanup()
         {
             if (_serverSessionActive)
                 ForceServerCleanup();
         }
+
+        public override void ClientHoleCleanup() { }
 
         private void ForceServerCleanup()
         {

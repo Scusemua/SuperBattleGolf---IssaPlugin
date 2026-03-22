@@ -7,7 +7,7 @@ using UnityEngine.InputSystem;
 namespace IssaPlugin.Items
 {
     // This class bridges the client-side overlay/input logic with the server-side session management.
-    public class MissileNetworkBridge : NetworkBehaviour
+    public class MissileNetworkBridge : NetworkBridgeBase
     {
         private Rocket _activeRocket;
         private bool _isSteering;
@@ -51,8 +51,7 @@ namespace IssaPlugin.Items
             // Clamp magnitude so a modified client cannot teleport the rocket
             // by sending an arbitrarily large velocity vector.
             float maxSpeed =
-                Configuration.MissileFallSpeed.Value
-                + Configuration.MissileSteerSpeed.Value * 1.5f;
+                Configuration.MissileFallSpeed.Value + Configuration.MissileSteerSpeed.Value * 1.5f;
             velocity = Vector3.ClampMagnitude(velocity, maxSpeed);
             var rb = _activeRocket.GetComponent<Rigidbody>();
             if (rb != null)
@@ -214,5 +213,13 @@ namespace IssaPlugin.Items
 
             IssaPluginPlugin.Log.LogInfo("[Missile] Client steering ended.");
         }
+
+        // ── Hole transition cleanup ───────────────────────────────────────────
+
+        public override void ServerHoleCleanup() /* Runs on server */
+        { }
+
+        public override void ClientHoleCleanup() /* Runs on client */
+        { }
     }
 }

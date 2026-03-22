@@ -9,7 +9,7 @@ namespace IssaPlugin.Items
     /// Client side:  Reads the camera ray and sends PlaceWallMessage.
     /// Server side:  Validates placement, checks hole proximity, consumes the
     ///               item, and spawns the wall GameObject.
-    public class PlaceableWallNetworkBridge : NetworkBehaviour
+    public class PlaceableWallNetworkBridge : NetworkBridgeBase
     {
         // Server-side list of walls spawned by this player.
         // Internal so PlaceableWallBehaviour can remove itself when destroyed.
@@ -200,7 +200,7 @@ namespace IssaPlugin.Items
 
         // ── Hole cleanup ─────────────────────────────────────────────────
 
-        public void ServerHoleCleanup()
+        public override void ServerHoleCleanup()
         {
             foreach (var wall in _activeWalls)
                 if (wall != null)
@@ -210,5 +210,8 @@ namespace IssaPlugin.Items
 
             IssaPluginPlugin.Log.LogInfo("[PlaceableWall] ServerHoleCleanup: all walls destroyed.");
         }
+
+        // Runs on client
+        public override void ClientHoleCleanup() { }
     }
 }

@@ -13,7 +13,7 @@ namespace IssaPlugin.Items
     /// FreezeBeginMessage to all clients via NetworkServer.SendToAll (bypassing Mirror's
     /// IL-weaving requirement that [ClientRpc] methods have).
     /// </summary>
-    public class FreezeNetworkBridge : NetworkBehaviour
+    public class FreezeNetworkBridge : NetworkBridgeBase
     {
         // ================================================================
         //  Global server lock — only one freeze session may run at a time.
@@ -127,7 +127,9 @@ namespace IssaPlugin.Items
             IssaPluginPlugin.Log.LogInfo("[Freeze] Server freeze session ended.");
         }
 
-        public static void ServerHoleCleanup()
+        // ── Hole transition cleanup ───────────────────────────────────────────
+
+        public static void GlobalServerHoleCleanup()
         {
             if (!_globalSessionActive)
                 return;
@@ -139,6 +141,14 @@ namespace IssaPlugin.Items
             _globalSessionActive = false;
             IssaPluginPlugin.Log.LogInfo("[Freeze] Session force-ended for hole transition.");
         }
+
+        public override void ServerHoleCleanup()
+        {
+            GlobalServerHoleCleanup();
+        }
+
+        // Runs on client
+        public override void ClientHoleCleanup() { }
 
         public override void OnStopServer()
         {

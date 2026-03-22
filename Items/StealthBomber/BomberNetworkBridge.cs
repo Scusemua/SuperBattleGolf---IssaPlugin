@@ -12,7 +12,7 @@ namespace IssaPlugin.Items
     /// _isBombing is an instance field so concurrent bombing runs from different
     /// players don't block each other, while still preventing the same player
     /// from stacking multiple runs.
-    public class BomberNetworkBridge : NetworkBehaviour
+    public class BomberNetworkBridge : NetworkBridgeBase
     {
         /// True on the server while this player's bombing coroutine is running.
         private bool _isBombing;
@@ -168,5 +168,12 @@ namespace IssaPlugin.Items
             var crashBehavior = visual.AddComponent<BomberCrashBehaviour>();
             crashBehavior.Rigidbody = rb;
         }
+
+        // ── Hole transition cleanup ───────────────────────────────────────────
+
+        public override void ServerHoleCleanup() { }
+
+        // Runs on client
+        public override void ClientHoleCleanup() { }
     }
 }

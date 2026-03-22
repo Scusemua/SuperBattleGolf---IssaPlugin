@@ -18,7 +18,7 @@ namespace IssaPlugin.Items
     /// across all players at once (any phase: fly-in, on-station, fly-out,
     /// mayday). Lock lives in static server-side fields.
     /// </summary>
-    public class AC130NetworkBridge : NetworkBehaviour
+    public class AC130NetworkBridge : NetworkBridgeBase
     {
         // ================================================================
         //  Global server lock  (server only, static)
@@ -897,13 +897,13 @@ namespace IssaPlugin.Items
             IssaPluginPlugin.Log.LogInfo("[AC130] Server session ended — gunship flying out.");
         }
 
-        public void ServerHoleCleanup()
+        public override void ServerHoleCleanup()
         {
             if (_serverSessionActive)
                 ForceServerCleanup();
         }
 
-        public void ClientHoleCleanup()
+        public override void ClientHoleCleanup() // Runs on client
         {
             if (LocalSessionActive)
                 _forceEnd = true;

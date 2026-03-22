@@ -15,7 +15,7 @@ namespace IssaPlugin.Items
     ///   5. On ground impact, NukeBombBehaviour.Detonate() fires the explosion
     ///      (temp rocket + sky blast) and destroys the bomb.
     /// </summary>
-    public class NukeNetworkBridge : NetworkBehaviour
+    public class NukeNetworkBridge : NetworkBridgeBase
     {
         // ================================================================
         //  Server state
@@ -128,10 +128,10 @@ namespace IssaPlugin.Items
         }
 
         // ================================================================
-        //  Hole-transition cleanup  (server only)
+        //  Hole-transition cleanup
         // ================================================================
 
-        public void ServerHoleCleanup()
+        public override void ServerHoleCleanup()
         {
             if (!_serverRoutineActive)
                 return;
@@ -145,5 +145,8 @@ namespace IssaPlugin.Items
             _serverRoutineActive = false;
             IssaPluginPlugin.Log.LogInfo("[Nuke] Server state cleared on hole transition.");
         }
+
+        public override void ClientHoleCleanup() /* Runs on client */
+        { }
     }
 }

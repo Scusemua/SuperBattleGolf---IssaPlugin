@@ -13,7 +13,7 @@ namespace IssaPlugin.Items
     /// LowGravityBeginMessage to all clients via NetworkServer.SendToAll (bypassing Mirror's
     /// IL-weaving requirement that [ClientRpc] methods have).
     /// </summary>
-    public class LowGravityNetworkBridge : NetworkBehaviour
+    public class LowGravityNetworkBridge : NetworkBridgeBase
     {
         // ================================================================
         //  Global server lock — only one low-gravity session may run at a time.
@@ -135,7 +135,7 @@ namespace IssaPlugin.Items
             IssaPluginPlugin.Log.LogInfo("[LowGravity] Server session ended.");
         }
 
-        public static void ServerHoleCleanup()
+        public static void GlobalServerHoleCleanup()
         {
             if (!_globalSessionActive)
                 return;
@@ -147,6 +147,14 @@ namespace IssaPlugin.Items
             _globalSessionActive = false;
             IssaPluginPlugin.Log.LogInfo("[LowGravity] Session force-ended for hole transition.");
         }
+
+        public override void ServerHoleCleanup()
+        {
+            GlobalServerHoleCleanup();
+        }
+
+        public override void ClientHoleCleanup() /* Runs on client */
+        { }
 
         public override void OnStopServer()
         {

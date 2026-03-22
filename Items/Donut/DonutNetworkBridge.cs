@@ -20,7 +20,7 @@ namespace IssaPlugin.Items
     /// Multiple players may run Donut sessions simultaneously — there is no
     /// global session lock.
     /// </summary>
-    public class DonutNetworkBridge : NetworkBehaviour
+    public class DonutNetworkBridge : NetworkBridgeBase
     {
         // ================================================================
         //  Global server lock  (server only, static)
@@ -399,13 +399,13 @@ namespace IssaPlugin.Items
             IssaPluginPlugin.Log.LogInfo("[Donut] Server session ended.");
         }
 
-        public void ServerHoleCleanup()
+        public override void ServerHoleCleanup()
         {
             if (_serverSessionActive)
                 ForceServerCleanup();
         }
 
-        public void ClientHoleCleanup()
+        public override void ClientHoleCleanup() // Runs on client 
         {
             if (LocalSessionActive)
                 _forceEnd = true;

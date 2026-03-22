@@ -107,43 +107,16 @@ namespace IssaPlugin
             // ── Server-side cleanup ───────────────────────────────────────────
             if (NetworkServer.active)
             {
-                foreach (var b in FindObjectsByType<AC130NetworkBridge>(FindObjectsSortMode.None))
+                foreach (var b in FindObjectsByType<NetworkBridgeBase>(FindObjectsSortMode.None))
                     b.ServerHoleCleanup();
-
-                foreach (var b in FindObjectsByType<DonutNetworkBridge>(FindObjectsSortMode.None))
-                    b.ServerHoleCleanup();
-
-                foreach (var b in FindObjectsByType<BearNetworkBridge>(FindObjectsSortMode.None))
-                    b.ServerHoleCleanup();
-
-                foreach (var b in FindObjectsByType<JavelinNetworkBridge>(FindObjectsSortMode.None))
-                    b.ServerHoleCleanup();
-
-                foreach (var b in FindObjectsByType<NukeNetworkBridge>(FindObjectsSortMode.None))
-                    b.ServerHoleCleanup();
-
-                foreach (
-                    var b in FindObjectsByType<BlackHoleGrenadeNetworkBridge>(
-                        FindObjectsSortMode.None
-                    )
-                )
-                    b.ServerHoleCleanup();
-
-                foreach (
-                    var b in FindObjectsByType<PlaceableWallNetworkBridge>(FindObjectsSortMode.None)
-                )
-                    b.ServerHoleCleanup();
-
-                FreezeNetworkBridge.ServerHoleCleanup();
-                LowGravityNetworkBridge.ServerHoleCleanup();
             }
 
             // ── Client-side cleanup (local player only) ───────────────────────
             var local = NetworkClient.localPlayer;
             if (local != null)
             {
-                local.GetComponent<AC130NetworkBridge>()?.ClientHoleCleanup();
-                local.GetComponent<DonutNetworkBridge>()?.ClientHoleCleanup();
+                foreach (var clientNetworkBridge in local.GetComponents<NetworkBridgeBase>())
+                    clientNetworkBridge.ClientHoleCleanup();
             }
 
             // Cancel any in-progress Stealth Bomber targeting UI.

@@ -16,7 +16,7 @@ namespace IssaPlugin.Items
     ///               handlers for BlackHoleGrenadeLandedMessage and
     ///               BlackHoleGrenadeSpitMessage.
     /// </summary>
-    public class BlackHoleGrenadeNetworkBridge : NetworkBehaviour
+    public class BlackHoleGrenadeNetworkBridge : NetworkBridgeBase
     {
         // ----------------------------------------------------------------
         //  Client → Server  (called from message handler in NetworkManagerPatches)
@@ -458,10 +458,10 @@ namespace IssaPlugin.Items
         }
 
         // ----------------------------------------------------------------
-        //  Hole-transition cleanup  (server only)
+        //  Hole-transition cleanup
         // ----------------------------------------------------------------
 
-        public void ServerHoleCleanup()
+        public override void ServerHoleCleanup()
         {
             // The grenade is a self-managing networked object — it destroys itself
             // when its timer expires.  No additional server state to clear.
@@ -469,5 +469,7 @@ namespace IssaPlugin.Items
                 "[BlackHoleGrenade] ServerHoleCleanup called (no persistent state to clear)."
             );
         }
+
+        public override void ClientHoleCleanup() {}
     }
 }

@@ -14,7 +14,7 @@ namespace IssaPlugin.Items
     ///               StickyGrenadeThrowMessage.  Also hosts the static handlers for
     ///               StickyGrenadeStuckMessage and StickyGrenadeDetonatedMessage.
     /// </summary>
-    public class StickyGrenadeNetworkBridge : NetworkBehaviour
+    public class StickyGrenadeNetworkBridge : NetworkBridgeBase
     {
         // ----------------------------------------------------------------
         //  Server state
@@ -213,5 +213,12 @@ namespace IssaPlugin.Items
                 $"[StickyGrenade] Client: detonation VFX at {msg.WorldPosition}"
             );
         }
+
+        // ── Hole transition cleanup ───────────────────────────────────────────
+
+        public override void ServerHoleCleanup() { }
+
+        // Runs on client
+        public override void ClientHoleCleanup() { }
     }
 }

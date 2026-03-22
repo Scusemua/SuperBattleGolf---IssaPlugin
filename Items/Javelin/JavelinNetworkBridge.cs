@@ -14,7 +14,7 @@ namespace IssaPlugin.Items
     ///      JavelinRocketBehaviour, waits for completion).
     ///   4. Server sends JavelinLaunchedMessage back to firing client (HUD hint).
     ///   5. When done, server sends JavelinDetonatedMessage so client clears state.
-    public class JavelinNetworkBridge : NetworkBehaviour
+    public class JavelinNetworkBridge : NetworkBridgeBase
     {
         // ================================================================
         //  Client state  (owning client only)
@@ -236,7 +236,7 @@ namespace IssaPlugin.Items
         }
 
         // ================================================================
-        //  Hole-transition cleanup  (server only)
+        //  Hole-transition cleanup
         // ================================================================
 
         /// <summary>
@@ -244,7 +244,7 @@ namespace IssaPlugin.Items
         /// Stops the in-flight coroutine so _serverRoutineActive does not
         /// permanently block new Javelin uses after a hole ends mid-flight.
         /// </summary>
-        public void ServerHoleCleanup()
+        public override void ServerHoleCleanup()
         {
             if (!_serverRoutineActive)
                 return;
@@ -258,6 +258,8 @@ namespace IssaPlugin.Items
             _serverRoutineActive = false;
             IssaPluginPlugin.Log.LogInfo("[Javelin] Server state cleared on hole transition.");
         }
+
+        public override void ClientHoleCleanup() { }
 
         // ================================================================
         //  Client-side server-message handlers
