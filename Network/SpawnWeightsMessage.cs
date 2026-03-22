@@ -16,6 +16,9 @@ namespace IssaPlugin.Network
         public float Javelin;
         public float StickyGrenade;
         public float Bear;
+        public float BlackHoleGrenade;
+        public float Nuke;
+        public float PlaceableWall;
     }
 
     public static class SpawnWeightsMessageSerialization
@@ -34,6 +37,9 @@ namespace IssaPlugin.Network
             writer.WriteFloat(msg.Javelin);
             writer.WriteFloat(msg.StickyGrenade);
             writer.WriteFloat(msg.Bear);
+            writer.WriteFloat(msg.BlackHoleGrenade);
+            writer.WriteFloat(msg.Nuke);
+            writer.WriteFloat(msg.PlaceableWall);
         }
 
         public static SpawnWeightsMessage ReadSpawnWeightsMessage(NetworkReader reader)
@@ -52,6 +58,9 @@ namespace IssaPlugin.Network
                 Javelin = reader.ReadFloat(),
                 StickyGrenade = reader.ReadFloat(),
                 Bear = reader.ReadFloat(),
+                BlackHoleGrenade = reader.ReadFloat(),
+                Nuke = reader.ReadFloat(),
+                PlaceableWall = reader.ReadFloat(),
             };
         }
     }

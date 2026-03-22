@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
@@ -19,17 +20,16 @@ namespace IssaPlugin.Patches
     ///     (PlayElephantGunMissForAllClients / PlayDuelingPistolMissForAllClients),
     ///     re-cast the same ray against all layers and check for BearHitReceiver.
     ///
-    ///   • Melee swings (golf club / baseball bat): two hooks fire in sequence.
-    ///     HitWithGolfSwingInternal fires at the moment the club contacts any
-    ///     Hittable (e.g. the golf ball) — bears in range are hit immediately so
-    ///     their reaction is in sync with the visual impact.  OnFinishedSwinging
-    ///     fires afterwards as a fallback for swings aimed only at a bear (no ball
-    ///     nearby), skipping any bear already hit by the first hook.
-    ///     The bear is also launched with an impulse force scaled to the weapon type,
-    ///     mirroring the "flying" effect players experience when hit.
+    ///   • Melee swings (golf club / baseball bat): the local client runs a
+    ///     coroutine during the swing hit window (SwingHitStartTime →
+    ///     SwingHitEndTime) that checks for bears each frame and sends a
+    ///     BearSwingHitMessage to the server on first detection.  The server
+    ///     handler applies damage and knockback immediately, so the bear reacts
+    ///     in sync with the visual impact rather than at OnFinishedSwinging.
+    ///     OnFinishedSwinging remains as a fallback for host-only (no-client)
+    ///     scenarios, and skips any bear already hit via the message this swing.
     ///
-    /// Both hooks run only on the server (NetworkServer.active guard) so all hit
-    /// events reach BearHitReceiver, which itself requires NetworkServer.active.
+    /// Both server-side hooks guard on NetworkServer.active.
     /// </summary>
     // ── Elephant gun ─────────────────────────────────────────────────────────────
 
@@ -69,65 +69,126 @@ namespace IssaPlugin.Patches
         }
     }
 
-    // ── Golf club / baseball bat ─────────────────────────────────────────────────
+    // ── Golf club / baseball bat — client-side hit detection ─────────────────────
 
     /// <summary>
-    /// Hits nearby bears at the moment the swing contacts any <see cref="Hittable"/>
-    /// (e.g. the golf ball).  Firing here rather than at <c>OnFinishedSwinging</c>
-    /// eliminates the delay between the visual impact and the bear's reaction.
-    ///
-    /// Bears hit here are recorded in <see cref="GolfClubBearHitPatch._earlyHitBears"/>
-    /// so the fallback <c>OnFinishedSwinging</c> patch does not double-hit them.
+    /// Patches <c>PlayerGolfer.ReleaseSwingChargeInternal</c> on the local client.
+    /// Starts a per-swing coroutine that OverlapSpheres for bears each frame during
+    /// the game's own swing hit window (SwingHitStartTime → SwingHitEndTime).
+    /// Each unique bear found causes a <see cref="BearSwingHitMessage"/> to be sent
+    /// to the server, where the hit is processed immediately rather than waiting for
+    /// <c>OnFinishedSwinging</c>.
     /// </summary>
     [HarmonyPatch]
-    static class GolfSwingImpactBearHitPatch
+    static class BearSwingClientDetectionPatch
     {
         static MethodBase TargetMethod() =>
-            AccessTools.Method(typeof(Hittable), "HitWithGolfSwingInternal");
+            AccessTools.Method(typeof(PlayerGolfer), "ReleaseSwingChargeInternal");
 
-        static void Postfix(PlayerGolfer hitter)
+        static void Postfix(PlayerGolfer __instance)
         {
-            if (!NetworkServer.active || hitter == null)
+            if (!__instance.isLocalPlayer)
                 return;
 
-            BearMeleeHitHelper.HitBearsInSwingRange(
-                hitter,
-                skipSet: null,
-                recordSet: GolfClubBearHitPatch._earlyHitBears,
-                label: "golf club (on-impact)"
-            );
+            __instance.StartCoroutine(BearSwingDetectionRoutine(__instance));
+        }
+
+        private static IEnumerator BearSwingDetectionRoutine(PlayerGolfer golfer)
+        {
+            // Wait until the hitbox becomes active.
+            yield return new WaitForSeconds(GameManager.GolfSettings.SwingHitStartTime);
+
+            float hitWindowDuration =
+                GameManager.GolfSettings.SwingHitEndTime
+                - GameManager.GolfSettings.SwingHitStartTime;
+
+            float elapsed = 0f;
+
+            // One-per-swing dedup: each bear's netId is added when the message is sent.
+            var hitBears = new HashSet<uint>();
+
+            while (golfer.IsSwinging && elapsed < hitWindowDuration)
+            {
+                Vector3 swingCenter = golfer.transform.TransformPoint(
+                    GameManager.GolfSettings.SwingHitBoxLocalCenter
+                );
+
+                var colliders = Physics.OverlapSphere(
+                    swingCenter,
+                    Configuration.BearMeleeHitRange.Value,
+                    Physics.AllLayers,
+                    QueryTriggerInteraction.Collide
+                );
+
+                foreach (var col in colliders)
+                {
+                    var marker = col.GetComponentInParent<BearMarker>();
+                    if (marker == null)
+                        continue;
+
+                    var ni = marker.GetComponent<NetworkIdentity>();
+                    if (ni == null || !hitBears.Add(ni.netId))
+                        continue;
+
+                    NetworkClient.Send(new BearSwingHitMessage { BearNetId = ni.netId });
+                }
+
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
         }
     }
 
+    // ── Golf club / baseball bat — server-side fallback ───────────────────────────
+
     /// <summary>
-    /// Fallback bear hit check that fires when the swing animation completes.
-    /// Handles the case where the player swings at a bear without any
-    /// <see cref="Hittable"/> nearby (no golf ball), so
-    /// <see cref="GolfSwingImpactBearHitPatch"/> never fires.
+    /// Server-side fallback: fires when the swing animation completes.
+    /// Handles rare cases where the local client's <see cref="BearSwingHitMessage"/>
+    /// was not sent (e.g. no client attached to the server, or the bear entered
+    /// range after the hit window closed).
     ///
-    /// Skips bears already recorded by <see cref="GolfSwingImpactBearHitPatch"/>
-    /// to prevent double-hits, then clears the record for the next swing.
+    /// Skips any bear that was already hit via a <see cref="BearSwingHitMessage"/>
+    /// this swing (tracked per-player in <see cref="_swingHitPairs"/>), then
+    /// clears those entries so the next swing starts fresh.
     /// </summary>
     [HarmonyPatch(typeof(PlayerGolfer), "OnFinishedSwinging")]
     static class GolfClubBearHitPatch
     {
-        // Bears hit during GolfSwingImpactBearHitPatch for the current swing.
-        // Static is safe: Unity's physics loop is single-threaded.
-        internal static readonly HashSet<GameObject> _earlyHitBears = new();
+        /// <summary>
+        /// Per-player record of bears already hit via <see cref="BearSwingHitMessage"/>
+        /// during the current swing.  Keyed by (PlayerInfo, bear GameObject) so
+        /// concurrent swings by different players do not interfere.
+        /// Populated by the <see cref="BearSwingHitMessage"/> server handler in
+        /// <see cref="NetworkManagerPatches"/>; cleared here per-player.
+        /// </summary>
+        internal static readonly HashSet<(PlayerInfo, GameObject)> _swingHitPairs = [];
 
         static void Postfix(PlayerGolfer __instance)
         {
             if (!NetworkServer.active)
                 return;
 
+            var playerInfo = __instance.PlayerInfo;
+            if (playerInfo == null)
+            {
+                _swingHitPairs.Clear();
+                return;
+            }
+
+            // Build the per-player skip set from the shared hit-pairs table.
+            var skipSet = new HashSet<GameObject>();
+            foreach (var pair in _swingHitPairs)
+                if (pair.Item1 == playerInfo)
+                    skipSet.Add(pair.Item2);
+
             BearMeleeHitHelper.HitBearsInSwingRange(
                 __instance,
-                skipSet: _earlyHitBears,
-                recordSet: null,
+                skipSet: skipSet,
                 label: "golf club (fallback)"
             );
 
-            _earlyHitBears.Clear();
+            // Clear this player's entries so the next swing starts clean.
+            _swingHitPairs.RemoveWhere(pair => pair.Item1 == playerInfo);
         }
     }
 
@@ -135,19 +196,17 @@ namespace IssaPlugin.Patches
 
     static class BearMeleeHitHelper
     {
-        private static readonly HashSet<GameObject> _compoundDedup = new();
+        private static readonly HashSet<GameObject> _compoundDedup = [];
 
         /// <summary>
         /// OverlapSphere around the swing hitbox centre and apply one hit per bear.
         /// </summary>
         /// <param name="swinger">The player performing the swing.</param>
         /// <param name="skipSet">Bears to skip (already hit this swing). May be null.</param>
-        /// <param name="recordSet">Set to add hit bears to. May be null.</param>
-        /// <param name="label">Log label distinguishing on-impact vs fallback hits.</param>
+        /// <param name="label">Log label for debugging.</param>
         internal static void HitBearsInSwingRange(
             PlayerGolfer swinger,
             HashSet<GameObject> skipSet,
-            HashSet<GameObject> recordSet,
             string label
         )
         {
@@ -171,11 +230,9 @@ namespace IssaPlugin.Patches
                 GameManager.GolfSettings.SwingHitBoxLocalCenter
             );
 
-            float range = Configuration.BearMeleeHitRange.Value;
-
             var colliders = Physics.OverlapSphere(
                 swingCenter,
-                range,
+                Configuration.BearMeleeHitRange.Value,
                 Physics.AllLayers,
                 QueryTriggerInteraction.Collide
             );
@@ -194,17 +251,13 @@ namespace IssaPlugin.Patches
                 if (skipSet != null && skipSet.Contains(receiver.gameObject))
                     continue;
 
-                recordSet?.Add(receiver.gameObject);
-
                 Vector3 knockDir = (
                     receiver.transform.position - playerInfo.transform.position
                 ).normalized;
                 knockDir = (knockDir + Vector3.up * 0.5f).normalized;
 
-                // DealDamage first: it calls OnHitByExplosion → TransitionTo(Stunned)
-                // → ZeroVelocity(), which clears any prior velocity.  The knockback
-                // impulse is then applied on top of that clean zero so it isn't
-                // immediately cancelled by the state transition.
+                // DealDamage first: transitions to Stunned → ZeroVelocity(), then
+                // ApplyMeleeKnockback applies the impulse on top of the zero.
                 BearExplosionAttackerContext.CurrentAttacker = playerInfo;
                 receiver.DealDamage(damage);
                 BearExplosionAttackerContext.CurrentAttacker = null;

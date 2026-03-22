@@ -709,6 +709,84 @@ namespace IssaPlugin.Patches
                     }
                 );
 
+            // Local client detected a bear in the swing hitbox during the hit window
+            Writer<BearSwingHitMessage>.write =
+                BearSwingHitMessageSerialization.WriteBearSwingHitMessage;
+            Reader<BearSwingHitMessage>.read =
+                BearSwingHitMessageSerialization.ReadBearSwingHitMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<BearSwingHitMessage>(
+                    (conn, msg) =>
+                    {
+                        var playerInfo = conn.identity?.GetComponent<PlayerInfo>();
+                        if (playerInfo == null)
+                            return;
+
+                        if (
+                            !NetworkServer.spawned.TryGetValue(msg.BearNetId, out var bearNi)
+                            || bearNi == null
+                        )
+                            return;
+
+                        var receiver = bearNi.GetComponent<BearHitReceiver>();
+                        if (receiver == null)
+                            return;
+
+                        // Generous range check — the bear may have moved a little
+                        // between the client's detection and the server receiving the message.
+                        float dist = Vector3.Distance(
+                            playerInfo.transform.position,
+                            bearNi.transform.position
+                        );
+                        if (dist > Configuration.BearMeleeHitRange.Value * 4f)
+                            return;
+
+                        // Record this (player, bear) pair so OnFinishedSwinging doesn't
+                        // double-hit the same bear for the same swing.
+                        if (
+                            !GolfClubBearHitPatch._swingHitPairs.Add(
+                                (playerInfo, receiver.gameObject)
+                            )
+                        )
+                            return; // duplicate message for the same bear this swing
+
+                        bool isBat =
+                            playerInfo.Inventory?.GetEffectivelyEquippedItem(true)
+                            == ItemRegistry.BaseballBatItemType;
+
+                        float damage = isBat
+                            ? Configuration.BearDamageBaseballBat.Value
+                            : Configuration.BearDamageGolfClub.Value;
+
+                        float knockbackForce = isBat
+                            ? Configuration.BearBatKnockbackForce.Value
+                            : Configuration.BearMeleeKnockbackForce.Value;
+
+                        Vector3 knockDir = (
+                            bearNi.transform.position - playerInfo.transform.position
+                        ).normalized;
+                        knockDir = (knockDir + Vector3.up * 0.5f).normalized;
+
+                        BearExplosionAttackerContext.CurrentAttacker = playerInfo;
+                        receiver.DealDamage(damage);
+                        BearExplosionAttackerContext.CurrentAttacker = null;
+                        receiver.Behaviour?.ApplyMeleeKnockback(knockDir, knockbackForce);
+
+                        NetworkServer.SendToAll(
+                            new BearHitVfxMessage
+                            {
+                                HitPoint = bearNi.transform.position + Vector3.up * 1f,
+                                AttackerOrigin = playerInfo.transform.position,
+                            }
+                        );
+
+                        IssaPluginPlugin.Log.LogInfo(
+                            $"[Bear] Hit by swing (client-reported) "
+                                + $"from {playerInfo.PlayerId.PlayerName} for {damage} damage."
+                        );
+                    }
+                );
+
             // ── Server → All Clients ─────────────────────────────────────────────────
 
             // Bear AI state changed (drives Animator on all clients)
