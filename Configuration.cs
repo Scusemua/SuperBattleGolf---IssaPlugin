@@ -206,6 +206,18 @@ namespace IssaPlugin
             private set;
         }
 
+        // --- Placeable Wall ---
+        public static ConfigEntry<Key> PlaceableWallGiveKey { get; private set; }
+        public static ConfigEntry<float> PlaceableWallUses { get; private set; }
+        public static ConfigEntry<float> PlaceableWallSpawnWeight { get; private set; }
+        public static ConfigEntry<float> PlaceableWallMaxPlacementDistance { get; private set; }
+        public static ConfigEntry<float> PlaceableWallMinHoleDistance { get; private set; }
+        public static ConfigEntry<float> PlaceableWallHealthPoints { get; private set; }
+
+        public static ConfigEntry<float> PlaceableWallVelocityImpactFactor { get; private set; }
+
+        public static ConfigEntry<float> PlaceableWallTorsionMultiplier { get; private set; }
+
         // --- Bear ---
         public static ConfigEntry<Key> BearGiveKey { get; private set; }
         public static ConfigEntry<float> BearUses { get; private set; }
@@ -1423,6 +1435,65 @@ namespace IssaPlugin
                 "BonusGolfCartForceMultiplier",
                 2.0f,
                 "Additional force multiplier applied to golf carts."
+            );
+
+            // --- Placeable Wall ---
+            PlaceableWallGiveKey = cfg.Bind(
+                "PlaceableWall",
+                "GiveKey",
+                Key.Numpad6,
+                "Debug key to add the Placeable Wall to your inventory."
+            );
+
+            PlaceableWallUses = cfg.Bind(
+                "PlaceableWall",
+                "Uses",
+                1f,
+                "Number of wall placements per pickup."
+            );
+
+            PlaceableWallSpawnWeight = cfg.Bind(
+                "ItemBoxSpawns",
+                "PlaceableWallWeight",
+                2f,
+                "Spawn weight for the Placeable Wall in item boxes. Set to 0 to disable."
+            );
+
+            PlaceableWallMaxPlacementDistance = cfg.Bind(
+                "PlaceableWall",
+                "MaxPlacementDistance",
+                20f,
+                "Maximum distance (units) from the player's camera at which a wall can be placed."
+            );
+
+            PlaceableWallMinHoleDistance = cfg.Bind(
+                "PlaceableWall",
+                "MinHoleDistance",
+                3f,
+                "Minimum XZ distance (units) from the hole centre that a wall may be placed. "
+                    + "Prevents blocking the hole entirely. Set to 0 to disable the check."
+            );
+
+            PlaceableWallHealthPoints = cfg.Bind(
+                "PlaceableWall",
+                "HealthPoints",
+                3f,
+                "Number of golf club or baseball bat hits required to destroy the wall. "
+                    + "Rocket hits always destroy in one shot."
+            );
+
+            PlaceableWallVelocityImpactFactor = cfg.Bind(
+                "PlaceableWall",
+                "VelocityImpactFactor",
+                2.5f,
+                "Degree to which the velocity of an object colliding with the placeable wall will damage it. Default: 2.5."
+            );
+
+            PlaceableWallTorsionMultiplier = cfg.Bind(
+                "PlaceableWall",
+                "TorsionMultiplier",
+                0.002f,
+                "Degree to which torque (spin) damages the bricks of the placeable wall. Default: 0.002."
             );
 
             // --- Bear ---

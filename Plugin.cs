@@ -129,6 +129,13 @@ namespace IssaPlugin
                 )
                     b.ServerHoleCleanup();
 
+                foreach (
+                    var b in FindObjectsByType<PlaceableWallNetworkBridge>(
+                        FindObjectsSortMode.None
+                    )
+                )
+                    b.ServerHoleCleanup();
+
                 FreezeNetworkBridge.ServerHoleCleanup();
                 LowGravityNetworkBridge.ServerHoleCleanup();
             }

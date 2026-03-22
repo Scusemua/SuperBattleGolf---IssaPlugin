@@ -643,6 +643,29 @@ namespace IssaPlugin.Patches
                 BlackHoleGrenadeMessageHandlers.HandleBlackHoleGrenadeSpit
             );
 
+            // ── PlaceableWall Messages ────────────────────────────────────────
+
+            // Client → Server
+            Writer<PlaceWallMessage>.write = PlaceWallMessageSerialization.WritePlaceWallMessage;
+            Reader<PlaceWallMessage>.read = PlaceWallMessageSerialization.ReadPlaceWallMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<PlaceWallMessage>(
+                    (conn, msg) =>
+                    {
+                        conn.identity?.GetComponent<PlaceableWallNetworkBridge>()
+                            ?.ServerHandlePlacement(msg.RayOrigin, msg.RayDirection);
+                    }
+                );
+
+            // Server → All Clients
+            Writer<WallDestroyedMessage>.write =
+                WallDestroyedMessageSerialization.WriteWallDestroyedMessage;
+            Reader<WallDestroyedMessage>.read =
+                WallDestroyedMessageSerialization.ReadWallDestroyedMessage;
+            NetworkClient.RegisterHandler<WallDestroyedMessage>(
+                PlaceableWallMessageHandlers.HandleWallDestroyed
+            );
+
             // ── Spawn-weight sync (server → all clients) ─────────────────────
             Writer<SpawnWeightsMessage>.write =
                 SpawnWeightsMessageSerialization.WriteSpawnWeightsMessage;
@@ -781,6 +804,7 @@ namespace IssaPlugin.Patches
             RegisterPrefab(AssetLoader.TeddyBearPrefab);
             RegisterPrefab(AssetLoader.NukeBombPrefab);
             RegisterPrefab(AssetLoader.BlackHoleGrenadePrefab);
+            RegisterPrefab(AssetLoader.WallPrefab);
         }
 
         private static void RegisterPrefab(GameObject prefab)
@@ -1068,6 +1092,16 @@ namespace IssaPlugin.Patches
                 return;
 
             item.ServerPickup(inventory);
+        }
+    }
+
+    /// PlaceableWall NetworkMessage handlers — kept in a separate (non-patch) class so
+    /// the Harmony analyser does not misidentify the 'msg' parameters as patch parameters.
+    static class PlaceableWallMessageHandlers
+    {
+        internal static void HandleWallDestroyed(WallDestroyedMessage msg)
+        {
+            PlaceableWallNetworkBridge.HandleWallDestroyed(msg);
         }
     }
 

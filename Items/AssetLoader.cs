@@ -59,6 +59,16 @@ namespace IssaPlugin.Items
         /// Not networked — each client instantiates and destroys its own copy.
         public static GameObject BlackHoleVfxPrefab { get; private set; }
 
+        /// The networked wall that is spawned when the Placeable Wall item is used.
+        /// Falls back to a runtime-built box if 'wall.prefab' is absent.
+        public static GameObject WallPrefab { get; private set; }
+
+        /// The model the player holds while the Placeable Wall item is equipped.
+        /// Falls back to a small runtime box if 'wall_handheld.prefab' is absent.
+        public static GameObject WallHandheldPrefab { get; private set; }
+
+        public static Sprite WallIcon { get; private set; }
+
         /// The model the player holds while the Nuke item is equipped.
         public static GameObject NuclearDetonatorPrefab { get; private set; }
 
@@ -308,6 +318,44 @@ namespace IssaPlugin.Items
                 DroppedCustomItemPrefab.AddComponent<Entity>();
                 DroppedCustomItemPrefab.AddComponent<DroppedCustomItem>();
                 GameObject.DontDestroyOnLoad(DroppedCustomItemPrefab);
+            }
+
+            // --- Placeable Wall ---
+            WallIcon = LoadSprite("wall_icon.png");
+
+            WallHandheldPrefab = Load<GameObject>("brick.prefab");
+            if (WallHandheldPrefab != null)
+            {
+                DisableRigidbody(WallHandheldPrefab);
+            }
+            else
+            {
+                WallHandheldPrefab = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                WallHandheldPrefab.name = "PlaceableWallHandheld_Fallback";
+                WallHandheldPrefab.transform.localScale = new Vector3(0.4f, 0.3f, 0.05f);
+                DisableRigidbody(WallHandheldPrefab);
+                GameObject.DontDestroyOnLoad(WallHandheldPrefab);
+            }
+
+            WallPrefab = Load<GameObject>("wall.prefab");
+            if (WallPrefab != null)
+            {
+                EnsureNetworkIdentity(WallPrefab, 0x4411000Au);
+                DisableRigidbody(WallPrefab);
+            }
+            else
+            {
+                IssaPluginPlugin.Log.LogWarning(
+                    "[Assets] wall.prefab not found — using fallback box."
+                );
+                WallPrefab = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                WallPrefab.name = "PlaceableWall_Fallback";
+                WallPrefab.transform.localScale = new Vector3(4f, 3f, 0.3f);
+                var wallRb = WallPrefab.AddComponent<Rigidbody>();
+                wallRb.isKinematic = true;
+                wallRb.useGravity = false;
+                EnsureNetworkIdentity(WallPrefab, 0x4411000Au);
+                GameObject.DontDestroyOnLoad(WallPrefab);
             }
 
             IssaPluginPlugin.Log.LogInfo("[Assets] IssaPluginBundle loaded.");
