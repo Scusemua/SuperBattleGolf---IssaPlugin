@@ -125,6 +125,7 @@ namespace IssaPlugin.Items
             // (even during fly-in). The OnHitsExceeded callback captures locals
             // from this coroutine so it can initiate the crash without polling.
             var hitReceiver = harrierGo.AddComponent<HarrierHitReceiver>();
+            var harrierIdentity = harrierGo.GetComponent<NetworkIdentity>();
             hitReceiver.OnHitsExceeded += () =>
             {
                 if (_shotDown || harrierGo == null)
@@ -133,7 +134,10 @@ namespace IssaPlugin.Items
                 _shotDown = true;
                 IssaPluginPlugin.Log.LogInfo("[Harrier] Shot down — initiating crash.");
 
-                NetworkServer.SendToAll(new HarrierShotDownMessage());
+                NetworkServer.SendToAll(new HarrierShotDownMessage
+                {
+                    HarrierNetId = harrierIdentity.netId
+                });
 
                 var crash = harrierGo.AddComponent<HarrierCrashBehaviour>();
                 crash.ThrowerInventory = inventory;
@@ -348,7 +352,19 @@ namespace IssaPlugin.Items
         public static void ClientHandleShotDown(HarrierShotDownMessage msg)
         {
             IssaPluginPlugin.Log.LogInfo("[Harrier] Shot down!");
-            // Future: play audio, camera shake, etc.
+
+            var localBridge = NetworkClient.localPlayer?.GetComponent<HarrierNetworkBridge>();
+            if (localBridge != null && localBridge.LocalSessionActive)
+                return;
+
+            if (!NetworkClient.spawned.TryGetValue(msg.HarrierNetId, out var ni) || ni == null)
+                return;
+
+            var harrierGo = ni.gameObject;
+            if (harrierGo.GetComponent<HarrierCrashBehaviour>() == null)
+            {
+                var crashBehaviour = harrierGo.AddComponent<HarrierCrashBehaviour>();
+            }
         }
 
         // ================================================================

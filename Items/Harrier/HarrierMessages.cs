@@ -66,13 +66,27 @@ namespace IssaPlugin.Items
     /// Broadcast by the server to all clients when the Harrier is shot down.
     /// Clients can use this for audio / HUD feedback.
     /// </summary>
-    public struct HarrierShotDownMessage : NetworkMessage { }
+    public struct HarrierShotDownMessage : NetworkMessage
+    {
+        public uint HarrierNetId;
+
+        public override string ToString()
+        {
+            return $"HarrierShotDownMessage[HarrierNetId={HarrierNetId}]";
+        }
+    }
 
     public static class HarrierShotDownMessageSerialization
     {
-        public static void WriteHarrierShotDownMessage(NetworkWriter writer, HarrierShotDownMessage msg) {}
+        public static void WriteHarrierShotDownMessage(NetworkWriter writer, HarrierShotDownMessage msg)
+        {
+            writer.WriteUInt(msg.HarrierNetId);
+        }
 
         public static HarrierShotDownMessage ReadHarrierShotDownMessage(NetworkReader reader) =>
-            new HarrierShotDownMessage {};
+            new HarrierShotDownMessage
+            {
+                HarrierNetId = reader.ReadUInt(),
+            };
     }
 }

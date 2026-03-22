@@ -50,12 +50,49 @@ namespace IssaPlugin.Items
         private const float InitialDownSpeed = 15f;
         private const float RocketImpulse    = 25f;
 
+        // ----------------------------------------------------------------
+        //  Smoke trail (all clients)
+        // ----------------------------------------------------------------
+
+        private GameObject _smokeTrail;
+        private GameObject _fireTrail;
+
         // ================================================================
         //  Unity lifecycle
         // ================================================================
 
         private void Start()
         {
+            // Smoke trail — all clients spawn it locally (purely visual).
+            if (AssetLoader.MaydaySmokeTrailPrefab != null)
+            {
+                _smokeTrail = Instantiate(
+                    AssetLoader.MaydaySmokeTrailPrefab,
+                    transform.position,
+                    Quaternion.identity
+                );
+                _smokeTrail.transform.SetParent(transform, worldPositionStays: true);
+            }
+            else
+            {
+                IssaPluginPlugin.Log.LogWarning("[Mayday] Smoke trail prefab not loaded.");
+            }
+
+            // Smoke trail — all clients spawn it locally (purely visual).
+            if (AssetLoader.MaydayFireTrailPrefab != null)
+            {
+                _fireTrail = Instantiate(
+                    AssetLoader.MaydayFireTrailPrefab,
+                    transform.position,
+                    Quaternion.identity
+                );
+                _fireTrail.transform.SetParent(transform, worldPositionStays: true);
+            }
+            else
+            {
+                IssaPluginPlugin.Log.LogWarning("[Mayday] Fire trail prefab not loaded.");
+            }
+
             // Stop the autonomous flight driver.
             var flyBehaviour = GetComponent<HarrierBehaviour>();
             if (flyBehaviour != null)
@@ -70,7 +107,7 @@ namespace IssaPlugin.Items
 
             // Initial velocity: carry the jet's current forward momentum plus a
             // downward push, then add a nudge from the killing rocket direction.
-            Vector3 crashVel = transform.forward * (Configuration.HarrierApproachSpeed.Value * 0.4f)
+            Vector3 crashVel = transform.forward * Configuration.HarrierApproachSpeed.Value * 0.125f
                              + Vector3.down * InitialDownSpeed;
 
             if (KillingRocketDir != Vector3.zero)
