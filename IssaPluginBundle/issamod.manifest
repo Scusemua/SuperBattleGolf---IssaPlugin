@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 1427539369
+CRC: 356290961
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 9cce1feaf46145ea928433ae9ba04fed
+    Hash: 89f687e244a9112443f586ab602f87f3
   TypeTreeHash:
     serializedVersion: 2
     Hash: 82d52513d6b19822b87b688cdb5147d6
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: dc0b96ef21ade889f64113e0e01f4151
+    Hash: 1c3bcb65531e62d773c4b42d862c3cef
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -93,6 +93,7 @@ Assets:
 - Assets/Assets/predator_missile_tablet_model.prefab
 - Assets/Assets/big_plane.ogg
 - Assets/Assets/bat_icon.png
+- Assets/Assets/uzi.prefab
 - Assets/Assets/Dark 1.mat
 - Assets/Assets/Dark 2.mat
 - Assets/Assets/javelin_target_indicator.prefab
@@ -121,6 +122,7 @@ Assets:
 - Assets/Assets/donut_model.prefab
 - Assets/Assets/gravity_remote.prefab
 - Assets/Assets/lightning.prefab
+- Assets/Assets/uzi_icon_v1.png
 - Assets/Assets/javelin_trail.prefab
 - Assets/Assets/stealth_bomber_tablet_model.prefab
 - Assets/Assets/ac130_tablet.prefab
@@ -129,6 +131,7 @@ Assets:
 - Assets/Assets/bear_icon.png
 - Assets/Assets/WarningExclamation.prefab
 - Assets/Blink/Art/Animals/Stylized/Bear/Bear_Prefabs/BearAnimator.controller
+- Assets/Assets/uzi_icon_v2.png
 - Assets/Assets/gravity_remote_icon.png
 - Assets/Assets/black_hole.prefab
 - Assets/Assets/sniper_rifle_icon.png

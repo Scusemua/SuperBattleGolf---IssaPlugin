@@ -69,6 +69,9 @@ namespace IssaPlugin.Items
 
         public static Sprite WallIcon { get; private set; }
 
+        public static Sprite SubMachineGunIcon { get; private set; }
+        public static GameObject SubMachineGunPrefab { get; private set; }
+
         /// Local-only non-networked copy of WallPrefab used as the placement ghost.
         /// Network components and physics are stripped so it can be instantiated freely
         /// on the client without Mirror context.
@@ -383,6 +386,12 @@ namespace IssaPlugin.Items
                 GameObject.DontDestroyOnLoad(WallGhostPrefab);
                 IssaPluginPlugin.Log.LogInfo("[Assets] WallGhostPrefab created from WallPrefab.");
             }
+
+            // --- Sub-Machine Gun ---
+            SubMachineGunIcon = LoadSprite("uzi_icon_v2.png");
+            SubMachineGunPrefab = Load<GameObject>("uzi.prefab");
+            if (SubMachineGunPrefab != null)
+                DisableRigidbody(SubMachineGunPrefab);
 
             IssaPluginPlugin.Log.LogInfo("[Assets] IssaPluginBundle loaded.");
         }

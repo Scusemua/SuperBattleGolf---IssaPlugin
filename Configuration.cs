@@ -228,6 +228,16 @@ namespace IssaPlugin
         public static ConfigEntry<float> PlaceableWallDamageGolfClub { get; private set; }
         public static ConfigEntry<float> PlaceableWallDamageBaseballBat { get; private set; }
 
+        // --- Sub-Machine Gun ---
+        public static ConfigEntry<Key> SubMachineGunGiveKey { get; private set; }
+        public static ConfigEntry<float> SubMachineGunUses { get; private set; }
+        public static ConfigEntry<float> SubMachineGunSpawnWeight { get; private set; }
+        public static ConfigEntry<float> SubMachineGunBulletCount { get; private set; }
+        public static ConfigEntry<float> SubMachineGunFireRate { get; private set; }
+        public static ConfigEntry<float> SubMachineGunInaccuracy { get; private set; }
+        public static ConfigEntry<float> SubMachineGunMaxAimingDistance { get; private set; }
+        public static ConfigEntry<float> SubMachineGunMaxShotDistance { get; private set; }
+
         // --- Bear ---
         public static ConfigEntry<Key> BearGiveKey { get; private set; }
         public static ConfigEntry<float> BearUses { get; private set; }
@@ -1558,6 +1568,56 @@ namespace IssaPlugin
                 "DamageBaseballBat",
                 2f,
                 "Damage dealt to a wall chunk per baseball bat swing."
+            );
+
+            // --- Sub-Machine Gun ---
+            SubMachineGunGiveKey = cfg.Bind(
+                "SubMachineGun",
+                "GiveKey",
+                Key.M,
+                "Debug key to add the Sub-Machine Gun to your inventory."
+            );
+            SubMachineGunUses = cfg.Bind(
+                "SubMachineGun",
+                "Uses",
+                1f,
+                "Number of uses per Sub-Machine Gun pickup."
+            );
+            SubMachineGunSpawnWeight = cfg.Bind(
+                "ItemBoxSpawns",
+                "SubMachineGunWeight",
+                2f,
+                "Spawn weight for the Sub-Machine Gun in item boxes. Set to 0 to disable."
+            );
+            SubMachineGunBulletCount = cfg.Bind(
+                "SubMachineGun",
+                "BulletCount",
+                20f,
+                "Number of bullets fired per use."
+            );
+            SubMachineGunFireRate = cfg.Bind(
+                "SubMachineGun",
+                "FireRate",
+                0.08f,
+                "Seconds between each bullet in the burst."
+            );
+            SubMachineGunInaccuracy = cfg.Bind(
+                "SubMachineGun",
+                "Inaccuracy",
+                22f,
+                "Random spread angle (degrees) applied to each bullet. Higher = less accurate."
+            );
+            SubMachineGunMaxAimingDistance = cfg.Bind(
+                "SubMachineGun",
+                "MaxAimingDistance",
+                500f,
+                "Max distance used when computing the aim point for each bullet."
+            );
+            SubMachineGunMaxShotDistance = cfg.Bind(
+                "SubMachineGun",
+                "MaxShotDistance",
+                500f,
+                "Max raycast distance for each bullet."
             );
 
             // --- Bear ---

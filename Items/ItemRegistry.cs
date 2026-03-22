@@ -27,6 +27,7 @@ namespace IssaPlugin.Items
         public static readonly ItemType NukeItemType = (ItemType)111;
         public static readonly ItemType BlackHoleGrenadeItemType = (ItemType)112;
         public static readonly ItemType PlaceableWallItemType = (ItemType)113;
+        public static readonly ItemType SubMachineGunItemType = (ItemType)114;
 
         // Static initialization order note: AllItems is a static field initializer that only
         // instantiates the definition objects; it does not call any abstract members. Properties like
@@ -49,6 +50,7 @@ namespace IssaPlugin.Items
                 new NukeItemDefinition(),
                 new BlackHoleGrenadeItemDefinition(),
                 new PlaceableWallItemDefinition(),
+                new SubMachineGunItemDefinition(),
             };
 
         private static IReadOnlyDictionary<int, CustomItemDefinition> _customItemDefinitionMap;
@@ -58,7 +60,10 @@ namespace IssaPlugin.Items
             {
                 if (_customItemDefinitionMap == null)
                 {
-                    _customItemDefinitionMap = ItemRegistry.AllItems.ToDictionary(item => (int)item.ItemType, item => item);
+                    _customItemDefinitionMap = ItemRegistry.AllItems.ToDictionary(
+                        item => (int)item.ItemType,
+                        item => item
+                    );
                 }
                 return _customItemDefinitionMap;
             }
@@ -132,14 +137,18 @@ namespace IssaPlugin.Items
             var dict = (Dictionary<ItemType, ItemData>)AllItemDataField.GetValue(collection);
             if (dict == null)
             {
-                IssaPluginPlugin.Log.LogError($"[ItemRegistry] Could not inject custom items: could not find 'allItemData' field.");
+                IssaPluginPlugin.Log.LogError(
+                    $"[ItemRegistry] Could not inject custom items: could not find 'allItemData' field."
+                );
                 return;
             }
 
             var oldArray = (ItemData[])AllItemField.GetValue(collection);
             if (dict == null)
             {
-                IssaPluginPlugin.Log.LogError($"[ItemRegistry] Could not inject custom items: could not find 'items' field.");
+                IssaPluginPlugin.Log.LogError(
+                    $"[ItemRegistry] Could not inject custom items: could not find 'items' field."
+                );
                 return;
             }
 
@@ -157,7 +166,7 @@ namespace IssaPlugin.Items
                 ? pd.Icon
                 : null;
 
-            for (int i = 0; i < AllItems.Count; i++) 
+            for (int i = 0; i < AllItems.Count; i++)
             {
                 CustomItemDefinition def = AllItems[i];
                 var data = GetOrCreateItemData(def);
