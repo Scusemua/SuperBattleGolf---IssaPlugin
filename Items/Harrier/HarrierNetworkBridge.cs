@@ -32,6 +32,7 @@ namespace IssaPlugin.Items
         public bool PendingHarrierHoming;
 
         private bool _serverRoutineActive;
+        private bool _shotDown;
         private Coroutine _serverRoutine;
         private GameObject _serverHarrier;
 
@@ -110,6 +111,7 @@ namespace IssaPlugin.Items
             }
 
             _serverHarrier = harrierGo;
+            _shotDown = false;
 
             // Attach the movement driver (server-only; not replicated to clients).
             var behaviour = harrierGo.AddComponent<HarrierBehaviour>();
@@ -118,6 +120,27 @@ namespace IssaPlugin.Items
             behaviour.ApproachSpeed  = Configuration.HarrierApproachSpeed.Value;
             behaviour.DriftSpeed     = Configuration.HarrierDriftSpeed.Value;
             behaviour.HoverRadius    = Configuration.HarrierHoverRadius.Value;
+
+            // Attach the hit receiver so the jet can be shot down immediately
+            // (even during fly-in). The OnHitsExceeded callback captures locals
+            // from this coroutine so it can initiate the crash without polling.
+            var hitReceiver = harrierGo.AddComponent<HarrierHitReceiver>();
+            hitReceiver.OnHitsExceeded += () =>
+            {
+                if (_shotDown || harrierGo == null)
+                    return;
+
+                _shotDown = true;
+                IssaPluginPlugin.Log.LogInfo("[Harrier] Shot down — initiating crash.");
+
+                NetworkServer.SendToAll(new HarrierShotDownMessage());
+
+                var crash = harrierGo.AddComponent<HarrierCrashBehaviour>();
+                crash.ThrowerInventory = inventory;
+                crash.KillingRocketDir =
+                    (harrierGo.transform.position - hitReceiver.LastHitWorldPos).normalized;
+                crash.ExplosionScale   = Configuration.HarrierCrashExplosionScale.Value;
+            };
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[Harrier] Jet spawned at {spawnPos:F0}, heading to {hoverPos:F0}."
@@ -132,7 +155,7 @@ namespace IssaPlugin.Items
             float elapsed = 0f;
 
             while (harrierGo != null && behaviour != null
-                   && !behaviour.HasArrived && elapsed < flyInTimeout)
+                   && !behaviour.HasArrived && !_shotDown && elapsed < flyInTimeout)
             {
                 elapsed += Time.deltaTime;
                 yield return null;
@@ -159,7 +182,7 @@ namespace IssaPlugin.Items
             // firing before it has fully settled into its hover position.
             float fireCooldown = fireInterval * 0.5f;
 
-            while (sessionElapsed < duration && harrierGo != null)
+            while (sessionElapsed < duration && harrierGo != null && !_shotDown)
             {
                 sessionElapsed += Time.deltaTime;
                 fireCooldown   -= Time.deltaTime;
@@ -177,9 +200,24 @@ namespace IssaPlugin.Items
                 yield return null;
             }
 
-            // ── Fly-out phase ────────────────────────────────────────────
-            if (harrierGo != null && behaviour != null)
+            // ── Exit phase: normal fly-out OR wait for crash to complete ───
+            if (_shotDown)
             {
+                // Jet was shot down — wait for HarrierCrashBehaviour to detect
+                // ground impact before we NetworkServer.Destroy it.
+                float crashTimeout = 20f;
+                elapsed = 0f;
+                var crashBehaviour = harrierGo?.GetComponent<HarrierCrashBehaviour>();
+                while (harrierGo != null && crashBehaviour != null
+                       && !crashBehaviour.IsComplete && elapsed < crashTimeout)
+                {
+                    elapsed += Time.deltaTime;
+                    yield return null;
+                }
+            }
+            else if (harrierGo != null && behaviour != null)
+            {
+                // Session expired normally — fly the jet off the map.
                 behaviour.BeginFlyOut();
                 IssaPluginPlugin.Log.LogInfo("[Harrier] Beginning fly-out.");
 
@@ -305,6 +343,12 @@ namespace IssaPlugin.Items
             var local = NetworkClient.localPlayer?.GetComponent<HarrierNetworkBridge>();
             if (local != null)
                 local.LocalSessionActive = false;
+        }
+
+        public static void ClientHandleShotDown(HarrierShotDownMessage msg)
+        {
+            IssaPluginPlugin.Log.LogInfo("[Harrier] Shot down!");
+            // Future: play audio, camera shake, etc.
         }
 
         // ================================================================

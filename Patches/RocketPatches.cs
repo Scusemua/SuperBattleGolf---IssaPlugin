@@ -36,8 +36,12 @@ namespace IssaPlugin.Patches
             );
 
             // Remove returns true if the ID was present, cleaning up the set at the
-            // same time. Bombing-run rockets must not count as hits on their own proxy.
-            bool isBomberDrop = StealthBomberItem.ActiveBomberDropRocketIds.Remove(
+            // same time. Bombing-run rockets must not count as hits on their own proxy,
+            // and Harrier-fired rockets must not count as hits on the HarrierHitReceiver.
+            bool isBomberDrop  = StealthBomberItem.ActiveBomberDropRocketIds.Remove(
+                __instance.GetInstanceID()
+            );
+            bool isHarrierShot = HarrierItem.ActiveHarrierRocketIds.Remove(
                 __instance.GetInstanceID()
             );
 
@@ -72,6 +76,16 @@ namespace IssaPlugin.Patches
                 if (wallChunk != null)
                 {
                     wallChunk.ApplyExplosionDamage(worldPosition, 8f);
+                }
+
+                if (!isHarrierShot)
+                {
+                    var harrierHitReceiver = hit.GetComponentInParent<HarrierHitReceiver>();
+                    if (harrierHitReceiver != null)
+                    {
+                        harrierHitReceiver.LastHitWorldPos = worldPosition;
+                        harrierHitReceiver.OnHit?.Invoke();
+                    }
                 }
             }
         }

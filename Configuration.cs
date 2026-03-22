@@ -251,6 +251,8 @@ namespace IssaPlugin
         public static ConfigEntry<float> HarrierExplosionScale { get; private set; }
         public static ConfigEntry<float> HarrierRocketJitter { get; private set; }
         public static ConfigEntry<bool> HarrierFriendlyFire { get; private set; }
+        public static ConfigEntry<float> HarrierHitsToDestroy { get; private set; }
+        public static ConfigEntry<float> HarrierCrashExplosionScale { get; private set; }
 
         // --- Bear ---
         public static ConfigEntry<Key> BearGiveKey { get; private set; }
@@ -1706,6 +1708,18 @@ namespace IssaPlugin
                 "FriendlyFire",
                 false,
                 "If false, the Harrier will not target the player who summoned it."
+            );
+            HarrierHitsToDestroy = cfg.Bind(
+                "HarrierJet",
+                "HitsToDestroy",
+                3f,
+                "Number of direct rocket hits required to shoot down the Harrier. Set to 0 to make it invincible."
+            );
+            HarrierCrashExplosionScale = cfg.Bind(
+                "HarrierJet",
+                "CrashExplosionScale",
+                3f,
+                "Scale multiplier for the explosion spawned when the Harrier crashes into the ground."
             );
 
             // --- Bear ---

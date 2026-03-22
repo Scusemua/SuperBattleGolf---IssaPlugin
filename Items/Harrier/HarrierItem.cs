@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Reflection;
 using Mirror;
 using UnityEngine;
 
@@ -8,6 +9,18 @@ namespace IssaPlugin.Items
     public static class HarrierItem
     {
         private static int _useIndex;
+
+        private static readonly MethodInfo ServerExplodeMethod = typeof(Rocket).GetMethod(
+            "ServerExplode",
+            BindingFlags.NonPublic | BindingFlags.Instance
+        );
+
+        /// <summary>
+        /// Instance IDs of rockets fired by the Harrier itself.
+        /// The rocket explosion patch skips these so they cannot accidentally
+        /// register as hits on the HarrierHitReceiver.
+        /// </summary>
+        public static readonly HashSet<int> ActiveHarrierRocketIds = new HashSet<int>();
 
         // ----------------------------------------------------------------
         //  Rocket spawning
@@ -58,9 +71,13 @@ namespace IssaPlugin.Items
                 ItemType.RocketLauncher
             );
 
+            // Offset along the fire direction so the rocket spawns outside the
+            // harrier mesh — otherwise it immediately self-collides and explodes.
+            Vector3 spawnPosition = fromPosition + direction * 15f;
+
             var rocket = Object.Instantiate(
                 GameManager.ItemSettings.RocketPrefab,
-                fromPosition,
+                spawnPosition,
                 rotation
             );
 
@@ -77,6 +94,55 @@ namespace IssaPlugin.Items
             NetworkServer.Spawn(rocket.gameObject, (NetworkConnectionToClient)null);
 
             ExplosionScaler.Register(rocket, Configuration.HarrierExplosionScale.Value);
+
+            // Track so the explosion patch can exclude Harrier-fired rockets from
+            // registering as hits on the HarrierHitReceiver.
+            ActiveHarrierRocketIds.Add(rocket.gameObject.GetInstanceID());
+        }
+
+        // ----------------------------------------------------------------
+        //  Crash impact explosion
+        // ----------------------------------------------------------------
+
+        /// <summary>
+        /// Spawns a rocket at <paramref name="position"/>, registers its explosion
+        /// scale, then immediately force-detonates it server-side to produce the
+        /// crash impact blast.
+        /// </summary>
+        public static void SpawnAndExplodeImpactRocket(
+            PlayerInventory inventory,
+            Vector3 position,
+            float explosionScale
+        )
+        {
+            if (!NetworkServer.active)
+                return;
+
+            _useIndex++;
+            var itemUseId = new ItemUseId(
+                inventory.PlayerInfo.PlayerId.Guid,
+                _useIndex,
+                ItemType.RocketLauncher
+            );
+
+            var rocket = Object.Instantiate(
+                GameManager.ItemSettings.RocketPrefab,
+                position,
+                Quaternion.identity
+            );
+
+            if (rocket == null)
+            {
+                IssaPluginPlugin.Log.LogError("[Harrier] Impact rocket did not instantiate.");
+                return;
+            }
+
+            rocket.gameObject.AddComponent<CustomSpawnedRocket>();
+            rocket.ServerInitialize(inventory.PlayerInfo, null, itemUseId);
+            NetworkServer.Spawn(rocket.gameObject, (NetworkConnectionToClient)null);
+            ExplosionScaler.Register(rocket, explosionScale);
+
+            ServerExplodeMethod?.Invoke(rocket, new object[] { position });
         }
 
         // ----------------------------------------------------------------

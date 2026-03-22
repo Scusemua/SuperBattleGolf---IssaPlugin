@@ -902,6 +902,14 @@ namespace IssaPlugin.Patches
             {
                 HarrierNetworkBridge.ClientHandleEnd(msg);
             });
+
+            Writer<HarrierShotDownMessage>.write =
+                HarrierShotDownMessageSerialization.WriteHarrierShotDownMessage;
+            Reader<HarrierShotDownMessage>.read =
+                HarrierShotDownMessageSerialization.ReadHarrierShotDownMessage;
+            NetworkClient.RegisterHandler<HarrierShotDownMessage>(
+                HarrierNetworkBridge.ClientHandleShotDown
+            );
         }
 
         public static void ResetRegistration() => _registered = false;
