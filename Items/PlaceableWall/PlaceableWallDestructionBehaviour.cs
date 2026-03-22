@@ -11,6 +11,8 @@ namespace IssaPlugin.Items {
 
         public Rigidbody Rigidbody {get; private set;}
 
+        private bool _deformed;
+
         private void Awake() {
             Rigidbody = GetComponent<Rigidbody>();
 
@@ -19,26 +21,55 @@ namespace IssaPlugin.Items {
             TorsionMultiplier = Configuration.PlaceableWallTorsionMultiplier.Value;
         }
 
-        private void TryDeformWall()
+        public void ApplyDamage(float amount)
         {
-            if (HealthPoints > 0)
-            {
+            HealthPoints -= amount;
+            TryDeformWall();
+        }
+
+        public void ApplyExplosionDamage(Vector3 explosionCenter, float explosionRadius)
+        {
+            HealthPoints = 0f;
+            TryDeformWall(explosionCenter, explosionRadius);
+        }
+
+        private void TryDeformWall(Vector3? explosionCenter = null, float explosionRadius = 0f)
+        {
+            if (_deformed || HealthPoints > 0)
                 return;
-            }
+
+            _deformed = true;
+
+            float debrisLifetime = Configuration.PlaceableWallDebrisLifetime.Value;
+            float explosionForce = Configuration.PlaceableWallRocketExplosionForce.Value;
 
             foreach(Transform childTransform in transform) {
-                Rigidbody spawnedRigidbody = childTransform.gameObject.AddComponent<Rigidbody>();
                 childTransform.parent = null;
+                Rigidbody spawnedRigidbody = childTransform.gameObject.AddComponent<Rigidbody>();
 
-                // Transfer the impact velocity to the new rigidbody.
-                spawnedRigidbody.linearVelocity = GetComponent<Rigidbody>().GetPointVelocity(childTransform.position);
+                if (explosionCenter.HasValue)
+                {
+                    // Apply radial blast force from the rocket's world position.
+                    spawnedRigidbody.AddExplosionForce(
+                        explosionForce,
+                        explosionCenter.Value,
+                        explosionRadius,
+                        1f,
+                        ForceMode.Impulse
+                    );
+                }
+                else
+                {
+                    // Transfer the parent chunk's velocity (e.g. from a melee hit).
+                    spawnedRigidbody.linearVelocity = Rigidbody.GetPointVelocity(childTransform.position);
+                    spawnedRigidbody.AddTorque(Rigidbody.angularVelocity, ForceMode.VelocityChange);
+                }
 
-                // Transfer the torque velocity to the new rigidbody.
-                spawnedRigidbody.AddTorque(GetComponent<Rigidbody>().angularVelocity, ForceMode.VelocityChange);
+                Destroy(childTransform.gameObject, debrisLifetime);
             }
 
             // Destroy this chunk of the wall.
-            Destroy(gameObject); 
+            Destroy(gameObject);
         }
 
         private void FixedUpdate() {

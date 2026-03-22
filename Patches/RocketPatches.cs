@@ -67,6 +67,12 @@ namespace IssaPlugin.Patches
                 {
                     donutHitReceiver.OnHit();
                 }
+
+                var wallChunk = hit.GetComponentInParent<PlaceableWallDestructionBehaviour>();
+                if (wallChunk != null)
+                {
+                    wallChunk.ApplyExplosionDamage(worldPosition, 8f);
+                }
             }
         }
     }
