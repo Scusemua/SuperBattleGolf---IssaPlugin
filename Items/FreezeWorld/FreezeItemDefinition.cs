@@ -12,7 +12,11 @@ namespace IssaPlugin.Items
         public override Sprite Icon => AssetLoader.FreezeIcon;
         public override GameObject HeldModelPrefab => AssetLoader.FreezeModelPrefab;
         public override int MaxUses => (int)Configuration.FreezeUses.Value;
-        public override float SpawnWeight => Configuration.FreezeSpawnWeight.Value;
+        public override float SpawnWeight
+        {
+            get { return Configuration.FreezeSpawnWeight.Value; }
+            set { Configuration.FreezeSpawnWeight.Value = value; }
+        }
         public override Key GiveKey => Configuration.FreezeGiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)

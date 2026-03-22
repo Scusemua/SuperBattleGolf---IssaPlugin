@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
 using HarmonyLib;
@@ -50,8 +51,21 @@ namespace IssaPlugin.Items
                 new PlaceableWallItemDefinition(),
             };
 
+        private static IReadOnlyDictionary<int, CustomItemDefinition> _customItemDefinitionMap;
+        public static IReadOnlyDictionary<int, CustomItemDefinition> CustomItemDefinitionMap
+        {
+            get
+            {
+                if (_customItemDefinitionMap == null)
+                {
+                    _customItemDefinitionMap = ItemRegistry.AllItems.ToDictionary(item => (int)item.ItemType, item => item);
+                }
+                return _customItemDefinitionMap;
+            }
+        }
+
         public static CustomItemDefinition GetDefinition(ItemType type) =>
-            AllItems.FirstOrDefault(d => d.ItemType == type);
+            ItemRegistry.AllItems.FirstOrDefault(d => d.ItemType == type);
 
         private static readonly FieldInfo SlotsField = AccessTools.Field(
             typeof(PlayerInventory),

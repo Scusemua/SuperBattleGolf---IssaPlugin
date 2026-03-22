@@ -12,7 +12,11 @@ namespace IssaPlugin.Items
         public override Sprite Icon => AssetLoader.DonutIcon;
         public override GameObject HeldModelPrefab => AssetLoader.DonutHandheldPrefab;
         public override int MaxUses => (int)Configuration.DonutUses.Value;
-        public override float SpawnWeight => Configuration.DonutSpawnWeight.Value;
+        public override float SpawnWeight
+        {
+            get { return Configuration.DonutSpawnWeight.Value; }
+            set { Configuration.DonutSpawnWeight.Value = value; }
+        }
         public override Key GiveKey => Configuration.DonutGiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)

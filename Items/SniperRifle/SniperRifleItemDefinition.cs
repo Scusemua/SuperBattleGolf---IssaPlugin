@@ -13,7 +13,11 @@ namespace IssaPlugin.Items
         public override GameObject HeldModelPrefab => AssetLoader.SniperRiflePrefab;
         public override bool UseRocketIconFallback => false; // uses pistol fallback
         public override int MaxUses => (int)Configuration.SniperRifleUses.Value;
-        public override float SpawnWeight => Configuration.SniperRifleSpawnWeight.Value;
+        public override float SpawnWeight
+        {
+            get { return Configuration.SniperRifleSpawnWeight.Value; }
+            set { Configuration.SniperRifleSpawnWeight.Value = value; }
+        }
         public override Key GiveKey => Configuration.SniperRifleGiveKey.Value;
         public override EquipmentType EquipmentType => EquipmentType.ElephantGun;
         public override ItemType AnimatorItemType => ItemType.ElephantGun;

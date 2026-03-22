@@ -11,7 +11,11 @@ namespace IssaPlugin.Items
         public override Sprite Icon => AssetLoader.JavelinIcon;
         public override GameObject HeldModelPrefab => AssetLoader.JavelinHandheldPrefab;
         public override int MaxUses => (int)Configuration.JavelinUses.Value;
-        public override float SpawnWeight => Configuration.JavelinSpawnWeight.Value;
+        public override float SpawnWeight
+        {
+            get { return Configuration.JavelinSpawnWeight.Value; }
+            set { Configuration.JavelinSpawnWeight.Value = value; }
+        }
         public override Key GiveKey => Configuration.JavelinGiveKey.Value;
         public override ItemType AnimatorItemType => ItemType.RocketLauncher;
         public override ItemType AnimatorChangedItemType => ItemType.RocketLauncher;

@@ -25,7 +25,7 @@ namespace IssaPlugin.Items
         // MaxUses reads Configuration.XxxUses.Value at call time (lazy — no static init risk).
         // The cast to int is intentional: BepInEx config values for use-counts are ConfigEntry<float>.
         public abstract int MaxUses { get; }
-        public abstract float SpawnWeight { get; }
+        public abstract float SpawnWeight { get; set; }
         public abstract Key GiveKey { get; }
 
         // Game integration

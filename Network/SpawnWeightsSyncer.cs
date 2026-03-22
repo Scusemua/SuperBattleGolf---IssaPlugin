@@ -1,5 +1,7 @@
 using System.Collections;
+using System.Collections.Generic;
 using IssaPlugin.Network;
+using IssaPlugin.Items;
 using Mirror;
 using UnityEngine;
 
@@ -15,7 +17,10 @@ namespace IssaPlugin
         private const float SyncInterval = 5f;
 
         // Sentinel: impossible weight value so the first check always triggers a sync.
-        private static SpawnWeightsMessage _lastSent = new SpawnWeightsMessage { Bat = -1f };
+        private static SpawnWeightsMessage _lastSent = new SpawnWeightsMessage
+        {
+            ItemSpawnWeights = {},
+        };
 
         private IEnumerator Start()
         {
@@ -29,26 +34,19 @@ namespace IssaPlugin
 
         private static void BroadcastWeightsIfChanged()
         {
+            Dictionary<int, float> itemSpawnWeights = new Dictionary<int, float>();
+            foreach (CustomItemDefinition item in ItemRegistry.AllItems)
+            {
+                itemSpawnWeights.Add((int)item.ItemType, item.SpawnWeight);
+            }
+
             var msg = new SpawnWeightsMessage
             {
                 CustomItemSpawnsEnabled = Configuration.CustomItemSpawnsEnabled.Value,
-                Bat = Configuration.BaseballBatSpawnWeight.Value,
-                Bomber = Configuration.BomberSpawnWeight.Value,
-                Missile = Configuration.MissileSpawnWeight.Value,
-                AC130 = Configuration.AC130SpawnWeight.Value,
-                Freeze = Configuration.FreezeSpawnWeight.Value,
-                LowGravity = Configuration.LowGravitySpawnWeight.Value,
-                Sniper = Configuration.SniperRifleSpawnWeight.Value,
-                Donut = Configuration.DonutSpawnWeight.Value,
-                Javelin = Configuration.JavelinSpawnWeight.Value,
-                StickyGrenade = Configuration.StickyGrenadeSpawnWeight.Value,
-                Bear = Configuration.BearSpawnWeight.Value,
-                BlackHoleGrenade = Configuration.BlackHoleGrenadeSpawnWeight.Value,
-                Nuke = Configuration.NukeSpawnWeight.Value,
-                PlaceableWall = Configuration.PlaceableWallSpawnWeight.Value,
+                ItemSpawnWeights = itemSpawnWeights,
             };
 
-            if (WeightsEqual(msg, _lastSent))
+            if (!ShouldUpdateWeights(msg, _lastSent))
                 return;
 
             _lastSent = msg;
@@ -59,29 +57,42 @@ namespace IssaPlugin
 
             NetworkServer.SendToAll(msg);
 
-            IssaPluginPlugin.Log.LogDebug(
-                $"[SpawnWeights] Synced — Bat={msg.Bat} Bomber={msg.Bomber} Missile={msg.Missile} "
-                    + $"AC130={msg.AC130} Freeze={msg.Freeze} LowGravity={msg.LowGravity} Nuke={msg.Nuke} "
-                    + $"Sniper={msg.Sniper} Donut={msg.Donut} Javelin={msg.Javelin} StickyGrenade={msg.StickyGrenade} "
-                    + $"PlaceableWall={msg.PlaceableWall} BlackHoleGrenade={msg.BlackHoleGrenade}"
-            );
+            IssaPluginPlugin.Log.LogDebug($"[SpawnWeights] Synced: {msg.ToString()}");
         }
 
-        private static bool WeightsEqual(SpawnWeightsMessage a, SpawnWeightsMessage b) =>
-            a.Bat == b.Bat
-            && a.Bomber == b.Bomber
-            && a.Missile == b.Missile
-            && a.AC130 == b.AC130
-            && a.Freeze == b.Freeze
-            && a.LowGravity == b.LowGravity
-            && a.Sniper == b.Sniper
-            && a.Donut == b.Donut
-            && a.Javelin == b.Javelin
-            && a.StickyGrenade == b.StickyGrenade
-            && a.Bear == b.Bear
-            && a.PlaceableWall == b.PlaceableWall
-            && a.BlackHoleGrenade == b.BlackHoleGrenade
-            && a.Nuke == b.Nuke;
+        private static bool ShouldUpdateWeights(SpawnWeightsMessage a, SpawnWeightsMessage b)
+        {
+            // If one or both have null spawn weights, then return true.
+            if (a.ItemSpawnWeights != null || b.ItemSpawnWeights != null)
+                return true; 
+
+            if (a.ItemSpawnWeights.Count != b.ItemSpawnWeights.Count)
+            {
+                IssaPluginPlugin.Log.LogWarning(
+                    $"SpawnWeightsMessages have unequal number of entries: {a.ItemSpawnWeights.Count} vs. {b.ItemSpawnWeights.Count}"
+                );
+                return true; // Probably shouldn't happen, but let's update to correct.
+            }
+
+            foreach (var (itemType, spawnWeight) in a.ItemSpawnWeights)
+            {
+                if (!b.ItemSpawnWeights.ContainsKey(itemType))
+                {
+                    // Doesn't have an entry... shouldn't happen, but if it does, they should be updated.
+                    IssaPluginPlugin.Log.LogError(
+                        $"SpawnWeightsMessage is missing entry for item type ${itemType}"
+                    );
+                    return true; 
+                }
+
+                if (a.ItemSpawnWeights[itemType] != b.ItemSpawnWeights[itemType])
+                {
+                    return true; // Mismatched spawn weight; need to update.
+                }
+            }
+
+            return false; // They're equal. Don't need to update weights.
+        }
 
         /// Called on each client when a SpawnWeightsMessage arrives from the host.
         internal static void HandleSpawnWeights(SpawnWeightsMessage msg)
@@ -90,27 +101,13 @@ namespace IssaPlugin
             if (NetworkServer.active)
                 return;
 
-            Configuration.CustomItemSpawnsEnabled.Value = msg.CustomItemSpawnsEnabled;
-            Configuration.BaseballBatSpawnWeight.Value = msg.Bat;
-            Configuration.BomberSpawnWeight.Value = msg.Bomber;
-            Configuration.MissileSpawnWeight.Value = msg.Missile;
-            Configuration.AC130SpawnWeight.Value = msg.AC130;
-            Configuration.FreezeSpawnWeight.Value = msg.Freeze;
-            Configuration.LowGravitySpawnWeight.Value = msg.LowGravity;
-            Configuration.SniperRifleSpawnWeight.Value = msg.Sniper;
-            Configuration.DonutSpawnWeight.Value = msg.Donut;
-            Configuration.JavelinSpawnWeight.Value = msg.Javelin;
-            Configuration.StickyGrenadeSpawnWeight.Value = msg.StickyGrenade;
-            Configuration.BearSpawnWeight.Value = msg.Bear;
-            Configuration.NukeSpawnWeight.Value = msg.Nuke;
-            Configuration.BlackHoleGrenadeSpawnWeight.Value = msg.BlackHoleGrenade;
-            Configuration.PlaceableWallSpawnWeight.Value = msg.PlaceableWall;
+            foreach (var (itemType, spawnWeight) in msg.ItemSpawnWeights)
+            {
+                CustomItemDefinition itemDef = ItemRegistry.CustomItemDefinitionMap[itemType];
+                itemDef.SpawnWeight = spawnWeight;
+            }
 
-            IssaPluginPlugin.Log.LogDebug(
-                $"[SpawnWeights] Received from host: CustomItemSpawnsEnabled={msg.CustomItemSpawnsEnabled} Bat={msg.Bat} Bomber={msg.Bomber} "
-                    + $"Missile={msg.Missile} AC130={msg.AC130} Freeze={msg.Freeze} "
-                    + $"LowGravity={msg.LowGravity} Sniper={msg.Sniper} Donut={msg.Donut} Javelin={msg.Javelin} StickyGrenade={msg.StickyGrenade}"
-            );
+            IssaPluginPlugin.Log.LogDebug($"[SpawnWeights] Received from host: {msg.ToString()}");
         }
     }
 }
