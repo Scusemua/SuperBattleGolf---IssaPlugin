@@ -1456,7 +1456,7 @@ namespace IssaPlugin
             BlackHoleGrenadeExcludeThrower = cfg.Bind(
                 "BlackHoleGrenade",
                 "ExcludeThrower",
-                false,
+                true,
                 "If true, the player who threw the grenade is not affected by suction or spit."
             );
 
