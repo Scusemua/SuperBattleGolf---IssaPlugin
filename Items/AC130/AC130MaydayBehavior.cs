@@ -214,7 +214,7 @@ namespace IssaPlugin.Items
 
             // Build forward direction: pitched down by _diveAngle, biased
             // toward map centre, plus random drift.
-            Vector3 toCenter = (OrbitCenter - transform.position);
+            Vector3 toCenter = OrbitCenter - transform.position;
             toCenter.y = 0f;
             if (toCenter.sqrMagnitude < 0.01f)
                 toCenter = transform.forward;

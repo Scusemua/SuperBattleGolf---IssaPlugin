@@ -492,28 +492,28 @@ namespace IssaPlugin
             BaseballBatSpawnWeight = cfg.Bind(
                 "ItemBoxSpawns",
                 "BaseballBatWeight",
-                5f,
+                15f,
                 "Spawn weight for the baseball bat in item boxes. Set to 0 to disable."
             );
 
             BomberSpawnWeight = cfg.Bind(
                 "ItemBoxSpawns",
                 "StealthBomberWeight",
-                2f,
+                10f,
                 "Spawn weight for the stealth bomber in item boxes. Set to 0 to disable."
             );
 
             MissileSpawnWeight = cfg.Bind(
                 "ItemBoxSpawns",
                 "PredatorMissileWeight",
-                3f,
+                10f,
                 "Spawn weight for the predator missile in item boxes. Set to 0 to disable."
             );
 
             AC130SpawnWeight = cfg.Bind(
                 "ItemBoxSpawns",
                 "AC130Weight",
-                1f,
+                5f,
                 "Spawn weight for the AC130 in item boxes. Set to 0 to disable."
             );
 
@@ -687,7 +687,7 @@ namespace IssaPlugin
             FreezeSpawnWeight = cfg.Bind(
                 "ItemBoxSpawns",
                 "FreezeWorldWeight",
-                2f,
+                8f,
                 "Spawn weight for the Freeze World item in item boxes. Set to 0 to disable."
             );
 
@@ -914,7 +914,7 @@ namespace IssaPlugin
             LowGravitySpawnWeight = cfg.Bind(
                 "ItemBoxSpawns",
                 "LowGravityWeight",
-                2f,
+                8f,
                 "Spawn weight for the Low Gravity item in item boxes. Set to 0 to disable."
             );
 
@@ -936,7 +936,7 @@ namespace IssaPlugin
             SniperRifleSpawnWeight = cfg.Bind(
                 "ItemBoxSpawns",
                 "SniperRifleWeight",
-                2f,
+                10f,
                 "Spawn weight for the Sniper Rifle in item boxes. Set to 0 to disable."
             );
 
@@ -1023,7 +1023,7 @@ namespace IssaPlugin
             DonutSpawnWeight = cfg.Bind(
                 "ItemBoxSpawns",
                 "DonutWeight",
-                1f,
+                5f,
                 "Spawn weight for the Donut in item boxes. Set to 0 to disable."
             );
 
@@ -1151,7 +1151,7 @@ namespace IssaPlugin
             JavelinSpawnWeight = cfg.Bind(
                 "ItemBoxSpawns",
                 "JavelinWeight",
-                2f,
+                12f,
                 "Spawn weight for the Javelin in item boxes. Set to 0 to disable."
             );
 
@@ -1229,7 +1229,7 @@ namespace IssaPlugin
             StickyGrenadeSpawnWeight = cfg.Bind(
                 "ItemBoxSpawns",
                 "StickyGrenadeWeight",
-                3f,
+                12f,
                 "Spawn weight for the StickyGrenade in item boxes. Set to 0 to disable."
             );
 
@@ -1297,7 +1297,7 @@ namespace IssaPlugin
             NukeSpawnWeight = cfg.Bind(
                 "ItemBoxSpawns",
                 "NukeWeight",
-                0.5f,
+                5f,
                 "Spawn weight for the Nuke in item boxes. Set to 0 to disable."
             );
 
@@ -1387,7 +1387,7 @@ namespace IssaPlugin
             BlackHoleGrenadeSpawnWeight = cfg.Bind(
                 "ItemBoxSpawns",
                 "BlackHoleGrenadeWeight",
-                0.8f,
+                8f,
                 "Spawn weight for the Black Hole Grenade in item boxes. Set to 0 to disable."
             );
 
@@ -1509,7 +1509,7 @@ namespace IssaPlugin
             PlaceableWallSpawnWeight = cfg.Bind(
                 "ItemBoxSpawns",
                 "PlaceableWallWeight",
-                2f,
+                15f,
                 "Spawn weight for the Placeable Wall in item boxes. Set to 0 to disable."
             );
 
@@ -1602,7 +1602,7 @@ namespace IssaPlugin
             AK47SpawnWeight = cfg.Bind(
                 "ItemBoxSpawns",
                 "AK47Weight",
-                2f,
+                12f,
                 "Spawn weight for the Sub-Machine Gun in item boxes. Set to 0 to disable."
             );
             AK47FireRate = cfg.Bind(
@@ -1646,7 +1646,7 @@ namespace IssaPlugin
             HarrierSpawnWeight = cfg.Bind(
                 "ItemBoxSpawns",
                 "HarrierJetWeight",
-                1f,
+                8f,
                 "Spawn weight for the Harrier Jet in item boxes. Set to 0 to disable."
             );
             HarrierAltitude = cfg.Bind(
@@ -1733,7 +1733,7 @@ namespace IssaPlugin
             BearSpawnWeight = cfg.Bind(
                 "ItemBoxSpawns",
                 "BearWeight",
-                2f,
+                6f,
                 "Spawn weight for the Bear item in item boxes. Set to 0 to disable."
             );
             BearCount = cfg.Bind("Bear", "BearCount", 2f, "Number of bears spawned per item use.");

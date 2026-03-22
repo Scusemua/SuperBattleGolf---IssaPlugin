@@ -15,9 +15,7 @@ namespace IssaPlugin.Network
             string s = $"CustomItemSpawnsEnabled={CustomItemSpawnsEnabled} ";
             foreach (var (itemType, spawnWeight) in msg.ItemSpawnWeights)
             {
-                CustomItemDefinition itemDef = ItemRegistry.CustomItemDefinitionMap[
-                    itemType
-                ];
+                CustomItemDefinition itemDef = ItemRegistry.CustomItemDefinitionMap[itemType];
                 s += $"{itemDef.DisplayName}={msg.ItemSpawnWeights[itemType]}";
             }
 
