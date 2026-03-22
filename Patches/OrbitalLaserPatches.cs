@@ -192,24 +192,6 @@ namespace IssaPlugin.Patches
                 }
             }
 
-            // var donutMarker = Object.FindFirstObjectByType<DonutMarker>();
-            // if (donutMarker != null)
-            // {
-            //     var lot = donutMarker.GetComponent<LockOnTarget>();
-            //     if (lot != null)
-            //     {
-            //         float d = OrbitalLaserAircraftHelpers.XZDist(
-            //             donutMarker.transform.position,
-            //             holePos
-            //         );
-            //         if (d < bestDist)
-            //         {
-            //             bestDist = d;
-            //             bestLockOn = lot;
-            //         }
-            //     }
-            // }
-
             if (bestLockOn == null)
                 return true; // no aircraft — let base method run normally
 
