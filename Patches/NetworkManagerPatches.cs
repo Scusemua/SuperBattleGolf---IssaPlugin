@@ -695,6 +695,24 @@ namespace IssaPlugin.Patches
                 SpawnWeightsSyncer.HandleSpawnWeights
             );
 
+            // ── Vote system ───────────────────────────────────────────────────
+            Writer<VoteStartMessage>.write  = VoteMessageSerialization.WriteVoteStartMessage;
+            Reader<VoteStartMessage>.read   = VoteMessageSerialization.ReadVoteStartMessage;
+            Writer<VoteSubmitMessage>.write = VoteMessageSerialization.WriteVoteSubmitMessage;
+            Reader<VoteSubmitMessage>.read  = VoteMessageSerialization.ReadVoteSubmitMessage;
+            Writer<VoteResultsMessage>.write = VoteMessageSerialization.WriteVoteResultsMessage;
+            Reader<VoteResultsMessage>.read  = VoteMessageSerialization.ReadVoteResultsMessage;
+
+            // Server receives votes from every client (including the host's local client)
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<VoteSubmitMessage>(
+                    (conn, msg) => VoteManager.Instance?.HandleVoteSubmit(conn, msg)
+                );
+
+            // All clients receive vote lifecycle messages from the server
+            NetworkClient.RegisterHandler<VoteStartMessage>(VoteManager.HandleVoteStart);
+            NetworkClient.RegisterHandler<VoteResultsMessage>(VoteManager.HandleVoteResults);
+
             // ══════════════════════════════════════════════════════════════════════════
             //  BEAR MESSAGES
             // ══════════════════════════════════════════════════════════════════════════

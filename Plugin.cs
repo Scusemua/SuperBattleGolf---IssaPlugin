@@ -2,6 +2,7 @@ using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
 using IssaPlugin.Items;
+using IssaPlugin.Network;
 using IssaPlugin.Overlays;
 using IssaPlugin.Patches;
 using Mirror;
@@ -41,7 +42,9 @@ namespace IssaPlugin
             CourseManager.MatchStateChanged += OnMatchStateChanged;
 
             gameObject.AddComponent<SpawnWeightsSyncer>();
+            gameObject.AddComponent<VoteManager>();
             gameObject.AddComponent<PlayerBoxOverlay>();
+            gameObject.AddComponent<VoteOverlay>();
             gameObject.AddComponent<BomberOverlay>();
             gameObject.AddComponent<AC130Overlay>();
             gameObject.AddComponent<FreezeOverlay>();

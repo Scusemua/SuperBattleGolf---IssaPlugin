@@ -28,6 +28,14 @@ namespace IssaPlugin.Items
         public abstract float SpawnWeight { get; set; }
         public abstract Key GiveKey { get; }
 
+        // When false the item is excluded from the spawn pool entirely (weight is ignored).
+        // Delegates to Configuration so the value persists across sessions and is vote-writeable.
+        public virtual bool Enabled
+        {
+            get => Configuration.GetItemEnabled(ItemType);
+            set => Configuration.SetItemEnabled(ItemType, value);
+        }
+
         // Game integration
         public virtual EquipmentType EquipmentType => EquipmentType.RocketLauncher;
 

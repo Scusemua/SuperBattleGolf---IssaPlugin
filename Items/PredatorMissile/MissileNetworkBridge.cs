@@ -10,6 +10,7 @@ namespace IssaPlugin.Items
     public class MissileNetworkBridge : NetworkBridgeBase
     {
         private Rocket _activeRocket;
+        private Rigidbody _activeRocketRigidbody;
         private bool _isSteering;
 
         /// True on the server while this player's missile routine is running.
@@ -46,16 +47,13 @@ namespace IssaPlugin.Items
 
         public void ServerSetMissileVelocity(Vector3 velocity)
         {
-            if (_activeRocket == null)
+            if (_activeRocket == null || _activeRocketRigidbody == null)
                 return;
             // Clamp magnitude so a modified client cannot teleport the rocket
             // by sending an arbitrarily large velocity vector.
             float maxSpeed =
                 Configuration.MissileFallSpeed.Value + Configuration.MissileSteerSpeed.Value * 1.5f;
-            velocity = Vector3.ClampMagnitude(velocity, maxSpeed);
-            var rb = _activeRocket.GetComponent<Rigidbody>();
-            if (rb != null)
-                rb.linearVelocity = velocity;
+            _activeRocketRigidbody.linearVelocity = Vector3.ClampMagnitude(velocity, maxSpeed);
         }
 
         public void ServerDetonateMissile()
@@ -99,7 +97,11 @@ namespace IssaPlugin.Items
 
         /// <summary>Called by the server coroutine to register the spawned rocket so that
         /// velocity and detonate messages can be forwarded to it.</summary>
-        public void ServerSetActiveRocket(Rocket rocket) => _activeRocket = rocket;
+        public void ServerSetActiveRocket(Rocket rocket)
+        {
+            _activeRocket = rocket;
+            _activeRocketRigidbody = rocket?.GetComponent<Rigidbody>();
+        }
 
         /// <summary>Server calls this to clear its own references after the routine ends.</summary>
         public void ServerClearSteering()

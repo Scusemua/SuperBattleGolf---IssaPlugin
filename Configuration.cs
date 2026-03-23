@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using BepInEx.Configuration;
 using UnityEngine.InputSystem;
 
@@ -8,6 +9,19 @@ namespace IssaPlugin
         // Master kill-switch for allowing custom items to be spawned without
         // having to set all spawn weights to 0.
         public static ConfigEntry<bool> CustomItemSpawnsEnabled { get; private set; }
+
+        // ── Per-item enabled flags (vote-writeable at runtime) ─────────────────
+        // Looked up by ItemType int via GetItemEnabled / SetItemEnabled.
+        private static readonly Dictionary<int, ConfigEntry<bool>> ItemEnabledEntries = [];
+
+        public static bool GetItemEnabled(ItemType itemType) =>
+            ItemEnabledEntries.TryGetValue((int)itemType, out var e) ? e.Value : true;
+
+        public static void SetItemEnabled(ItemType itemType, bool enabled)
+        {
+            if (ItemEnabledEntries.TryGetValue((int)itemType, out var e))
+                e.Value = enabled;
+        }
 
         // --- Baseball Bat ---
         public static ConfigEntry<float> BaseballBatPowerMultiplier { get; private set; }
@@ -302,6 +316,29 @@ namespace IssaPlugin
                 true,
                 "Master kill-switch for allowing custom items to be spawned without having to set all spawn weights to 0."
             );
+
+            // ── Per-item enabled flags (populated by vote results at runtime) ────
+            static void Reg(ConfigFile c, Dictionary<int, ConfigEntry<bool>> map,
+                int id, string key, string label) =>
+                map[id] = c.Bind("ItemEnabled", key, true,
+                    $"Whether the {label} is enabled and can spawn.");
+
+            Reg(cfg, ItemEnabledEntries, 100, "BaseballBatEnabled",      "Baseball Bat");
+            Reg(cfg, ItemEnabledEntries, 101, "StealthBomberEnabled",    "Stealth Bomber");
+            Reg(cfg, ItemEnabledEntries, 102, "PredatorMissileEnabled",  "Predator Missile");
+            Reg(cfg, ItemEnabledEntries, 103, "AC130Enabled",            "AC-130 Gunship");
+            Reg(cfg, ItemEnabledEntries, 104, "FreezeEnabled",           "Freeze World");
+            Reg(cfg, ItemEnabledEntries, 105, "LowGravityEnabled",       "Low Gravity");
+            Reg(cfg, ItemEnabledEntries, 106, "SniperRifleEnabled",      "Sniper Rifle");
+            Reg(cfg, ItemEnabledEntries, 107, "DonutEnabled",            "Donut");
+            Reg(cfg, ItemEnabledEntries, 108, "JavelinEnabled",          "Javelin");
+            Reg(cfg, ItemEnabledEntries, 109, "StickyGrenadeEnabled",    "Sticky Grenade");
+            Reg(cfg, ItemEnabledEntries, 110, "BearEnabled",             "Bear");
+            Reg(cfg, ItemEnabledEntries, 111, "NukeEnabled",             "Nuke");
+            Reg(cfg, ItemEnabledEntries, 112, "BlackHoleGrenadeEnabled", "Black Hole Grenade");
+            Reg(cfg, ItemEnabledEntries, 113, "PlaceableWallEnabled",    "Placeable Wall");
+            Reg(cfg, ItemEnabledEntries, 114, "AK47Enabled",             "AK-47");
+            Reg(cfg, ItemEnabledEntries, 115, "HarrierEnabled",          "Harrier Jet");
 
             // --- Baseball Bat ---
             BaseballBatPowerMultiplier = cfg.Bind(

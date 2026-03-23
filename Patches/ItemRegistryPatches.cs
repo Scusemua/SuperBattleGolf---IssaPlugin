@@ -96,7 +96,7 @@ namespace IssaPlugin.Patches
             var list = new List<ItemPool.ItemSpawnChance>();
             foreach (var itemDefinition in ItemRegistry.AllItems)
             {
-                if (itemDefinition.SpawnWeight > 0f)
+                if (itemDefinition.Enabled && itemDefinition.SpawnWeight > 0f)
                     list.Add(
                         new ItemPool.ItemSpawnChance
                         {

@@ -32,6 +32,16 @@ namespace IssaPlugin
             }
         }
 
+        /// Forces an immediate server pool rebuild and weight broadcast regardless of whether
+        /// weights have changed. Call this after any change that affects Enabled state without
+        /// touching SpawnWeight values (e.g., after a vote result is applied).
+        internal static void ForceServerSync()
+        {
+            _lastSent = new SpawnWeightsMessage { ItemSpawnWeights = null };
+            if (NetworkServer.active)
+                BroadcastWeightsIfChanged();
+        }
+
         private static void BroadcastWeightsIfChanged()
         {
             Dictionary<int, float> itemSpawnWeights = new Dictionary<int, float>();

@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using IssaPlugin.Items;
+using IssaPlugin.Network;
 
 namespace IssaPlugin.Patches
 {
@@ -55,6 +56,29 @@ namespace IssaPlugin.Patches
             UnityEngine.Debug.LogWarning(
                 $"[giveCustomItem] Unknown item \"{itemName}\". Valid names: {validNames} (or an integer item-type ID)."
             );
+        }
+
+        /// <summary>
+        /// Console command: vote [timeout]
+        /// Starts an enable/disable vote for all custom items. Host only.
+        /// Timeout defaults to 30 seconds if omitted.
+        /// </summary>
+        [CCommand("vote", "Start a custom-item enable/disable vote. Usage: vote <timeoutSeconds>")]
+        private static void StartVote(string timeoutStr)
+        {
+            if (!float.TryParse(timeoutStr, out float timeout) || timeout <= 0f)
+            {
+                UnityEngine.Debug.LogWarning($"[vote] Invalid timeout \"{timeoutStr}\". Must be a positive number.");
+                return;
+            }
+
+            if (VoteManager.Instance == null)
+            {
+                UnityEngine.Debug.LogWarning("[vote] VoteManager is not initialised.");
+                return;
+            }
+
+            VoteManager.Instance.StartVote(timeout);
         }
     }
 }

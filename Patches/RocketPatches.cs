@@ -94,10 +94,8 @@ namespace IssaPlugin.Patches
     [HarmonyPatch(typeof(Rocket), "OnFixedBUpdate")]
     static class RocketFixedBUpdatePatch
     {
-        private static readonly FieldInfo DistanceField = AccessTools.Field(
-            typeof(Rocket),
-            "distanceTravelled"
-        );
+        private static readonly AccessTools.FieldRef<Rocket, float> DistanceTravelledRef =
+            AccessTools.FieldRefAccess<Rocket, float>("distanceTravelled");
 
         static bool Prefix(Rocket __instance)
         {
@@ -110,7 +108,7 @@ namespace IssaPlugin.Patches
             // never fires, but allow the rest of OnFixedBUpdate to run normally
             // (the client overrides velocity every frame via MissileSetVelocityMessage).
             if (PredatorMissileItem.ActiveMissileRockets.Contains(__instance))
-                DistanceField?.SetValue(__instance, 0f);
+                DistanceTravelledRef(__instance) = 0f;
 
             return true;
         }
