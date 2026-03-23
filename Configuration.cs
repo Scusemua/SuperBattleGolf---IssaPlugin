@@ -529,21 +529,21 @@ namespace IssaPlugin
             AC130OrbitRadius = cfg.Bind(
                 "AC130",
                 "OrbitRadius",
-                400f,
+                100f,
                 "Radius in units of the circle the gunship flies around the map centre."
             );
 
             AC130OrbitSpeed = cfg.Bind(
                 "AC130",
                 "OrbitSpeed",
-                12f,
+                6f,
                 "Degrees per second at which the gunship orbits the map centre."
             );
 
             AC130Altitude = cfg.Bind(
                 "AC130",
                 "Altitude",
-                120f,
+                140f,
                 "Height above the map centre the gunship flies at."
             );
 
@@ -620,14 +620,14 @@ namespace IssaPlugin
             AC130ApproachDistance = cfg.Bind(
                 "AC130",
                 "ApproachDistance",
-                800f,
+                200f,
                 "How far away the AC130 spawns and flies in from before reaching the orbit point."
             );
 
             AC130ApproachSpeed = cfg.Bind(
                 "AC130",
                 "ApproachSpeed",
-                120f,
+                60f,
                 "Speed in units per second at which the AC130 flies in and out."
             );
 
