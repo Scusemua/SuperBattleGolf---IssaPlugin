@@ -319,6 +319,24 @@ namespace IssaPlugin.Items
                 }
             );
             proxyBehaviour = proxyGo?.GetComponent<BomberProxyBehaviour>();
+
+            // Subscribe to intermediate hits so clients see a damage smoke trail.
+            if (proxyBehaviour != null)
+            {
+                proxyBehaviour.OnHit += () =>
+                {
+                    if (proxyBehaviour.HitsRequired > 0
+                        && proxyBehaviour.HitCount > 0
+                        && proxyBehaviour.HitCount < proxyBehaviour.HitsRequired)
+                    {
+                        IssaPluginPlugin.Log.LogInfo(
+                            $"[BomberProxy] Damaged ({proxyBehaviour.HitCount}/{proxyBehaviour.HitsRequired}) — broadcasting smoke."
+                        );
+                        bridge.SendBomberDamaged();
+                    }
+                };
+            }
+
             // Lock-on components (Entity, BomberMarker, LockOnTarget) are added to
             // BomberProxyPrefab via BomberProxyClientSetup in AssetLoader, so all
             // server and client instances have them automatically without needing an RPC.

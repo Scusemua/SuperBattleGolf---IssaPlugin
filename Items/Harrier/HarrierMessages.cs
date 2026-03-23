@@ -89,4 +89,27 @@ namespace IssaPlugin.Items
                 HarrierNetId = reader.ReadUInt(),
             };
     }
+
+    /// <summary>
+    /// Broadcast by the server to all clients when the Harrier takes a hit but
+    /// has not yet been destroyed. Clients spawn a damage smoke trail on the jet.
+    /// </summary>
+    public struct HarrierDamagedMessage : NetworkMessage
+    {
+        public uint HarrierNetId;
+    }
+
+    public static class HarrierDamagedMessageSerialization
+    {
+        public static void WriteHarrierDamagedMessage(NetworkWriter writer, HarrierDamagedMessage msg)
+        {
+            writer.WriteUInt(msg.HarrierNetId);
+        }
+
+        public static HarrierDamagedMessage ReadHarrierDamagedMessage(NetworkReader reader) =>
+            new HarrierDamagedMessage
+            {
+                HarrierNetId = reader.ReadUInt(),
+            };
+    }
 }

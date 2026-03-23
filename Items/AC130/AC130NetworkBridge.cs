@@ -193,10 +193,26 @@ namespace IssaPlugin.Items
                 };
             }
 
-            // Wire up rocket-hit threshold callback.
+            // Wire up rocket-hit callbacks.
             var hitReceiver = gunshipGo.GetComponent<AC130HitReceiver>();
             if (hitReceiver != null)
             {
+                var gunshipIdentityForDmg = gunshipGo.GetComponent<NetworkIdentity>();
+                hitReceiver.OnHit += () =>
+                {
+                    if (hitReceiver.HitsRequired > 0
+                        && hitReceiver.HitCount > 0
+                        && hitReceiver.HitCount < hitReceiver.HitsRequired)
+                    {
+                        IssaPluginPlugin.Log.LogInfo(
+                            $"[AC130] Damaged ({hitReceiver.HitCount}/{hitReceiver.HitsRequired}) — broadcasting smoke."
+                        );
+                        NetworkServer.SendToAll(
+                            new AC130DamagedMessage { GunshipNetId = gunshipIdentityForDmg.netId }
+                        );
+                    }
+                };
+
                 hitReceiver.OnHitsExceeded = () =>
                 {
                     ServerBeginMayday();

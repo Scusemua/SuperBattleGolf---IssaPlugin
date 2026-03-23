@@ -67,6 +67,28 @@ namespace IssaPlugin.Items
         }
     }
 
+    /// <summary>
+    /// Broadcast by the server to all clients when the AC130 takes a hit but
+    /// has not yet triggered mayday. Clients spawn a damage smoke trail on the gunship.
+    /// </summary>
+    public struct AC130DamagedMessage : NetworkMessage
+    {
+        public uint GunshipNetId;
+    }
+
+    public static class AC130DamagedMessageSerialization
+    {
+        public static void WriteAC130DamagedMessage(NetworkWriter writer, AC130DamagedMessage msg)
+        {
+            writer.WriteUInt(msg.GunshipNetId);
+        }
+
+        public static AC130DamagedMessage ReadAC130DamagedMessage(NetworkReader reader)
+        {
+            return new AC130DamagedMessage { GunshipNetId = reader.ReadUInt() };
+        }
+    }
+
     // ── [Command] replacements (client→server) ──────────────────────────────
 
     public struct AC130StartMessage : NetworkMessage { }

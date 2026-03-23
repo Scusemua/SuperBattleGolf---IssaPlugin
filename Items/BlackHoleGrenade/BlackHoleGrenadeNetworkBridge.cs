@@ -171,6 +171,20 @@ namespace IssaPlugin.Items
             if (localInfo == null)
                 return;
 
+            // Stop any existing suction/VFX for this black hole instance (re-land guard).
+            StopSuction(msg.BlackHoleNetId);
+
+            // Spawn the local-only black hole VFX at the landed position for everyone.
+            if (AssetLoader.BlackHoleVfxPrefab != null)
+            {
+                var vfx = Instantiate(
+                    AssetLoader.BlackHoleVfxPrefab,
+                    msg.BlackHolePosition,
+                    Quaternion.identity
+                );
+                s_activeVfx[msg.BlackHoleNetId] = vfx;
+            }
+
             // If configured to exclude the thrower, skip suction for them.
             if (Configuration.BlackHoleGrenadeExcludeThrower.Value
                 && localInfo == msg.ThrowerInfo)
@@ -179,9 +193,6 @@ namespace IssaPlugin.Items
             var movement = localInfo.Movement;
             if (movement == null)
                 return;
-
-            // Stop any existing suction for this black hole instance (re-land guard).
-            StopSuction(msg.BlackHoleNetId);
 
             var coroutine = movement.StartCoroutine(
                 SuctionCoroutine(
@@ -196,17 +207,6 @@ namespace IssaPlugin.Items
             );
 
             s_activeSuctions[msg.BlackHoleNetId] = (coroutine, movement);
-
-            // Spawn the local-only black hole VFX at the landed position.
-            if (AssetLoader.BlackHoleVfxPrefab != null)
-            {
-                var vfx = Instantiate(
-                    AssetLoader.BlackHoleVfxPrefab,
-                    msg.BlackHolePosition,
-                    Quaternion.identity
-                );
-                s_activeVfx[msg.BlackHoleNetId] = vfx;
-            }
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[BlackHoleGrenade] Client: suction started (netId={msg.BlackHoleNetId})."

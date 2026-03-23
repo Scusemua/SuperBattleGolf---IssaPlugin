@@ -111,6 +111,20 @@ namespace IssaPlugin.Items
 
     public struct BomberPrepareHomingMessage : NetworkMessage { }
 
+    /// <summary>
+    /// Broadcast by the server to all clients when the Stealth Bomber takes a hit
+    /// but has not yet been shot down. Clients spawn a damage smoke trail on the visual.
+    /// </summary>
+    public struct BomberDamagedMessage : NetworkMessage { }
+
+    public static class BomberDamagedMessageSerialization
+    {
+        public static void WriteBomberDamagedMessage(NetworkWriter writer, BomberDamagedMessage msg) { }
+
+        public static BomberDamagedMessage ReadBomberDamagedMessage(NetworkReader reader) =>
+            new BomberDamagedMessage();
+    }
+
     public static class BomberPrepareHomingMessageSerialization
     {
         public static void WriteBomberPrepareHomingMessage(

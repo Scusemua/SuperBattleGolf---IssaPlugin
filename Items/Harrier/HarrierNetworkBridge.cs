@@ -126,6 +126,21 @@ namespace IssaPlugin.Items
             // from this coroutine so it can initiate the crash without polling.
             var hitReceiver = harrierGo.AddComponent<HarrierHitReceiver>();
             var harrierIdentity = harrierGo.GetComponent<NetworkIdentity>();
+            hitReceiver.OnHit += () =>
+            {
+                if (hitReceiver.HitsRequired > 0
+                    && hitReceiver.HitCount > 0
+                    && hitReceiver.HitCount < hitReceiver.HitsRequired)
+                {
+                    IssaPluginPlugin.Log.LogInfo(
+                        $"[Harrier] Damaged ({hitReceiver.HitCount}/{hitReceiver.HitsRequired}) — broadcasting smoke."
+                    );
+                    NetworkServer.SendToAll(
+                        new HarrierDamagedMessage { HarrierNetId = harrierIdentity.netId }
+                    );
+                }
+            };
+
             hitReceiver.OnHitsExceeded += () =>
             {
                 if (_shotDown || harrierGo == null)
@@ -347,6 +362,23 @@ namespace IssaPlugin.Items
             var local = NetworkClient.localPlayer?.GetComponent<HarrierNetworkBridge>();
             if (local != null)
                 local.LocalSessionActive = false;
+        }
+
+        public static void ClientHandleDamaged(HarrierDamagedMessage msg)
+        {
+            if (AssetLoader.MaydaySmokeTrailPrefab == null)
+                return;
+
+            if (!NetworkClient.spawned.TryGetValue(msg.HarrierNetId, out var ni) || ni == null)
+                return;
+
+            IssaPluginPlugin.Log.LogInfo("[Harrier] Spawning damage smoke trail.");
+            var smoke = Object.Instantiate(
+                AssetLoader.MaydaySmokeTrailPrefab,
+                ni.transform.position,
+                Quaternion.identity
+            );
+            smoke.transform.SetParent(ni.transform, worldPositionStays: true);
         }
 
         public static void ClientHandleShotDown(HarrierShotDownMessage msg)

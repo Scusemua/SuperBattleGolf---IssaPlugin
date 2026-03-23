@@ -87,6 +87,11 @@ namespace IssaPlugin.Items
             );
         }
 
+        public void SendBomberDamaged()
+        {
+            NetworkServer.SendToAll(new BomberDamagedMessage());
+        }
+
         public void SendBomberShotDown(
             Vector3 crashDir,
             float crashSpeed,
@@ -108,6 +113,24 @@ namespace IssaPlugin.Items
         // ================================================================
         //  Message handlers — registered in NetworkManagerPatches
         // ================================================================
+
+        public static void HandleBomberDamaged(BomberDamagedMessage msg)
+        {
+            if (AssetLoader.MaydaySmokeTrailPrefab == null)
+                return;
+
+            var visual = StealthBomberItem.ActiveBomberVisual;
+            if (visual == null)
+                return;
+
+            IssaPluginPlugin.Log.LogInfo("[Bomber] Spawning damage smoke trail.");
+            var smoke = Object.Instantiate(
+                AssetLoader.MaydaySmokeTrailPrefab,
+                visual.transform.position,
+                Quaternion.identity
+            );
+            smoke.transform.SetParent(visual.transform, worldPositionStays: true);
+        }
 
         public static void HandleBomberVisualSpawn(BomberVisualSpawnMessage msg)
         {

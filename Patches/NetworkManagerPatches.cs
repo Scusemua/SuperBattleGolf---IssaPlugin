@@ -102,6 +102,14 @@ namespace IssaPlugin.Patches
             Reader<BomberShotDownMessage>.read =
                 BomberShotDownMessageSerialization.ReadBomberShotDownMessage;
 
+            NetworkClient.RegisterHandler<BomberDamagedMessage>(
+                BomberNetworkBridge.HandleBomberDamaged
+            );
+            Writer<BomberDamagedMessage>.write =
+                BomberDamagedMessageSerialization.WriteBomberDamagedMessage;
+            Reader<BomberDamagedMessage>.read =
+                BomberDamagedMessageSerialization.ReadBomberDamagedMessage;
+
             // ------------------------
             // ---- AC130 Messages ----
             NetworkClient.RegisterHandler<AC130SoundMessage>(AC130MessageHandlers.HandleAC130Sound);
@@ -115,6 +123,14 @@ namespace IssaPlugin.Patches
                 AC130MaydayVfxMessageSerialization.WriteAC130MaydayVfxMessage;
             Reader<AC130MaydayVfxMessage>.read =
                 AC130MaydayVfxMessageSerialization.ReadAC130MaydayVfxMessage;
+
+            NetworkClient.RegisterHandler<AC130DamagedMessage>(
+                AC130MessageHandlers.HandleAC130Damaged
+            );
+            Writer<AC130DamagedMessage>.write =
+                AC130DamagedMessageSerialization.WriteAC130DamagedMessage;
+            Reader<AC130DamagedMessage>.read =
+                AC130DamagedMessageSerialization.ReadAC130DamagedMessage;
 
             NetworkClient.RegisterHandler<AC130MaydayImpactMessage>(
                 AC130MessageHandlers.HandleAC130MaydayImpact
@@ -910,6 +926,14 @@ namespace IssaPlugin.Patches
             NetworkClient.RegisterHandler<HarrierShotDownMessage>(
                 HarrierNetworkBridge.ClientHandleShotDown
             );
+
+            Writer<HarrierDamagedMessage>.write =
+                HarrierDamagedMessageSerialization.WriteHarrierDamagedMessage;
+            Reader<HarrierDamagedMessage>.read =
+                HarrierDamagedMessageSerialization.ReadHarrierDamagedMessage;
+            NetworkClient.RegisterHandler<HarrierDamagedMessage>(
+                HarrierNetworkBridge.ClientHandleDamaged
+            );
         }
 
         public static void ResetRegistration() => _registered = false;
@@ -1025,6 +1049,23 @@ namespace IssaPlugin.Patches
                 mayday.OrbitCenter =
                     gunship.GetComponent<AC130FlyBehaviour>()?.orbitCenter ?? Vector3.zero;
             }
+        }
+
+        internal static void HandleAC130Damaged(AC130DamagedMessage msg)
+        {
+            if (AssetLoader.MaydaySmokeTrailPrefab == null)
+                return;
+
+            if (!NetworkClient.spawned.TryGetValue(msg.GunshipNetId, out var ni) || ni == null)
+                return;
+
+            IssaPluginPlugin.Log.LogInfo("[AC130] Spawning damage smoke trail.");
+            var smoke = Object.Instantiate(
+                AssetLoader.MaydaySmokeTrailPrefab,
+                ni.transform.position,
+                Quaternion.identity
+            );
+            smoke.transform.SetParent(ni.transform, worldPositionStays: true);
         }
 
         internal static void HandleAC130MaydayImpact(AC130MaydayImpactMessage msg)
