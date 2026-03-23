@@ -433,13 +433,12 @@ namespace IssaPlugin.Items
 
         private static void StopSuction(uint netId)
         {
-            if (!s_activeSuctions.TryGetValue(netId, out var entry))
-                return;
-
-            if (entry.coroutine != null && entry.movement != null)
-                entry.movement.StopCoroutine(entry.coroutine);
-
-            s_activeSuctions.Remove(netId);
+            if (s_activeSuctions.TryGetValue(netId, out var entry))
+            {
+                if (entry.coroutine != null && entry.movement != null)
+                    entry.movement.StopCoroutine(entry.coroutine);
+                s_activeSuctions.Remove(netId);
+            }
 
             if (s_activeVfx.TryGetValue(netId, out var vfxInstance))
             {
