@@ -2,11 +2,14 @@
 
 <img src="icon.png" width="256" height="256" />
 
-Adds **11 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
+Adds **15 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
 
 To download and/or install the mod, please check out the GitHub releases or the mod's [ThunderStore page](https://thunderstore.io/c/super-battle-golf/).
 
 ## Items
+
+### ⚾ Baseball Bat
+A melee weapon that replaces your golf club swing. Wind up and send anyone in range flying. Straightforward, personal, deeply satisfying.
 
 ### 🛩️ AC-130 Gunship
 You become the gunship. The plane circles the map at altitude while you stare down a targeting camera and rain rockets on your friends. Fire is free, ammo is infinite, and the only limit is how long you can stay on station (and also the configured time-limit). Hit the mayday button and the gunship nosedives -- your opponents can lock onto it with a rocket launcher and shoot it down before it reaches them. If they can't, the crash does the work for you.
@@ -41,6 +44,15 @@ Locks onto a ground target point and flies a lofted arc: up, turn at apex, dive 
 ### 💥 Sticky Grenade
 Thrown with an arc preview so you know exactly where it's going. Sticks to whatever it lands on -- terrain, structures, or a player who wasn't paying attention. Detonates on a fuse. If it sticks to a player, they have a few seconds to contemplate their choices.
 
+### 🌀 Black Hole Grenade
+Thrown with an arc preview. Lands and opens a black hole that pulls every nearby player and object toward its center for several seconds, then violently ejects everything outward in random directions. Good luck putting after that.
+
+### 🧱 Placeable Wall
+Plants a destructible brick wall wherever you're standing. Useful for blocking shots, redirecting players, or just making the course more chaotic. The wall takes damage from rockets, explosives, golf clubs, and the baseball bat -- it will eventually come down, but it might save you long enough for it to matter.
+
+### 🔫 AK-47
+A rapid-fire sub-machine gun. Hold the fire button and spray bullets downrange at high speed. Each bullet hits independently, so sustained fire on a target adds up fast. Accuracy degrades with range, so this one rewards getting close.
+
 ---
 
 ## Installation
@@ -68,14 +80,20 @@ All settings take effect immediately on the next session without restarting the 
 
 - **Multiplayer:** All items are fully networked. The host runs as the server; all item behavior is server-authoritative. Clients do not need the mod installed to join a modded lobby, but they will not see custom item models or UI overlays unless they also have it installed.
 - **Existing items:** No base game items are removed or rebalanced. This mod only adds.
-- **Other mods:** Should be compatible with anything that doesn't patch the same inventory or item-spawning hooks. In particlar, this mod is compatible with AtomicStudio's [ModConfig](https://thunderstore.io/c/super-battle-golf/p/AtomicStudio/ModConfig/) mod, which makes it very easy to tweak the numerous available settings. Note that the host can change settings during the game, and they will take effect the next time the associated item is used. Spawn pool weights are synchronized on a five second interval as well.
+- **Other mods:** Should be compatible with anything that doesn't patch the same inventory or item-spawning hooks. In particular, this mod is compatible with AtomicStudio's [ModConfig](https://thunderstore.io/c/super-battle-golf/p/AtomicStudio/ModConfig/) mod, which makes it very easy to tweak the numerous available settings, and with AtomicStudio's [ItemSpawner](https://thunderstore.io/c/super-battle-golf/p/AtomicStudio/ItemSpawner/) mod. Note that the host can change settings during the game, and they will take effect the next time the associated item is used. Spawn pool weights are synchronized on a five second interval as well.
 - 
+---
+
+## Console Commands
+
+- **`vote <timeout>`** — Host only. Starts a vote among all players to enable or disable individual custom items. The timeout (in seconds) controls how long the vote stays open before closing automatically.
+
 ---
 
 ## Known Issues / Notes
 
-- Bears do not currently play a reaction animation when hit with a melee weapon -- the knockback and damage apply at the end of the swing, not at contact. This will be improved in a future update.
 - The Donut, AC-130, and Stealth Bomber all appear as valid lock-on targets for the rocket launcher. This is intentional.
+- The AK-47 sometimes triggers the game's anti-cheat, as it fires rather rapidly. I am working on a fix. (It may already be fixed.)
 
 ---
 
