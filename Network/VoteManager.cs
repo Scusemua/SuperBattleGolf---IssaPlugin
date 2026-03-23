@@ -118,6 +118,12 @@ namespace IssaPlugin.Network
             // SpawnWeightsSyncer won't do this automatically unless a weight value also changed.
             SpawnWeightsSyncer.ForceServerSync();
 
+            // Close the host's overlay immediately. The listen-server host runs this method
+            // directly (not via a network message), so we can't rely on HandleVoteResults
+            // being called on the host's NetworkClient in time.
+            VoteActive = false;
+            LocalVoteSubmitted = false;
+
             NetworkServer.SendToAll(new VoteResultsMessage { Results = results });
             IssaPluginPlugin.Log.LogInfo("[Vote] Tallied and broadcast results.");
         }

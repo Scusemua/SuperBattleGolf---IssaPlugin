@@ -12,6 +12,7 @@ namespace IssaPlugin.Overlays
         private const float PanelWidth  = 520f;
         private const float RowHeight   = 36f;
         private const float HeaderH     = 52f;
+        private const float TipH        = 22f;
         private const float TimerH      = 28f;
         private const float SubmitH     = 46f;
         private const float Padding     = 14f;
@@ -21,7 +22,7 @@ namespace IssaPlugin.Overlays
 
         // ── Styles / textures (lazy-initialised once) ────────────────────────────
         private bool _stylesReady;
-        private GUIStyle _panelStyle, _titleStyle, _timerStyle, _waitStyle;
+        private GUIStyle _panelStyle, _titleStyle, _tipStyle, _timerStyle, _waitStyle;
         private GUIStyle _itemStyle;
         private GUIStyle _yesOn, _yesOff, _noOn, _noOff, _submitStyle;
 
@@ -32,7 +33,7 @@ namespace IssaPlugin.Overlays
             EnsureStyles();
 
             int itemCount = ItemRegistry.AllItems.Count;
-            float panelH  = HeaderH + TimerH + Padding
+            float panelH  = HeaderH + TipH + TimerH + Padding
                            + RowHeight * itemCount + Padding
                            + SubmitH + Padding;
 
@@ -46,6 +47,11 @@ namespace IssaPlugin.Overlays
             // ── Title ────────────────────────────────────────────────────────────
             GUI.Label(new Rect(px, cy, PanelWidth, HeaderH), "Vote: Enable Custom Items?", _titleStyle);
             cy += HeaderH;
+
+            // ── Tip line ─────────────────────────────────────────────────────────
+            GUI.Label(new Rect(px, cy, PanelWidth, TipH),
+                "Press Escape to pause the game and show your cursor", _tipStyle);
+            cy += TipH;
 
             // ── Timer / waiting line ─────────────────────────────────────────────
             bool submitted = VoteManager.LocalVoteSubmitted;
@@ -128,6 +134,13 @@ namespace IssaPlugin.Overlays
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleCenter,
                 normal    = { textColor = Color.white }
+            };
+
+            _tipStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize  = 11,
+                alignment = TextAnchor.MiddleCenter,
+                normal    = { textColor = new Color(0.60f, 0.60f, 0.60f) }
             };
 
             _timerStyle = new GUIStyle(GUI.skin.label)

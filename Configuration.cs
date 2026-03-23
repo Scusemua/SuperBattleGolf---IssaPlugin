@@ -1402,7 +1402,7 @@ namespace IssaPlugin
             NukeExcludeThrower = cfg.Bind(
                 "Nuke",
                 "ExcludeThrower",
-                false,
+                true,
                 "If true, the sky blast does not apply force to the player who activated the nuke."
             );
 
