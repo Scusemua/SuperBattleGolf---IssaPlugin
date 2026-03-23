@@ -1,7 +1,9 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using HarmonyLib;
 using IssaPlugin.Items;
+using Mirror;
 using UnityEngine;
 
 namespace IssaPlugin.Patches
@@ -42,7 +44,7 @@ namespace IssaPlugin.Patches
                 __instance.GetInstanceID()
             );
             bool isHarrierShot = HarrierItem.ActiveHarrierRocketIds.Remove(
-                __instance.GetInstanceID()
+                __instance.GetInstanceID(), out NetworkConnectionToClient harrierSummonerConn
             );
 
             foreach (var hit in hits)
@@ -85,6 +87,24 @@ namespace IssaPlugin.Patches
                     {
                         harrierHitReceiver.LastHitWorldPos = worldPosition;
                         harrierHitReceiver.OnHit?.Invoke();
+                    }
+                }
+            }
+
+            // Notify the Harrier summoner when their rocket hits a player.
+            if (isHarrierShot && harrierSummonerConn != null)
+            {
+                var notified = new List<PlayerInfo>();
+                foreach (var hit in hits)
+                {
+                    var pi = hit.GetComponentInParent<PlayerInfo>();
+                    if (pi != null && !notified.Contains(pi))
+                    {
+                        notified.Add(pi);
+                        harrierSummonerConn.Send(new HitNotificationMessage
+                        {
+                            Message = $"Harrier hit {pi.PlayerId.PlayerName}!"
+                        });
                     }
                 }
             }

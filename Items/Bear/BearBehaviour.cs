@@ -556,6 +556,13 @@ namespace IssaPlugin.Items
             IssaPluginPlugin.Log.LogInfo(
                 $"[Bear] Attack hit applied to {target.PlayerId.PlayerName}."
             );
+
+            // Notify the summoner's client so they can see the bear is doing work.
+            var summConn = SummonerInfo.GetComponent<NetworkIdentity>()?.connectionToClient;
+            summConn?.Send(new HitNotificationMessage
+            {
+                Message = $"Bear hit {target.PlayerId.PlayerName}!"
+            });
         }
 
         // ── External events ───────────────────────────────────────────────────

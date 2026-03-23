@@ -952,6 +952,15 @@ namespace IssaPlugin.Patches
             NetworkClient.RegisterHandler<HarrierDamagedMessage>(
                 HarrierNetworkBridge.ClientHandleDamaged
             );
+
+            // ── Hit notifications (Harrier / Bear → owning client only) ──────────
+            Writer<HitNotificationMessage>.write =
+                HitNotificationMessageSerialization.WriteHitNotificationMessage;
+            Reader<HitNotificationMessage>.read =
+                HitNotificationMessageSerialization.ReadHitNotificationMessage;
+            NetworkClient.RegisterHandler<HitNotificationMessage>(msg =>
+                IssaPlugin.Overlays.HitNotificationOverlay.Instance?.AddNotification(msg.Message)
+            );
         }
 
         public static void ResetRegistration() => _registered = false;

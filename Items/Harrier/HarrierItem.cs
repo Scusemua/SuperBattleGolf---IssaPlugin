@@ -20,7 +20,7 @@ namespace IssaPlugin.Items
         /// The rocket explosion patch skips these so they cannot accidentally
         /// register as hits on the HarrierHitReceiver.
         /// </summary>
-        public static readonly HashSet<int> ActiveHarrierRocketIds = new HashSet<int>();
+        public static readonly Dictionary<int, NetworkConnectionToClient> ActiveHarrierRocketIds = [];
 
         // ----------------------------------------------------------------
         //  Rocket spawning
@@ -96,8 +96,10 @@ namespace IssaPlugin.Items
             ExplosionScaler.Register(rocket, Configuration.HarrierExplosionScale.Value);
 
             // Track so the explosion patch can exclude Harrier-fired rockets from
-            // registering as hits on the HarrierHitReceiver.
-            ActiveHarrierRocketIds.Add(rocket.gameObject.GetInstanceID());
+            // registering as hits on the HarrierHitReceiver, and to route hit
+            // notifications back to the summoner's client.
+            var summConn = inventory.GetComponent<NetworkIdentity>()?.connectionToClient;
+            ActiveHarrierRocketIds[rocket.gameObject.GetInstanceID()] = summConn;
         }
 
         // ----------------------------------------------------------------
