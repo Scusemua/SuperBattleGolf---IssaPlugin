@@ -20,6 +20,12 @@ namespace IssaPlugin.Items
         // (e.g. if the game re-calls TryUseItem while held).
         private static bool _isFiring;
 
+        // The server's elephant-gun VFX rate limiter rejects calls faster than 0.25 s
+        // and kicks after 10 violations. We track the last VFX send time and skip the
+        // call when it would arrive too soon — same pattern used for the shot sound.
+        private static float _lastVfxTime = float.MinValue;
+        private const float VfxMinInterval = 0.3f; // slightly above server's 0.25 s threshold
+
         // ── Reflected private methods ────────────────────────────────────────────
 
         private static readonly MethodInfo TryParseFirearmRaycastResultsMethod =
@@ -120,7 +126,11 @@ namespace IssaPlugin.Items
 
             if (!parsed)
             {
-                VfxManager.PlayElephantGunMissForAllClients(inventory, ray.direction);
+                if (Time.time - _lastVfxTime >= VfxMinInterval)
+                {
+                    _lastVfxTime = Time.time;
+                    VfxManager.PlayElephantGunMissForAllClients(inventory, ray.direction);
+                }
                 return;
             }
 
@@ -144,15 +154,19 @@ namespace IssaPlugin.Items
                     && hittable.AsEntity.PlayerInfo.IsElectromagnetShieldActive
                 )
                 {
-                    VfxManager.PlayElephantGunHitForAllClients(
-                        inventory,
-                        new VfxManager.GunShotHitVfxData(
-                            hittable,
-                            true,
-                            localHitPoint,
-                            raycastHit.point
-                        )
-                    );
+                    if (Time.time - _lastVfxTime >= VfxMinInterval)
+                    {
+                        _lastVfxTime = Time.time;
+                        VfxManager.PlayElephantGunHitForAllClients(
+                            inventory,
+                            new VfxManager.GunShotHitVfxData(
+                                hittable,
+                                true,
+                                localHitPoint,
+                                raycastHit.point
+                            )
+                        );
+                    }
                     return;
                 }
 
@@ -177,10 +191,14 @@ namespace IssaPlugin.Items
                 );
             }
 
-            VfxManager.PlayElephantGunHitForAllClients(
-                inventory,
-                new VfxManager.GunShotHitVfxData(hittable, false, localHitPoint, raycastHit.point)
-            );
+            if (Time.time - _lastVfxTime >= VfxMinInterval)
+            {
+                _lastVfxTime = Time.time;
+                VfxManager.PlayElephantGunHitForAllClients(
+                    inventory,
+                    new VfxManager.GunShotHitVfxData(hittable, false, localHitPoint, raycastHit.point)
+                );
+            }
         }
     }
 }
