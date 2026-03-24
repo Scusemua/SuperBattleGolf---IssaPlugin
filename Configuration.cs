@@ -10,6 +10,13 @@ namespace IssaPlugin
         // having to set all spawn weights to 0.
         public static ConfigEntry<bool> CustomItemSpawnsEnabled { get; private set; }
 
+        // Whether non-host clients can use item hotkeys to give themselves items.
+        // The host is always exempt and can always give themselves items.
+        public static ConfigEntry<bool> AllowHotkeyItemGiving { get; private set; }
+
+        // ── Client-side visual settings ────────────────────────────────────────
+        public static ConfigEntry<bool> BloodEffectsEnabled { get; private set; }
+
         // ── Per-item enabled flags (vote-writeable at runtime) ─────────────────
         // Looked up by ItemType int via GetItemEnabled / SetItemEnabled.
         private static readonly Dictionary<int, ConfigEntry<bool>> ItemEnabledEntries = [];
@@ -341,6 +348,20 @@ namespace IssaPlugin
                 "Enabled",
                 true,
                 "Master kill-switch for allowing custom items to be spawned without having to set all spawn weights to 0."
+            );
+
+            AllowHotkeyItemGiving = cfg.Bind(
+                "IssaPlugin",
+                "AllowHotkeyItemGiving",
+                false,
+                "Whether non-host clients can use item hotkeys to give themselves items. The host is always exempt."
+            );
+
+            BloodEffectsEnabled = cfg.Bind(
+                "Visual",
+                "BloodEffectsEnabled",
+                true,
+                "Whether blood splatter effects are shown when players are hit by guns. Each client sets this independently."
             );
 
             // ── Per-item enabled flags (populated by vote results at runtime) ────
