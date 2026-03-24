@@ -123,7 +123,7 @@ namespace IssaPlugin.Overlays
             };
 
             // Warning particle — attach to camera so it follows the view
-            if (!isSelf && AssetLoader.WarningParticlePrefab != null)
+            if (!isSelf && Configuration.WarningSymbolEnabled.Value && AssetLoader.WarningParticlePrefab != null)
             {
                 var go = Instantiate(AssetLoader.WarningParticlePrefab);
                 var cam = Camera.main;

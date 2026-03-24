@@ -328,6 +328,7 @@ namespace IssaPlugin
         public static ConfigEntry<bool> WarningsEnabled { get; private set; }
         public static ConfigEntry<float> WarningDuration { get; private set; }
         public static ConfigEntry<bool> WarningShowForSelf { get; private set; }
+        public static ConfigEntry<bool> WarningSymbolEnabled { get; private set; }
         public static ConfigEntry<float> WarningPrefabScale { get; private set; }
         public static ConfigEntry<float> WarningSymbolAlpha { get; private set; }
         public static ConfigEntry<float> WarningPiPScale { get; private set; }
@@ -2100,6 +2101,13 @@ namespace IssaPlugin
                 "ShowForSelf",
                 false,
                 "If true, the warning banner and PiP also appear for the player who used the item. Useful for testing."
+            );
+
+            WarningSymbolEnabled = cfg.Bind(
+                "Warnings",
+                "WarningSymbolEnabled",
+                true,
+                "If true, the warning particle effect is shown. Each client can disable it locally."
             );
 
             WarningPrefabScale = cfg.Bind(
