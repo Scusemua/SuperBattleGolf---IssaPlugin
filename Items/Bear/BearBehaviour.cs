@@ -558,7 +558,9 @@ namespace IssaPlugin.Items
             );
 
             // Notify the summoner's client so they can see the bear is doing work.
-            var summConn = SummonerInfo.GetComponent<NetworkIdentity>()?.connectionToClient;
+            // Use BearNetworkBridge (a NetworkBehaviour) — the canonical, hierarchy-safe
+            // way to reach a player's connection in this codebase.
+            var summConn = SummonerInfo.GetComponent<BearNetworkBridge>()?.connectionToClient;
             summConn?.Send(new HitNotificationMessage
             {
                 Message = $"Bear hit {target.PlayerId.PlayerName}!"
