@@ -19,9 +19,10 @@ namespace IssaPlugin.Overlays
 
         // ── State ─────────────────────────────────────────────────────────────────
 
-        private bool _chooserOpen;
-        private bool _pendingSwap;
+        private bool _isChooserOpen;
+        private bool _isPendingSwap;
         private float _pendingCountdown;
+        private readonly List<PlayerInfo> _cachedPlayers = new List<PlayerInfo>();
 
         // ── Layout constants ──────────────────────────────────────────────────────
 
@@ -35,7 +36,12 @@ namespace IssaPlugin.Overlays
 
         // ── Styles (lazy-initialised) ─────────────────────────────────────────────
 
-        private bool _stylesReady;
+        private bool _areStylesReady;
+        private Texture2D _panelBgTex;
+        private Texture2D _swapOnTex;
+        private Texture2D _swapHovTex;
+        private Texture2D _cancelBgTex;
+        private Texture2D _cancelHovTex;
         private GUIStyle _panelStyle;
         private GUIStyle _titleStyle;
         private GUIStyle _tipStyle;
@@ -53,11 +59,16 @@ namespace IssaPlugin.Overlays
         {
             if (Instance == this)
                 Instance = null;
+            Object.Destroy(_panelBgTex);
+            Object.Destroy(_swapOnTex);
+            Object.Destroy(_swapHovTex);
+            Object.Destroy(_cancelBgTex);
+            Object.Destroy(_cancelHovTex);
         }
 
         private void Update()
         {
-            if (!_pendingSwap)
+            if (!_isPendingSwap)
                 return;
             _pendingCountdown -= Time.deltaTime;
             if (_pendingCountdown < 0f)
@@ -69,8 +80,17 @@ namespace IssaPlugin.Overlays
         /// Opens the player-selection panel (called from PositionSwapItemDefinition.OnUse).
         public void OpenChooser()
         {
-            _chooserOpen = true;
-            _pendingSwap = false;
+            _isChooserOpen = true;
+            _isPendingSwap = false;
+            RefreshPlayerList();
+        }
+
+        private void RefreshPlayerList()
+        {
+            _cachedPlayers.Clear();
+            var remotes = GameManager.RemotePlayers;
+            if (remotes != null)
+                _cachedPlayers.AddRange(remotes);
         }
 
         /// Called when the server acknowledges a swap request and starts the delay.
@@ -80,8 +100,8 @@ namespace IssaPlugin.Overlays
             var localIdentity = GameManager.LocalPlayerInfo?.GetComponent<NetworkIdentity>();
             if (localIdentity != null && localIdentity.netId == initiatorNetId)
             {
-                _chooserOpen = false;
-                _pendingSwap = true;
+                _isChooserOpen = false;
+                _isPendingSwap = true;
                 _pendingCountdown = delay;
             }
         }
@@ -89,27 +109,39 @@ namespace IssaPlugin.Overlays
         /// Called on all clients when the swap executes.
         public void OnSwapExecuted(uint initiatorNetId, uint targetNetId)
         {
-            _chooserOpen = false;
-            _pendingSwap = false;
+            _isChooserOpen = false;
+            _isPendingSwap = false;
         }
 
-        /// Called when the server cancels a pending swap.
-        public void OnSwapCancelled()
+        /// Forces all overlay state closed unconditionally (used by hole-transition cleanup).
+        public void ForceClose()
         {
-            _chooserOpen = false;
-            _pendingSwap = false;
+            _isChooserOpen = false;
+            _isPendingSwap = false;
+        }
+
+        /// Called on all clients when the server cancels a pending swap.
+        /// Only closes the UI if the local player was the initiator.
+        public void OnSwapCancelled(uint initiatorNetId)
+        {
+            var localIdentity = GameManager.LocalPlayerInfo?.GetComponent<NetworkIdentity>();
+            if (localIdentity == null || localIdentity.netId != initiatorNetId)
+                return;
+
+            _isChooserOpen = false;
+            _isPendingSwap = false;
         }
 
         // ── GUI ───────────────────────────────────────────────────────────────────
 
         private void OnGUI()
         {
-            if (!_chooserOpen && !_pendingSwap)
+            if (!_isChooserOpen && !_isPendingSwap)
                 return;
 
             EnsureStyles();
 
-            if (_pendingSwap)
+            if (_isPendingSwap)
                 DrawCountdown();
             else
                 DrawChooser();
@@ -117,8 +149,7 @@ namespace IssaPlugin.Overlays
 
         private void DrawChooser()
         {
-            var others = GetOtherPlayers();
-            int rowCount = Mathf.Max(1, others.Count);
+            int rowCount = Mathf.Max(1, _cachedPlayers.Count);
             float panelH = HeaderH + TipH + Padding + RowHeight * rowCount + Padding + ButtonH + Padding;
 
             float px = (Screen.width - PanelWidth) * 0.5f;
@@ -138,7 +169,7 @@ namespace IssaPlugin.Overlays
             );
             cy += TipH + Padding;
 
-            if (others.Count == 0)
+            if (_cachedPlayers.Count == 0)
             {
                 GUI.Label(
                     new Rect(px + Padding, cy, PanelWidth - Padding * 2f, RowHeight),
@@ -154,7 +185,7 @@ namespace IssaPlugin.Overlays
 
                 float labelW = PanelWidth - Padding * 2f - ButtonW - 8f;
 
-                foreach (var player in others)
+                foreach (var player in _cachedPlayers)
                 {
                     float distFromMe = Vector3.Distance(localPos, player.transform.position);
                     string holeStr = holePos.HasValue
@@ -187,7 +218,7 @@ namespace IssaPlugin.Overlays
                             NetworkClient.Send(
                                 new PositionSwapRequestMessage { TargetNetId = identity.netId }
                             );
-                            _chooserOpen = false;
+                            _isChooserOpen = false;
                         }
                     }
 
@@ -207,7 +238,7 @@ namespace IssaPlugin.Overlays
                 )
             )
             {
-                _chooserOpen = false;
+                _isChooserOpen = false;
             }
         }
 
@@ -226,32 +257,21 @@ namespace IssaPlugin.Overlays
             GUI.Label(new Rect(px, py, W, H), text, _countdownStyle);
         }
 
-        // ── Helpers ───────────────────────────────────────────────────────────────
-
-        private static List<PlayerInfo> GetOtherPlayers()
-        {
-            var result = new List<PlayerInfo>();
-            var remotes = GameManager.RemotePlayers;
-            if (remotes != null)
-                result.AddRange(remotes);
-            return result;
-        }
-
         // ── Style setup ───────────────────────────────────────────────────────────
 
         private void EnsureStyles()
         {
-            if (_stylesReady)
+            if (_areStylesReady)
                 return;
-            _stylesReady = true;
+            _areStylesReady = true;
 
-            var panelBg = Tex(new Color(0.06f, 0.06f, 0.16f, 0.93f));
-            var swapOn = Tex(new Color(0.15f, 0.50f, 0.90f, 1.00f));
-            var swapHov = Tex(new Color(0.25f, 0.65f, 1.00f, 1.00f));
-            var cancelBg = Tex(new Color(0.40f, 0.10f, 0.10f, 1.00f));
-            var cancelHov = Tex(new Color(0.60f, 0.15f, 0.15f, 1.00f));
+            _panelBgTex = Tex(new Color(0.06f, 0.06f, 0.16f, 0.93f));
+            _swapOnTex = Tex(new Color(0.15f, 0.50f, 0.90f, 1.00f));
+            _swapHovTex = Tex(new Color(0.25f, 0.65f, 1.00f, 1.00f));
+            _cancelBgTex = Tex(new Color(0.40f, 0.10f, 0.10f, 1.00f));
+            _cancelHovTex = Tex(new Color(0.60f, 0.15f, 0.15f, 1.00f));
 
-            _panelStyle = new GUIStyle(GUI.skin.box) { normal = { background = panelBg } };
+            _panelStyle = new GUIStyle(GUI.skin.box) { normal = { background = _panelBgTex } };
 
             _titleStyle = new GUIStyle(GUI.skin.label)
             {
@@ -288,16 +308,16 @@ namespace IssaPlugin.Overlays
                 fontSize = 13,
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleCenter,
-                normal = { background = swapOn, textColor = Color.white },
-                hover = { background = swapHov, textColor = Color.white },
+                normal = { background = _swapOnTex, textColor = Color.white },
+                hover = { background = _swapHovTex, textColor = Color.white },
             };
 
             _cancelStyle = new GUIStyle(GUI.skin.button)
             {
                 fontSize = 13,
                 alignment = TextAnchor.MiddleCenter,
-                normal = { background = cancelBg, textColor = Color.white },
-                hover = { background = cancelHov, textColor = Color.white },
+                normal = { background = _cancelBgTex, textColor = Color.white },
+                hover = { background = _cancelHovTex, textColor = Color.white },
             };
 
             _countdownStyle = new GUIStyle(GUI.skin.label)

@@ -19,10 +19,6 @@ namespace IssaPlugin.Items
         }
         public override Key GiveKey => Configuration.PositionSwapGiveKey.Value;
 
-        // Return false so the game doesn't count this as a "successful use" and try
-        // to auto-advance/consume — the item is consumed server-side after target selection.
-        public override bool UseResult => false;
-
         public override void OnUse(PlayerInventory inventory)
         {
             // OnUse fires only on the local client. Open the chooser overlay; the item

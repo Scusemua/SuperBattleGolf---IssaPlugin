@@ -84,13 +84,6 @@ namespace IssaPlugin.Items
 
         // ── Single bullet raycast ────────────────────────────────────────────────
 
-        private static void ApplyRecoil(PlayerInventory inventory, Vector3 shotDirection)
-        {
-            float recoil = Configuration.AK47Recoil.Value;
-            if (recoil == 0f) return;
-            inventory.PlayerInfo.Rigidbody.linearVelocity -= shotDirection.normalized * recoil;
-        }
-
         private static void DoShoot(PlayerInventory inventory)
         {
             Vector3 barrelEnd = inventory.GetElephantGunBarrelEndPosition();
@@ -116,7 +109,7 @@ namespace IssaPlugin.Items
             Vector3 dir = (aimPoint - barrelEnd).RandomlyRotatedDeg(inaccuracy);
             Ray ray = new Ray(barrelEnd, dir);
 
-            ApplyRecoil(inventory, dir);
+            ItemHelper.ApplyRecoil(inventory, dir, Configuration.AK47Recoil.Value);
 
             float maxShot = Configuration.AK47MaxShotDistance.Value;
             int layerMask = GameManager.LayerSettings.GunHittablesMask;

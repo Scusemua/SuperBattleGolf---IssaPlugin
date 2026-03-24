@@ -24,8 +24,11 @@ namespace IssaPlugin.Items
         //  Server state (per-instance)
         // ================================================================
 
-        private bool _serverRoutineActive;
+        private bool _isServerRoutineActive;
         private Coroutine _serverRoutine;
+        private PlayerInventory _inventory;
+
+        private void Awake() => _inventory = GetComponent<PlayerInventory>();
 
         // ================================================================
         //  Server-side request handler
@@ -34,27 +37,34 @@ namespace IssaPlugin.Items
 
         public void ServerHandleRequest(uint targetNetId)
         {
-            if (_serverRoutineActive)
+            if (_isServerRoutineActive)
             {
                 IssaPluginPlugin.Log.LogWarning("[PositionSwap] Routine already active for this player.");
                 return;
             }
 
-            var inventory = GetComponent<PlayerInventory>();
-            if (inventory == null)
+            if (_inventory == null)
                 return;
 
-            var equipped = inventory.GetEffectivelyEquippedItem(true);
+            var equipped = _inventory.GetEffectivelyEquippedItem(true);
             if (equipped != ItemRegistry.PositionSwapItemType)
             {
                 IssaPluginPlugin.Log.LogWarning("[PositionSwap] Item not equipped on initiator.");
                 return;
             }
 
+            // Prevent self-swap: item would be consumed with no effect.
+            if (targetNetId == netId)
+            {
+                IssaPluginPlugin.Log.LogWarning("[PositionSwap] Initiator targeted themselves.");
+                return;
+            }
+
             if (!NetworkServer.spawned.TryGetValue(targetNetId, out var targetIdentity))
             {
                 IssaPluginPlugin.Log.LogWarning($"[PositionSwap] Target netId {targetNetId} not found.");
-                connectionToClient?.Send(new PositionSwapCancelledMessage());
+                // No warning was broadcast yet so only the initiator needs to know.
+                connectionToClient?.Send(new PositionSwapCancelledMessage { InitiatorNetId = netId });
                 return;
             }
 
@@ -62,12 +72,12 @@ namespace IssaPlugin.Items
             if (targetInventory == null)
             {
                 IssaPluginPlugin.Log.LogWarning("[PositionSwap] Target has no PlayerInventory.");
-                connectionToClient?.Send(new PositionSwapCancelledMessage());
+                connectionToClient?.Send(new PositionSwapCancelledMessage { InitiatorNetId = netId });
                 return;
             }
 
             // Consume the item before starting the coroutine.
-            ItemHelper.ConsumeEquippedItem(inventory);
+            ItemHelper.ConsumeEquippedItem(_inventory);
 
             float delay = Configuration.PositionSwapDelay.Value;
 
@@ -78,8 +88,8 @@ namespace IssaPlugin.Items
                 Delay = delay,
             });
 
-            _serverRoutineActive = true;
-            _serverRoutine = StartCoroutine(ServerSwapRoutine(inventory, targetInventory, delay));
+            _isServerRoutineActive = true;
+            _serverRoutine = StartCoroutine(ServerSwapRoutine(_inventory, targetInventory, delay));
         }
 
         // ================================================================
@@ -103,8 +113,9 @@ namespace IssaPlugin.Items
             )
             {
                 IssaPluginPlugin.Log.LogWarning("[PositionSwap] Player gone before swap could execute.");
-                connectionToClient?.Send(new PositionSwapCancelledMessage());
-                _serverRoutineActive = false;
+                // Broadcast so every client can destroy the warning orbs that were spawned.
+                NetworkServer.SendToAll(new PositionSwapCancelledMessage { InitiatorNetId = netId });
+                _isServerRoutineActive = false;
                 _serverRoutine = null;
                 yield break;
             }
@@ -139,7 +150,7 @@ namespace IssaPlugin.Items
                 $"[PositionSwap] Swapped positions: initiator→{targetOldPos}, target→{initiatorOldPos}"
             );
 
-            _serverRoutineActive = false;
+            _isServerRoutineActive = false;
             _serverRoutine = null;
         }
 
@@ -187,7 +198,10 @@ namespace IssaPlugin.Items
 
         public static void HandleCancelled(PositionSwapCancelledMessage msg)
         {
-            PositionSwapOverlay.Instance?.OnSwapCancelled();
+            // Clean up orbs on all clients regardless of who initiated.
+            DestroyWarningOrbs(msg.InitiatorNetId);
+            // Only close the overlay UI on the initiator's client.
+            PositionSwapOverlay.Instance?.OnSwapCancelled(msg.InitiatorNetId);
             IssaPluginPlugin.Log.LogInfo("[PositionSwap] Swap cancelled.");
         }
 
@@ -254,7 +268,7 @@ namespace IssaPlugin.Items
 
         public override void ServerHoleCleanup()
         {
-            if (!_serverRoutineActive)
+            if (!_isServerRoutineActive)
                 return;
 
             if (_serverRoutine != null)
@@ -263,9 +277,25 @@ namespace IssaPlugin.Items
                 _serverRoutine = null;
             }
 
-            connectionToClient?.Send(new PositionSwapCancelledMessage());
-            _serverRoutineActive = false;
+            NetworkServer.SendToAll(new PositionSwapCancelledMessage { InitiatorNetId = netId });
+            _isServerRoutineActive = false;
             IssaPluginPlugin.Log.LogInfo("[PositionSwap] Server state cleared on hole transition.");
+        }
+
+        public override void OnStopServer()
+        {
+            if (!_isServerRoutineActive)
+                return;
+
+            if (_serverRoutine != null)
+            {
+                StopCoroutine(_serverRoutine);
+                _serverRoutine = null;
+            }
+
+            _isServerRoutineActive = false;
+            IssaPluginPlugin.Log.LogInfo("[PositionSwap] Server state cleared on server stop.");
+            // Don't SendToAll here — the server is stopping and the transport is shutting down.
         }
 
         public override void ClientHoleCleanup()
@@ -278,7 +308,11 @@ namespace IssaPlugin.Items
                     Object.Destroy(pair.Value.targetOrb);
             }
             _pendingOrbs.Clear();
-            PositionSwapOverlay.Instance?.OnSwapCancelled();
+
+            // Force-close the overlay for the local player regardless of who initiated.
+            var overlay = PositionSwapOverlay.Instance;
+            if (overlay != null)
+                overlay.ForceClose();
         }
     }
 }

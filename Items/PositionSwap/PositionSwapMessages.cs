@@ -122,21 +122,29 @@ namespace IssaPlugin.Items
         }
     }
 
-    /// Server → Initiator client only: swap was cancelled before it could execute.
-    public struct PositionSwapCancelledMessage : NetworkMessage { }
+    /// Server → All clients: swap was cancelled before it could execute.
+    /// Broadcast so every client can clean up warning orbs; clients check InitiatorNetId
+    /// to decide whether to close the chooser/countdown overlay.
+    public struct PositionSwapCancelledMessage : NetworkMessage
+    {
+        public uint InitiatorNetId;
+    }
 
     public static class PositionSwapCancelledMessageSerialization
     {
         public static void WritePositionSwapCancelledMessage(
             NetworkWriter writer,
             PositionSwapCancelledMessage msg
-        ) { }
+        )
+        {
+            writer.WriteUInt(msg.InitiatorNetId);
+        }
 
         public static PositionSwapCancelledMessage ReadPositionSwapCancelledMessage(
             NetworkReader reader
         )
         {
-            return new PositionSwapCancelledMessage();
+            return new PositionSwapCancelledMessage { InitiatorNetId = reader.ReadUInt() };
         }
     }
 }

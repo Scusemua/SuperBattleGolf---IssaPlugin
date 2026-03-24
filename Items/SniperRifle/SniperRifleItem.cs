@@ -67,13 +67,6 @@ namespace IssaPlugin.Items
 
         // ── Core shot logic (no knockback) ───────────────────────────────────
 
-        private static void ApplyRecoil(PlayerInventory inventory, Vector3 shotDirection)
-        {
-            float recoil = Configuration.SniperRifleRecoil.Value;
-            if (recoil == 0f) return;
-            inventory.PlayerInfo.Rigidbody.linearVelocity -= shotDirection.normalized * recoil;
-        }
-
         private static void DoShoot(PlayerInventory inventory)
         {
             // Use the same barrel-end position as the ElephantGun.
@@ -106,7 +99,7 @@ namespace IssaPlugin.Items
             Vector3 dir = (aimPoint - barrelEnd).RandomlyRotatedDeg(inaccuracy);
             Ray ray = new Ray(barrelEnd, dir);
 
-            ApplyRecoil(inventory, dir);
+            ItemHelper.ApplyRecoil(inventory, dir, Configuration.SniperRifleRecoil.Value);
 
             float maxShot = Configuration.SniperRifleMaxShotDistance.Value;
             int layerMask = GameManager.LayerSettings.GunHittablesMask;
