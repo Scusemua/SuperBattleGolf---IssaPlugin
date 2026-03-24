@@ -14,6 +14,8 @@ namespace IssaPlugin.Patches
     [HarmonyPatch]
     static class ServerExplodeScalePatch
     {
+        static readonly Collider[] overlappingColliderBuffer = new Collider[100];
+
         static MethodBase TargetMethod() => AccessTools.Method(typeof(Rocket), "ServerExplode");
 
         static void Postfix(Rocket __instance, Vector3 worldPosition)
@@ -52,9 +54,10 @@ namespace IssaPlugin.Patches
             if (scale > 1f)
             {
                 int layerMask = GameManager.LayerSettings.RocketHittablesMask;
-                var colliders = Physics.OverlapSphere(
+                int hitCount = Physics.OverlapSphereNonAlloc(
                     worldPosition,
                     scaledRange,
+                    overlappingColliderBuffer,
                     layerMask,
                     QueryTriggerInteraction.Ignore
                 );
@@ -62,8 +65,9 @@ namespace IssaPlugin.Patches
                 float bonusForce = (scale - 1f) * 25f;
                 var processed = new HashSet<Rigidbody>();
 
-                foreach (var col in colliders)
+                for (int i = 0; i < hitCount; i++)
                 {
+                    var col = overlappingColliderBuffer[i];
                     var rb = col.GetComponentInParent<Rigidbody>();
                     if (rb != null && processed.Add(rb))
                     {
