@@ -148,7 +148,7 @@ namespace IssaPlugin.Items
             }
 
             var oldArray = (ItemData[])AllItemField.GetValue(collection);
-            if (dict == null)
+            if (oldArray == null)
             {
                 IssaPluginPlugin.Log.LogError(
                     $"[ItemRegistry] Could not inject custom items: could not find 'items' field."
