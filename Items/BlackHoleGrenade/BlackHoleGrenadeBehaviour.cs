@@ -53,6 +53,7 @@ namespace IssaPlugin.Items
         private float _elapsed;
         private float _suckElapsed;
         private bool _landedMessageSent;
+        private readonly HashSet<Rigidbody> _seenRigidbodies = new();
 
         // ----------------------------------------------------------------
         //  Lifecycle
@@ -202,11 +203,11 @@ namespace IssaPlugin.Items
             var hits = Physics.OverlapSphere(
                 blackHolePos,
                 SuckRadius,
-                ~0,
+                Physics.DefaultRaycastLayers,
                 QueryTriggerInteraction.Ignore
             );
 
-            var seen = new HashSet<Rigidbody>();
+            _seenRigidbodies.Clear();
 
             foreach (var col in hits)
             {
@@ -231,9 +232,9 @@ namespace IssaPlugin.Items
                     continue;
 
                 var rb = col.attachedRigidbody;
-                if (rb == null || seen.Contains(rb))
+                if (rb == null || _seenRigidbodies.Contains(rb))
                     continue;
-                seen.Add(rb);
+                _seenRigidbodies.Add(rb);
 
                 Vector3 toCenter = blackHolePos - rb.position;
                 float dist = toCenter.magnitude;
@@ -280,11 +281,11 @@ namespace IssaPlugin.Items
             var hits = Physics.OverlapSphere(
                 center,
                 SuckRadius,
-                ~0,
+                Physics.DefaultRaycastLayers,
                 QueryTriggerInteraction.Ignore
             );
 
-            var seen = new HashSet<Rigidbody>();
+            _seenRigidbodies.Clear();
 
             foreach (var col in hits)
             {
@@ -297,9 +298,9 @@ namespace IssaPlugin.Items
                     continue;
 
                 var rb = col.attachedRigidbody;
-                if (rb == null || seen.Contains(rb))
+                if (rb == null || _seenRigidbodies.Contains(rb))
                     continue;
-                seen.Add(rb);
+                _seenRigidbodies.Add(rb);
 
                 // Random direction biased upward so objects fly into the air.
                 Vector3 dir = Random.onUnitSphere;
