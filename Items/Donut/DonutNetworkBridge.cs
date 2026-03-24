@@ -433,6 +433,7 @@ namespace IssaPlugin.Items
                 _serverDonut = null;
             }
 
+            _serverFlyBehaviour = null;
             _serverSessionActive = false;
             ReleaseGlobalLock();
         }
