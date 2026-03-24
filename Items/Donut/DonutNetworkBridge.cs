@@ -29,15 +29,15 @@ namespace IssaPlugin.Items
 
         // Transform whose position is repeatedly set to the raycast
         // to the ground by the Donut.
-        private static Transform donutLaserTarget = null;
+        private static Transform _donutLaserTarget = null;
 
         /// Server-side reference to the active Donut GameObject.
         public static GameObject ActiveDonut => _activeSessionBridge?._serverDonut;
 
         public static Transform DonutLaserTarget
         {
-            get => donutLaserTarget;
-            set { donutLaserTarget = value; }
+            get => _donutLaserTarget;
+            set { _donutLaserTarget = value; }
         }
 
         // Vector3 passed to OrbitalLaserManager.ServerActivateLaser so when we execute
@@ -75,7 +75,7 @@ namespace IssaPlugin.Items
 
         private bool _shotDown;
 
-        private int localLaserUsesRemaining;
+        private int _localLaserUsesRemaining;
         private float _localLastLaserTime;
 
         private bool _canMove; // Can't move while shooting
@@ -337,8 +337,8 @@ namespace IssaPlugin.Items
                 Quaternion.identity
             );
 
-            localLaserUsesRemaining--;
-            DonutOverlay.UpdateLaserUses(localLaserUsesRemaining);
+            _localLaserUsesRemaining--;
+            DonutOverlay.UpdateLaserUses(_localLaserUsesRemaining);
             DonutOverlay.TriggerLaserFlash();
             Destroy(go, 3.0f); // Destroy after 3 seconds.
         }
@@ -503,11 +503,11 @@ namespace IssaPlugin.Items
                 orbitModule.ForceUpdateModule();
             }
 
-            localLaserUsesRemaining = (int)Configuration.DonutLaserUses.Value;
+            _localLaserUsesRemaining = (int)Configuration.DonutLaserUses.Value;
             float sessionElapsed = 0f;
             float sessionDuration = Configuration.DonutDuration.Value;
 
-            DonutOverlay.SetActive(true, localLaserUsesRemaining);
+            DonutOverlay.SetActive(true, _localLaserUsesRemaining);
 
             // ── Main control loop ─────────────────────────────────────────────
             while (!_forceEnd && sessionElapsed < sessionDuration)
@@ -591,7 +591,7 @@ namespace IssaPlugin.Items
                 if (
                     mouse != null
                     && mouse.leftButton.wasPressedThisFrame
-                    && localLaserUsesRemaining > 0
+                    && _localLaserUsesRemaining > 0
                     && Time.time - _localLastLaserTime >= Configuration.DonutLaserCooldown.Value
                 )
                 {
