@@ -45,7 +45,7 @@ namespace IssaPlugin.Patches
             if (!__instance.GetComponent<PositionSwapNetworkBridge>())
                 __instance.gameObject.AddComponent<PositionSwapNetworkBridge>();
 
-            IssaPluginPlugin.Log.LogInfo(
+            IssaPluginPlugin.Log.LogDebug(
                 "[Network] Bridge components injected onto player object."
             );
         }
