@@ -909,7 +909,10 @@ namespace IssaPlugin.Items
             {
                 _serverFlyBehaviour.OnExternallyDestroyed = null;
                 _serverFlyBehaviour.BeginFlyOut();
-                _serverFlyBehaviour = null;
+                // Do NOT null _serverFlyBehaviour here — if a rocket hits during fly-out
+                // ServerBeginMayday still needs orbitCenter from it. The field becomes
+                // fake-null when the gunship self-destructs, or is nulled by ServerBeginMayday
+                // itself (line 793) or ForceServerCleanup.
             }
             else if (_serverGunship != null)
             {
