@@ -58,6 +58,7 @@ namespace IssaPlugin.Items
 
         private bool _serverSessionActive;
         private GameObject _serverDonut;
+        private DonutFlyBehaviour _serverFlyBehaviour;
         private int _laserUsesRemaining;
         private int _laserUseIndex;
         private bool _laserPending;
@@ -156,7 +157,7 @@ namespace IssaPlugin.Items
                 Quaternion.identity
             );
 
-            var flyBehaviour = donutGo.AddComponent<DonutFlyBehaviour>();
+            _serverFlyBehaviour = donutGo.AddComponent<DonutFlyBehaviour>();
             var hitReceiver = donutGo.AddComponent<DonutHitReceiver>();
 
             // Enable the Rigidbody for physics-driven movement (prefab may ship kinematic).
@@ -226,9 +227,8 @@ namespace IssaPlugin.Items
             if (!_serverSessionActive || _serverDonut == null)
                 return;
 
-            var fly = _serverDonut.GetComponent<DonutFlyBehaviour>();
-            if (fly != null)
-                fly.MoveInput = worldMoveDir;
+            if (_serverFlyBehaviour != null)
+                _serverFlyBehaviour.MoveInput = worldMoveDir;
         }
 
         public void ServerFireLaser()
@@ -263,9 +263,8 @@ namespace IssaPlugin.Items
             foreach (var col in _serverDonut.GetComponents<Collider>())
                 col.enabled = true;
 
-            var donutFlyBehaviour = _serverDonut.GetComponent<DonutFlyBehaviour>();
-            if (donutFlyBehaviour != null)
-                donutFlyBehaviour.enabled = false;
+            if (_serverFlyBehaviour != null)
+                _serverFlyBehaviour.enabled = false;
 
             var rb = _serverDonut.GetComponent<Rigidbody>();
             if (rb != null)
@@ -403,6 +402,7 @@ namespace IssaPlugin.Items
                 _serverDonut = null;
             }
 
+            _serverFlyBehaviour = null;
             ReleaseGlobalLock();
             IssaPluginPlugin.Log.LogInfo("[Donut] Server session ended.");
         }
