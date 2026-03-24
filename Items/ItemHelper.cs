@@ -1,7 +1,6 @@
 using System.Reflection;
 using Mirror;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace IssaPlugin.Items
 {
@@ -10,8 +9,6 @@ namespace IssaPlugin.Items
         /// Layer mask used for ground raycasts. Public so AC130NetworkBridge
         /// can use it without duplicating the GetMask call.
         public static readonly int GroundLayerMask = LayerMask.GetMask("Default", "Terrain");
-
-        private static MethodInfo _cmdAddItemMethod;
 
         private static readonly MethodInfo DecrementMethod = typeof(PlayerInventory).GetMethod(
             "DecrementUseFromSlotAt",
@@ -34,6 +31,7 @@ namespace IssaPlugin.Items
 
             if (NetworkServer.active)
             {
+                // Host is always allowed to give themselves items.
                 bool added = ItemRegistry.DirectAddCustomItem(inventory, itemType, uses);
                 if (!added)
                     IssaPluginPlugin.Log.LogWarning(
@@ -42,23 +40,10 @@ namespace IssaPlugin.Items
             }
             else
             {
-                if (_cmdAddItemMethod == null)
-                {
-                    _cmdAddItemMethod = typeof(PlayerInventory).GetMethod(
-                        "CmdAddItem",
-                        BindingFlags.NonPublic | BindingFlags.Instance
-                    );
-                }
-
-                if (_cmdAddItemMethod != null)
-                {
-                    _cmdAddItemMethod.Invoke(inventory, new object[] { itemType });
-                    IssaPluginPlugin.Log.LogInfo($"[{logTag}] Requested item via server command.");
-                }
-                else
-                {
-                    IssaPluginPlugin.Log.LogError($"[{logTag}] Could not find CmdAddItem method.");
-                }
+                // Non-host clients send a request to the server, which checks
+                // AllowHotkeyItemGiving before granting.
+                NetworkClient.Send(new GiveItemRequestMessage { ItemType = itemType, Uses = uses });
+                IssaPluginPlugin.Log.LogInfo($"[{logTag}] Sent item request to server.");
             }
         }
 
@@ -78,9 +63,14 @@ namespace IssaPlugin.Items
             SetItemUseMethod?.Invoke(inventory, new object[] { type });
         }
 
-        public static void ApplyRecoil(PlayerInventory inventory, Vector3 shotDirection, float recoil)
+        public static void ApplyRecoil(
+            PlayerInventory inventory,
+            Vector3 shotDirection,
+            float recoil
+        )
         {
-            if (recoil == 0f) return;
+            if (recoil == 0f)
+                return;
             inventory.PlayerInfo.Rigidbody.linearVelocity -= shotDirection.normalized * recoil;
         }
 

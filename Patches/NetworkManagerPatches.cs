@@ -1,5 +1,6 @@
 using System.Collections;
 using HarmonyLib;
+using IssaPlugin;
 using IssaPlugin.Items;
 using IssaPlugin.Network;
 using Mirror;
@@ -981,8 +982,8 @@ namespace IssaPlugin.Patches
             if (NetworkServer.active)
                 NetworkServer.RegisterHandler<PositionSwapRequestMessage>(
                     (conn, msg) =>
-                        conn.identity
-                            ?.GetComponent<PositionSwapNetworkBridge>()
+                        conn
+                            .identity?.GetComponent<PositionSwapNetworkBridge>()
                             ?.ServerHandleRequest(msg.TargetNetId)
                 );
 
@@ -1021,6 +1022,41 @@ namespace IssaPlugin.Patches
             NetworkClient.RegisterHandler<PositionSwapCancelledMessage>(
                 PositionSwapNetworkBridge.HandleCancelled
             );
+
+            // ── Hotkey item-giving (Client → Server) ─────────────────────────────
+            Writer<GiveItemRequestMessage>.write =
+                GiveItemRequestMessageSerialization.WriteGiveItemRequestMessage;
+            Reader<GiveItemRequestMessage>.read =
+                GiveItemRequestMessageSerialization.ReadGiveItemRequestMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<GiveItemRequestMessage>(
+                    (conn, msg) =>
+                    {
+                        if (!Configuration.AllowHotkeyItemGiving.Value)
+                        {
+                            IssaPluginPlugin.Log.LogInfo(
+                                "[GiveItem] Rejected hotkey request: AllowHotkeyItemGiving is disabled."
+                            );
+                            return;
+                        }
+
+                        var inventory = conn.identity?.GetComponent<PlayerInventory>();
+                        if (inventory == null)
+                            return;
+
+                        var def = ItemRegistry.GetDefinition(msg.ItemType);
+                        int uses = msg.Uses > 0 ? msg.Uses : (def?.MaxUses ?? 1);
+                        bool added = ItemRegistry.DirectAddCustomItem(
+                            inventory,
+                            msg.ItemType,
+                            uses
+                        );
+                        if (!added)
+                            IssaPluginPlugin.Log.LogWarning(
+                                "[GiveItem] Failed to add item (inventory full?)."
+                            );
+                    }
+                );
         }
 
         public static void ResetRegistration() => _registered = false;
