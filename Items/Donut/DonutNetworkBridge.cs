@@ -243,7 +243,7 @@ namespace IssaPlugin.Items
                 return;
 
             _lastLaserTime = Time.time;
-            LaserAnticipationCoroutine();
+            ExecuteLaserFire();
         }
 
         public void ServerDonutShotDown()
@@ -347,7 +347,7 @@ namespace IssaPlugin.Items
         //  Server internals
         // ================================================================
 
-        private void LaserAnticipationCoroutine()
+        private void ExecuteLaserFire()
         {
             _laserPending = true;
 
