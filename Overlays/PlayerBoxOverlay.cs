@@ -41,6 +41,10 @@ namespace IssaPlugin.Overlays
         private AC130NetworkBridge _localAC130Bridge;
         private MissileNetworkBridge _localMissileBridge;
 
+        // Cached "(YOU)" label — rebuilt only when the local player reference changes.
+        private PlayerInfo _cachedLocalPlayerInfo;
+        private string _localPlayerLabel;
+
         private AC130NetworkBridge LocalAC130Bridge
         {
             get
@@ -99,6 +103,12 @@ namespace IssaPlugin.Overlays
             var localPlayerInfo = GameManager.LocalPlayerInfo;
             if (localPlayerInfo != null)
             {
+                if (localPlayerInfo != _cachedLocalPlayerInfo)
+                {
+                    _cachedLocalPlayerInfo = localPlayerInfo;
+                    _localPlayerLabel = localPlayerInfo.PlayerId.PlayerName + " (YOU)";
+                }
+
                 DrawTargetBox(
                     cam,
                     localPlayerInfo.transform.position + Vector3.up * 1f,
@@ -109,7 +119,7 @@ namespace IssaPlugin.Overlays
                     cam,
                     localPlayerInfo.transform.position + Vector3.up * 1f,
                     screenH,
-                    localPlayerInfo.PlayerId.PlayerName + " (YOU)"
+                    _localPlayerLabel
                 );
             }
 
