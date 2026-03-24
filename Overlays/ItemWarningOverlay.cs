@@ -38,10 +38,11 @@ namespace IssaPlugin.Overlays
         private const float BannerStartY = 0.20f; // fraction of screen height
 
         // ── Item type ints for switch statements ──────────────────────────────
-        private static readonly int TypeBomber = (int)ItemRegistry.StealthBomberItemType;
-        private static readonly int TypeAC130 = (int)ItemRegistry.AC130ItemType;
-        private static readonly int TypeDonut = (int)ItemRegistry.DonutItemType;
-        private static readonly int TypeNuke = (int)ItemRegistry.NukeItemType;
+        private static readonly int TypeBomber  = (int)ItemRegistry.StealthBomberItemType;
+        private static readonly int TypeAC130   = (int)ItemRegistry.AC130ItemType;
+        private static readonly int TypeDonut   = (int)ItemRegistry.DonutItemType;
+        private static readonly int TypeNuke    = (int)ItemRegistry.NukeItemType;
+        private static readonly int TypeHarrier = (int)ItemRegistry.HarrierItemType;
 
         // ── Warning entry ─────────────────────────────────────────────────────
         private class WarningEntry
@@ -294,7 +295,8 @@ namespace IssaPlugin.Overlays
             itemTypeValue == TypeBomber
             || itemTypeValue == TypeAC130
             || itemTypeValue == TypeDonut
-            || itemTypeValue == TypeNuke;
+            || itemTypeValue == TypeNuke
+            || itemTypeValue == TypeHarrier;
 
         private void TryAttachBomberCamera(WarningEntry entry)
         {
@@ -353,14 +355,11 @@ namespace IssaPlugin.Overlays
             Vector3 localOffset;
             Vector3 lookOffset = Vector3.up * 1.5f;
 
-            if (itemTypeValue == TypeBomber)
-                localOffset = new Vector3(0f, 6f, -22f);
-            else if (itemTypeValue == TypeAC130)
-                localOffset = new Vector3(0f, 8f, -22f);
-            else if (itemTypeValue == TypeDonut)
-                localOffset = new Vector3(0f, 12f, -18f);
-            else
-                localOffset = new Vector3(0f, 10f, -20f);
+            if      (itemTypeValue == TypeBomber)  localOffset = new Vector3(0f,  6f, -22f);
+            else if (itemTypeValue == TypeAC130)   localOffset = new Vector3(0f,  8f, -22f);
+            else if (itemTypeValue == TypeDonut)   localOffset = new Vector3(0f, 12f, -18f);
+            else if (itemTypeValue == TypeHarrier) localOffset = new Vector3(0f, 10f, -28f);
+            else                                   localOffset = new Vector3(0f, 10f, -20f);
 
             camT.position = target.position + target.TransformDirection(localOffset);
             camT.LookAt(target.position + lookOffset);

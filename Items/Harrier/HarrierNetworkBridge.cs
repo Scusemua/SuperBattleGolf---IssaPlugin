@@ -1,4 +1,5 @@
 using System.Collections;
+using IssaPlugin.Network;
 using Mirror;
 using UnityEngine;
 
@@ -126,6 +127,13 @@ namespace IssaPlugin.Items
             // from this coroutine so it can initiate the crash without polling.
             var hitReceiver = harrierGo.AddComponent<HarrierHitReceiver>();
             var harrierIdentity = harrierGo.GetComponent<NetworkIdentity>();
+            ItemWarningBroadcaster.Broadcast(
+                inventory.PlayerInfo.PlayerId.PlayerName,
+                ItemRegistry.HarrierItemType,
+                "Harrier Jet",
+                trackedNetId: harrierIdentity.netId,
+                senderNetId:  netId
+            );
             hitReceiver.OnHit += () =>
             {
                 if (hitReceiver.HitsRequired > 0
