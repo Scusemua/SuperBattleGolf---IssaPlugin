@@ -135,6 +135,14 @@ namespace IssaPlugin.Items
         /// Impact explosion VFX prefab — spawned at the crash position.
         public static GameObject MaydayExplosionVfxPrefab { get; private set; }
 
+        /// <summary>
+        /// Local-only particle system prefab spawned near the camera when a warning fires.
+        /// Bundle asset name: <c>warning_particle.prefab</c>
+        /// The prefab should be a screen-space or billboard particle effect that looks good
+        /// when attached 2.5 units in front of the main camera.
+        /// </summary>
+        public static GameObject WarningParticlePrefab { get; private set; }
+
         public static bool IsLoaded => _bundle != null;
 
         private static AssetBundle _bundle;
@@ -418,6 +426,8 @@ namespace IssaPlugin.Items
             {
                 DisableRigidbody(HarrierTabletPrefab);
             }
+
+            WarningParticlePrefab = Load<GameObject>("warning_particle.prefab");
 
             IssaPluginPlugin.Log.LogInfo("[Assets] IssaPluginBundle loaded.");
         }

@@ -308,6 +308,20 @@ namespace IssaPlugin
         public static ConfigEntry<float> BearMeleeHitRange { get; private set; }
         public static ConfigEntry<bool> BearFriendlyFire { get; private set; }
 
+        // --- Item Warnings ---
+        public static ConfigEntry<bool> WarningsEnabled { get; private set; }
+        public static ConfigEntry<float> WarningDuration { get; private set; }
+
+        private static readonly Dictionary<int, ConfigEntry<bool>> ItemWarningEnabledEntries = [];
+
+        /// <summary>
+        /// Returns true if warnings are globally enabled AND the specific item has its
+        /// warning flag set. Defaults to false for unregistered items (opt-in is explicit).
+        /// </summary>
+        public static bool GetItemWarningEnabled(ItemType itemType) =>
+            WarningsEnabled.Value
+            && (ItemWarningEnabledEntries.TryGetValue((int)itemType, out var e) ? e.Value : false);
+
         public static void Initialize(ConfigFile cfg)
         {
             CustomItemSpawnsEnabled = cfg.Bind(
@@ -318,27 +332,36 @@ namespace IssaPlugin
             );
 
             // ── Per-item enabled flags (populated by vote results at runtime) ────
-            static void Reg(ConfigFile c, Dictionary<int, ConfigEntry<bool>> map,
-                int id, string key, string label) =>
-                map[id] = c.Bind("ItemEnabled", key, true,
-                    $"Whether the {label} is enabled and can spawn.");
+            static void Reg(
+                ConfigFile c,
+                Dictionary<int, ConfigEntry<bool>> map,
+                int id,
+                string key,
+                string label
+            ) =>
+                map[id] = c.Bind(
+                    "ItemEnabled",
+                    key,
+                    true,
+                    $"Whether the {label} is enabled and can spawn."
+                );
 
-            Reg(cfg, ItemEnabledEntries, 100, "BaseballBatEnabled",      "Baseball Bat");
-            Reg(cfg, ItemEnabledEntries, 101, "StealthBomberEnabled",    "Stealth Bomber");
-            Reg(cfg, ItemEnabledEntries, 102, "PredatorMissileEnabled",  "Predator Missile");
-            Reg(cfg, ItemEnabledEntries, 103, "AC130Enabled",            "AC-130 Gunship");
-            Reg(cfg, ItemEnabledEntries, 104, "FreezeEnabled",           "Freeze World");
-            Reg(cfg, ItemEnabledEntries, 105, "LowGravityEnabled",       "Low Gravity");
-            Reg(cfg, ItemEnabledEntries, 106, "SniperRifleEnabled",      "Sniper Rifle");
-            Reg(cfg, ItemEnabledEntries, 107, "DonutEnabled",            "Donut");
-            Reg(cfg, ItemEnabledEntries, 108, "JavelinEnabled",          "Javelin");
-            Reg(cfg, ItemEnabledEntries, 109, "StickyGrenadeEnabled",    "Sticky Grenade");
-            Reg(cfg, ItemEnabledEntries, 110, "BearEnabled",             "Bear");
-            Reg(cfg, ItemEnabledEntries, 111, "NukeEnabled",             "Nuke");
+            Reg(cfg, ItemEnabledEntries, 100, "BaseballBatEnabled", "Baseball Bat");
+            Reg(cfg, ItemEnabledEntries, 101, "StealthBomberEnabled", "Stealth Bomber");
+            Reg(cfg, ItemEnabledEntries, 102, "PredatorMissileEnabled", "Predator Missile");
+            Reg(cfg, ItemEnabledEntries, 103, "AC130Enabled", "AC-130 Gunship");
+            Reg(cfg, ItemEnabledEntries, 104, "FreezeEnabled", "Freeze World");
+            Reg(cfg, ItemEnabledEntries, 105, "LowGravityEnabled", "Low Gravity");
+            Reg(cfg, ItemEnabledEntries, 106, "SniperRifleEnabled", "Sniper Rifle");
+            Reg(cfg, ItemEnabledEntries, 107, "DonutEnabled", "Donut");
+            Reg(cfg, ItemEnabledEntries, 108, "JavelinEnabled", "Javelin");
+            Reg(cfg, ItemEnabledEntries, 109, "StickyGrenadeEnabled", "Sticky Grenade");
+            Reg(cfg, ItemEnabledEntries, 110, "BearEnabled", "Bear");
+            Reg(cfg, ItemEnabledEntries, 111, "NukeEnabled", "Nuke");
             Reg(cfg, ItemEnabledEntries, 112, "BlackHoleGrenadeEnabled", "Black Hole Grenade");
-            Reg(cfg, ItemEnabledEntries, 113, "PlaceableWallEnabled",    "Placeable Wall");
-            Reg(cfg, ItemEnabledEntries, 114, "AK47Enabled",             "AK-47");
-            Reg(cfg, ItemEnabledEntries, 115, "HarrierEnabled",          "Harrier Jet");
+            Reg(cfg, ItemEnabledEntries, 113, "PlaceableWallEnabled", "Placeable Wall");
+            Reg(cfg, ItemEnabledEntries, 114, "AK47Enabled", "AK-47");
+            Reg(cfg, ItemEnabledEntries, 115, "HarrierEnabled", "Harrier Jet");
 
             // --- Baseball Bat ---
             BaseballBatPowerMultiplier = cfg.Bind(
@@ -1978,6 +2001,98 @@ namespace IssaPlugin
                 false,
                 "If false, bears will not target or attack the player who summoned them."
             );
+
+            // ── Item Warnings ─────────────────────────────────────────────────
+            WarningsEnabled = cfg.Bind(
+                "Warnings",
+                "Enabled",
+                true,
+                "Master toggle for all item-use warning banners and PiP cameras."
+            );
+
+            WarningDuration = cfg.Bind(
+                "Warnings",
+                "Duration",
+                5.0f,
+                "How long (seconds) each warning banner and PiP camera is displayed."
+            );
+
+            // Per-item warning flags.  true = warning ON by default, false = opt-in.
+            // To add a warning for a new item, add a line here and call
+            // ItemWarningBroadcaster.Broadcast() in the item's server activation method.
+            static void RegWarn(
+                ConfigFile c,
+                Dictionary<int, ConfigEntry<bool>> map,
+                int id,
+                string key,
+                string label,
+                bool defaultOn
+            ) =>
+                map[id] = c.Bind(
+                    "ItemWarnings",
+                    key,
+                    defaultOn,
+                    $"Show a warning to all other players when {label} is used."
+                );
+
+            RegWarn(
+                cfg,
+                ItemWarningEnabledEntries,
+                100,
+                "BaseballBatWarning",
+                "Baseball Bat",
+                false
+            );
+            RegWarn(cfg, ItemWarningEnabledEntries, 101, "BomberWarning", "Stealth Bomber", true);
+            RegWarn(
+                cfg,
+                ItemWarningEnabledEntries,
+                102,
+                "MissileWarning",
+                "Predator Missile",
+                true
+            );
+            RegWarn(cfg, ItemWarningEnabledEntries, 103, "AC130Warning", "AC-130 Gunship", true);
+            RegWarn(cfg, ItemWarningEnabledEntries, 104, "FreezeWarning", "Freeze World", false);
+            RegWarn(cfg, ItemWarningEnabledEntries, 105, "LowGravityWarning", "Low Gravity", false);
+            RegWarn(
+                cfg,
+                ItemWarningEnabledEntries,
+                106,
+                "SniperRifleWarning",
+                "Sniper Rifle",
+                false
+            );
+            RegWarn(cfg, ItemWarningEnabledEntries, 107, "DonutWarning", "Donut", true);
+            RegWarn(cfg, ItemWarningEnabledEntries, 108, "JavelinWarning", "Javelin", false);
+            RegWarn(
+                cfg,
+                ItemWarningEnabledEntries,
+                109,
+                "StickyGrenadeWarning",
+                "Sticky Grenade",
+                false
+            );
+            RegWarn(cfg, ItemWarningEnabledEntries, 110, "BearWarning", "Bear", true);
+            RegWarn(cfg, ItemWarningEnabledEntries, 111, "NukeWarning", "Nuke", true);
+            RegWarn(
+                cfg,
+                ItemWarningEnabledEntries,
+                112,
+                "BlackHoleGrenadeWarning",
+                "Black Hole Grenade",
+                false
+            );
+            RegWarn(
+                cfg,
+                ItemWarningEnabledEntries,
+                113,
+                "PlaceableWallWarning",
+                "Placeable Wall",
+                false
+            );
+            RegWarn(cfg, ItemWarningEnabledEntries, 114, "AK47Warning", "AK-47", false);
+            RegWarn(cfg, ItemWarningEnabledEntries, 115, "HarrierWarning", "Harrier Jet", false);
         }
     }
 }

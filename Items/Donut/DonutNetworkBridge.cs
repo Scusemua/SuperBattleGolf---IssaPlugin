@@ -1,4 +1,5 @@
 using System.Collections;
+using IssaPlugin.Network;
 using IssaPlugin.Overlays;
 using Mirror;
 using UnityEngine;
@@ -186,6 +187,13 @@ namespace IssaPlugin.Items
             _laserPending = false;
             _lastLaserTime = -999f;
 
+            ItemWarningBroadcaster.Broadcast(
+                inventory.PlayerInfo.PlayerId.PlayerName,
+                ItemRegistry.DonutItemType,
+                "Donut",
+                trackedNetId: ni.netId,
+                senderNetId:  netId
+            );
             connectionToClient.Send(new DonutBeginClientMessage { DonutNetId = ni.netId });
 
             _serverTimeout = StartCoroutine(ServerTimeoutRoutine());

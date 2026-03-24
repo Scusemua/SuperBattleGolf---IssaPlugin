@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using IssaPlugin.Network;
 using Mirror;
 using UnityEngine;
 
@@ -76,6 +77,12 @@ namespace IssaPlugin.Items
             }
 
             ItemHelper.ConsumeEquippedItem(inventory);
+            ItemWarningBroadcaster.Broadcast(
+                inventory.PlayerInfo.PlayerId.PlayerName,
+                ItemRegistry.BearItemType,
+                "Bear",
+                senderNetId: netId
+            );
 
             int bearCount = (int)Configuration.BearCount.Value;
             float spawnRadius = Configuration.BearSpawnRadius.Value;

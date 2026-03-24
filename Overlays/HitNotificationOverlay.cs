@@ -17,8 +17,8 @@ namespace IssaPlugin.Overlays
     {
         public static HitNotificationOverlay Instance { get; private set; }
 
-        private const float Lifetime  = 4f;
-        private const int   MaxToasts = 5;
+        private const float Lifetime = 4f;
+        private const int MaxToasts = 5;
 
         private readonly List<(string Text, float ExpireTime)> _toasts = new();
 
@@ -61,12 +61,13 @@ namespace IssaPlugin.Overlays
 
             EnsureStyle();
 
-            const float Width    = 310f;
-            const float LineH    = 22f;
+            const float Width = 310f;
+            const float LineH = 22f;
             const float PadRight = 14f;
-            const float PadTop   = 14f;
+            // Start at 60px from top to clear BearOverlay's timer (y≈12–44, top-right).
+            const float PadTop = 60f;
 
-            float sw  = Screen.width;
+            float sw = Screen.width;
             float now = Time.time;
 
             for (int i = 0; i < _toasts.Count; i++)
@@ -92,9 +93,9 @@ namespace IssaPlugin.Overlays
 
             _style = new GUIStyle(GUI.skin.label)
             {
-                alignment  = TextAnchor.MiddleRight,
-                fontSize   = 13,
-                fontStyle  = FontStyle.Bold,
+                alignment = TextAnchor.MiddleRight,
+                fontSize = 13,
+                fontStyle = FontStyle.Bold,
             };
         }
     }

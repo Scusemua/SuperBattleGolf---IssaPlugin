@@ -696,12 +696,12 @@ namespace IssaPlugin.Patches
             );
 
             // ── Vote system ───────────────────────────────────────────────────
-            Writer<VoteStartMessage>.write  = VoteMessageSerialization.WriteVoteStartMessage;
-            Reader<VoteStartMessage>.read   = VoteMessageSerialization.ReadVoteStartMessage;
+            Writer<VoteStartMessage>.write = VoteMessageSerialization.WriteVoteStartMessage;
+            Reader<VoteStartMessage>.read = VoteMessageSerialization.ReadVoteStartMessage;
             Writer<VoteSubmitMessage>.write = VoteMessageSerialization.WriteVoteSubmitMessage;
-            Reader<VoteSubmitMessage>.read  = VoteMessageSerialization.ReadVoteSubmitMessage;
+            Reader<VoteSubmitMessage>.read = VoteMessageSerialization.ReadVoteSubmitMessage;
             Writer<VoteResultsMessage>.write = VoteMessageSerialization.WriteVoteResultsMessage;
-            Reader<VoteResultsMessage>.read  = VoteMessageSerialization.ReadVoteResultsMessage;
+            Reader<VoteResultsMessage>.read = VoteMessageSerialization.ReadVoteResultsMessage;
 
             // Server receives votes from every client (including the host's local client)
             if (NetworkServer.active)
@@ -960,6 +960,15 @@ namespace IssaPlugin.Patches
                 HitNotificationMessageSerialization.ReadHitNotificationMessage;
             NetworkClient.RegisterHandler<HitNotificationMessage>(msg =>
                 IssaPlugin.Overlays.HitNotificationOverlay.Instance?.AddNotification(msg.Message)
+            );
+
+            // ---- ItemWarning Messages ----
+            Writer<ItemWarningMessage>.write =
+                ItemWarningMessageSerialization.WriteItemWarningMessage;
+            Reader<ItemWarningMessage>.read =
+                ItemWarningMessageSerialization.ReadItemWarningMessage;
+            NetworkClient.RegisterHandler<ItemWarningMessage>(
+                IssaPlugin.Overlays.ItemWarningOverlay.HandleWarningMessage
             );
         }
 

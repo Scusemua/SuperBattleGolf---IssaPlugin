@@ -1,4 +1,5 @@
 using System.Collections;
+using IssaPlugin.Network;
 using IssaPlugin.Overlays;
 using Mirror;
 using UnityEngine;
@@ -222,6 +223,13 @@ namespace IssaPlugin.Items
             var gunshipIdentity = gunshipGo.GetComponent<NetworkIdentity>();
 
             NetworkServer.SendToAll(new AC130SoundMessage());
+            ItemWarningBroadcaster.Broadcast(
+                inventory.PlayerInfo.PlayerId.PlayerName,
+                ItemRegistry.AC130ItemType,
+                "AC-130 Gunship",
+                trackedNetId: gunshipIdentity.netId,
+                senderNetId:  netId
+            );
             connectionToClient.Send(
                 new AC130BeginClientMessage
                 {

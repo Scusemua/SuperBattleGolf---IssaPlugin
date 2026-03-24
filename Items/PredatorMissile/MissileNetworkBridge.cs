@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Reflection;
+using IssaPlugin.Network;
 using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -42,6 +43,12 @@ namespace IssaPlugin.Items
             }
 
             _serverMissileActive = true;
+            ItemWarningBroadcaster.Broadcast(
+                inventory.PlayerInfo.PlayerId.PlayerName,
+                ItemRegistry.PredatorMissileItemType,
+                "Predator Missile",
+                senderNetId: netId
+            );
             StartCoroutine(PredatorMissileItem.ServerMissileRoutine(inventory, this));
         }
 

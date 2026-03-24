@@ -1,4 +1,5 @@
 using System.Collections;
+using IssaPlugin.Network;
 using Mirror;
 using UnityEngine;
 
@@ -82,8 +83,15 @@ namespace IssaPlugin.Items
 
             NetworkServer.Spawn(bombGo);
 
-            // Build a unique ItemUseId for the temporary detonation rocket.
+            // Warn all other players before the bomb reaches the ground.
             var playerInfo = inventory.PlayerInfo;
+            ItemWarningBroadcaster.Broadcast(
+                playerInfo.PlayerId.PlayerName,
+                ItemRegistry.NukeItemType,
+                "Nuke",
+                trackedNetId: bombGo.GetComponent<NetworkIdentity>()?.netId ?? 0,
+                senderNetId:  netId
+            );
             var itemUseId = new ItemUseId(
                 playerInfo.PlayerId.Guid,
                 NukeItem.NextUseIndex(),

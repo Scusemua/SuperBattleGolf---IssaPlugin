@@ -1,3 +1,4 @@
+using IssaPlugin.Network;
 using Mirror;
 using UnityEngine;
 
@@ -39,6 +40,19 @@ namespace IssaPlugin.Items
             }
 
             _isBombing = true;
+
+            var inv = GetComponent<PlayerInventory>();
+            if (inv != null)
+            {
+                // trackedNetId = 0: the bomber visual is client-local (not networked).
+                // The overlay polls StealthBomberItem.ActiveBomberVisual for the PiP target.
+                ItemWarningBroadcaster.Broadcast(
+                    inv.PlayerInfo.PlayerId.PlayerName,
+                    ItemRegistry.StealthBomberItemType,
+                    "Stealth Bomber",
+                    senderNetId: netId
+                );
+            }
 
             StartCoroutine(
                 StealthBomberItem.ServerBombingPhase(
