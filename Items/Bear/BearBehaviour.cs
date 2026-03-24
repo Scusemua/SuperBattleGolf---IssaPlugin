@@ -54,6 +54,8 @@ namespace IssaPlugin.Items
         private const float AngleStep = 360f / ContextRayCount;
         private readonly float[] _interest = new float[ContextRayCount];
         private readonly float[] _danger = new float[ContextRayCount];
+        private Vector3 _cachedSteeringDir = Vector3.forward;
+        private int _steeringTick;
 
         // Layer masks (cached)
         private int _obstacleMask;
@@ -334,6 +336,12 @@ namespace IssaPlugin.Items
         /// </summary>
         private Vector3 ComputeContextSteering(Vector3 desiredWorldDir)
         {
+            // Recompute every 3 fixed ticks; reuse cached result in between.
+            // At 50 Hz this still re-steers ~17 times/second, imperceptible to players.
+            _steeringTick++;
+            if (_steeringTick % 3 != 0)
+                return _cachedSteeringDir;
+
             const float RayLength = 4.5f;
             const float RayOriginLift = 0.6f; // raise origin so we don't hit ground
 
@@ -363,10 +371,14 @@ namespace IssaPlugin.Items
 
             // All directions blocked — try least-dangerous fallback
             if (_interest[best] <= 0f)
-                return GetLeastDangerousDirection();
+            {
+                _cachedSteeringDir = GetLeastDangerousDirection();
+                return _cachedSteeringDir;
+            }
 
             float bestAngle = best * AngleStep;
-            return (Quaternion.Euler(0f, bestAngle, 0f) * Vector3.forward).normalized;
+            _cachedSteeringDir = (Quaternion.Euler(0f, bestAngle, 0f) * Vector3.forward).normalized;
+            return _cachedSteeringDir;
         }
 
         private Vector3 GetLeastDangerousDirection()
