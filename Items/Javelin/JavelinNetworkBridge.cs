@@ -36,6 +36,7 @@ namespace IssaPlugin.Items
 
         private bool _serverRoutineActive;
         private Coroutine _serverRoutine;
+        private Camera _camera;
 
         // ================================================================
         //  Mirror lifecycle
@@ -59,7 +60,8 @@ namespace IssaPlugin.Items
         public void ClientUpdateLockOn()
         {
             // Raycast from camera through crosshair into terrain/ground.
-            var cam = Camera.main;
+            _camera ??= Camera.main;
+            var cam = _camera;
             if (cam == null)
             {
                 HasLock = false;
