@@ -262,9 +262,12 @@ namespace IssaPlugin.Overlays
                 if (w.PiPCamera == null || w.PiPTexture == null)
                     continue;
 
-                float pipX = sw - PiPWidth - PiPMargin;
+                float pipScale = Mathf.Clamp(Configuration.WarningPiPScale.Value, 0.5f, 2.0f);
+                float pipW = PiPWidth * pipScale;
+                float pipH = PiPHeight * pipScale;
+                float pipX = sw - pipW - PiPMargin;
                 float pipY = PiPMargin;
-                var pipRect = new Rect(pipX, pipY, PiPWidth, PiPHeight);
+                var pipRect = new Rect(pipX, pipY, pipW, pipH);
 
                 // Yellow border
                 var saved = GUI.color;

@@ -313,8 +313,8 @@ namespace IssaPlugin
         public static ConfigEntry<float> WarningDuration { get; private set; }
         public static ConfigEntry<bool> WarningShowForSelf { get; private set; }
         public static ConfigEntry<float> WarningPrefabScale { get; private set; }
-
         public static ConfigEntry<float> WarningSymbolAlpha { get; private set; }
+        public static ConfigEntry<float> WarningPiPScale { get; private set; }
 
         private static readonly Dictionary<int, ConfigEntry<bool>> ItemWarningEnabledEntries = [];
 
@@ -1672,7 +1672,7 @@ namespace IssaPlugin
             AK47FireRate = cfg.Bind(
                 "AK47",
                 "FireRate",
-                0.06f,
+                0.04f,
                 "Seconds between each bullet in the burst."
             );
             AK47Inaccuracy = cfg.Bind(
@@ -2040,6 +2040,14 @@ namespace IssaPlugin
                 "WarningSymbolAlpha",
                 0.5f,
                 "Controls the alpha channel of the start color of the warning prefab."
+            );
+
+            WarningPiPScale = cfg.Bind(
+                "Warnings",
+                "PiPScale",
+                1.0f,
+                "Scale multiplier for the PiP camera box (base size 320x180). "
+                    + "Valid range: 0.5 (160x90) to 2.0 (640x360)."
             );
 
             // Per-item warning flags.  true = warning ON by default, false = opt-in.
