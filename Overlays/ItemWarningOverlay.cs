@@ -131,6 +131,22 @@ namespace IssaPlugin.Overlays
                     go.transform.SetParent(cam.transform, worldPositionStays: false);
                     go.transform.localPosition = new Vector3(0f, 0f, 2.5f);
                     go.transform.localRotation = Quaternion.identity;
+
+                    float warningScale = Configuration.WarningPrefabScale.Value;
+                    go.transform.localScale = new Vector3(warningScale, warningScale, warningScale);
+
+                    var particleSystem = go.GetComponent<ParticleSystem>();
+                    if (particleSystem != null)
+                    {
+                        var main = particleSystem.main;
+                        var newColor = new Color(
+                            1.0f,
+                            1.0f,
+                            1.0f,
+                            Configuration.WarningSymbolAlpha.Value
+                        );
+                        main.startColor = newColor;
+                    }
                 }
                 entry.ParticleInstance = go;
             }
@@ -247,7 +263,7 @@ namespace IssaPlugin.Overlays
                     continue;
 
                 float pipX = sw - PiPWidth - PiPMargin;
-                float pipY = sh - PiPHeight - PiPMargin;
+                float pipY = PiPMargin;
                 var pipRect = new Rect(pipX, pipY, PiPWidth, PiPHeight);
 
                 // Yellow border

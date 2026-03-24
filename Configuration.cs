@@ -309,9 +309,12 @@ namespace IssaPlugin
         public static ConfigEntry<bool> BearFriendlyFire { get; private set; }
 
         // --- Item Warnings ---
-        public static ConfigEntry<bool>  WarningsEnabled    { get; private set; }
-        public static ConfigEntry<float> WarningDuration    { get; private set; }
-        public static ConfigEntry<bool>  WarningShowForSelf { get; private set; }
+        public static ConfigEntry<bool> WarningsEnabled { get; private set; }
+        public static ConfigEntry<float> WarningDuration { get; private set; }
+        public static ConfigEntry<bool> WarningShowForSelf { get; private set; }
+        public static ConfigEntry<float> WarningPrefabScale { get; private set; }
+
+        public static ConfigEntry<float> WarningSymbolAlpha { get; private set; }
 
         private static readonly Dictionary<int, ConfigEntry<bool>> ItemWarningEnabledEntries = [];
 
@@ -2023,6 +2026,20 @@ namespace IssaPlugin
                 "ShowForSelf",
                 false,
                 "If true, the warning banner and PiP also appear for the player who used the item. Useful for testing."
+            );
+
+            WarningPrefabScale = cfg.Bind(
+                "Warnings",
+                "WarningSymbolScale",
+                1.0f,
+                "Controls the size of the warning prefab."
+            );
+
+            WarningSymbolAlpha = cfg.Bind(
+                "Warnings",
+                "WarningSymbolAlpha",
+                1.0f,
+                "Controls the alpha channel of the start color of the warning prefab."
             );
 
             // Per-item warning flags.  true = warning ON by default, false = opt-in.
