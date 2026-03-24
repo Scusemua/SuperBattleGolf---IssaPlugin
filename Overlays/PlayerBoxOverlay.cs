@@ -12,14 +12,13 @@ namespace IssaPlugin.Overlays
         private const float BoxHeight = 56f;
         private const float BorderThickness = 2f;
 
-        private static string[] _playerNames = new string[]
-        {
+        private static string[] _playerNames =
+        [
             "Lucy",
             "Charlie",
             "Daisy",
             "Ethan",
             "Fiona",
-            "George",
             "Harry",
             "Isabella",
             "Jack",
@@ -35,7 +34,7 @@ namespace IssaPlugin.Overlays
             "Tony",
             "Ashley",
             "George",
-        };
+        ];
 
         // Lazily cached references to the local player's bridges.
         private AC130NetworkBridge _localAC130Bridge;
