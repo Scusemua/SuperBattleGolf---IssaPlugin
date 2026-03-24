@@ -17,9 +17,6 @@ namespace IssaPlugin.Items
     /// CLIENT SIDE (owning player only): Manages the orbit camera, reads
     /// WASD + mouse input each frame, sends DonutMoveMessage to the server,
     /// and fires DonutFireLaserMessage on left-click.
-    ///
-    /// Multiple players may run Donut sessions simultaneously — there is no
-    /// global session lock.
     /// </summary>
     public class DonutNetworkBridge : NetworkBridgeBase
     {
