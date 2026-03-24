@@ -10,10 +10,17 @@ namespace IssaPlugin.Items
     ///
     /// Mirrors the rocket's velocity direction only — speed is preserved.
     /// Destroyed automatically when the rocket's GameObject is destroyed.
+    /// Used by: AC-130, Stealth Bomber, Donut, Bear, Harrier.
     public class RocketHomingBehaviour : MonoBehaviour
     {
         /// The item Transform to home toward. Set immediately after AddComponent.
         public Transform Target;
+
+        /// Proximity-fuse distance in metres. When the rocket closes to within
+        /// this range it detonates even if no collision occurs (the target may
+        /// have no physics collider). Set by the caller after AddComponent;
+        /// defaults to Configuration.AC130RocketProximityFuse when left at -1.
+        public float ProximityFuse = -1f;
 
         private Rigidbody _rb;
 
@@ -22,6 +29,9 @@ namespace IssaPlugin.Items
             _rb = GetComponent<Rigidbody>();
             if (_rb == null)
                 IssaPluginPlugin.Log.LogWarning("[RocketHomingBehaviour] No Rigidbody on rocket.");
+
+            if (ProximityFuse < 0f)
+                ProximityFuse = Configuration.AC130RocketProximityFuse.Value;
         }
 
         private void FixedUpdate()
@@ -37,8 +47,7 @@ namespace IssaPlugin.Items
             // The custom item may not have a physics collider,
             // in which case the rocket never collides with it.
             // Detonate via proximity fuse when close enough.
-            float proximityFuse = Configuration.AC130RocketProximityFuse.Value;
-            if (distToTarget <= proximityFuse)
+            if (distToTarget <= ProximityFuse)
             {
                 var rocket = GetComponent<Rocket>();
                 if (rocket != null)
