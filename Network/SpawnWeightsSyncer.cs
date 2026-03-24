@@ -84,6 +84,9 @@ namespace IssaPlugin
                 return true; // Probably shouldn't happen, but let's update to correct.
             }
 
+            if (a.CustomItemSpawnsEnabled != b.CustomItemSpawnsEnabled)
+                return true;
+
             foreach (var (itemType, spawnWeight) in a.ItemSpawnWeights)
             {
                 if (!b.ItemSpawnWeights.ContainsKey(itemType))
