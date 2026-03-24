@@ -15,6 +15,7 @@ namespace IssaPlugin.Overlays
     public class AK47CrosshairOverlay : MonoBehaviour
     {
         private Material _mat;
+        private Camera _camera;
 
         private const int Segments = 64;
         private const float LineWidth = 2f; // ring thickness in pixels
@@ -72,7 +73,8 @@ namespace IssaPlugin.Overlays
 
             // Project the inaccuracy half-angle onto screen space using the camera's
             // vertical FOV so the ring edge matches where bullets can actually land.
-            float vFov = Camera.main != null ? Camera.main.fieldOfView : 60f;
+            _camera ??= Camera.main;
+            float vFov = _camera != null ? _camera.fieldOfView : 60f;
             float screenRadius =
                 Screen.height
                 / 2f
@@ -103,12 +105,13 @@ namespace IssaPlugin.Overlays
 
         private void FixLookRotationAfterScope()
         {
-            if (Camera.main != null)
+            _camera ??= Camera.main;
+            if (_camera != null)
                 GameManager
                     .LocalPlayerInfo
                     ?.Movement
                     ?.transform.rotation = Quaternion.LookRotation(
-                        Camera.main.transform.forward.normalized
+                        _camera.transform.forward.normalized
                     );
         }
 
@@ -143,7 +146,8 @@ namespace IssaPlugin.Overlays
             var li = GameManager.LocalPlayerInfo;
             if (li?.Movement == null)
                 return;
-            var cam = Camera.main;
+            _camera ??= Camera.main;
+            var cam = _camera;
             if (cam == null)
                 return;
             Vector3 fwd = cam.transform.forward;
