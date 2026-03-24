@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 725489855
+CRC: 1335918384
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: b444291bf0afd30f6a805eb6e2bf9146
+    Hash: 78e5c6bf3a7296386755e0cbf02e0162
   TypeTreeHash:
     serializedVersion: 2
     Hash: 82d52513d6b19822b87b688cdb5147d6
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 3ed989c62ae3ebe61bfe95c3e8169b97
+    Hash: f36eaff0d202c894e4ea4ddb39c5bbd3
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -82,24 +82,27 @@ Assets:
 - Assets/Assets/bomber_proxy.prefab
 - Assets/Assets/ConfettiBlastRainbow.prefab
 - Assets/Assets/sniper_scope_overlay.png
-- Assets/Assets/Material.001.mat
+- Assets/Assets/warning_particle.prefab
 - Assets/Assets/donut_icon.png
 - Assets/Assets/predator_missile_tablet_model.prefab
 - Assets/Assets/predator_missile_ready.ogg
 - Assets/Assets/Materials/Teddy/Material.012.mat
-- Assets/Assets/gravity_remote_model.fbx
+- Assets/Assets/Material.001.mat
 - Assets/Assets/bear.prefab
-- Assets/Assets/Dark 1.mat
+- Assets/Assets/gravity_remote_model.fbx
 - Assets/Assets/big_plane.ogg
 - Assets/Assets/bat_icon.png
 - Assets/Assets/uzi.prefab
+- Assets/Assets/Dark 1.mat
 - Assets/Assets/Dark 2.mat
 - Assets/Assets/javelin_target_indicator.prefab
 - Assets/Assets/missile_locked.ogg
 - Assets/Assets/bat_model.prefab
 - Assets/Assets/javelin_icon.png
+- Assets/Assets/position_swap_smoke.prefab
 - Assets/Assets/Materials/Teddy/fabric_white.mat
 - Assets/Assets/intervention.prefab
+- Assets/Assets/position_swap_orb.prefab
 - Assets/Assets/bomber_model.prefab
 - Assets/Assets/etfx_explosion_nuke.wav
 - Assets/Assets/Materials/Teddy/Nose.002.mat
@@ -107,6 +110,7 @@ Assets:
 - Assets/Assets/bomber_icon.png
 - Assets/Assets/plane_falling.ogg
 - Assets/Assets/wall.prefab
+- Assets/Assets/position_swap_handheld.prefab
 - Assets/Assets/spike_ball.prefab
 - Assets/Assets/Material.002.mat
 - Assets/Assets/stealth_bomber_tablet.prefab
@@ -131,9 +135,7 @@ Assets:
 - Assets/Assets/position_swap_icon.png
 - Assets/Assets/laser_zone_red.prefab
 - Assets/Assets/bear_icon.png
-- Assets/Assets/WarningExclamation.prefab
 - Assets/Blink/Art/Animals/Stylized/Bear/Bear_Prefabs/BearAnimator.controller
-- Assets/Assets/warning_particle.prefab
 - Assets/Assets/harrier_tablet.prefab
 - Assets/Assets/uzi_icon_v2.png
 - Assets/Assets/sports_car_handheld.prefab

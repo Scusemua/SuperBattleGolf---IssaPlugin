@@ -234,6 +234,10 @@ Assets used in the project:
     (https://skfb.ly/oytAV) by KangaroOz 3D 
     Licensed under CC Attribution-NonCommercial-ShareAlike
 
+-   "Crystal Ball"\
+    (https://skfb.ly/6DUUx) by Yanez Designs 
+    Licensed under Creative Commons Attribution 
+
 ---
 
 *IssaPlugin is a fan-made mod and is not affiliated with Brimstone or Oro Interactive.*
