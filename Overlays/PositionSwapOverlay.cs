@@ -150,7 +150,8 @@ namespace IssaPlugin.Overlays
         private void DrawChooser()
         {
             int rowCount = Mathf.Max(1, _cachedPlayers.Count);
-            float panelH = HeaderH + TipH + Padding + RowHeight * rowCount + Padding + ButtonH + Padding;
+            float panelH =
+                HeaderH + TipH + Padding + RowHeight * rowCount + Padding + ButtonH + Padding;
 
             float px = (Screen.width - PanelWidth) * 0.5f;
             float py = (Screen.height - panelH) * 0.5f;
@@ -159,12 +160,16 @@ namespace IssaPlugin.Overlays
 
             float cy = py + Padding * 0.5f;
 
-            GUI.Label(new Rect(px, cy, PanelWidth, HeaderH), "Position Swap — Choose Target", _titleStyle);
+            GUI.Label(
+                new Rect(px, cy, PanelWidth, HeaderH),
+                "Position Swap — Choose Target",
+                _titleStyle
+            );
             cy += HeaderH;
 
             GUI.Label(
                 new Rect(px, cy, PanelWidth, TipH),
-                "Select a player to swap positions with",
+                "Select a player to swap positions with (pause for a cursor)",
                 _tipStyle
             );
             cy += TipH + Padding;
@@ -197,7 +202,11 @@ namespace IssaPlugin.Overlays
 
                     float btnY = cy + (RowHeight - ButtonH) * 0.5f;
 
-                    GUI.Label(new Rect(px + Padding, cy, labelW, RowHeight * 0.55f), nameLabel, _rowStyle);
+                    GUI.Label(
+                        new Rect(px + Padding, cy, labelW, RowHeight * 0.55f),
+                        nameLabel,
+                        _rowStyle
+                    );
                     GUI.Label(
                         new Rect(px + Padding, cy + RowHeight * 0.52f, labelW, RowHeight * 0.48f),
                         infoLabel,
@@ -251,9 +260,8 @@ namespace IssaPlugin.Overlays
 
             GUI.Box(new Rect(px, py, W, H), GUIContent.none, _panelStyle);
 
-            string text = _pendingCountdown > 0.05f
-                ? $"Swapping in {_pendingCountdown:F1}s..."
-                : "Swapping!";
+            string text =
+                _pendingCountdown > 0.05f ? $"Swapping in {_pendingCountdown:F1}s..." : "Swapping!";
             GUI.Label(new Rect(px, py, W, H), text, _countdownStyle);
         }
 
@@ -283,7 +291,7 @@ namespace IssaPlugin.Overlays
 
             _tipStyle = new GUIStyle(GUI.skin.label)
             {
-                fontSize = 11,
+                fontSize = 13,
                 alignment = TextAnchor.MiddleCenter,
                 normal = { textColor = new Color(0.60f, 0.60f, 0.60f) },
             };
