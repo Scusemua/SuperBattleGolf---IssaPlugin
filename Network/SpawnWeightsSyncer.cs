@@ -14,6 +14,7 @@ namespace IssaPlugin
     ///    their local config values before the next scene reload.
     public class SpawnWeightsSyncer : MonoBehaviour
     {
+        private static Dictionary<int, float> _cachedItemSpawnWeights;
         private const float SyncInterval = 5f;
 
         // Sentinel: impossible weight value so the first check always triggers a sync.
@@ -44,16 +45,23 @@ namespace IssaPlugin
 
         private static void BroadcastWeightsIfChanged()
         {
-            Dictionary<int, float> itemSpawnWeights = new Dictionary<int, float>();
+            if (_cachedItemSpawnWeights == null)
+            {
+                _cachedItemSpawnWeights = new Dictionary<int, float>();
+            } else
+            {
+                _cachedItemSpawnWeights.Clear();
+            }
+
             foreach (CustomItemDefinition item in ItemRegistry.AllItems)
             {
-                itemSpawnWeights.Add((int)item.ItemType, item.SpawnWeight);
+                _cachedItemSpawnWeights.Add((int)item.ItemType, item.SpawnWeight);
             }
 
             var msg = new SpawnWeightsMessage
             {
                 CustomItemSpawnsEnabled = Configuration.CustomItemSpawnsEnabled.Value,
-                ItemSpawnWeights = itemSpawnWeights,
+                ItemSpawnWeights = _cachedItemSpawnWeights,
             };
 
             if (!ShouldUpdateWeights(msg, _lastSent))
