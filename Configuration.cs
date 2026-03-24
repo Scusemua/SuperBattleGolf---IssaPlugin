@@ -2031,14 +2031,14 @@ namespace IssaPlugin
             WarningPrefabScale = cfg.Bind(
                 "Warnings",
                 "WarningSymbolScale",
-                1.0f,
+                0.75f,
                 "Controls the size of the warning prefab."
             );
 
             WarningSymbolAlpha = cfg.Bind(
                 "Warnings",
                 "WarningSymbolAlpha",
-                1.0f,
+                0.5f,
                 "Controls the alpha channel of the start color of the warning prefab."
             );
 
