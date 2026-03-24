@@ -74,6 +74,20 @@ namespace IssaPlugin.Items
 
         public static Sprite HarrierIcon { get; private set; }
 
+        // --- Position Swap ---
+        public static Sprite PositionSwapIcon { get; private set; }
+
+        /// Model held while the Position Swap item is equipped.
+        public static GameObject PositionSwapHandheldPrefab { get; private set; }
+
+        /// Local-only VFX parented to each player during the swap countdown.
+        /// Bundle asset name: <c>position_swap_orb.prefab</c>
+        public static GameObject PositionSwapOrbPrefab { get; private set; }
+
+        /// Local-only VFX spawned at both swap positions on execution.
+        /// Bundle asset name: <c>position_swap_smoke.prefab</c>
+        public static GameObject PositionSwapSmokePrefab { get; private set; }
+
         /// <summary>
         /// The networked Harrier Jet object spawned by HarrierNetworkBridge.
         /// Requires NetworkIdentity + NetworkTransform in the bundle.
@@ -428,6 +442,20 @@ namespace IssaPlugin.Items
             }
 
             WarningParticlePrefab = Load<GameObject>("warning_particle.prefab");
+
+            // --- Position Swap ---
+            PositionSwapIcon = LoadSprite("position_swap_icon.png");
+            PositionSwapHandheldPrefab = Load<GameObject>("position_swap_handheld.prefab");
+            if (PositionSwapHandheldPrefab != null)
+                DisableRigidbody(PositionSwapHandheldPrefab);
+
+            PositionSwapOrbPrefab = Load<GameObject>("position_swap_orb.prefab");
+            if (PositionSwapOrbPrefab != null)
+                StripNetworkComponents(PositionSwapOrbPrefab);
+
+            PositionSwapSmokePrefab = Load<GameObject>("position_swap_smoke.prefab");
+            if (PositionSwapSmokePrefab != null)
+                StripNetworkComponents(PositionSwapSmokePrefab);
 
             IssaPluginPlugin.Log.LogInfo("[Assets] IssaPluginBundle loaded.");
         }

@@ -970,6 +970,57 @@ namespace IssaPlugin.Patches
             NetworkClient.RegisterHandler<ItemWarningMessage>(
                 IssaPlugin.Overlays.ItemWarningOverlay.HandleWarningMessage
             );
+
+            // ── Position Swap Messages ──────────────────────────────────────────
+
+            // Client → Server
+            Writer<PositionSwapRequestMessage>.write =
+                PositionSwapRequestMessageSerialization.WritePositionSwapRequestMessage;
+            Reader<PositionSwapRequestMessage>.read =
+                PositionSwapRequestMessageSerialization.ReadPositionSwapRequestMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<PositionSwapRequestMessage>(
+                    (conn, msg) =>
+                        conn.identity
+                            ?.GetComponent<PositionSwapNetworkBridge>()
+                            ?.ServerHandleRequest(msg.TargetNetId)
+                );
+
+            // Server → All clients: warning orbs
+            Writer<PositionSwapWarningMessage>.write =
+                PositionSwapWarningMessageSerialization.WritePositionSwapWarningMessage;
+            Reader<PositionSwapWarningMessage>.read =
+                PositionSwapWarningMessageSerialization.ReadPositionSwapWarningMessage;
+            NetworkClient.RegisterHandler<PositionSwapWarningMessage>(
+                PositionSwapNetworkBridge.HandleWarning
+            );
+
+            // Server → Specific client: teleport your own character
+            Writer<PositionSwapTeleportMessage>.write =
+                PositionSwapTeleportMessageSerialization.WritePositionSwapTeleportMessage;
+            Reader<PositionSwapTeleportMessage>.read =
+                PositionSwapTeleportMessageSerialization.ReadPositionSwapTeleportMessage;
+            NetworkClient.RegisterHandler<PositionSwapTeleportMessage>(
+                PositionSwapNetworkBridge.HandleTeleport
+            );
+
+            // Server → All clients: swap executed
+            Writer<PositionSwapExecuteMessage>.write =
+                PositionSwapExecuteMessageSerialization.WritePositionSwapExecuteMessage;
+            Reader<PositionSwapExecuteMessage>.read =
+                PositionSwapExecuteMessageSerialization.ReadPositionSwapExecuteMessage;
+            NetworkClient.RegisterHandler<PositionSwapExecuteMessage>(
+                PositionSwapNetworkBridge.HandleExecute
+            );
+
+            // Server → Initiator client only: swap cancelled
+            Writer<PositionSwapCancelledMessage>.write =
+                PositionSwapCancelledMessageSerialization.WritePositionSwapCancelledMessage;
+            Reader<PositionSwapCancelledMessage>.read =
+                PositionSwapCancelledMessageSerialization.ReadPositionSwapCancelledMessage;
+            NetworkClient.RegisterHandler<PositionSwapCancelledMessage>(
+                PositionSwapNetworkBridge.HandleCancelled
+            );
         }
 
         public static void ResetRegistration() => _registered = false;

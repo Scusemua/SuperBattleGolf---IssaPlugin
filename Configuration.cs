@@ -253,6 +253,12 @@ namespace IssaPlugin
         public static ConfigEntry<float> AK47MaxShotDistance { get; private set; }
         public static ConfigEntry<float> AK47Recoil { get; private set; }
 
+        // --- Position Swap ---
+        public static ConfigEntry<Key> PositionSwapGiveKey { get; private set; }
+        public static ConfigEntry<float> PositionSwapUses { get; private set; }
+        public static ConfigEntry<float> PositionSwapSpawnWeight { get; private set; }
+        public static ConfigEntry<float> PositionSwapDelay { get; private set; }
+
         // --- Harrier Jet ---
         public static ConfigEntry<Key> HarrierGiveKey { get; private set; }
         public static ConfigEntry<float> HarrierUses { get; private set; }
@@ -1798,6 +1804,32 @@ namespace IssaPlugin
                 "CrashExplosionScale",
                 3f,
                 "Scale multiplier for the explosion spawned when the Harrier crashes into the ground."
+            );
+
+            // --- Position Swap ---
+            PositionSwapGiveKey = cfg.Bind(
+                "PositionSwap",
+                "GiveKey",
+                Key.Numpad0,
+                "Debug key to add the Position Swap item to your inventory."
+            );
+            PositionSwapUses = cfg.Bind(
+                "PositionSwap",
+                "Uses",
+                1f,
+                "Number of uses per Position Swap pickup."
+            );
+            PositionSwapSpawnWeight = cfg.Bind(
+                "ItemBoxSpawns",
+                "PositionSwapWeight",
+                6f,
+                "Spawn weight for the Position Swap item in item boxes. Set to 0 to disable."
+            );
+            PositionSwapDelay = cfg.Bind(
+                "PositionSwap",
+                "Delay",
+                3f,
+                "Seconds between selecting a swap target and the swap executing. During this time a warning orb appears under both players."
             );
 
             // --- Bear ---

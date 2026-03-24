@@ -29,6 +29,7 @@ namespace IssaPlugin.Items
         public static readonly ItemType PlaceableWallItemType = (ItemType)113;
         public static readonly ItemType AK47ItemType = (ItemType)114;
         public static readonly ItemType HarrierItemType = (ItemType)115;
+        public static readonly ItemType PositionSwapItemType = (ItemType)116;
 
         // Static initialization order note: AllItems is a static field initializer that only
         // instantiates the definition objects; it does not call any abstract members. Properties like
@@ -53,6 +54,7 @@ namespace IssaPlugin.Items
                 new PlaceableWallItemDefinition(),
                 new AK47ItemDefinition(),
                 new HarrierItemDefinition(),
+                new PositionSwapItemDefinition(),
             };
 
         private static IReadOnlyDictionary<int, CustomItemDefinition> _customItemDefinitionMap;
