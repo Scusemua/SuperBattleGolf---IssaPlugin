@@ -74,7 +74,9 @@ namespace IssaPlugin.Items
         }
 
         public static CustomItemDefinition GetDefinition(ItemType type) =>
-            ItemRegistry.AllItems.FirstOrDefault(d => d.ItemType == type);
+            CustomItemDefinitionMap.TryGetValue((int)type, out var d) ? d : null;
+
+        // ItemRegistry.AllItems.FirstOrDefault(d => d.ItemType == type);
 
         private static readonly FieldInfo SlotsField = AccessTools.Field(
             typeof(PlayerInventory),
@@ -99,7 +101,10 @@ namespace IssaPlugin.Items
         private static readonly Dictionary<ItemType, ItemData> CustomItemDataCache =
             new Dictionary<ItemType, ItemData>();
 
-        public static bool IsCustomItem(ItemType type) => AllItems.Any(d => d.ItemType == type);
+        public static bool IsCustomItem(ItemType type) =>
+            CustomItemDefinitionMap.ContainsKey((int)type);
+
+        //AllItems.Any(d => d.ItemType == type);
 
         public static int GetMaxUses(ItemType type) => GetDefinition(type)?.MaxUses ?? 1;
 
