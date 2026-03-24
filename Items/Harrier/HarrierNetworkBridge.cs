@@ -405,6 +405,11 @@ namespace IssaPlugin.Items
 
         public override void ServerHoleCleanup()
         {
+            // Clear all in-flight rocket entries so they don't linger if rockets
+            // are destroyed by the hole transition before ServerExplode fires.
+            // Safe to call on every player's bridge — Clear() is idempotent.
+            HarrierItem.ActiveHarrierRocketIds.Clear();
+
             if (_serverRoutineActive)
                 ForceServerCleanup();
         }

@@ -98,7 +98,9 @@ namespace IssaPlugin.Items
             // Track so the explosion patch can exclude Harrier-fired rockets from
             // registering as hits on the HarrierHitReceiver, and to route hit
             // notifications back to the summoner's client.
-            var summConn = inventory.GetComponent<NetworkIdentity>()?.connectionToClient;
+            // Use the HarrierNetworkBridge (a NetworkBehaviour) to get connectionToClient —
+            // this is the canonical, hierarchy-safe way to reach a player's connection.
+            var summConn = inventory.GetComponent<HarrierNetworkBridge>()?.connectionToClient;
             ActiveHarrierRocketIds[rocket.gameObject.GetInstanceID()] = summConn;
         }
 
