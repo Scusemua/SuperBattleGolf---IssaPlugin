@@ -48,11 +48,9 @@ namespace IssaPlugin.Patches
                     GameManager.CameraGameplaySettings.RocketExplosionScreenshakeSettings,
                     worldPosition
                 );
-            }
 
-            // --- Bonus knockback + extended radius hits ---
-            if (scale > 1f)
-            {
+                // --- Bonus knockback + extended radius hits ---
+
                 int layerMask = GameManager.LayerSettings.RocketHittablesMask;
                 int hitCount = Physics.OverlapSphereNonAlloc(
                     worldPosition,
