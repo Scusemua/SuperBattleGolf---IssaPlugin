@@ -136,6 +136,7 @@ namespace IssaPlugin
         public static ConfigEntry<float> SniperRifleMinZoomFov { get; private set; }
         public static ConfigEntry<float> SniperRifleMaxZoomFov { get; private set; }
         public static ConfigEntry<float> SniperRifleScrollSensitivity { get; private set; }
+        public static ConfigEntry<float> SniperRifleRecoil { get; private set; }
 
         // --- Donut ---
         public static ConfigEntry<Key> DonutGiveKey { get; private set; }
@@ -250,6 +251,7 @@ namespace IssaPlugin
         public static ConfigEntry<float> AK47Inaccuracy { get; private set; }
         public static ConfigEntry<float> AK47MaxAimingDistance { get; private set; }
         public static ConfigEntry<float> AK47MaxShotDistance { get; private set; }
+        public static ConfigEntry<float> AK47Recoil { get; private set; }
 
         // --- Harrier Jet ---
         public static ConfigEntry<Key> HarrierGiveKey { get; private set; }
@@ -1073,6 +1075,12 @@ namespace IssaPlugin
                 5f,
                 "FOV units changed per scroll notch. Higher values zoom faster."
             );
+            SniperRifleRecoil = cfg.Bind(
+                "SniperRifle",
+                "Recoil",
+                8f,
+                "Speed (m/s) added to the shooter in the opposite direction of the shot on each fire."
+            );
 
             // --- Donut ---
             DonutGiveKey = cfg.Bind(
@@ -1692,6 +1700,12 @@ namespace IssaPlugin
                 "MaxShotDistance",
                 500f,
                 "Max raycast distance for each bullet."
+            );
+            AK47Recoil = cfg.Bind(
+                "AK47",
+                "Recoil",
+                2f,
+                "Speed (m/s) added to the shooter in the opposite direction of each bullet fired."
             );
 
             // --- Harrier Jet ---
