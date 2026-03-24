@@ -38,6 +38,8 @@ namespace IssaPlugin.Items
         private Coroutine _serverTimeout;
         private bool _serverSessionActive;
         private GameObject _serverGunship;
+        private AC130FlyBehaviour _serverFlyBehaviour;
+        private AC130MaydayBehaviour _serverMaydayBehaviour;
         private float _serverLastFireTime;
 
         /// <summary>
@@ -179,10 +181,10 @@ namespace IssaPlugin.Items
             _activeSessionBridge = this;
 
             // Wire up external-destruction callback on the fly behaviour.
-            var flyComp = gunshipGo.GetComponent<AC130FlyBehaviour>();
-            if (flyComp != null)
+            _serverFlyBehaviour = gunshipGo.GetComponent<AC130FlyBehaviour>();
+            if (_serverFlyBehaviour != null)
             {
-                flyComp.OnExternallyDestroyed = () =>
+                _serverFlyBehaviour.OnExternallyDestroyed = () =>
                 {
                     if (_serverSessionActive)
                     {
@@ -201,9 +203,11 @@ namespace IssaPlugin.Items
                 var gunshipIdentityForDmg = gunshipGo.GetComponent<NetworkIdentity>();
                 hitReceiver.OnHit += () =>
                 {
-                    if (hitReceiver.HitsRequired > 0
+                    if (
+                        hitReceiver.HitsRequired > 0
                         && hitReceiver.HitCount > 0
-                        && hitReceiver.HitCount < hitReceiver.HitsRequired)
+                        && hitReceiver.HitCount < hitReceiver.HitsRequired
+                    )
                     {
                         IssaPluginPlugin.Log.LogInfo(
                             $"[AC130] Damaged ({hitReceiver.HitCount}/{hitReceiver.HitsRequired}) — broadcasting smoke."
@@ -228,7 +232,7 @@ namespace IssaPlugin.Items
                 ItemRegistry.AC130ItemType,
                 "AC-130 Gunship",
                 trackedNetId: gunshipIdentity.netId,
-                senderNetId:  netId
+                senderNetId: netId
             );
             connectionToClient.Send(
                 new AC130BeginClientMessage
@@ -312,12 +316,11 @@ namespace IssaPlugin.Items
             if (!_serverSessionActive || _serverGunship == null)
                 return;
 
-            var flyComp = _serverGunship.GetComponent<AC130FlyBehaviour>();
-            if (flyComp == null)
+            if (_serverFlyBehaviour == null)
                 return;
 
-            flyComp.altitude = Configuration.AC130Altitude.Value + altitudeOffset;
-            flyComp.orbitSpeed = boosting
+            _serverFlyBehaviour.altitude = Configuration.AC130Altitude.Value + altitudeOffset;
+            _serverFlyBehaviour.orbitSpeed = boosting
                 ? Configuration.AC130OrbitSpeed.Value * Configuration.AC130BoostMultiplier.Value
                 : Configuration.AC130OrbitSpeed.Value;
         }
@@ -334,12 +337,11 @@ namespace IssaPlugin.Items
             if (!_serverSessionActive || _serverGunship == null)
                 return;
 
-            var mayday = _serverGunship.GetComponent<AC130MaydayBehaviour>();
-            if (mayday == null)
+            if (_serverMaydayBehaviour == null)
                 return;
 
-            mayday.ExternalDiveInfluence = diveInfluence;
-            mayday.ExternalRollInfluence = rollInfluence;
+            _serverMaydayBehaviour.ExternalDiveInfluence = diveInfluence;
+            _serverMaydayBehaviour.ExternalRollInfluence = rollInfluence;
         }
 
         // ================================================================
@@ -780,22 +782,25 @@ namespace IssaPlugin.Items
 
             // Stop normal flight — mayday takes over movement.
             // Capture orbitCenter BEFORE destroying the fly component.
-            var flyComp = _serverGunship.GetComponent<AC130FlyBehaviour>();
             Vector3 orbitCenter =
-                flyComp != null ? flyComp.orbitCenter : _serverGunship.transform.position;
-            if (flyComp != null)
+                _serverFlyBehaviour != null
+                    ? _serverFlyBehaviour.orbitCenter
+                    : _serverGunship.transform.position;
+            if (_serverFlyBehaviour != null)
             {
-                flyComp.OnExternallyDestroyed = null; // prevent re-entry
-                Object.Destroy(flyComp);
+                _serverFlyBehaviour.OnExternallyDestroyed = null; // prevent re-entry
+                Object.Destroy(_serverFlyBehaviour);
+                _serverFlyBehaviour = null;
             }
 
             var gunshipIdentity = _serverGunship.GetComponent<NetworkIdentity>();
 
             // Add the authoritative mayday driver on the server.
-            var maydayComp = _serverGunship.AddComponent<AC130MaydayBehaviour>();
-            maydayComp.IsLocalPlayer = false;
-            maydayComp.OrbitCenter = orbitCenter;
-            maydayComp.OnImpact = () => ServerHandleMaydayImpact(_serverGunship.transform.position);
+            _serverMaydayBehaviour = _serverGunship.AddComponent<AC130MaydayBehaviour>();
+            _serverMaydayBehaviour.IsLocalPlayer = false;
+            _serverMaydayBehaviour.OrbitCenter = orbitCenter;
+            _serverMaydayBehaviour.OnImpact = () =>
+                ServerHandleMaydayImpact(_serverGunship.transform.position);
 
             // Owning client gets the cockpit camera.
             if (_serverSessionActive)
@@ -828,6 +833,7 @@ namespace IssaPlugin.Items
                 _serverGunship = null;
             }
 
+            _serverMaydayBehaviour = null;
             _serverSessionActive = false;
             ReleaseGlobalLock();
             connectionToClient.Send(new AC130EndMaydayClientMessage());
@@ -899,13 +905,11 @@ namespace IssaPlugin.Items
             // travels FlyOutDestroyDistance — Mirror propagates that to all clients.
             // Clear the destruction callback first so the normal fly-out doesn't
             // accidentally trigger a mayday.
-            var flyComp =
-                _serverGunship != null ? _serverGunship.GetComponent<AC130FlyBehaviour>() : null;
-
-            if (flyComp != null)
+            if (_serverFlyBehaviour != null)
             {
-                flyComp.OnExternallyDestroyed = null;
-                flyComp.BeginFlyOut();
+                _serverFlyBehaviour.OnExternallyDestroyed = null;
+                _serverFlyBehaviour.BeginFlyOut();
+                _serverFlyBehaviour = null;
             }
             else if (_serverGunship != null)
             {
@@ -947,6 +951,8 @@ namespace IssaPlugin.Items
                 _serverGunship = null;
             }
 
+            _serverFlyBehaviour = null;
+            _serverMaydayBehaviour = null;
             _serverSessionActive = false;
             ReleaseGlobalLock();
         }
