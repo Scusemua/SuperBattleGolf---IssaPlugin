@@ -186,6 +186,26 @@ namespace IssaPlugin.Items
                 return;
             }
 
+            LoadSpritesAndTextures();
+            LoadSimpleItemPrefabs();
+            LoadAircraftPrefabs();
+            LoadDonutAssets();
+            LoadStickyGrenadeAssets();
+            LoadBearAssets();
+            LoadNukeAssets();      // must precede LoadAudioAndVfx (shares MaydayExplosionVfxPrefab)
+            LoadAudioAndVfx();
+            LoadBlackHoleGrenadeAssets();
+            LoadDroppedItemPrefab();
+            LoadPlaceableWallAssets();
+            LoadAK47Assets();
+            LoadHarrierAssets();
+            LoadPositionSwapAssets();
+
+            IssaPluginPlugin.Log.LogInfo("[Assets] IssaPluginBundle loaded.");
+        }
+
+        private static void LoadSpritesAndTextures()
+        {
             BatIcon = LoadSprite("bat_icon.png");
             BomberIcon = LoadSprite("bomber_icon.png");
             MissileIcon = LoadSprite("missile_icon.png");
@@ -198,17 +218,53 @@ namespace IssaPlugin.Items
             StickyGrenadeIcon = LoadSprite("spike_ball_icon.png");
             BearIcon = LoadSprite("bear_icon.png");
             NukeIcon = LoadSprite("nuke_icon.png");
+            BlackHoleGrenadeIcon = LoadSprite("black_hole_grenade_icon.png");
+            WallIcon = LoadSprite("wall_icon.png");
+            AK47Icon = LoadSprite("ak47_icon.png");
+            HarrierIcon = LoadSprite("harrier_icon.png");
+            PositionSwapIcon = LoadSprite("position_swap_icon.png");
 
             SniperScopeTexture = LoadTexture2D("sniper_scope.png");
-
             if (SniperScopeTexture == null)
-            {
                 IssaPluginPlugin.Log.LogError("[Assets] Failed to load sniper scope texture.");
-            }
+        }
 
+        /// Prefabs that need only a load + DisableRigidbody (no NetworkIdentity, no ClientSetup).
+        private static void LoadSimpleItemPrefabs()
+        {
             BatModelPrefab = Load<GameObject>("bat_model.prefab");
             DisableRigidbody(BatModelPrefab);
+
+            FreezeModelPrefab = Load<GameObject>("snowball.prefab");
+            DisableRigidbody(FreezeModelPrefab);
+
+            LowGravityModelPrefab = Load<GameObject>("gravity_remote.prefab");
+            DisableRigidbody(LowGravityModelPrefab);
+
+            SniperRiflePrefab = Load<GameObject>("intervention.prefab");
+            DisableRigidbody(SniperRiflePrefab);
+
+            DonutHandheldPrefab = Load<GameObject>("donut_model.prefab");
+            DisableRigidbody(DonutHandheldPrefab);
+
+            JavelinHandheldPrefab = Load<GameObject>("javelin_rocket_launcher.prefab");
+            DisableRigidbody(JavelinHandheldPrefab);
+            JavelinTargetIndicatorPrefab = Load<GameObject>("javelin_target_indicator.prefab");
+            JavelinExplosionVfxPrefab = Load<GameObject>("NukeVerticalExplosionFire.prefab");
+            JavelinTrailVfxPrefab = Load<GameObject>("javelin_trail.prefab");
+
+            TeddyBearPrefab = Load<GameObject>("teddy.prefab");
+            DisableRigidbody(TeddyBearPrefab);
+
+            DonutLaserZoneRed = Load<GameObject>("laser_zone_red.prefab");
+            ConfettiBlastRainbow = Load<GameObject>("ConfettiBlastRainbow.prefab");
+            BloodSplatterPrefab = Load<GameObject>("blood_splatter_critical.prefab");
+        }
+
+        private static void LoadAircraftPrefabs()
+        {
             BomberPrefab = Load<GameObject>("bomber_model.prefab");
+
             BomberProxyPrefab = Load<GameObject>("bomber_proxy.prefab");
             EnsureNetworkIdentity(BomberProxyPrefab, 0xB0AA0001u);
             if (BomberProxyPrefab != null)
@@ -218,27 +274,33 @@ namespace IssaPlugin.Items
             EnsureNetworkIdentity(AC130Prefab, 0xAC130001u);
             if (AC130Prefab != null)
                 AC130Prefab.AddComponent<AC130ClientSetup>();
-            BomberTabletPrefab = Load<GameObject>("stealth_bomber_tablet.prefab");
-            MissileTabletPrefab = Load<GameObject>("predator_missile_tablet.prefab");
-            Ac130TabletPrefab = Load<GameObject>("ac130_tablet.prefab");
-            FreezeModelPrefab = Load<GameObject>("snowball.prefab");
-            LowGravityModelPrefab = Load<GameObject>("gravity_remote.prefab");
-            SniperRiflePrefab = Load<GameObject>("intervention.prefab");
-            BloodSplatterPrefab = Load<GameObject>("blood_splatter_critical.prefab");
 
+            BomberTabletPrefab = Load<GameObject>("stealth_bomber_tablet.prefab");
+            DisableRigidbody(BomberTabletPrefab);
+            MissileTabletPrefab = Load<GameObject>("predator_missile_tablet.prefab");
+            DisableRigidbody(MissileTabletPrefab);
+            Ac130TabletPrefab = Load<GameObject>("ac130_tablet.prefab");
+            DisableRigidbody(Ac130TabletPrefab);
+        }
+
+        private static void LoadDonutAssets()
+        {
             DonutPrefab = Load<GameObject>("donut_vehicle.prefab");
             EnsureNetworkIdentity(DonutPrefab, 0xF0000001u);
-            if (DonutPrefab != null)
-                DonutPrefab.AddComponent<DonutClientSetup>();
+            DonutPrefab?.AddComponent<DonutClientSetup>();
             DisableRigidbody(DonutPrefab);
+        }
 
+        private static void LoadStickyGrenadeAssets()
+        {
             StickyGrenadePrefab = Load<GameObject>("spike_ball.prefab");
             DisableRigidbody(StickyGrenadePrefab);
             EnsureNetworkIdentity(StickyGrenadePrefab, 0x5E47EC01u);
-            if (StickyGrenadePrefab != null)
-                StickyGrenadePrefab.AddComponent<StickyGrenadeClientSetup>();
+            StickyGrenadePrefab?.AddComponent<StickyGrenadeClientSetup>();
+        }
 
-            TeddyBearPrefab = Load<GameObject>("teddy.prefab");
+        private static void LoadBearAssets()
+        {
             BearPrefab = Load<GameObject>("bear.prefab");
             if (BearPrefab != null)
             {
@@ -246,7 +308,10 @@ namespace IssaPlugin.Items
                 BearPrefab.AddComponent<BearClientSetup>();
                 DisableRigidbody(BearPrefab); // BearBehaviour re-enables in Start()
             }
+        }
 
+        private static void LoadNukeAssets()
+        {
             NuclearDetonatorPrefab = Load<GameObject>("nuclear_detonator.prefab");
             if (NuclearDetonatorPrefab != null)
                 DisableRigidbody(NuclearDetonatorPrefab);
@@ -258,32 +323,13 @@ namespace IssaPlugin.Items
                 // Rigidbody starts kinematic; NukeBombBehaviour.Start() re-enables it.
                 DisableRigidbody(NukeBombPrefab);
             }
+        }
 
-            DonutHandheldPrefab = Load<GameObject>("donut_model.prefab");
-            JavelinHandheldPrefab = Load<GameObject>("javelin_rocket_launcher.prefab");
-            JavelinTargetIndicatorPrefab = Load<GameObject>("javelin_target_indicator.prefab");
-            JavelinExplosionVfxPrefab = Load<GameObject>("NukeVerticalExplosionFire.prefab");
-            JavelinTrailVfxPrefab = Load<GameObject>("javelin_trail.prefab");
-            DonutLaserZoneRed = Load<GameObject>("laser_zone_red.prefab");
-            ConfettiBlastRainbow = Load<GameObject>("ConfettiBlastRainbow.prefab");
-
-            // StripNetworkComponents(DonutHandheldPrefab);
-
-            // Set Kinematic to True and Use Gravity to False.
-            // We'll toggle them to true if they're dropped.
-            DisableRigidbody(BomberTabletPrefab);
-            DisableRigidbody(MissileTabletPrefab);
-            DisableRigidbody(Ac130TabletPrefab);
-            DisableRigidbody(FreezeModelPrefab);
-            DisableRigidbody(LowGravityModelPrefab);
-            DisableRigidbody(SniperRiflePrefab);
-            DisableRigidbody(DonutHandheldPrefab);
-            DisableRigidbody(JavelinHandheldPrefab);
-            DisableRigidbody(TeddyBearPrefab);
-
-            // AudioClips must be loaded by asset name without the file extension.
-            // Unity compiles audio into its own internal format at bundle-build
-            // time, so the original .ogg path is never valid at runtime.
+        /// AudioClips must be loaded by asset name without the file extension.
+        /// Unity compiles audio into its own internal format at bundle-build time,
+        /// so the original .ogg/.wav path is never valid at runtime.
+        private static void LoadAudioAndVfx()
+        {
             AC130AboveClip = Load<AudioClip>("ac130_above.ogg");
             HomerunAudioClip = Load<AudioClip>("homerun.ogg");
 
@@ -294,14 +340,16 @@ namespace IssaPlugin.Items
             MaydayFireTrailPrefab = Load<GameObject>("fire_torch_intense.prefab");
             MaydayExplosionVfxPrefab = Load<GameObject>("NukeVerticalExplosionFire.prefab");
 
-            // Nuke-specific explosion VFX — load from a dedicated prefab first,
-            // fall back to NukeVerticalExplosionFire if it isn't in the bundle yet.
+            // Nuke-specific explosion VFX — dedicated prefab preferred, fall back to mayday VFX.
             NukeExplosionVfxPrefab =
                 Load<GameObject>("nuclear_explosion.prefab") ?? MaydayExplosionVfxPrefab;
             NukeExplosionClip = MaydayImpactClip;
 
-            BlackHoleGrenadeIcon = LoadSprite("black_hole_grenade_icon.png");
+            WarningParticlePrefab = Load<GameObject>("warning_particle.prefab");
+        }
 
+        private static void LoadBlackHoleGrenadeAssets()
+        {
             BlackHoleVfxPrefab = Load<GameObject>("black_hole.prefab");
             if (BlackHoleVfxPrefab != null)
             {
@@ -316,53 +364,55 @@ namespace IssaPlugin.Items
             {
                 EnsureNetworkIdentity(BlackHoleGrenadePrefab, 0xB14C0001u);
                 DisableRigidbody(BlackHoleGrenadePrefab);
-            }
-            else
-            {
-                // Fallback: build a minimal networked sphere so the item works even
-                // without a dedicated bundle asset.  Artists can replace this later.
-                IssaPluginPlugin.Log.LogWarning(
-                    "[Assets] black_hole_grenade.prefab not found — using fallback sphere."
-                );
-                BlackHoleGrenadePrefab = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                BlackHoleGrenadePrefab.name = "BlackHoleGrenade_Fallback";
-                BlackHoleGrenadePrefab.transform.localScale = Vector3.one * 0.4f;
-                var bhRb =
-                    BlackHoleGrenadePrefab.GetComponent<Rigidbody>()
-                    ?? BlackHoleGrenadePrefab.AddComponent<Rigidbody>();
-                bhRb.isKinematic = true;
-                bhRb.useGravity = false;
-                // Disable the collider so the template sitting at origin doesn't
-                // interfere with in-scene physics.  Spawned instances re-enable it via
-                // BlackHoleGrenadeBehaviour (Rigidbody is already kinematic/no-gravity).
-                var bhCol = BlackHoleGrenadePrefab.GetComponent<SphereCollider>();
-                if (bhCol)
-                    bhCol.enabled = false;
-                EnsureNetworkIdentity(BlackHoleGrenadePrefab, 0xB14C0001u);
-                GameObject.DontDestroyOnLoad(BlackHoleGrenadePrefab);
+                return;
             }
 
+            // Fallback: build a minimal networked sphere so the item works even
+            // without a dedicated bundle asset.  Artists can replace this later.
+            IssaPluginPlugin.Log.LogWarning(
+                "[Assets] black_hole_grenade.prefab not found — using fallback sphere."
+            );
+            BlackHoleGrenadePrefab = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            BlackHoleGrenadePrefab.name = "BlackHoleGrenade_Fallback";
+            BlackHoleGrenadePrefab.transform.localScale = Vector3.one * 0.4f;
+            var bhRb =
+                BlackHoleGrenadePrefab.GetComponent<Rigidbody>()
+                ?? BlackHoleGrenadePrefab.AddComponent<Rigidbody>();
+            bhRb.isKinematic = true;
+            bhRb.useGravity = false;
+            // Disable the collider so the template sitting at origin doesn't
+            // interfere with in-scene physics.  Spawned instances re-enable it via
+            // BlackHoleGrenadeBehaviour (Rigidbody is already kinematic/no-gravity).
+            var bhCol = BlackHoleGrenadePrefab.GetComponent<SphereCollider>();
+            if (bhCol)
+                bhCol.enabled = false;
+            EnsureNetworkIdentity(BlackHoleGrenadePrefab, 0xB14C0001u);
+            GameObject.DontDestroyOnLoad(BlackHoleGrenadePrefab);
+        }
+
+        private static void LoadDroppedItemPrefab()
+        {
             DroppedCustomItemPrefab = Load<GameObject>("DroppedCustomItem.prefab");
-            if (DroppedCustomItemPrefab != null)
-            {
-                EnsureNetworkIdentity(DroppedCustomItemPrefab, 0xD20D0001u);
-                DroppedCustomItemPrefab.SetActive(false);
-                // Force kinematic regardless of what the bundle has baked in.
-                DisableRigidbody(DroppedCustomItemPrefab);
-                // Make the pickup collider a trigger so it doesn't block player movement.
-                // Physics.OverlapBoxNonAlloc uses QueryTriggerInteraction.Collide, so
-                // triggers are still detected by PlayerInteractableTargeter.
-                var dropCol = DroppedCustomItemPrefab.GetComponent<SphereCollider>();
-                if (dropCol)
-                    dropCol.isTrigger = true;
-                DroppedCustomItemPrefab.AddComponent<Entity>();
-                DroppedCustomItemPrefab.AddComponent<DroppedCustomItem>();
-                GameObject.DontDestroyOnLoad(DroppedCustomItemPrefab);
-            }
+            if (DroppedCustomItemPrefab == null)
+                return;
 
-            // --- Placeable Wall ---
-            WallIcon = LoadSprite("wall_icon.png");
+            EnsureNetworkIdentity(DroppedCustomItemPrefab, 0xD20D0001u);
+            DroppedCustomItemPrefab.SetActive(false);
+            // Force kinematic regardless of what the bundle has baked in.
+            DisableRigidbody(DroppedCustomItemPrefab);
+            // Make the pickup collider a trigger so it doesn't block player movement.
+            // Physics.OverlapBoxNonAlloc uses QueryTriggerInteraction.Collide, so
+            // triggers are still detected by PlayerInteractableTargeter.
+            var dropCol = DroppedCustomItemPrefab.GetComponent<SphereCollider>();
+            if (dropCol)
+                dropCol.isTrigger = true;
+            DroppedCustomItemPrefab.AddComponent<Entity>();
+            DroppedCustomItemPrefab.AddComponent<DroppedCustomItem>();
+            GameObject.DontDestroyOnLoad(DroppedCustomItemPrefab);
+        }
 
+        private static void LoadPlaceableWallAssets()
+        {
             WallHandheldPrefab = Load<GameObject>("brick.prefab");
             if (WallHandheldPrefab != null)
             {
@@ -401,33 +451,34 @@ namespace IssaPlugin.Items
             // Build the ghost template from WallPrefab.
             // Instantiate at load time (before any network session is active) so
             // DestroyImmediate on Mirror components is safe and has no side-effects.
-            if (WallPrefab != null)
-            {
-                WallGhostPrefab = GameObject.Instantiate(WallPrefab);
-                WallGhostPrefab.name = "PlaceableWall_GhostTemplate";
-                StripNetworkComponents(WallGhostPrefab);
-                // Disable physics — ghost is purely visual.
-                foreach (var rb in WallGhostPrefab.GetComponentsInChildren<Rigidbody>(true))
-                {
-                    rb.isKinematic = true;
-                    rb.detectCollisions = false;
-                }
-                foreach (var col in WallGhostPrefab.GetComponentsInChildren<Collider>(true))
-                    col.enabled = false;
-                WallGhostPrefab.SetActive(false);
-                GameObject.DontDestroyOnLoad(WallGhostPrefab);
-                IssaPluginPlugin.Log.LogInfo("[Assets] WallGhostPrefab created from WallPrefab.");
-            }
+            if (WallPrefab == null)
+                return;
 
-            // --- Sub-Machine Gun ---
-            AK47Icon = LoadSprite("ak47_icon.png");
+            WallGhostPrefab = GameObject.Instantiate(WallPrefab);
+            WallGhostPrefab.name = "PlaceableWall_GhostTemplate";
+            StripNetworkComponents(WallGhostPrefab);
+            // Disable physics — ghost is purely visual.
+            foreach (var rb in WallGhostPrefab.GetComponentsInChildren<Rigidbody>(true))
+            {
+                rb.isKinematic = true;
+                rb.detectCollisions = false;
+            }
+            foreach (var col in WallGhostPrefab.GetComponentsInChildren<Collider>(true))
+                col.enabled = false;
+            WallGhostPrefab.SetActive(false);
+            GameObject.DontDestroyOnLoad(WallGhostPrefab);
+            IssaPluginPlugin.Log.LogInfo("[Assets] WallGhostPrefab created from WallPrefab.");
+        }
+
+        private static void LoadAK47Assets()
+        {
             AK47Prefab = Load<GameObject>("ak47.prefab");
             if (AK47Prefab != null)
                 DisableRigidbody(AK47Prefab);
+        }
 
-            // --- Harrier Jet ---
-            HarrierIcon = LoadSprite("harrier_icon.png");
-
+        private static void LoadHarrierAssets()
+        {
             HarrierPrefab = Load<GameObject>("harrier.prefab");
             if (HarrierPrefab != null)
             {
@@ -435,16 +486,14 @@ namespace IssaPlugin.Items
                 DisableRigidbody(HarrierPrefab);
                 HarrierPrefab.AddComponent<HarrierClientSetup>();
             }
+
             HarrierTabletPrefab = Load<GameObject>("harrier_tablet.prefab");
             if (HarrierTabletPrefab != null)
-            {
                 DisableRigidbody(HarrierTabletPrefab);
-            }
+        }
 
-            WarningParticlePrefab = Load<GameObject>("warning_particle.prefab");
-
-            // --- Position Swap ---
-            PositionSwapIcon = LoadSprite("position_swap_icon.png");
+        private static void LoadPositionSwapAssets()
+        {
             PositionSwapHandheldPrefab = Load<GameObject>("position_swap_handheld.prefab");
             if (PositionSwapHandheldPrefab != null)
                 DisableRigidbody(PositionSwapHandheldPrefab);
@@ -456,8 +505,6 @@ namespace IssaPlugin.Items
             PositionSwapSmokePrefab = Load<GameObject>("position_swap_smoke.prefab");
             if (PositionSwapSmokePrefab != null)
                 StripNetworkComponents(PositionSwapSmokePrefab);
-
-            IssaPluginPlugin.Log.LogInfo("[Assets] IssaPluginBundle loaded.");
         }
 
         /// Ensures a prefab has a NetworkIdentity with a stable assetId so Mirror
