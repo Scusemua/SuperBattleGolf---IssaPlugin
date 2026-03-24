@@ -106,7 +106,8 @@ namespace IssaPlugin.Overlays
         private void AddWarning(ItemWarningMessage msg)
         {
             bool isSelf =
-                NetworkClient.localPlayer != null
+                !Configuration.WarningShowForSelf.Value
+                && NetworkClient.localPlayer != null
                 && NetworkClient.localPlayer.netId == msg.SenderNetId;
 
             float duration = Configuration.WarningDuration.Value;

@@ -309,8 +309,9 @@ namespace IssaPlugin
         public static ConfigEntry<bool> BearFriendlyFire { get; private set; }
 
         // --- Item Warnings ---
-        public static ConfigEntry<bool> WarningsEnabled { get; private set; }
-        public static ConfigEntry<float> WarningDuration { get; private set; }
+        public static ConfigEntry<bool>  WarningsEnabled    { get; private set; }
+        public static ConfigEntry<float> WarningDuration    { get; private set; }
+        public static ConfigEntry<bool>  WarningShowForSelf { get; private set; }
 
         private static readonly Dictionary<int, ConfigEntry<bool>> ItemWarningEnabledEntries = [];
 
@@ -2017,6 +2018,13 @@ namespace IssaPlugin
                 "How long (seconds) each warning banner and PiP camera is displayed."
             );
 
+            WarningShowForSelf = cfg.Bind(
+                "Warnings",
+                "ShowForSelf",
+                false,
+                "If true, the warning banner and PiP also appear for the player who used the item. Useful for testing."
+            );
+
             // Per-item warning flags.  true = warning ON by default, false = opt-in.
             // To add a warning for a new item, add a line here and call
             // ItemWarningBroadcaster.Broadcast() in the item's server activation method.
@@ -2092,7 +2100,7 @@ namespace IssaPlugin
                 false
             );
             RegWarn(cfg, ItemWarningEnabledEntries, 114, "AK47Warning", "AK-47", false);
-            RegWarn(cfg, ItemWarningEnabledEntries, 115, "HarrierWarning", "Harrier Jet", false);
+            RegWarn(cfg, ItemWarningEnabledEntries, 115, "HarrierWarning", "Harrier Jet", true);
         }
     }
 }

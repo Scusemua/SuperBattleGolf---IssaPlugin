@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 3357722693
+CRC: 1465434834
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: eb0d11f3b80b37a06b032c11049908d9
+    Hash: de69d942dbae77c2e655b15ed0041670
   TypeTreeHash:
     serializedVersion: 2
     Hash: 82d52513d6b19822b87b688cdb5147d6
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 642714ac5160434b3bbc8eb7ae87e2ed
+    Hash: c658505abdb8af40aae3d149d7784ff2
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -132,6 +132,7 @@ Assets:
 - Assets/Assets/bear_icon.png
 - Assets/Assets/WarningExclamation.prefab
 - Assets/Blink/Art/Animals/Stylized/Bear/Bear_Prefabs/BearAnimator.controller
+- Assets/Assets/warning_particle.prefab
 - Assets/Assets/harrier_tablet.prefab
 - Assets/Assets/uzi_icon_v2.png
 - Assets/Assets/sports_car_handheld.prefab
