@@ -322,6 +322,7 @@ namespace IssaPlugin
         public static ConfigEntry<float> BearAggroDuration { get; private set; }
         public static ConfigEntry<float> BearMeleeHitRange { get; private set; }
         public static ConfigEntry<bool> BearFriendlyFire { get; private set; }
+        public static ConfigEntry<bool> BearAttackFinishedPlayers { get; private set; }
 
         // --- Item Warnings ---
         public static ConfigEntry<bool> WarningsEnabled { get; private set; }
@@ -2071,6 +2072,12 @@ namespace IssaPlugin
                 "FriendlyFire",
                 false,
                 "If false, bears will not target or attack the player who summoned them."
+            );
+            BearAttackFinishedPlayers = cfg.Bind(
+                "Bear",
+                "AttackFinishedPlayers",
+                false,
+                "If true, bears will target players who have already holed out. If false, bears ignore them."
             );
 
             // ── Item Warnings ─────────────────────────────────────────────────

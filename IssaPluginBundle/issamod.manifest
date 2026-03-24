@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 1465434834
+CRC: 725489855
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: de69d942dbae77c2e655b15ed0041670
+    Hash: b444291bf0afd30f6a805eb6e2bf9146
   TypeTreeHash:
     serializedVersion: 2
     Hash: 82d52513d6b19822b87b688cdb5147d6
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: c658505abdb8af40aae3d149d7784ff2
+    Hash: 3ed989c62ae3ebe61bfe95c3e8169b97
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -128,6 +128,7 @@ Assets:
 - Assets/Assets/ac130_tablet.prefab
 - Assets/Assets/jet_plane_flyby.ogg
 - Assets/Assets/ak47.prefab
+- Assets/Assets/position_swap_icon.png
 - Assets/Assets/laser_zone_red.prefab
 - Assets/Assets/bear_icon.png
 - Assets/Assets/WarningExclamation.prefab

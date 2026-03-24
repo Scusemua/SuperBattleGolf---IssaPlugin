@@ -172,8 +172,18 @@ namespace IssaPlugin.Items
                 return false;
 
             // Don't chase a player who is already dead / eliminated
-            // (adjust this check based on what the base game exposes)
-            return p.gameObject.activeInHierarchy;
+            if (!p.gameObject.activeInHierarchy)
+                return false;
+
+            // Optionally ignore players who have already holed out
+            if (
+                !Configuration.BearAttackFinishedPlayers.Value
+                && p.AsGolfer != null
+                && p.AsGolfer.MatchResolution == PlayerMatchResolution.Scored
+            )
+                return false;
+
+            return true;
         }
     }
 }
