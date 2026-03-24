@@ -98,7 +98,7 @@ namespace IssaPlugin
                     return true;
                 }
 
-                if (a.ItemSpawnWeights[itemType] != b.ItemSpawnWeights[itemType])
+                if (spawnWeight != b.ItemSpawnWeights[itemType])
                 {
                     return true; // Mismatched spawn weight; need to update.
                 }
