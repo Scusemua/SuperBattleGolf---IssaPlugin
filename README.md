@@ -4,7 +4,7 @@
 
 Adds **15 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
 
-To download and/or install the mod, please check out the GitHub releases or the mod's [ThunderStore page](https://thunderstore.io/c/super-battle-golf/).
+To download and/or install the mod, please check out the GitHub releases or the mod's [ThunderStore page](https://thunderstore.io/c/super-battle-golf/p/TeamScusemua/IssaMod/).
 
 ## Items
 
@@ -78,7 +78,7 @@ All settings take effect immediately on the next session without restarting the 
 
 ## Compatibility
 
-- **Multiplayer:** All items are fully networked. The host runs as the server; all item behavior is server-authoritative. Clients do not need the mod installed to join a modded lobby, but they will not see custom item models or UI overlays unless they also have it installed.
+- **Multiplayer:** All items are fully networked. The host runs as the server; all item behavior is server-authoritative. Clients do require the mod.
 - **Existing items:** No base game items are removed or rebalanced. This mod only adds.
 - **Other mods:** Should be compatible with anything that doesn't patch the same inventory or item-spawning hooks. In particular, this mod is compatible with AtomicStudio's [ModConfig](https://thunderstore.io/c/super-battle-golf/p/AtomicStudio/ModConfig/) mod, which makes it very easy to tweak the numerous available settings, and with AtomicStudio's [ItemSpawner](https://thunderstore.io/c/super-battle-golf/p/AtomicStudio/ItemSpawner/) mod. Note that the host can change settings during the game, and they will take effect the next time the associated item is used. Spawn pool weights are synchronized on a five second interval as well.
 - 
