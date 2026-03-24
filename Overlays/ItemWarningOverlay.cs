@@ -35,7 +35,7 @@ namespace IssaPlugin.Overlays
         private const float BannerWidth = 640f;
         private const float BannerHeight = 48f;
         private const float BannerSpacing = 6f;
-        private const float BannerStartY = 0.20f; // fraction of screen height
+        private const float BannerStartY = 0.13f; // fraction of screen height (below the warning particle)
 
         // ── Item type ints for switch statements ──────────────────────────────
         private static readonly int TypeBomber  = (int)ItemRegistry.StealthBomberItemType;
@@ -130,7 +130,13 @@ namespace IssaPlugin.Overlays
                 if (cam != null)
                 {
                     go.transform.SetParent(cam.transform, worldPositionStays: false);
-                    go.transform.localPosition = new Vector3(0f, 0f, 2.5f);
+                    // Push the particle to the top of the screen.
+                    // Compute the world-space Y offset that places the object at ~8% from
+                    // the top by back-projecting from the camera's actual vertical FOV.
+                    const float z = 2.5f;
+                    float halfH = z * Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad);
+                    float yUp = halfH * (1f - 2f * 0.08f);
+                    go.transform.localPosition = new Vector3(0f, yUp, z);
                     go.transform.localRotation = Quaternion.identity;
 
                     float warningScale = Configuration.WarningPrefabScale.Value;
