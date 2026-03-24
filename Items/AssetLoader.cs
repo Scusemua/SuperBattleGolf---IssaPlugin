@@ -192,7 +192,7 @@ namespace IssaPlugin.Items
             LoadDonutAssets();
             LoadStickyGrenadeAssets();
             LoadBearAssets();
-            LoadNukeAssets();      // must precede LoadAudioAndVfx (shares MaydayExplosionVfxPrefab)
+            LoadNukeAssets(); // must precede LoadAudioAndVfx (shares MaydayExplosionVfxPrefab)
             LoadAudioAndVfx();
             LoadBlackHoleGrenadeAssets();
             LoadDroppedItemPrefab();
