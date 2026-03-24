@@ -29,6 +29,7 @@ namespace IssaPlugin.Overlays
         // ── Rendering resources ────────────────────────────────────────────────
         private Texture2D _solidTex;
         private GUIStyle _labelStyle;
+        private Camera _camera;
 
         // ── Bar dimensions (screen-space) ─────────────────────────────────────
         private const float BarWidth = 80f;
@@ -79,7 +80,9 @@ namespace IssaPlugin.Overlays
             if (_bearHPs.Count == 0)
                 return;
 
-            var cam = Camera.main;
+            if (_camera == null)
+                _camera = Camera.main;
+            var cam = _camera;
             if (cam == null)
                 return;
 
