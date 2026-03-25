@@ -1715,7 +1715,7 @@ namespace IssaPlugin
             AK47Inaccuracy = cfg.Bind(
                 "AK47",
                 "Inaccuracy",
-                4f,
+                5f,
                 "Random spread angle (degrees) applied to each bullet. Higher = less accurate."
             );
             AK47MaxAimingDistance = cfg.Bind(
