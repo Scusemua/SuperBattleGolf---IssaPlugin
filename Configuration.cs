@@ -1833,7 +1833,7 @@ namespace IssaPlugin
             PositionSwapGiveKey = cfg.Bind(
                 "PositionSwap",
                 "GiveKey",
-                Key.Numpad0,
+                Key.NumpadMinus,
                 "Debug key to add the Position Swap item to your inventory."
             );
             PositionSwapUses = cfg.Bind(
