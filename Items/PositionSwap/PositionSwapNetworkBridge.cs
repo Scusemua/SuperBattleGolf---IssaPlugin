@@ -76,6 +76,20 @@ namespace IssaPlugin.Items
                 return;
             }
 
+            // Refuse if either player is in a golf cart — their rigidbody position
+            // doesn't reflect their visual position while seated.
+            var initiatorInfo = _inventory.PlayerInfo;
+            var targetInfoEarly = targetInventory.PlayerInfo;
+            if (
+                (initiatorInfo != null && initiatorInfo.ActiveGolfCartSeat.IsValid())
+                || (targetInfoEarly != null && targetInfoEarly.ActiveGolfCartSeat.IsValid())
+            )
+            {
+                IssaPluginPlugin.Log.LogWarning("[PositionSwap] One or both players are in a golf cart.");
+                connectionToClient?.Send(new PositionSwapCancelledMessage { InitiatorNetId = netId });
+                return;
+            }
+
             // Consume the item before starting the coroutine.
             ItemHelper.ConsumeEquippedItem(_inventory);
 
@@ -123,19 +137,50 @@ namespace IssaPlugin.Items
             var initiatorInfo = initiatorInventory.PlayerInfo;
             var targetInfo = targetInventory.PlayerInfo;
 
-            Vector3 initiatorOldPos = initiatorInfo.transform.position;
-            Vector3 targetOldPos = targetInfo.transform.position;
+            if (initiatorInfo == null || targetInfo == null)
+            {
+                IssaPluginPlugin.Log.LogWarning("[PositionSwap] PlayerInfo null before swap could execute.");
+                NetworkServer.SendToAll(new PositionSwapCancelledMessage { InitiatorNetId = netId });
+                _isServerRoutineActive = false;
+                _serverRoutine = null;
+                yield break;
+            }
 
-            // Move server-side transforms so server-authoritative systems see the swap.
-            initiatorInfo.transform.position = targetOldPos;
-            targetInfo.transform.position = initiatorOldPos;
+            // Either player may have entered a golf cart during the warning delay.
+            if (initiatorInfo.ActiveGolfCartSeat.IsValid() || targetInfo.ActiveGolfCartSeat.IsValid())
+            {
+                IssaPluginPlugin.Log.LogWarning("[PositionSwap] A player entered a golf cart during the delay; cancelling.");
+                NetworkServer.SendToAll(new PositionSwapCancelledMessage { InitiatorNetId = netId });
+                _isServerRoutineActive = false;
+                _serverRoutine = null;
+                yield break;
+            }
+
+            // Use Rigidbody.position for both — consistent with what Movement.Teleport() uses.
+            Vector3 initiatorOldPos = initiatorInfo.Rigidbody.position;
+            Vector3 targetOldPos = targetInfo.Rigidbody.position;
+
+            // Immediately update server-side Rigidbody positions so server-authoritative
+            // systems see the swap before client CmdTeleport arrives.
+            initiatorInfo.Rigidbody.position = targetOldPos;
+            targetInfo.Rigidbody.position = initiatorOldPos;
 
             // Tell each affected client to warp their own character controller.
-            connectionToClient?.Send(new PositionSwapTeleportMessage { NewPosition = targetOldPos });
-            targetInventory
-                .GetComponent<PositionSwapNetworkBridge>()
-                ?.connectionToClient
-                ?.Send(new PositionSwapTeleportMessage { NewPosition = initiatorOldPos });
+            // For the listen-server host, connectionToClient.Send() may not invoke the
+            // registered client handler; call HandleTeleport directly instead.
+            if (isLocalPlayer)
+                HandleTeleport(new PositionSwapTeleportMessage { NewPosition = targetOldPos });
+            else
+                connectionToClient?.Send(new PositionSwapTeleportMessage { NewPosition = targetOldPos });
+
+            var targetBridge = targetInventory.GetComponent<PositionSwapNetworkBridge>();
+            if (targetBridge != null)
+            {
+                if (targetBridge.isLocalPlayer)
+                    HandleTeleport(new PositionSwapTeleportMessage { NewPosition = initiatorOldPos });
+                else
+                    targetBridge.connectionToClient?.Send(new PositionSwapTeleportMessage { NewPosition = initiatorOldPos });
+            }
 
             // Broadcast the execute event so all clients can play VFX and close UI.
             NetworkServer.SendToAll(new PositionSwapExecuteMessage
@@ -171,20 +216,10 @@ namespace IssaPlugin.Items
             if (playerInfo == null)
                 return;
 
-            // Disable CharacterController before repositioning to avoid being stuck inside colliders.
-            var cc = playerInfo.GetComponent<CharacterController>();
-            if (cc != null)
-                cc.enabled = false;
-
-            playerInfo.transform.position = msg.NewPosition;
-
-            if (cc != null)
-                cc.enabled = true;
-
-            // Zero momentum so the player doesn't continue with pre-swap velocity.
-            var rb = playerInfo.GetComponent<Rigidbody>();
-            if (rb != null)
-                rb.linearVelocity = Vector3.zero;
+            // Use the game's own Teleport() which sets both transform and rigidbody.position,
+            // zeros linear/angular velocity, resets grounded state, and syncs to the server
+            // via CmdTeleport — avoiding the launch-into-the-air Rigidbody velocity bug.
+            playerInfo.Movement.Teleport(msg.NewPosition, playerInfo.Movement.transform.rotation, false);
 
             IssaPluginPlugin.Log.LogInfo($"[PositionSwap] Local player teleported to {msg.NewPosition}");
         }
