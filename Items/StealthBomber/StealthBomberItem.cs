@@ -315,7 +315,7 @@ namespace IssaPlugin.Items
 
             Vector3 spawnPos = stripStart - direction * approachDist;
             Vector3 exitPos = stripEnd + direction * approachDist;
-            spawnPos.y = strip.Center.y + altitude - 5f;
+            spawnPos.y = strip.Center.y + altitude;
             exitPos.y = strip.Center.y + altitude;
 
             float exitBufferDist = Configuration.BomberSpeed.Value * waitTime;
@@ -399,7 +399,7 @@ namespace IssaPlugin.Items
                     }
                     else
                     {
-                        float offsetAmount = RandomGaussian(0f, spread * 0.4f);
+                        float offsetAmount = RandomGaussian(-spread, spread);
                         offsetAmount = Mathf.Clamp(offsetAmount, -spread, spread);
 
                         Vector3 offset = perpendicular * offsetAmount;
@@ -647,6 +647,8 @@ namespace IssaPlugin.Items
                 _bomberUseIndex,
                 ItemType.RocketLauncher
             );
+
+            IssaPluginPlugin.Log.LogDebug($"[Bomber] Spawning rocket at position={position}");
 
             var rocket = Object.Instantiate(
                 GameManager.ItemSettings.RocketPrefab,
