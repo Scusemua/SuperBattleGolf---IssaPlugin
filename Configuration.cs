@@ -143,6 +143,7 @@ namespace IssaPlugin
         public static ConfigEntry<float> SniperRifleMinZoomFov { get; private set; }
         public static ConfigEntry<float> SniperRifleMaxZoomFov { get; private set; }
         public static ConfigEntry<float> SniperRifleScrollSensitivity { get; private set; }
+        public static ConfigEntry<float> SniperRifleScreenShakeIntensity { get; private set; }
 
         // public static ConfigEntry<float> SniperRifleRecoil { get; private set; }
 
@@ -1108,6 +1109,13 @@ namespace IssaPlugin
                 "ScrollSensitivity",
                 5f,
                 "FOV units changed per scroll notch. Higher values zoom faster."
+            );
+
+            SniperRifleScreenShakeIntensity = cfg.Bind(
+                "SniperRifle",
+                "ScreenShakeIntensity",
+                0.1f,
+                "Intensity of the screen shake when firing. 0 disables it. Higher values shake more."
             );
 
             // SniperRifleRecoil = cfg.Bind(
