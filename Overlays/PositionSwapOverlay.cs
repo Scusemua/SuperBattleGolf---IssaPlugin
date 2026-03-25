@@ -283,7 +283,7 @@ namespace IssaPlugin.Overlays
 
             _titleStyle = new GUIStyle(GUI.skin.label)
             {
-                fontSize = 18,
+                fontSize = 21,
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleCenter,
                 normal = { textColor = Color.white },
@@ -291,14 +291,14 @@ namespace IssaPlugin.Overlays
 
             _tipStyle = new GUIStyle(GUI.skin.label)
             {
-                fontSize = 13,
+                fontSize = 15,
                 alignment = TextAnchor.MiddleCenter,
                 normal = { textColor = new Color(0.60f, 0.60f, 0.60f) },
             };
 
             _rowStyle = new GUIStyle(GUI.skin.label)
             {
-                fontSize = 15,
+                fontSize = 18,
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.LowerLeft,
                 normal = { textColor = Color.white },
@@ -306,14 +306,14 @@ namespace IssaPlugin.Overlays
 
             _subStyle = new GUIStyle(GUI.skin.label)
             {
-                fontSize = 11,
+                fontSize = 15,
                 alignment = TextAnchor.UpperLeft,
                 normal = { textColor = new Color(0.65f, 0.75f, 0.95f) },
             };
 
             _swapBtnStyle = new GUIStyle(GUI.skin.button)
             {
-                fontSize = 13,
+                fontSize = 15,
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleCenter,
                 normal = { background = _swapOnTex, textColor = Color.white },
@@ -322,7 +322,7 @@ namespace IssaPlugin.Overlays
 
             _cancelStyle = new GUIStyle(GUI.skin.button)
             {
-                fontSize = 13,
+                fontSize = 15,
                 alignment = TextAnchor.MiddleCenter,
                 normal = { background = _cancelBgTex, textColor = Color.white },
                 hover = { background = _cancelHovTex, textColor = Color.white },
