@@ -122,12 +122,19 @@ namespace IssaPlugin.Items
         }
     }
 
+    public enum PositionSwapCancelReason : byte
+    {
+        Generic = 0,
+        TargetEnteredGolfCart = 1,
+    }
+
     /// Server → All clients: swap was cancelled before it could execute.
     /// Broadcast so every client can clean up warning orbs; clients check InitiatorNetId
     /// to decide whether to close the chooser/countdown overlay.
     public struct PositionSwapCancelledMessage : NetworkMessage
     {
         public uint InitiatorNetId;
+        public PositionSwapCancelReason CancelReason;
     }
 
     public static class PositionSwapCancelledMessageSerialization
@@ -138,13 +145,18 @@ namespace IssaPlugin.Items
         )
         {
             writer.WriteUInt(msg.InitiatorNetId);
+            writer.WriteByte((byte)msg.CancelReason);
         }
 
         public static PositionSwapCancelledMessage ReadPositionSwapCancelledMessage(
             NetworkReader reader
         )
         {
-            return new PositionSwapCancelledMessage { InitiatorNetId = reader.ReadUInt() };
+            return new PositionSwapCancelledMessage
+            {
+                InitiatorNetId = reader.ReadUInt(),
+                CancelReason = (PositionSwapCancelReason)reader.ReadByte(),
+            };
         }
     }
 }

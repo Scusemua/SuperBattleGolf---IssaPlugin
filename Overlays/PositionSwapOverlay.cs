@@ -22,6 +22,8 @@ namespace IssaPlugin.Overlays
         private bool _isChooserOpen;
         private bool _isPendingSwap;
         private float _pendingCountdown;
+        private string _cancelNotification;
+        private float _cancelNotificationTimer;
         private readonly List<PlayerInfo> _cachedPlayers = new List<PlayerInfo>();
 
         // ── Layout constants ──────────────────────────────────────────────────────
@@ -50,6 +52,7 @@ namespace IssaPlugin.Overlays
         private GUIStyle _swapBtnStyle;
         private GUIStyle _cancelStyle;
         private GUIStyle _countdownStyle;
+        private GUIStyle _notifStyle;
 
         // ── Unity lifecycle ───────────────────────────────────────────────────────
 
@@ -68,11 +71,19 @@ namespace IssaPlugin.Overlays
 
         private void Update()
         {
-            if (!_isPendingSwap)
-                return;
-            _pendingCountdown -= Time.deltaTime;
-            if (_pendingCountdown < 0f)
-                _pendingCountdown = 0f;
+            if (_isPendingSwap)
+            {
+                _pendingCountdown -= Time.deltaTime;
+                if (_pendingCountdown < 0f)
+                    _pendingCountdown = 0f;
+            }
+
+            if (_cancelNotificationTimer > 0f)
+            {
+                _cancelNotificationTimer -= Time.deltaTime;
+                if (_cancelNotificationTimer <= 0f)
+                    _cancelNotification = null;
+            }
         }
 
         // ── Public API ────────────────────────────────────────────────────────────
@@ -121,8 +132,8 @@ namespace IssaPlugin.Overlays
         }
 
         /// Called on all clients when the server cancels a pending swap.
-        /// Only closes the UI if the local player was the initiator.
-        public void OnSwapCancelled(uint initiatorNetId)
+        /// Only closes the UI and shows a notification if the local player was the initiator.
+        public void OnSwapCancelled(uint initiatorNetId, PositionSwapCancelReason reason)
         {
             var localIdentity = GameManager.LocalPlayerInfo?.GetComponent<NetworkIdentity>();
             if (localIdentity == null || localIdentity.netId != initiatorNetId)
@@ -130,21 +141,30 @@ namespace IssaPlugin.Overlays
 
             _isChooserOpen = false;
             _isPendingSwap = false;
+
+            if (reason == PositionSwapCancelReason.TargetEnteredGolfCart)
+            {
+                _cancelNotification = "Swap cancelled — target got in a golf cart";
+                _cancelNotificationTimer = 3f;
+            }
         }
 
         // ── GUI ───────────────────────────────────────────────────────────────────
 
         private void OnGUI()
         {
-            if (!_isChooserOpen && !_isPendingSwap)
-                return;
-
             EnsureStyles();
 
-            if (_isPendingSwap)
-                DrawCountdown();
-            else
-                DrawChooser();
+            if (_isChooserOpen || _isPendingSwap)
+            {
+                if (_isPendingSwap)
+                    DrawCountdown();
+                else
+                    DrawChooser();
+            }
+
+            if (_cancelNotification != null)
+                DrawCancelNotification();
         }
 
         private void DrawChooser()
@@ -262,6 +282,21 @@ namespace IssaPlugin.Overlays
             }
         }
 
+        private void DrawCancelNotification()
+        {
+            const float W = 420f;
+            const float H = 52f;
+            float px = (Screen.width - W) * 0.5f;
+            float py = Screen.height * 0.12f;
+
+            // Fade out over the last second.
+            float alpha = Mathf.Clamp01(_cancelNotificationTimer);
+            GUI.color = new Color(1f, 1f, 1f, alpha);
+            GUI.Box(new Rect(px, py, W, H), GUIContent.none, _panelStyle);
+            GUI.Label(new Rect(px, py, W, H), _cancelNotification, _notifStyle);
+            GUI.color = Color.white;
+        }
+
         private void DrawCountdown()
         {
             const float W = 360f;
@@ -345,6 +380,14 @@ namespace IssaPlugin.Overlays
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleCenter,
                 normal = { textColor = new Color(1f, 0.90f, 0.30f) },
+            };
+
+            _notifStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 17,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter,
+                normal = { textColor = new Color(1f, 0.55f, 0.20f) },
             };
         }
 

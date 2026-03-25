@@ -150,7 +150,11 @@ namespace IssaPlugin.Items
             if (initiatorInfo.ActiveGolfCartSeat.IsValid() || targetInfo.ActiveGolfCartSeat.IsValid())
             {
                 IssaPluginPlugin.Log.LogWarning("[PositionSwap] A player entered a golf cart during the delay; cancelling.");
-                NetworkServer.SendToAll(new PositionSwapCancelledMessage { InitiatorNetId = netId });
+                NetworkServer.SendToAll(new PositionSwapCancelledMessage
+                {
+                    InitiatorNetId = netId,
+                    CancelReason = PositionSwapCancelReason.TargetEnteredGolfCart,
+                });
                 _isServerRoutineActive = false;
                 _serverRoutine = null;
                 yield break;
@@ -236,7 +240,7 @@ namespace IssaPlugin.Items
             // Clean up orbs on all clients regardless of who initiated.
             DestroyWarningOrbs(msg.InitiatorNetId);
             // Only close the overlay UI on the initiator's client.
-            PositionSwapOverlay.Instance?.OnSwapCancelled(msg.InitiatorNetId);
+            PositionSwapOverlay.Instance?.OnSwapCancelled(msg.InitiatorNetId, msg.CancelReason);
             IssaPluginPlugin.Log.LogInfo("[PositionSwap] Swap cancelled.");
         }
 
