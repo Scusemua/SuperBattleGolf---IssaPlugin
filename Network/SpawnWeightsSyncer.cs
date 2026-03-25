@@ -94,7 +94,7 @@ namespace IssaPlugin
             if (newMsg.ItemSpawnWeights == null || _lastSent.ItemSpawnWeights == null)
                 return true;
 
-            // The 'enabled' status of at least one item has changed. 
+            // The 'enabled' status of at least one item has changed.
             if (enabledHash != _lastEnabledHash)
                 return true;
 
