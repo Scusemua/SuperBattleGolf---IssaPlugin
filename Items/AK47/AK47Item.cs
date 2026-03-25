@@ -109,7 +109,7 @@ namespace IssaPlugin.Items
             Vector3 dir = (aimPoint - barrelEnd).RandomlyRotatedDeg(inaccuracy);
             Ray ray = new Ray(barrelEnd, dir);
 
-            ItemHelper.ApplyRecoil(inventory, dir, Configuration.AK47Recoil.Value);
+            // ItemHelper.ApplyRecoil(inventory, dir, Configuration.AK47Recoil.Value);
 
             float maxShot = Configuration.AK47MaxShotDistance.Value;
             int layerMask = GameManager.LayerSettings.GunHittablesMask;

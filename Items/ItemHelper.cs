@@ -63,16 +63,16 @@ namespace IssaPlugin.Items
             SetItemUseMethod?.Invoke(inventory, new object[] { type });
         }
 
-        public static void ApplyRecoil(
-            PlayerInventory inventory,
-            Vector3 shotDirection,
-            float recoil
-        )
-        {
-            if (recoil == 0f)
-                return;
-            inventory.PlayerInfo.Rigidbody.linearVelocity -= shotDirection.normalized * recoil;
-        }
+        // public static void ApplyRecoil(
+        //     PlayerInventory inventory,
+        //     Vector3 shotDirection,
+        //     float recoil
+        // )
+        // {
+        //     if (recoil == 0f)
+        //         return;
+        //     inventory.PlayerInfo.Rigidbody.linearVelocity -= shotDirection.normalized * recoil;
+        // }
 
         /// Server-side convenience: wraps SetCurrentItemUse + DecrementAndRemove + SetCurrentItemUse.
         ///

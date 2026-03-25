@@ -99,7 +99,7 @@ namespace IssaPlugin.Items
             Vector3 dir = (aimPoint - barrelEnd).RandomlyRotatedDeg(inaccuracy);
             Ray ray = new Ray(barrelEnd, dir);
 
-            ItemHelper.ApplyRecoil(inventory, dir, Configuration.SniperRifleRecoil.Value);
+            // ItemHelper.ApplyRecoil(inventory, dir, Configuration.SniperRifleRecoil.Value);
 
             float maxShot = Configuration.SniperRifleMaxShotDistance.Value;
             int layerMask = GameManager.LayerSettings.GunHittablesMask;
