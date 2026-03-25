@@ -81,7 +81,7 @@ namespace IssaPlugin
 
             // Check if player used hotkey to give themself a custom item.
             foreach (var def in ItemRegistry.AllItems)
-                if (keyboard[def.GiveKey].wasPressedThisFrame)
+                if (def.GiveKey != Key.None && keyboard[def.GiveKey].wasPressedThisFrame)
                     ItemHelper.GiveItemToLocalPlayer(def.ItemType, def.MaxUses, def.DisplayName);
 
             // Keep the Javelin lock-on target fresh every frame while equipped.
