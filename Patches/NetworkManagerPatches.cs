@@ -1014,7 +1014,7 @@ namespace IssaPlugin.Patches
                 PositionSwapNetworkBridge.HandleExecute
             );
 
-            // Server → Initiator client only: swap cancelled
+            // Server → All clients: swap cancelled (UI logic filtered client-side)
             Writer<PositionSwapCancelledMessage>.write =
                 PositionSwapCancelledMessageSerialization.WritePositionSwapCancelledMessage;
             Reader<PositionSwapCancelledMessage>.read =
