@@ -23,6 +23,8 @@ namespace IssaPlugin
             ItemSpawnWeights = null,
         };
 
+        private static int _lastEnabledHash = 0;
+
         private IEnumerator Start()
         {
             while (true)
@@ -65,10 +67,17 @@ namespace IssaPlugin
                 ItemSpawnWeights = _cachedItemSpawnWeights,
             };
 
-            if (!ShouldUpdateWeights(msg, _lastSent))
+            // Compute a simple enabled-state fingerprint
+            int enabledHash = 0;
+            foreach (var item in ItemRegistry.AllItems)
+                if (item.Enabled)
+                    enabledHash ^= (int)item.ItemType;
+
+            if (!ShouldUpdateWeights(msg, enabledHash))
                 return;
 
             _lastSent = msg;
+            _lastEnabledHash = enabledHash;
 
             // Re-inject custom weights into the live server pools.
             foreach (var settings in Resources.FindObjectsOfTypeAll<ItemSpawnerSettings>())
@@ -79,26 +88,30 @@ namespace IssaPlugin
             IssaPluginPlugin.Log.LogDebug($"[SpawnWeights] Synced: {msg.ToString()}");
         }
 
-        private static bool ShouldUpdateWeights(SpawnWeightsMessage a, SpawnWeightsMessage b)
+        private static bool ShouldUpdateWeights(SpawnWeightsMessage newMsg, int enabledHash)
         {
             // If one or both have null spawn weights, then return true.
-            if (a.ItemSpawnWeights == null || b.ItemSpawnWeights == null)
+            if (newMsg.ItemSpawnWeights == null || _lastSent.ItemSpawnWeights == null)
                 return true;
 
-            if (a.ItemSpawnWeights.Count != b.ItemSpawnWeights.Count)
+            // The 'enabled' status of at least one item has changed. 
+            if (enabledHash != _lastEnabledHash)
+                return true;
+
+            if (newMsg.ItemSpawnWeights.Count != _lastSent.ItemSpawnWeights.Count)
             {
                 IssaPluginPlugin.Log.LogWarning(
-                    $"SpawnWeightsMessages have unequal number of entries: {a.ItemSpawnWeights.Count} vs. {b.ItemSpawnWeights.Count}"
+                    $"SpawnWeightsMessages have unequal number of entries: {newMsg.ItemSpawnWeights.Count} vs. {_lastSent.ItemSpawnWeights.Count}"
                 );
                 return true; // Probably shouldn't happen, but let's update to correct.
             }
 
-            if (a.CustomItemSpawnsEnabled != b.CustomItemSpawnsEnabled)
+            if (newMsg.CustomItemSpawnsEnabled != _lastSent.CustomItemSpawnsEnabled)
                 return true;
 
-            foreach (var (itemType, spawnWeight) in a.ItemSpawnWeights)
+            foreach (var (itemType, spawnWeight) in newMsg.ItemSpawnWeights)
             {
-                if (!b.ItemSpawnWeights.ContainsKey(itemType))
+                if (!_lastSent.ItemSpawnWeights.ContainsKey(itemType))
                 {
                     // Doesn't have an entry... shouldn't happen, but if it does, they should be updated.
                     IssaPluginPlugin.Log.LogError(
@@ -107,7 +120,7 @@ namespace IssaPlugin
                     return true;
                 }
 
-                if (spawnWeight != b.ItemSpawnWeights[itemType])
+                if (spawnWeight != _lastSent.ItemSpawnWeights[itemType])
                 {
                     return true; // Mismatched spawn weight; need to update.
                 }
