@@ -261,7 +261,10 @@ namespace IssaPlugin.Items
             IssaPluginPlugin.Log.LogInfo("[Javelin] Server state cleared on hole transition.");
         }
 
-        public override void ClientHoleCleanup() { }
+        public override void ClientHoleCleanup()
+        {
+            ClientClearLock();
+        }
 
         // ================================================================
         //  Client-side server-message handlers
