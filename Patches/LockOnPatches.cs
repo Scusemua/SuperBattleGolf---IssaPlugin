@@ -91,6 +91,12 @@ namespace IssaPlugin.Patches
         private static bool _wasTargetingBear;
         private static bool _wasTargetingHarrier;
 
+        // Cached marker references — refreshed only when null (i.e. not yet spawned or destroyed).
+        // Avoids per-frame FindFirstObjectByType scene scans while lock-on is active.
+        private static BomberMarker _cachedBomberMarker;
+        private static AC130GunshipMarker _cachedGunshipMarker;
+        private static HarrierMarker _cachedHarrierMarker;
+
         internal static void ResetTargetingState()
         {
             _wasTargetingGunship = false;
@@ -98,6 +104,9 @@ namespace IssaPlugin.Patches
             _wasTargetingDonut = false;
             _wasTargetingBear = false;
             _wasTargetingHarrier = false;
+            _cachedBomberMarker = null;
+            _cachedGunshipMarker = null;
+            _cachedHarrierMarker = null;
         }
 
         static MethodBase TargetMethod() =>
@@ -138,6 +147,9 @@ namespace IssaPlugin.Patches
                 && bestLockOnTarget != null
                 && bestLockOnTarget.GetComponent<HarrierMarker>() != null;
 
+            // Cache Camera.main once — it calls FindFirstObjectByType internally.
+            var cam = Camera.main;
+
             // ---- Bomber fallback detection ----
             // The proxy's BomberProxyBehaviour is server-only, so the client-side
             // LockOnTarget may not register with LockOnTargetManager (the base game
@@ -147,25 +159,21 @@ namespace IssaPlugin.Patches
             // and CmdPrepareBomberRocket is called.
             if (!nowTargetingBomber && !__result)
             {
-                var bomberMarker = Object.FindFirstObjectByType<BomberMarker>();
-                if (bomberMarker != null)
+                _cachedBomberMarker ??= GameObject.FindFirstObjectByType<BomberMarker>();
+                if (_cachedBomberMarker != null)
                 {
-                    var lot = bomberMarker.GetComponent<LockOnTarget>();
-                    if (lot != null)
+                    var lot = _cachedBomberMarker.GetComponent<LockOnTarget>();
+                    if (lot != null && cam != null)
                     {
                         // Only lock on when the player is aiming toward the bomber.
-                        var cam = Camera.main;
-                        if (cam != null)
+                        Vector3 toCraft = (
+                            _cachedBomberMarker.transform.position - cam.transform.position
+                        ).normalized;
+                        if (Vector3.Dot(toCraft, cam.transform.forward) > 0.7f)
                         {
-                            Vector3 toCraft = (
-                                bomberMarker.transform.position - cam.transform.position
-                            ).normalized;
-                            if (Vector3.Dot(toCraft, cam.transform.forward) > 0.7f)
-                            {
-                                __result = true;
-                                bestLockOnTarget = lot;
-                                nowTargetingBomber = true;
-                            }
+                            __result = true;
+                            bestLockOnTarget = lot;
+                            nowTargetingBomber = true;
                         }
                     }
                 }
@@ -177,24 +185,20 @@ namespace IssaPlugin.Patches
             // Mirror the bomber fallback: find the marker directly and inject it.
             if (!nowTargetingGunship)
             {
-                var gunshipMarker = Object.FindFirstObjectByType<AC130GunshipMarker>();
-                if (gunshipMarker != null)
+                _cachedGunshipMarker ??= GameObject.FindFirstObjectByType<AC130GunshipMarker>();
+                if (_cachedGunshipMarker != null)
                 {
-                    var lot = gunshipMarker.GetComponent<LockOnTarget>();
-                    if (lot != null)
+                    var lot = _cachedGunshipMarker.GetComponent<LockOnTarget>();
+                    if (lot != null && cam != null)
                     {
-                        var cam = Camera.main;
-                        if (cam != null)
+                        Vector3 toCraft = (
+                            _cachedGunshipMarker.transform.position - cam.transform.position
+                        ).normalized;
+                        if (Vector3.Dot(toCraft, cam.transform.forward) > 0.7f)
                         {
-                            Vector3 toCraft = (
-                                gunshipMarker.transform.position - cam.transform.position
-                            ).normalized;
-                            if (Vector3.Dot(toCraft, cam.transform.forward) > 0.7f)
-                            {
-                                __result = true;
-                                bestLockOnTarget = lot;
-                                nowTargetingGunship = true;
-                            }
+                            __result = true;
+                            bestLockOnTarget = lot;
+                            nowTargetingGunship = true;
                         }
                     }
                 }
@@ -206,24 +210,20 @@ namespace IssaPlugin.Patches
             // clients. Find the marker directly and inject it when aimed toward the jet.
             if (!nowTargetingHarrier)
             {
-                var harrierMarker = Object.FindFirstObjectByType<HarrierMarker>();
-                if (harrierMarker != null)
+                _cachedHarrierMarker ??= GameObject.FindFirstObjectByType<HarrierMarker>();
+                if (_cachedHarrierMarker != null)
                 {
-                    var lot = harrierMarker.GetComponent<LockOnTarget>();
-                    if (lot != null)
+                    var lot = _cachedHarrierMarker.GetComponent<LockOnTarget>();
+                    if (lot != null && cam != null)
                     {
-                        var cam = Camera.main;
-                        if (cam != null)
+                        Vector3 toJet = (
+                            _cachedHarrierMarker.transform.position - cam.transform.position
+                        ).normalized;
+                        if (Vector3.Dot(toJet, cam.transform.forward) > 0.7f)
                         {
-                            Vector3 toJet = (
-                                harrierMarker.transform.position - cam.transform.position
-                            ).normalized;
-                            if (Vector3.Dot(toJet, cam.transform.forward) > 0.7f)
-                            {
-                                __result = true;
-                                bestLockOnTarget = lot;
-                                nowTargetingHarrier = true;
-                            }
+                            __result = true;
+                            bestLockOnTarget = lot;
+                            nowTargetingHarrier = true;
                         }
                     }
                 }
