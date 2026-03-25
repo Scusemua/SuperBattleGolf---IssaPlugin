@@ -47,6 +47,29 @@ namespace IssaPlugin.Items
             public float Length;
         }
 
+        public static float RandomGaussian(float minValue = 0.0f, float maxValue = 1.0f)
+        {
+            float u,
+                v,
+                S;
+
+            do
+            {
+                u = 2.0f * UnityEngine.Random.value - 1.0f;
+                v = 2.0f * UnityEngine.Random.value - 1.0f;
+                S = u * u + v * v;
+            } while (S >= 1.0f);
+
+            // Standard Normal Distribution
+            float std = u * Mathf.Sqrt(-2.0f * Mathf.Log(S) / S);
+
+            // Normal Distribution centered between the min and max value
+            // and clamped following the "three-sigma rule"
+            float mean = (minValue + maxValue) / 2.0f;
+            float sigma = (maxValue - mean) / 3.0f;
+            return Mathf.Clamp(std * sigma + mean, minValue, maxValue);
+        }
+
         private static void SetCurrentItemUse(PlayerInventory inventory, ItemUseType type)
         {
             ItemHelper.SetCurrentItemUse(inventory, type);
@@ -292,7 +315,7 @@ namespace IssaPlugin.Items
 
             Vector3 spawnPos = stripStart - direction * approachDist;
             Vector3 exitPos = stripEnd + direction * approachDist;
-            spawnPos.y = strip.Center.y + altitude;
+            spawnPos.y = strip.Center.y + altitude - 5f;
             exitPos.y = strip.Center.y + altitude;
 
             float exitBufferDist = Configuration.BomberSpeed.Value * waitTime;
@@ -325,9 +348,11 @@ namespace IssaPlugin.Items
             {
                 proxyBehaviour.OnHit += () =>
                 {
-                    if (proxyBehaviour.HitsRequired > 0
+                    if (
+                        proxyBehaviour.HitsRequired > 0
                         && proxyBehaviour.HitCount > 0
-                        && proxyBehaviour.HitCount < proxyBehaviour.HitsRequired)
+                        && proxyBehaviour.HitCount < proxyBehaviour.HitsRequired
+                    )
                     {
                         IssaPluginPlugin.Log.LogInfo(
                             $"[BomberProxy] Damaged ({proxyBehaviour.HitCount}/{proxyBehaviour.HitsRequired}) — broadcasting smoke."
@@ -374,7 +399,12 @@ namespace IssaPlugin.Items
                     }
                     else
                     {
-                        Vector3 offset = perpendicular * UnityEngine.Random.Range(-spread, spread);
+                        float offsetAmount = RandomGaussian(0f, spread * 0.4f);
+                        offsetAmount = Mathf.Clamp(offsetAmount, -spread, spread);
+
+                        Vector3 offset = perpendicular * offsetAmount;
+                        // Vector3 offset = perpendicular * UnityEngine.Random.Range(-spread, spread);
+
                         float angularJitter = Configuration.BomberRocketAngularJitter.Value;
                         Quaternion jitter = Quaternion.Euler(
                             UnityEngine.Random.Range(-angularJitter, angularJitter),

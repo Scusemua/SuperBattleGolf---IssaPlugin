@@ -24,7 +24,7 @@ namespace IssaPlugin.Items
         // and kicks after 10 violations. We track the last VFX send time and skip the
         // call when it would arrive too soon — same pattern used for the shot sound.
         private static float _lastVfxTime = float.MinValue;
-        private const float VfxMinInterval = 0.3f; // slightly above server's 0.25 s threshold
+        private const float VfxMinInterval = 0.1f; // slightly above server's 0.25 s threshold
 
         // ── Reflected private methods ────────────────────────────────────────────
 
