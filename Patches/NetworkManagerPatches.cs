@@ -724,12 +724,14 @@ namespace IssaPlugin.Patches
             Writer<BearSummonMessage>.write = BearSummonMessageSerialization.WriteBearSummonMessage;
             Reader<BearSummonMessage>.read = BearSummonMessageSerialization.ReadBearSummonMessage;
             if (NetworkServer.active)
+            {
                 NetworkServer.RegisterHandler<BearSummonMessage>(
                     (conn, msg) =>
                     {
                         conn.identity?.GetComponent<BearNetworkBridge>()?.ServerSummonBears();
                     }
                 );
+            }
 
             // Player is locked onto a bear and wants the next rocket to home toward it
             Writer<BearPrepareHomingMessage>.write =
@@ -737,12 +739,14 @@ namespace IssaPlugin.Patches
             Reader<BearPrepareHomingMessage>.read =
                 BearPrepareHomingMessageSerialization.ReadBearPrepareHomingMessage;
             if (NetworkServer.active)
+            {
                 NetworkServer.RegisterHandler<BearPrepareHomingMessage>(
                     (conn, msg) =>
                     {
                         conn.identity?.GetComponent<BearNetworkBridge>()?.ServerPrepareBearRocket();
                     }
                 );
+            }
 
             // Local client detected a bear in the swing hitbox during the hit window
             Writer<BearSwingHitMessage>.write =
@@ -750,6 +754,7 @@ namespace IssaPlugin.Patches
             Reader<BearSwingHitMessage>.read =
                 BearSwingHitMessageSerialization.ReadBearSwingHitMessage;
             if (NetworkServer.active)
+            {
                 NetworkServer.RegisterHandler<BearSwingHitMessage>(
                     (conn, msg) =>
                     {
@@ -821,6 +826,7 @@ namespace IssaPlugin.Patches
                         );
                     }
                 );
+            }
 
             // ── Server → All Clients ─────────────────────────────────────────────────
 
@@ -900,25 +906,33 @@ namespace IssaPlugin.Patches
                 HarrierRequestMessageSerialization.WriteHarrierRequestMessage;
             Reader<HarrierRequestMessage>.read =
                 HarrierRequestMessageSerialization.ReadHarrierRequestMessage;
-            NetworkServer.RegisterHandler<HarrierRequestMessage>(
-                (conn, msg) =>
-                {
-                    conn.identity?.GetComponent<HarrierNetworkBridge>()?.ServerHandleRequest();
-                }
-            );
+            if (NetworkServer.active)
+            {
+                NetworkServer.RegisterHandler<HarrierRequestMessage>(
+                    (conn, msg) =>
+                    {
+                        conn.identity?.GetComponent<HarrierNetworkBridge>()?.ServerHandleRequest();
+                    }
+                );
+            }
 
             Writer<HarrierPrepareHomingMessage>.write =
                 HarrierPrepareHomingMessageSerialization.WriteHarrierPrepareHomingMessage;
             Reader<HarrierPrepareHomingMessage>.read =
                 HarrierPrepareHomingMessageSerialization.ReadHarrierPrepareHomingMessage;
-            NetworkServer.RegisterHandler<HarrierPrepareHomingMessage>(
-                (conn, msg) =>
-                {
-                    var bridge = conn.identity?.GetComponent<HarrierNetworkBridge>();
-                    if (bridge != null)
-                        bridge.PendingHarrierHoming = true;
-                }
-            );
+            if (NetworkServer.active)
+            {
+                NetworkServer.RegisterHandler<HarrierPrepareHomingMessage>(
+                    (conn, msg) =>
+                    {
+                        var bridge = conn.identity?.GetComponent<HarrierNetworkBridge>();
+                        if (bridge != null)
+                        {
+                            bridge.PendingHarrierHoming = true;
+                        }
+                    }
+                );
+            }
 
             Writer<HarrierBeginClientMessage>.write =
                 HarrierBeginClientMessageSerialization.WriteHarrierBeginClientMessage;
