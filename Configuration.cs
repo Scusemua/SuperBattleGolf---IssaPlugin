@@ -2223,6 +2223,14 @@ namespace IssaPlugin
             );
             RegWarn(cfg, ItemWarningEnabledEntries, 114, "AK47Warning", "AK-47", false);
             RegWarn(cfg, ItemWarningEnabledEntries, 115, "HarrierWarning", "Harrier Jet", true);
+            RegWarn(
+                cfg,
+                ItemWarningEnabledEntries,
+                116,
+                "PositionSwapWarning",
+                "Position Swap",
+                false
+            );
         }
     }
 }
