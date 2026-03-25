@@ -91,8 +91,8 @@ namespace IssaPlugin.Items
         public uint TargetNetId;
         // Both "new" positions are the swapped destinations, included so every client
         // can spawn smoke at the correct world-space locations regardless of latency.
-        public Vector3 InitiatorNewPosition;
-        public Vector3 TargetNewPosition;
+        public Vector3 InitiatorDestination;
+        public Vector3 TargetDestination;
     }
 
     public static class PositionSwapExecuteMessageSerialization
@@ -104,8 +104,8 @@ namespace IssaPlugin.Items
         {
             writer.WriteUInt(msg.InitiatorNetId);
             writer.WriteUInt(msg.TargetNetId);
-            writer.WriteVector3(msg.InitiatorNewPosition);
-            writer.WriteVector3(msg.TargetNewPosition);
+            writer.WriteVector3(msg.InitiatorDestination);
+            writer.WriteVector3(msg.TargetDestination);
         }
 
         public static PositionSwapExecuteMessage ReadPositionSwapExecuteMessage(
@@ -116,8 +116,8 @@ namespace IssaPlugin.Items
             {
                 InitiatorNetId = reader.ReadUInt(),
                 TargetNetId = reader.ReadUInt(),
-                InitiatorNewPosition = reader.ReadVector3(),
-                TargetNewPosition = reader.ReadVector3(),
+                InitiatorDestination = reader.ReadVector3(),
+                TargetDestination = reader.ReadVector3(),
             };
         }
     }
