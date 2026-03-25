@@ -35,13 +35,13 @@ namespace IssaPlugin.Overlays
         private const float BannerWidth = 640f;
         private const float BannerHeight = 48f;
         private const float BannerSpacing = 6f;
-        private const float BannerStartY = 0.13f; // fraction of screen height (below the warning particle)
+        private const float BannerStartY = 0.26f; // fraction of screen height (caption below the warning particle)
 
         // ── Item type ints for switch statements ──────────────────────────────
-        private static readonly int TypeBomber  = (int)ItemRegistry.StealthBomberItemType;
-        private static readonly int TypeAC130   = (int)ItemRegistry.AC130ItemType;
-        private static readonly int TypeDonut   = (int)ItemRegistry.DonutItemType;
-        private static readonly int TypeNuke    = (int)ItemRegistry.NukeItemType;
+        private static readonly int TypeBomber = (int)ItemRegistry.StealthBomberItemType;
+        private static readonly int TypeAC130 = (int)ItemRegistry.AC130ItemType;
+        private static readonly int TypeDonut = (int)ItemRegistry.DonutItemType;
+        private static readonly int TypeNuke = (int)ItemRegistry.NukeItemType;
         private static readonly int TypeHarrier = (int)ItemRegistry.HarrierItemType;
 
         // ── Warning entry ─────────────────────────────────────────────────────
@@ -123,7 +123,11 @@ namespace IssaPlugin.Overlays
             };
 
             // Warning particle — attach to camera so it follows the view
-            if (!isSelf && Configuration.WarningSymbolEnabled.Value && AssetLoader.WarningParticlePrefab != null)
+            if (
+                !isSelf
+                && Configuration.WarningSymbolEnabled.Value
+                && AssetLoader.WarningParticlePrefab != null
+            )
             {
                 var go = Instantiate(AssetLoader.WarningParticlePrefab);
                 var cam = Camera.main;
@@ -135,7 +139,7 @@ namespace IssaPlugin.Overlays
                     // the top by back-projecting from the camera's actual vertical FOV.
                     const float z = 2.5f;
                     float halfH = z * Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad);
-                    float yUp = halfH * (1f - 2f * 0.08f);
+                    float yUp = halfH * (1f - 2f * 0.12f);
                     go.transform.localPosition = new Vector3(0f, yUp, z);
                     go.transform.localRotation = Quaternion.identity;
 
@@ -361,11 +365,16 @@ namespace IssaPlugin.Overlays
             Vector3 localOffset;
             Vector3 lookOffset = Vector3.up * 1.5f;
 
-            if      (itemTypeValue == TypeBomber)  localOffset = new Vector3(0f,  6f, -22f);
-            else if (itemTypeValue == TypeAC130)   localOffset = new Vector3(0f,  8f, -22f);
-            else if (itemTypeValue == TypeDonut)   localOffset = new Vector3(0f, 12f, -18f);
-            else if (itemTypeValue == TypeHarrier) localOffset = new Vector3(0f, 10f, -28f);
-            else                                   localOffset = new Vector3(0f, 10f, -20f);
+            if (itemTypeValue == TypeBomber)
+                localOffset = new Vector3(0f, 6f, -22f);
+            else if (itemTypeValue == TypeAC130)
+                localOffset = new Vector3(0f, 8f, -22f);
+            else if (itemTypeValue == TypeDonut)
+                localOffset = new Vector3(0f, 12f, -18f);
+            else if (itemTypeValue == TypeHarrier)
+                localOffset = new Vector3(0f, 10f, -28f);
+            else
+                localOffset = new Vector3(0f, 10f, -20f);
 
             camT.position = target.position + target.TransformDirection(localOffset);
             camT.LookAt(target.position + lookOffset);
