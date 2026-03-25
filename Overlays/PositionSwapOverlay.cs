@@ -192,13 +192,22 @@ namespace IssaPlugin.Overlays
 
                 foreach (var player in _cachedPlayers)
                 {
+                    bool inCart = player.ActiveGolfCartSeat.IsValid();
                     float distFromMe = Vector3.Distance(localPos, player.transform.position);
-                    string holeStr = holePos.HasValue
-                        ? $"{Mathf.RoundToInt(Vector3.Distance(holePos.Value, player.transform.position))}m to hole"
-                        : "? to hole";
 
                     string nameLabel = player.PlayerId.PlayerName;
-                    string infoLabel = $"{Mathf.RoundToInt(distFromMe)}m away  ·  {holeStr}";
+                    string infoLabel;
+                    if (inCart)
+                    {
+                        infoLabel = $"{Mathf.RoundToInt(distFromMe)}m away  ·  In a golf cart";
+                    }
+                    else
+                    {
+                        string holeStr = holePos.HasValue
+                            ? $"{Mathf.RoundToInt(Vector3.Distance(holePos.Value, player.transform.position))}m to hole"
+                            : "? to hole";
+                        infoLabel = $"{Mathf.RoundToInt(distFromMe)}m away  ·  {holeStr}";
+                    }
 
                     float btnY = cy + (RowHeight - ButtonH) * 0.5f;
 
@@ -213,10 +222,11 @@ namespace IssaPlugin.Overlays
                         _subStyle
                     );
 
+                    GUI.enabled = !inCart;
                     if (
                         GUI.Button(
                             new Rect(px + Padding + labelW + 8f, btnY, ButtonW, ButtonH),
-                            "SWAP",
+                            inCart ? "In cart" : "SWAP",
                             _swapBtnStyle
                         )
                     )
@@ -230,6 +240,7 @@ namespace IssaPlugin.Overlays
                             _isChooserOpen = false;
                         }
                     }
+                    GUI.enabled = true;
 
                     cy += RowHeight;
                 }
