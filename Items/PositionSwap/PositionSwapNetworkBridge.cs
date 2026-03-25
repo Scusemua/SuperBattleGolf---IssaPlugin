@@ -142,8 +142,8 @@ namespace IssaPlugin.Items
             {
                 InitiatorNetId = netId,
                 TargetNetId = targetInventory.netId,
-                InitiatorNewPosition = targetOldPos,
-                TargetNewPosition = initiatorOldPos,
+                InitiatorDestination = targetOldPos,
+                TargetDestination = initiatorOldPos,
             });
 
             IssaPluginPlugin.Log.LogInfo(
@@ -193,7 +193,7 @@ namespace IssaPlugin.Items
         {
             PositionSwapOverlay.Instance?.OnSwapExecuted(msg.InitiatorNetId, msg.TargetNetId);
             DestroyWarningOrbs(msg.InitiatorNetId);
-            SpawnSmokeAtPositions(msg.InitiatorNewPosition, msg.TargetNewPosition);
+            SpawnSmokeAtPositions(msg.InitiatorDestination, msg.TargetDestination);
         }
 
         public static void HandleCancelled(PositionSwapCancelledMessage msg)
