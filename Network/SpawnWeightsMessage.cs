@@ -10,13 +10,13 @@ namespace IssaPlugin.Network
 
         public Dictionary<int, float> ItemSpawnWeights;
 
-        public readonly string ToString(SpawnWeightsMessage msg)
+        public override string ToString()
         {
             string s = $"CustomItemSpawnsEnabled={CustomItemSpawnsEnabled} ";
-            foreach (var (itemType, spawnWeight) in msg.ItemSpawnWeights)
+            foreach (var (itemType, spawnWeight) in ItemSpawnWeights)
             {
                 CustomItemDefinition itemDef = ItemRegistry.CustomItemDefinitionMap[itemType];
-                s += $"{itemDef.DisplayName}={msg.ItemSpawnWeights[itemType]}";
+                s += $"{itemDef.DisplayName}={ItemSpawnWeights[itemType]}";
             }
 
             return s;
