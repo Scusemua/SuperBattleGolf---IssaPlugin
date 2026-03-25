@@ -48,7 +48,8 @@ namespace IssaPlugin
             if (_cachedItemSpawnWeights == null)
             {
                 _cachedItemSpawnWeights = new Dictionary<int, float>();
-            } else
+            }
+            else
             {
                 _cachedItemSpawnWeights.Clear();
             }
@@ -124,8 +125,8 @@ namespace IssaPlugin
 
             foreach (var (itemType, spawnWeight) in msg.ItemSpawnWeights)
             {
-                CustomItemDefinition itemDef = ItemRegistry.CustomItemDefinitionMap[itemType];
-                itemDef.SpawnWeight = spawnWeight;
+                if (ItemRegistry.CustomItemDefinitionMap.TryGetValue(itemType, out var itemDef))
+                    itemDef.SpawnWeight = spawnWeight;
             }
 
             IssaPluginPlugin.Log.LogDebug($"[SpawnWeights] Received from host: {msg.ToString()}");
