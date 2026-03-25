@@ -259,6 +259,7 @@ namespace IssaPlugin
         public static ConfigEntry<float> AK47Inaccuracy { get; private set; }
         public static ConfigEntry<float> AK47MaxAimingDistance { get; private set; }
         public static ConfigEntry<float> AK47MaxShotDistance { get; private set; }
+
         // public static ConfigEntry<float> AK47Recoil { get; private set; }
 
         // --- Position Swap ---
@@ -425,14 +426,14 @@ namespace IssaPlugin
             BomberAltitude = cfg.Bind(
                 "StealthBomber",
                 "Altitude",
-                50f,
+                60f,
                 "Height above the map the bombing run flies at."
             );
 
             BomberSpeed = cfg.Bind(
                 "StealthBomber",
                 "Speed",
-                40f,
+                35f,
                 "Speed of the bombing run in units per second."
             );
 
@@ -453,8 +454,11 @@ namespace IssaPlugin
             BomberSpread = cfg.Bind(
                 "StealthBomber",
                 "Spread",
-                5f,
-                "Random lateral spread in units for each rocket's drop position."
+                25f,
+                new ConfigDescription(
+                    "Random lateral spread in units for each rocket's drop position.",
+                    new AcceptableValueRange<float>(25f, 100f)
+                )
             );
 
             BomberUses = cfg.Bind(
