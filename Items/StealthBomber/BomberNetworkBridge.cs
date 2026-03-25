@@ -18,6 +18,9 @@ namespace IssaPlugin.Items
         /// True on the server while this player's bombing coroutine is running.
         private bool _isBombing;
 
+        // Cached so OnDestroy can check ownership after Mirror has torn down network state.
+        private bool _wasOwned;
+
         /// <summary>
         /// Set by CmdPrepareBomberRocket when the owning client has the bomber
         /// locked on. Consumed by RocketHomingPatch when the next rocket spawns.
@@ -204,6 +207,25 @@ namespace IssaPlugin.Items
 
             var crashBehavior = visual.AddComponent<BomberCrashBehaviour>();
             crashBehavior.Rigidbody = rb;
+        }
+
+        // ── Disconnect / destroy cleanup ─────────────────────────────────────
+
+        public override void OnStartClient()
+        {
+            _wasOwned = isOwned;
+        }
+
+        public override void OnStopClient()
+        {
+            if (isOwned)
+                StealthBomberItem.CancelTargeting();
+        }
+
+        private void OnDestroy()
+        {
+            if (_wasOwned)
+                StealthBomberItem.CancelTargeting();
         }
 
         // ── Hole transition cleanup ───────────────────────────────────────────
