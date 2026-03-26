@@ -1,0 +1,1 @@
+This installer will automatically install or update the IssaMod mod/plugin for Super Battle Golf. Note that you should already have BepinEx installed, as this installer expects this to be the case, and it will not install BepinEx itself for you.
