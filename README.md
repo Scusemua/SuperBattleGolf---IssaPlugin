@@ -2,7 +2,7 @@
 
 <img src="icon.png" width="256" height="256" />
 
-Adds **15 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
+Adds **16 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
 
 To download and/or install the mod, please check out the GitHub releases or the mod's [ThunderStore page](https://thunderstore.io/c/super-battle-golf/p/TeamScusemua/IssaMod/).
 
@@ -52,6 +52,9 @@ Plants a destructible brick wall wherever you're standing. Useful for blocking s
 
 ### 🔫 AK-47
 A rapid-fire sub-machine gun. Hold the fire button and spray bullets downrange at high speed. Each bullet hits independently, so sustained fire on a target adds up fast. Accuracy degrades with range, so this one rewards getting close.
+
+### 🔄 Position Swap
+Pick any other player from the chooser overlay. Warning orbs appear above both of you while a short countdown runs -- then you swap positions in a burst of smoke. Great for dumping someone into a bad lie or pulling yourself out of one. Can't be used on players sitting in a golf cart.
 
 ---
 
