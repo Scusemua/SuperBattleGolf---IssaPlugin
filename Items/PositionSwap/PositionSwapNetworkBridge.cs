@@ -153,7 +153,7 @@ namespace IssaPlugin.Items
                 NetworkServer.SendToAll(new PositionSwapCancelledMessage
                 {
                     InitiatorNetId = netId,
-                    CancelReason = PositionSwapCancelReason.TargetEnteredGolfCart,
+                    CancelReason = PositionSwapCancelReason.PlayerEnteredGolfCart,
                 });
                 _isServerRoutineActive = false;
                 _serverRoutine = null;

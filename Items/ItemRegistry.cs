@@ -319,5 +319,37 @@ namespace IssaPlugin.Items
             );
             return true;
         }
+
+        /// <summary>
+        /// Server handler for <see cref="GiveItemRequestMessage"/>.
+        /// Registered by NetworkManagerPatches on the server.
+        /// Validates the hotkey-giving configuration flag, resolves use count, and
+        /// adds the requested item to the requesting player's inventory.
+        /// </summary>
+        internal static void ServerHandleGiveItemRequest(
+            NetworkConnectionToClient conn,
+            GiveItemRequestMessage msg
+        )
+        {
+            if (!Configuration.AllowHotkeyItemGiving.Value)
+            {
+                IssaPluginPlugin.Log.LogInfo(
+                    "[GiveItem] Rejected hotkey request: AllowHotkeyItemGiving is disabled."
+                );
+                return;
+            }
+
+            var inventory = conn.identity?.GetComponent<PlayerInventory>();
+            if (inventory == null)
+                return;
+
+            var def = GetDefinition(msg.ItemType);
+            int uses = msg.Uses > 0 ? msg.Uses : (def?.MaxUses ?? 1);
+            bool added = DirectAddCustomItem(inventory, msg.ItemType, uses);
+            if (!added)
+                IssaPluginPlugin.Log.LogWarning(
+                    "[GiveItem] Failed to add item (inventory full?)."
+                );
+        }
     }
 }

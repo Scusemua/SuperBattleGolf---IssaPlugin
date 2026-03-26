@@ -113,12 +113,12 @@ namespace IssaPlugin.Patches
 
             // ------------------------
             // ---- AC130 Messages ----
-            NetworkClient.RegisterHandler<AC130SoundMessage>(AC130MessageHandlers.HandleAC130Sound);
+            NetworkClient.RegisterHandler<AC130SoundMessage>(AC130NetworkBridge.HandleAC130Sound);
             Writer<AC130SoundMessage>.write = AC130SoundMessageSerialization.WriteAC130SoundMessage;
             Reader<AC130SoundMessage>.read = AC130SoundMessageSerialization.ReadAC130SoundMessage;
 
             NetworkClient.RegisterHandler<AC130MaydayVfxMessage>(
-                AC130MessageHandlers.HandleAC130MaydayVfx
+                AC130NetworkBridge.HandleAC130MaydayVfx
             );
             Writer<AC130MaydayVfxMessage>.write =
                 AC130MaydayVfxMessageSerialization.WriteAC130MaydayVfxMessage;
@@ -126,7 +126,7 @@ namespace IssaPlugin.Patches
                 AC130MaydayVfxMessageSerialization.ReadAC130MaydayVfxMessage;
 
             NetworkClient.RegisterHandler<AC130DamagedMessage>(
-                AC130MessageHandlers.HandleAC130Damaged
+                AC130NetworkBridge.HandleAC130Damaged
             );
             Writer<AC130DamagedMessage>.write =
                 AC130DamagedMessageSerialization.WriteAC130DamagedMessage;
@@ -134,7 +134,7 @@ namespace IssaPlugin.Patches
                 AC130DamagedMessageSerialization.ReadAC130DamagedMessage;
 
             NetworkClient.RegisterHandler<AC130MaydayImpactMessage>(
-                AC130MessageHandlers.HandleAC130MaydayImpact
+                AC130NetworkBridge.HandleAC130MaydayImpact
             );
             Writer<AC130MaydayImpactMessage>.write =
                 AC130MaydayImpactMessageSerialization.WriteAC130MaydayImpactMessage;
@@ -151,7 +151,7 @@ namespace IssaPlugin.Patches
             // Client → Server: register on the server only.
             if (NetworkServer.active)
                 NetworkServer.RegisterHandler<DroppedItemPickupMessage>(
-                    DroppedItemMessageHandlers.HandleDroppedItemPickup
+                    DroppedCustomItem.ServerHandlePickupMessage
                 );
 
             // ── New Command replacements (client→server) ─────────────────────
@@ -538,7 +538,7 @@ namespace IssaPlugin.Patches
             Reader<JavelinRocketTrailMessage>.read =
                 JavelinRocketTrailMessageSerialization.ReadJavelinRocketTrailMessage;
             NetworkClient.RegisterHandler<JavelinRocketTrailMessage>(
-                JavelinMessageHandlers.HandleJavelinRocketTrail
+                JavelinNetworkBridge.HandleRocketTrailVfx
             );
 
             Writer<JavelinExplosionMessage>.write =
@@ -546,7 +546,7 @@ namespace IssaPlugin.Patches
             Reader<JavelinExplosionMessage>.read =
                 JavelinExplosionMessageSerialization.ReadJavelinExplosionMessage;
             NetworkClient.RegisterHandler<JavelinExplosionMessage>(
-                JavelinMessageHandlers.HandleJavelinExplosion
+                JavelinNetworkBridge.HandleExplosionVfx
             );
 
             // Server → Client
@@ -624,7 +624,7 @@ namespace IssaPlugin.Patches
             Reader<NukeExplosionMessage>.read =
                 NukeExplosionMessageSerialization.ReadNukeExplosionMessage;
             NetworkClient.RegisterHandler<NukeExplosionMessage>(
-                NukeMessageHandlers.HandleNukeExplosion
+                NukeNetworkBridge.HandleNukeExplosion
             );
 
             // ── BlackHoleGrenade Messages ─────────────────────────────────────
@@ -649,7 +649,7 @@ namespace IssaPlugin.Patches
             Reader<BlackHoleGrenadeLandedMessage>.read =
                 BlackHoleGrenadeLandedMessageSerialization.ReadBlackHoleGrenadeLandedMessage;
             NetworkClient.RegisterHandler<BlackHoleGrenadeLandedMessage>(
-                BlackHoleGrenadeMessageHandlers.HandleBlackHoleGrenadeLanded
+                BlackHoleGrenadeNetworkBridge.HandleBlackHoleGrenadeLanded
             );
 
             Writer<BlackHoleGrenadeSpitMessage>.write =
@@ -657,7 +657,7 @@ namespace IssaPlugin.Patches
             Reader<BlackHoleGrenadeSpitMessage>.read =
                 BlackHoleGrenadeSpitMessageSerialization.ReadBlackHoleGrenadeSpitMessage;
             NetworkClient.RegisterHandler<BlackHoleGrenadeSpitMessage>(
-                BlackHoleGrenadeMessageHandlers.HandleBlackHoleGrenadeSpit
+                BlackHoleGrenadeNetworkBridge.HandleBlackHoleGrenadeSpit
             );
 
             // ── PlaceableWall Messages ────────────────────────────────────────
@@ -684,7 +684,7 @@ namespace IssaPlugin.Patches
             Reader<WallDestroyedMessage>.read =
                 WallDestroyedMessageSerialization.ReadWallDestroyedMessage;
             NetworkClient.RegisterHandler<WallDestroyedMessage>(
-                PlaceableWallMessageHandlers.HandleWallDestroyed
+                PlaceableWallNetworkBridge.HandleWallDestroyed
             );
 
             // ── Spawn-weight sync (server → all clients) ─────────────────────
@@ -754,79 +754,9 @@ namespace IssaPlugin.Patches
             Reader<BearSwingHitMessage>.read =
                 BearSwingHitMessageSerialization.ReadBearSwingHitMessage;
             if (NetworkServer.active)
-            {
                 NetworkServer.RegisterHandler<BearSwingHitMessage>(
-                    (conn, msg) =>
-                    {
-                        var playerInfo = conn.identity?.GetComponent<PlayerInfo>();
-                        if (playerInfo == null)
-                            return;
-
-                        if (
-                            !NetworkServer.spawned.TryGetValue(msg.BearNetId, out var bearNi)
-                            || bearNi == null
-                        )
-                            return;
-
-                        var receiver = bearNi.GetComponent<BearHitReceiver>();
-                        if (receiver == null)
-                            return;
-
-                        // Generous range check — the bear may have moved a little
-                        // between the client's detection and the server receiving the message.
-                        float dist = Vector3.Distance(
-                            playerInfo.transform.position,
-                            bearNi.transform.position
-                        );
-                        if (dist > Configuration.BearMeleeHitRange.Value * 4f)
-                            return;
-
-                        // Record this (player, bear) pair so OnFinishedSwinging doesn't
-                        // double-hit the same bear for the same swing.
-                        if (
-                            !GolfClubBearHitPatch._swingHitPairs.Add(
-                                (playerInfo, receiver.gameObject)
-                            )
-                        )
-                            return; // duplicate message for the same bear this swing
-
-                        bool isBat =
-                            playerInfo.Inventory?.GetEffectivelyEquippedItem(true)
-                            == ItemRegistry.BaseballBatItemType;
-
-                        float damage = isBat
-                            ? Configuration.BearDamageBaseballBat.Value
-                            : Configuration.BearDamageGolfClub.Value;
-
-                        float knockbackForce = isBat
-                            ? Configuration.BearBatKnockbackForce.Value
-                            : Configuration.BearMeleeKnockbackForce.Value;
-
-                        Vector3 knockDir = (
-                            bearNi.transform.position - playerInfo.transform.position
-                        ).normalized;
-                        knockDir = (knockDir + Vector3.up * 0.5f).normalized;
-
-                        BearExplosionAttackerContext.CurrentAttacker = playerInfo;
-                        receiver.DealDamage(damage);
-                        BearExplosionAttackerContext.CurrentAttacker = null;
-                        receiver.Behaviour?.ApplyMeleeKnockback(knockDir, knockbackForce);
-
-                        NetworkServer.SendToAll(
-                            new BearHitVfxMessage
-                            {
-                                HitPoint = bearNi.transform.position + Vector3.up * 1f,
-                                AttackerOrigin = playerInfo.transform.position,
-                            }
-                        );
-
-                        IssaPluginPlugin.Log.LogInfo(
-                            $"[Bear] Hit by swing (client-reported) "
-                                + $"from {playerInfo.PlayerId.PlayerName} for {damage} damage."
-                        );
-                    }
+                    BearNetworkBridge.ServerHandleSwingHit
                 );
-            }
 
             // ── Server → All Clients ─────────────────────────────────────────────────
 
@@ -938,19 +868,17 @@ namespace IssaPlugin.Patches
                 HarrierBeginClientMessageSerialization.WriteHarrierBeginClientMessage;
             Reader<HarrierBeginClientMessage>.read =
                 HarrierBeginClientMessageSerialization.ReadHarrierBeginClientMessage;
-            NetworkClient.RegisterHandler<HarrierBeginClientMessage>(msg =>
-            {
-                HarrierNetworkBridge.ClientHandleBegin(msg);
-            });
+            NetworkClient.RegisterHandler<HarrierBeginClientMessage>(
+                HarrierNetworkBridge.ClientHandleBegin
+            );
 
             Writer<HarrierEndClientMessage>.write =
                 HarrierEndClientMessageSerialization.WriteHarrierEndClientMessage;
             Reader<HarrierEndClientMessage>.read =
                 HarrierEndClientMessageSerialization.ReadHarrierEndClientMessage;
-            NetworkClient.RegisterHandler<HarrierEndClientMessage>(msg =>
-            {
-                HarrierNetworkBridge.ClientHandleEnd(msg);
-            });
+            NetworkClient.RegisterHandler<HarrierEndClientMessage>(
+                HarrierNetworkBridge.ClientHandleEnd
+            );
 
             Writer<HarrierShotDownMessage>.write =
                 HarrierShotDownMessageSerialization.WriteHarrierShotDownMessage;
@@ -1044,32 +972,7 @@ namespace IssaPlugin.Patches
                 GiveItemRequestMessageSerialization.ReadGiveItemRequestMessage;
             if (NetworkServer.active)
                 NetworkServer.RegisterHandler<GiveItemRequestMessage>(
-                    (conn, msg) =>
-                    {
-                        if (!Configuration.AllowHotkeyItemGiving.Value)
-                        {
-                            IssaPluginPlugin.Log.LogInfo(
-                                "[GiveItem] Rejected hotkey request: AllowHotkeyItemGiving is disabled."
-                            );
-                            return;
-                        }
-
-                        var inventory = conn.identity?.GetComponent<PlayerInventory>();
-                        if (inventory == null)
-                            return;
-
-                        var def = ItemRegistry.GetDefinition(msg.ItemType);
-                        int uses = msg.Uses > 0 ? msg.Uses : (def?.MaxUses ?? 1);
-                        bool added = ItemRegistry.DirectAddCustomItem(
-                            inventory,
-                            msg.ItemType,
-                            uses
-                        );
-                        if (!added)
-                            IssaPluginPlugin.Log.LogWarning(
-                                "[GiveItem] Failed to add item (inventory full?)."
-                            );
-                    }
+                    ItemRegistry.ServerHandleGiveItemRequest
                 );
         }
 
@@ -1129,7 +1032,6 @@ namespace IssaPlugin.Patches
             );
         }
 
-        // Registration delegates point into AC130MessageHandlers below.
     }
 
     /// Resets the registration flag when the client disconnects so that all
@@ -1144,290 +1046,4 @@ namespace IssaPlugin.Patches
         static void Postfix() => NetworkManagerRegisterPrefabsPatch.ResetRegistration();
     }
 
-    /// AC130 NetworkMessage handlers — kept in a separate (non-patch) class so
-    /// the Harmony analyser does not misidentify the 'msg' parameters as patch
-    /// parameters and emit false Harmony003 warnings.
-    static class AC130MessageHandlers
-    {
-        internal static void HandleAC130Sound(AC130SoundMessage msg)
-        {
-            var clip = AssetLoader.AC130AboveClip;
-            if (clip == null)
-            {
-                IssaPluginPlugin.Log.LogWarning("[AC130] Audio clip not loaded.");
-                return;
-            }
-
-            var go = new GameObject("AC130_Sound");
-            var src = go.AddComponent<AudioSource>();
-            src.clip = clip;
-            src.spatialBlend = 0f;
-            src.volume = 1f;
-            src.Play();
-            Object.Destroy(go, clip.length + 0.1f);
-        }
-
-        internal static void HandleAC130MaydayVfx(AC130MaydayVfxMessage msg)
-        {
-            // Skip for the owning client — TargetBeginMayday handles the cockpit path.
-            // All other clients get the external smoke/fire mayday behaviour here.
-            var localBridge = NetworkClient.localPlayer?.GetComponent<AC130NetworkBridge>();
-            if (localBridge != null && localBridge.LocalSessionActive)
-                return;
-
-            if (!NetworkClient.spawned.TryGetValue(msg.GunshipNetId, out var ni) || ni == null)
-                return;
-
-            var gunship = ni.gameObject;
-            if (gunship.GetComponent<AC130MaydayBehaviour>() == null)
-            {
-                var mayday = gunship.AddComponent<AC130MaydayBehaviour>();
-                mayday.IsLocalPlayer = false;
-                mayday.OrbitCenter =
-                    gunship.GetComponent<AC130FlyBehaviour>()?.orbitCenter ?? Vector3.zero;
-            }
-        }
-
-        internal static void HandleAC130Damaged(AC130DamagedMessage msg)
-        {
-            if (AssetLoader.MaydaySmokeTrailPrefab == null)
-                return;
-
-            if (!NetworkClient.spawned.TryGetValue(msg.GunshipNetId, out var ni) || ni == null)
-                return;
-
-            IssaPluginPlugin.Log.LogInfo("[AC130] Spawning damage smoke trail.");
-            var smoke = Object.Instantiate(
-                AssetLoader.MaydaySmokeTrailPrefab,
-                ni.transform.position,
-                Quaternion.identity
-            );
-            smoke.transform.SetParent(ni.transform, worldPositionStays: true);
-        }
-
-        internal static void HandleAC130MaydayImpact(AC130MaydayImpactMessage msg)
-        {
-            float duration = Configuration.AC130MaydayExplosionDuration.Value;
-
-            if (AssetLoader.MaydayExplosionVfxPrefab != null)
-            {
-                var vfxGo = Object.Instantiate(
-                    AssetLoader.MaydayExplosionVfxPrefab,
-                    msg.ImpactPos,
-                    Quaternion.identity
-                );
-                Object.Destroy(vfxGo, duration);
-            }
-            else
-            {
-                VfxManager.PlayPooledVfxLocalOnly(
-                    VfxType.RocketLauncherRocketExplosion,
-                    msg.ImpactPos,
-                    Quaternion.identity,
-                    Vector3.one * Configuration.AC130MaydayExplosionScale.Value
-                );
-            }
-
-            if (AssetLoader.ImpactVfxPrefab != null)
-            {
-                var debrisGo = Object.Instantiate(
-                    AssetLoader.ImpactVfxPrefab,
-                    msg.ImpactPos,
-                    Quaternion.identity
-                );
-                Object.Destroy(debrisGo, duration);
-            }
-
-            CameraModuleController.Shake(
-                GameManager.CameraGameplaySettings.RocketExplosionScreenshakeSettings,
-                msg.ImpactPos
-            );
-        }
-    }
-
-    /// Javelin NetworkMessage handlers — kept in a separate (non-patch) class so
-    /// the Harmony analyser does not misidentify the 'msg' parameters as patch parameters.
-    static class JavelinMessageHandlers
-    {
-        internal static void HandleJavelinRocketTrail(JavelinRocketTrailMessage msg)
-        {
-            if (AssetLoader.JavelinTrailVfxPrefab == null)
-                return;
-
-            if (!NetworkClient.spawned.TryGetValue(msg.RocketNetId, out var ni) || ni == null)
-                return;
-
-            var trail = Object.Instantiate(
-                AssetLoader.JavelinTrailVfxPrefab,
-                ni.transform.position,
-                ni.transform.rotation
-            );
-            trail.transform.SetParent(ni.transform, worldPositionStays: false);
-            trail.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
-
-            var detacher = ni.gameObject.AddComponent<JavelinRocketTrailDetacher>();
-            detacher.TrailRoot = trail.transform;
-        }
-
-        internal static void HandleJavelinExplosion(JavelinExplosionMessage msg)
-        {
-            if (AssetLoader.JavelinExplosionVfxPrefab == null)
-                return;
-
-            var vfx = Object.Instantiate(
-                AssetLoader.JavelinExplosionVfxPrefab,
-                msg.Position,
-                Quaternion.identity
-            );
-            Object.Destroy(vfx, Configuration.JavelinExplosionVfxDuration.Value);
-        }
-    }
-
-    /// Nuke NetworkMessage handlers — kept in a separate (non-patch) class so
-    /// the Harmony analyser does not misidentify the 'msg' parameters as patch parameters.
-    static class NukeMessageHandlers
-    {
-        internal static void HandleNukeExplosion(NukeExplosionMessage msg)
-        {
-            // Explosion VFX — reuse the nuke fire prefab already in the bundle.
-            if (AssetLoader.NukeExplosionVfxPrefab != null)
-            {
-                var vfx = Object.Instantiate(
-                    AssetLoader.NukeExplosionVfxPrefab,
-                    msg.Position,
-                    Quaternion.identity
-                );
-                vfx.transform.localScale = Vector3.one * msg.NukeExplosionVfxScale;
-                Object.Destroy(vfx, Configuration.NukeExplosionVfxDuration.Value);
-            }
-            else
-            {
-                // Fallback to the pooled rocket explosion if the prefab isn't loaded.
-                VfxManager.PlayPooledVfxLocalOnly(
-                    VfxType.RocketLauncherRocketExplosion,
-                    msg.Position,
-                    Quaternion.identity,
-                    Vector3.one * msg.NukeExplosionVfxScale
-                );
-            }
-
-            // Impact sound.
-            if (AssetLoader.NukeExplosionClip != null)
-            {
-                var go = new GameObject("Nuke_Sound");
-                var src = go.AddComponent<AudioSource>();
-                src.clip = AssetLoader.NukeExplosionClip;
-                src.spatialBlend = 0f;
-                src.volume = 1f;
-                src.Play();
-                Object.Destroy(go, AssetLoader.NukeExplosionClip.length + 0.1f);
-            }
-
-            CameraModuleController.Shake(
-                GameManager.CameraGameplaySettings.RocketExplosionScreenshakeSettings,
-                msg.Position
-            );
-
-            // Sky blast — apply the impulse and register the knockout on the local
-            // player.  Each client runs this for themselves so TryKnockOut can call
-            // CmdInformKnockedOut back to the server (a [Command] must originate from
-            // the owning client).
-            var localInfo = GameManager.LocalPlayerInfo;
-            if (localInfo == null)
-                return;
-
-            if (Configuration.NukeExcludeThrower.Value && localInfo == msg.ThrowerInfo)
-                return;
-
-            var movement = localInfo.Movement;
-            var rb = localInfo.GetComponentInParent<Rigidbody>();
-            if (movement == null || rb == null)
-                return;
-
-            Vector3 toPlayer = movement.transform.position - msg.Position;
-            Vector3 horizontal = new Vector3(toPlayer.x, 0f, toPlayer.z).normalized;
-            Vector3 blastDir = Vector3
-                .Lerp(horizontal, Vector3.up, msg.SkyBlastVerticalBias)
-                .normalized;
-            Vector3 velocityChange = blastDir * msg.SkyBlastForce;
-
-            rb.AddForce(velocityChange, ForceMode.VelocityChange);
-
-            bool _;
-            movement.TryKnockOut(
-                msg.ThrowerInfo,
-                KnockoutType.Rocket,
-                false, // isLegSweep
-                movement.transform.InverseTransformPoint(msg.Position), // localOrigin
-                toPlayer.magnitude, // distance
-                velocityChange, // used for unground check
-                false, // ignores electromagnetic shield
-                msg.ItemUseId,
-                false, // fromSpecialState
-                true, // canFallbackToUnground
-                out _
-            );
-
-            // Give players a speed boost.
-            var playerMovement = GameManager.LocalPlayerMovement;
-            if (playerMovement != null)
-            {
-                movement.StartCoroutine(ApplyCoffeeMovementSpeed(movement));
-            }
-        }
-
-        internal static IEnumerator ApplyCoffeeMovementSpeed(PlayerMovement movement)
-        {
-            yield return new WaitForSeconds(3);
-            movement.InformDrankCoffee();
-            movement.InformDrankCoffee();
-            movement.InformDrankCoffee();
-        }
-    }
-
-    /// DroppedItem NetworkMessage handlers — kept in a separate (non-patch) class so
-    /// the Harmony analyser does not misidentify the 'msg' parameters as patch parameters.
-    static class DroppedItemMessageHandlers
-    {
-        internal static void HandleDroppedItemPickup(
-            NetworkConnectionToClient conn,
-            DroppedItemPickupMessage msg
-        )
-        {
-            if (!NetworkServer.spawned.TryGetValue(msg.DroppedItemNetId, out var ni) || ni == null)
-                return;
-
-            var item = ni.gameObject.GetComponent<DroppedCustomItem>();
-            var inventory = conn.identity?.GetComponent<PlayerInventory>();
-            if (item == null || inventory == null)
-                return;
-
-            item.ServerPickup(inventory);
-        }
-    }
-
-    /// PlaceableWall NetworkMessage handlers — kept in a separate (non-patch) class so
-    /// the Harmony analyser does not misidentify the 'msg' parameters as patch parameters.
-    static class PlaceableWallMessageHandlers
-    {
-        internal static void HandleWallDestroyed(WallDestroyedMessage msg)
-        {
-            PlaceableWallNetworkBridge.HandleWallDestroyed(msg);
-        }
-    }
-
-    /// BlackHoleGrenade NetworkMessage handlers — kept in a separate (non-patch) class so
-    /// the Harmony analyser does not misidentify the 'msg' parameters as patch parameters.
-    static class BlackHoleGrenadeMessageHandlers
-    {
-        internal static void HandleBlackHoleGrenadeLanded(BlackHoleGrenadeLandedMessage msg)
-        {
-            BlackHoleGrenadeNetworkBridge.HandleBlackHoleGrenadeLanded(msg);
-        }
-
-        internal static void HandleBlackHoleGrenadeSpit(BlackHoleGrenadeSpitMessage msg)
-        {
-            BlackHoleGrenadeNetworkBridge.HandleBlackHoleGrenadeSpit(msg);
-        }
-    }
 }

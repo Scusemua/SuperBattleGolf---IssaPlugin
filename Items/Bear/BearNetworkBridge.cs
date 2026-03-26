@@ -28,6 +28,15 @@ namespace IssaPlugin.Items
     {
         // ── Server state ──────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Per-player record of bears already hit via <see cref="BearSwingHitMessage"/>
+        /// during the current swing.  Keyed by (PlayerInfo, bear GameObject) so
+        /// concurrent swings by different players do not interfere.
+        /// Populated by <see cref="ServerHandleSwingHit"/>; cleared per-player by
+        /// GolfClubBearHitPatch in BearWeaponHitPatches on OnFinishedSwinging.
+        /// </summary>
+        internal static readonly HashSet<(PlayerInfo, GameObject)> SwingHitPairs = [];
+
         private readonly List<GameObject> _activeBears = new List<GameObject>();
         private bool _serverSessionActive;
         private Coroutine _serverTimeout;
@@ -306,6 +315,76 @@ namespace IssaPlugin.Items
         public static void HandleBearOverlayEnd(BearOverlayEndMessage msg)
         {
             IssaPlugin.Overlays.BearOverlay.Instance?.Deactivate();
+        }
+
+        // ── Server message handlers ───────────────────────────────────────────
+
+        /// <summary>
+        /// Server handler for <see cref="BearSwingHitMessage"/>.
+        /// Validates proximity, deduplicates per-swing hits via <see cref="SwingHitPairs"/>,
+        /// applies damage and knockback, and broadcasts the hit VFX to all clients.
+        /// </summary>
+        internal static void ServerHandleSwingHit(
+            NetworkConnectionToClient conn,
+            BearSwingHitMessage msg
+        )
+        {
+            var playerInfo = conn.identity?.GetComponent<PlayerInfo>();
+            if (playerInfo == null)
+                return;
+
+            if (!NetworkServer.spawned.TryGetValue(msg.BearNetId, out var bearNi) || bearNi == null)
+                return;
+
+            var receiver = bearNi.GetComponent<BearHitReceiver>();
+            if (receiver == null)
+                return;
+
+            // Generous range check — the bear may have moved a little
+            // between the client's detection and the server receiving the message.
+            float dist = Vector3.Distance(playerInfo.transform.position, bearNi.transform.position);
+            if (dist > Configuration.BearMeleeHitRange.Value * 4f)
+                return;
+
+            // Record this (player, bear) pair so OnFinishedSwinging doesn't
+            // double-hit the same bear for the same swing.
+            if (!SwingHitPairs.Add((playerInfo, receiver.gameObject)))
+                return; // duplicate message for the same bear this swing
+
+            bool isBat =
+                playerInfo.Inventory?.GetEffectivelyEquippedItem(true)
+                == ItemRegistry.BaseballBatItemType;
+
+            float damage = isBat
+                ? Configuration.BearDamageBaseballBat.Value
+                : Configuration.BearDamageGolfClub.Value;
+
+            float knockbackForce = isBat
+                ? Configuration.BearBatKnockbackForce.Value
+                : Configuration.BearMeleeKnockbackForce.Value;
+
+            Vector3 knockDir = (
+                bearNi.transform.position - playerInfo.transform.position
+            ).normalized;
+            knockDir = (knockDir + Vector3.up * 0.5f).normalized;
+
+            BearExplosionAttackerContext.CurrentAttacker = playerInfo;
+            receiver.DealDamage(damage);
+            BearExplosionAttackerContext.CurrentAttacker = null;
+            receiver.Behaviour?.ApplyMeleeKnockback(knockDir, knockbackForce);
+
+            NetworkServer.SendToAll(
+                new BearHitVfxMessage
+                {
+                    HitPoint = bearNi.transform.position + Vector3.up * 1f,
+                    AttackerOrigin = playerInfo.transform.position,
+                }
+            );
+
+            IssaPluginPlugin.Log.LogInfo(
+                $"[Bear] Hit by swing (client-reported) "
+                    + $"from {playerInfo.PlayerId.PlayerName} for {damage} damage."
+            );
         }
 
         // ── Helpers ───────────────────────────────────────────────────────────

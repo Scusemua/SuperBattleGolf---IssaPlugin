@@ -114,6 +114,24 @@ namespace IssaPlugin.Items
             NetworkClient.Send(new DroppedItemPickupMessage { DroppedItemNetId = ni.netId });
         }
 
+        /// Server handler for <see cref="DroppedItemPickupMessage"/>.
+        /// Registered by NetworkManagerPatches on the server.
+        internal static void ServerHandlePickupMessage(
+            NetworkConnectionToClient conn,
+            DroppedItemPickupMessage msg
+        )
+        {
+            if (!NetworkServer.spawned.TryGetValue(msg.DroppedItemNetId, out var ni) || ni == null)
+                return;
+
+            var item = ni.gameObject.GetComponent<DroppedCustomItem>();
+            var inventory = conn.identity?.GetComponent<PlayerInventory>();
+            if (item == null || inventory == null)
+                return;
+
+            item.ServerPickup(inventory);
+        }
+
         /// Called by the server handler registered in NetworkManagerPatches.
         public void ServerPickup(PlayerInventory player)
         {

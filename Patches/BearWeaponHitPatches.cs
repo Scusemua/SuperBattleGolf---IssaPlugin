@@ -154,15 +154,6 @@ namespace IssaPlugin.Patches
     [HarmonyPatch(typeof(PlayerGolfer), "OnFinishedSwinging")]
     static class GolfClubBearHitPatch
     {
-        /// <summary>
-        /// Per-player record of bears already hit via <see cref="BearSwingHitMessage"/>
-        /// during the current swing.  Keyed by (PlayerInfo, bear GameObject) so
-        /// concurrent swings by different players do not interfere.
-        /// Populated by the <see cref="BearSwingHitMessage"/> server handler in
-        /// <see cref="NetworkManagerPatches"/>; cleared here per-player.
-        /// </summary>
-        internal static readonly HashSet<(PlayerInfo, GameObject)> _swingHitPairs = [];
-
         static void Postfix(PlayerGolfer __instance)
         {
             if (!NetworkServer.active)
@@ -171,13 +162,13 @@ namespace IssaPlugin.Patches
             var playerInfo = __instance.PlayerInfo;
             if (playerInfo == null)
             {
-                _swingHitPairs.Clear();
+                BearNetworkBridge.SwingHitPairs.Clear();
                 return;
             }
 
             // Build the per-player skip set from the shared hit-pairs table.
             var skipSet = new HashSet<GameObject>();
-            foreach (var pair in _swingHitPairs)
+            foreach (var pair in BearNetworkBridge.SwingHitPairs)
                 if (pair.Item1 == playerInfo)
                     skipSet.Add(pair.Item2);
 
@@ -188,7 +179,7 @@ namespace IssaPlugin.Patches
             );
 
             // Clear this player's entries so the next swing starts clean.
-            _swingHitPairs.RemoveWhere(pair => pair.Item1 == playerInfo);
+            BearNetworkBridge.SwingHitPairs.RemoveWhere(pair => pair.Item1 == playerInfo);
         }
     }
 

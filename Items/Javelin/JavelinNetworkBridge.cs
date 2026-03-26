@@ -285,6 +285,43 @@ namespace IssaPlugin.Items
         }
 
         // ================================================================
+        //  NetworkMessage handlers (registered by NetworkManagerPatches)
+        // ================================================================
+
+        internal static void HandleRocketTrailVfx(JavelinRocketTrailMessage msg)
+        {
+            if (AssetLoader.JavelinTrailVfxPrefab == null)
+                return;
+
+            if (!NetworkClient.spawned.TryGetValue(msg.RocketNetId, out var ni) || ni == null)
+                return;
+
+            var trail = Instantiate(
+                AssetLoader.JavelinTrailVfxPrefab,
+                ni.transform.position,
+                ni.transform.rotation
+            );
+            trail.transform.SetParent(ni.transform, worldPositionStays: false);
+            trail.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+
+            var detacher = ni.gameObject.AddComponent<JavelinRocketTrailDetacher>();
+            detacher.TrailRoot = trail.transform;
+        }
+
+        internal static void HandleExplosionVfx(JavelinExplosionMessage msg)
+        {
+            if (AssetLoader.JavelinExplosionVfxPrefab == null)
+                return;
+
+            var vfx = Instantiate(
+                AssetLoader.JavelinExplosionVfxPrefab,
+                msg.Position,
+                Quaternion.identity
+            );
+            Destroy(vfx, Configuration.JavelinExplosionVfxDuration.Value);
+        }
+
+        // ================================================================
         //  Helpers
         // ================================================================
 
