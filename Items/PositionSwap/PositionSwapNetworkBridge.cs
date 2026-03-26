@@ -160,6 +160,38 @@ namespace IssaPlugin.Items
                 yield break;
             }
 
+
+            // Pre-validate that we can deliver teleports to both players before committing.
+            // For non-local players the connectionToClient must be present; if either is
+            // missing we cancel the whole swap so it is always all-or-nothing.
+            var targetBridge = targetInventory.GetComponent<PositionSwapNetworkBridge>();
+            if (targetBridge == null)
+            {
+                IssaPluginPlugin.Log.LogWarning("[PositionSwap] Target lost its NetworkBridge before swap could execute.");
+                NetworkServer.SendToAll(new PositionSwapCancelledMessage { InitiatorNetId = netId });
+                _isServerRoutineActive = false;
+                _serverRoutine = null;
+                yield break;
+            }
+
+            if (!isLocalPlayer && connectionToClient == null)
+            {
+                IssaPluginPlugin.Log.LogWarning("[PositionSwap] Initiator connection lost before swap could execute.");
+                NetworkServer.SendToAll(new PositionSwapCancelledMessage { InitiatorNetId = netId });
+                _isServerRoutineActive = false;
+                _serverRoutine = null;
+                yield break;
+            }
+
+            if (!targetBridge.isLocalPlayer && targetBridge.connectionToClient == null)
+            {
+                IssaPluginPlugin.Log.LogWarning("[PositionSwap] Target connection lost before swap could execute.");
+                NetworkServer.SendToAll(new PositionSwapCancelledMessage { InitiatorNetId = netId });
+                _isServerRoutineActive = false;
+                _serverRoutine = null;
+                yield break;
+            }
+
             // Use Rigidbody.position for both — consistent with what Movement.Teleport() uses.
             Vector3 initiatorOldPos = initiatorInfo.Rigidbody.position;
             Vector3 targetOldPos = targetInfo.Rigidbody.position;
@@ -172,18 +204,25 @@ namespace IssaPlugin.Items
             // Tell each affected client to warp their own character controller.
             // For the listen-server host, connectionToClient.Send() may not invoke the
             // registered client handler; call HandleTeleport directly instead.
+            // Connections were pre-validated above so these sends are unconditional.
             if (isLocalPlayer)
-                HandleTeleport(new PositionSwapTeleportMessage { NewPosition = targetOldPos });
-            else
-                connectionToClient?.Send(new PositionSwapTeleportMessage { NewPosition = targetOldPos });
-
-            var targetBridge = targetInventory.GetComponent<PositionSwapNetworkBridge>();
-            if (targetBridge != null)
             {
-                if (targetBridge.isLocalPlayer)
-                    HandleTeleport(new PositionSwapTeleportMessage { NewPosition = initiatorOldPos });
-                else
-                    targetBridge.connectionToClient?.Send(new PositionSwapTeleportMessage { NewPosition = initiatorOldPos });
+                HandleTeleport(new PositionSwapTeleportMessage { NewPosition = targetOldPos });
+            }
+            else
+            {
+                connectionToClient?.Send(new PositionSwapTeleportMessage { NewPosition = targetOldPos });
+            }
+                
+
+            // var targetBridge = targetInventory.GetComponent<PositionSwapNetworkBridge>();
+            if (targetBridge.isLocalPlayer)
+            {
+                HandleTeleport(new PositionSwapTeleportMessage { NewPosition = initiatorOldPos });
+            }
+            else
+            {
+                targetBridge.connectionToClient.Send(new PositionSwapTeleportMessage { NewPosition = initiatorOldPos });
             }
 
             // Broadcast the execute event so all clients can play VFX and close UI.
