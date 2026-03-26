@@ -142,9 +142,9 @@ namespace IssaPlugin.Overlays
             _isChooserOpen = false;
             _isPendingSwap = false;
 
-            if (reason == PositionSwapCancelReason.TargetEnteredGolfCart)
+            if (reason == PositionSwapCancelReason.PlayerEnteredGolfCart)
             {
-                _cancelNotification = "Swap cancelled — target got in a golf cart";
+                _cancelNotification = "Swap cancelled — user or arget got in a golf cart";
                 _cancelNotificationTimer = 3f;
             }
         }

@@ -125,7 +125,7 @@ namespace IssaPlugin.Items
     public enum PositionSwapCancelReason : byte
     {
         Generic = 0,
-        TargetEnteredGolfCart = 1,
+        PlayerEnteredGolfCart = 1,
     }
 
     /// Server → All clients: swap was cancelled before it could execute.
