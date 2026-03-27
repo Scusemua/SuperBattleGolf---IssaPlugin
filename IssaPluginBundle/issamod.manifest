@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 829862743
+CRC: 879597552
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: a80fa836d732ba3505fcd6ce32311dfd
+    Hash: 16982134b07d01ba9f0aa5369bcc1679
   TypeTreeHash:
     serializedVersion: 2
     Hash: 12d32a6d7b1bccbbbbab418431dfa151
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 6c268a333b4cb95800b5ceafcf2936c8
+    Hash: 2f96fab210586ccf23fe512d3a2491d3
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -90,6 +90,7 @@ Assets:
 - Assets/Assets/ac130_tablet.prefab
 - Assets/Assets/warning_particle.prefab
 - Assets/Assets/donut_icon.png
+- Assets/Assets/red_bull_trail.prefab
 - Assets/Assets/redbull_icon.png
 - Assets/Assets/ak47.prefab
 - Assets/Assets/poison_bottle_icon.png
