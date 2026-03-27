@@ -1,6 +1,6 @@
 # IssaMod
 
-Adds **17 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
+Adds **18 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
 
 For more information as well as the mod's source code, please see [the mod's GitHub repository](https://github.com/Scusemua/SuperBattleGolf---IssaPlugin/).
 
@@ -56,6 +56,9 @@ Pick any other player from the chooser overlay. Warning circle appear around bot
 
 ### 🧪 Poison Jar
 Lob a jar of poison with an arc preview. On landing it shatters and douses anyone within the blast radius -- including you, if your aim is bad. Poisoned players suffer a full screen of visual distortion: camera roll, FOV breathing, double vision, and aim drift that makes lining up a shot genuinely difficult. The radius and duration are both configurable, so you can turn it into a small precise splash or a wide lingering cloud.
+
+### 🛸 Drone Swarm
+Deploys a swarm of kamikaze drones that fan out overhead and circle the course. Each drone flies independently with erratic noise-driven steering, then picks a random target and dives. They home in continuously until they get close, then lock their aim point and fly straight -- so a target that moves fast enough can actually dodge. The swarm size scales with the number of players in the match. A HUD counter shows how many drones are still airborne. Session ends when every drone has either detonated or the time limit expires.
 
 ---
 
