@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 616687938
+CRC: 2315106161
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 801f8152ee406a046c0ad987f8ec23c0
+    Hash: fa996b21f5299da8566e37bd3a0a0a7e
   TypeTreeHash:
     serializedVersion: 2
     Hash: 82d52513d6b19822b87b688cdb5147d6
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 526be9b5b9c1249e5eff0a6e8c450b61
+    Hash: 562a67bc43200df397df195556f802b8
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -141,19 +141,19 @@ Assets:
 - Assets/Assets/uzi_icon_v2.png
 - Assets/Assets/sports_car_handheld.prefab
 - Assets/Assets/gravity_remote_icon.png
-- Assets/Assets/poison_vfx.prefab
+- Assets/Assets/black_hole.prefab
 - Assets/Assets/sniper_rifle_icon.png
 - Assets/Assets/freeze_effect_icon.png
 - Assets/Blink/Art/Animals/Stylized/Bear/Bear_Prefabs/Bear_4.prefab
 - Assets/Assets/DroppedCustomItem.prefab
 - Assets/Assets/smoke_prefab.prefab
-- Assets/Assets/black_hole.prefab
 - Assets/Assets/sniper_scope.png
 - Assets/Assets/Brass.mat
 - Assets/Assets/nuclear_bomb.prefab
 - Assets/Assets/posion_bottle.prefab
 - Assets/Assets/sports_car_icon.png
 - Assets/Assets/black_hole_grenade.prefab
+- Assets/Assets/poison_cloud_vfx.prefab
 - Assets/Assets/harrier_icon.png
 - Assets/Assets/spike_ball_icon.png
 - Assets/Assets/ac130_tablet_model.prefab

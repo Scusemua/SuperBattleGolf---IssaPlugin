@@ -538,7 +538,7 @@ namespace IssaPlugin.Items
                 DisableRigidbody(PoisonJarPrefab);
             }
 
-            PoisonSplashPrefab = Load<GameObject>("poison_vfx.prefab");
+            PoisonSplashPrefab = Load<GameObject>("poison_cloud_vfx.prefab");
             if (PoisonSplashPrefab != null)
                 StripNetworkComponents(PoisonSplashPrefab);
         }

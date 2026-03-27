@@ -360,6 +360,11 @@ namespace IssaPlugin
         public static ConfigEntry<float> PoisonTintBaseAlpha { get; private set; }
         public static ConfigEntry<float> PoisonTintPulseAmp { get; private set; }
         public static ConfigEntry<float> PoisonTintPulseFreq { get; private set; }
+        public static ConfigEntry<bool> PoisonAimNoiseEnabled { get; private set; }
+        public static ConfigEntry<float> PoisonAimNoiseYawAmp { get; private set; }
+        public static ConfigEntry<float> PoisonAimNoiseYawFreq { get; private set; }
+        public static ConfigEntry<float> PoisonAimNoisePitchAmp { get; private set; }
+        public static ConfigEntry<float> PoisonAimNoisePitchFreq { get; private set; }
 
         // --- Item Warnings ---
         public static ConfigEntry<bool> WarningsEnabled { get; private set; }
@@ -2450,6 +2455,36 @@ namespace IssaPlugin
                 "TintPulseFreq",
                 3f,
                 "Full-screen tint pulse frequency (Hz)."
+            );
+            PoisonAimNoiseEnabled = cfg.Bind(
+                "PoisonOverlay",
+                "AimNoiseEnabled",
+                true,
+                "If true, adds sinusoidal yaw and pitch drift to make aiming harder while poisoned."
+            );
+            PoisonAimNoiseYawAmp = cfg.Bind(
+                "PoisonOverlay",
+                "AimNoiseYawAmp",
+                2.5f,
+                "Yaw (horizontal) aim drift amplitude in degrees."
+            );
+            PoisonAimNoiseYawFreq = cfg.Bind(
+                "PoisonOverlay",
+                "AimNoiseYawFreq",
+                0.8f,
+                "Yaw aim drift frequency in Hz."
+            );
+            PoisonAimNoisePitchAmp = cfg.Bind(
+                "PoisonOverlay",
+                "AimNoisePitchAmp",
+                1.5f,
+                "Pitch (vertical) aim drift amplitude in degrees."
+            );
+            PoisonAimNoisePitchFreq = cfg.Bind(
+                "PoisonOverlay",
+                "AimNoisePitchFreq",
+                1.1f,
+                "Pitch aim drift frequency in Hz."
             );
         }
     }

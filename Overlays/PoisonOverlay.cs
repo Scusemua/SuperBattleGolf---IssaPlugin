@@ -134,6 +134,19 @@ namespace IssaPlugin.Overlays
 
             Vector3 euler = cam.transform.eulerAngles;
             euler.z = roll;
+
+            // Aim noise — yaw and pitch drift make aiming harder while poisoned.
+            // Phase offset (1.3 rad) keeps pitch and yaw from peaking at the same time.
+            if (Configuration.PoisonAimNoiseEnabled.Value)
+            {
+                euler.y +=
+                    Mathf.Sin(_time * Configuration.PoisonAimNoiseYawFreq.Value)
+                    * Configuration.PoisonAimNoiseYawAmp.Value;
+                euler.x +=
+                    Mathf.Sin(_time * Configuration.PoisonAimNoisePitchFreq.Value + 1.3f)
+                    * Configuration.PoisonAimNoisePitchAmp.Value;
+            }
+
             cam.transform.eulerAngles = euler;
 
             // FOV breathing
