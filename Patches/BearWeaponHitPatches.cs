@@ -148,7 +148,7 @@ namespace IssaPlugin.Patches
     /// range after the hit window closed).
     ///
     /// Skips any bear that was already hit via a <see cref="BearSwingHitMessage"/>
-    /// this swing (tracked per-player in <see cref="_swingHitPairs"/>), then
+    /// this swing (tracked per-player in <see cref="BearNetworkBridge.SwingHitPairs"/>), then
     /// clears those entries so the next swing starts fresh.
     /// </summary>
     [HarmonyPatch(typeof(PlayerGolfer), "OnFinishedSwinging")]

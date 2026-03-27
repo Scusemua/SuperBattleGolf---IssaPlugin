@@ -31,6 +31,8 @@ namespace IssaPlugin.Items
         // ── Internal references ───────────────────────────────────────────────
 
         private Rigidbody _rb;
+        private Animator _animator;
+        private BearAnimatorDriver _animatorDriver;
         private BearTargetSelector _selector;
         private NetworkIdentity _ni;
 
@@ -67,6 +69,21 @@ namespace IssaPlugin.Items
         // suction range.  Prevents MoveInDirection from overwriting the applied force.
         private float _blackHoleSuppressedUntil;
 
+        // ── Kinematic movement ────────────────────────────────────────────────
+        // The bear uses a kinematic Rigidbody during normal AI states so it blocks
+        // players without imparting the velocity-based forces that a dynamic body
+        // would. We switch to dynamic only for physics-driven states (Stunned, Dying,
+        // Dead, black-hole suction) so AddForce still works for knockback.
+
+        /// XZ velocity commanded by MoveInDirection this tick; applied by ApplyKinematicPosition.
+        private Vector3 _kinematicVelocity;
+
+        /// Manually accumulated Y velocity (simulates gravity while kinematic).
+        private float _yVelocity;
+
+        /// Reusable raycast buffer — avoids per-frame heap allocation.
+        private static readonly RaycastHit[] _groundHitBuffer = new RaycastHit[8];
+
         // ── Unity lifecycle ───────────────────────────────────────────────────
 
         private void Start()
@@ -79,30 +96,21 @@ namespace IssaPlugin.Items
             }
 
             _rb = GetComponent<Rigidbody>();
+            _animator = GetComponent<Animator>();
+            _animatorDriver = GetComponent<BearAnimatorDriver>();
             _ni = GetComponent<NetworkIdentity>();
             _selector = new BearTargetSelector();
 
             _obstacleMask = LayerMask.GetMask("Default", "Terrain");
 
-            // Rigidbody setup: we drive velocity manually each FixedUpdate
-            _rb.isKinematic = false;
-            _rb.useGravity = true;
-            _rb.freezeRotation = true; // we rotate the transform directly
+            // Rigidbody setup: kinematic by default so the bear acts as a solid
+            // blocker without imparting its velocity onto players via physics.
+            // We switch to dynamic in UpdateKinematicMode() for physics-driven
+            // states (Stunned, Dying, Dead, black-hole suction).
+            _rb.isKinematic = true;
+            _rb.useGravity = false;
+            _rb.freezeRotation = true;
             _rb.interpolation = RigidbodyInterpolation.Interpolate;
-
-            // Dynamic Rigidbodies require convex mesh colliders; force convex on all of them.
-            // foreach (var mc in GetComponentsInChildren<MeshCollider>())
-            //     mc.convex = true;
-
-            // Prevent physical bear↔player collisions. PlayerMovement.OnCollisionEnter calls
-            // Entity.GetNetworkedPointVelocity on whatever it touches while ragdolling, which
-            // NREs on bears because they have no Entity component. Bears deal damage only via
-            // ApplyAttackHit, not through physics contact.
-            var bearColliders = GetComponentsInChildren<Collider>();
-            foreach (var player in GetActivePlayers())
-            foreach (var pc in player.GetComponentsInChildren<Collider>())
-            foreach (var bc in bearColliders)
-                Physics.IgnoreCollision(bc, pc, true);
 
             // Aggro notification is handled directly via OnHitByExplosion —
             // no separate event subscription needed.
@@ -118,7 +126,103 @@ namespace IssaPlugin.Items
 
             _stateTimer -= Time.fixedDeltaTime;
 
+            UpdateKinematicMode();
             UpdateStateMachine();
+            ApplyKinematicPosition();
+        }
+
+        /// <summary>
+        /// Switches the Rigidbody between kinematic and dynamic based on the current
+        /// AI state and whether a black hole is active.
+        ///
+        ///   Kinematic: normal movement states — bear is a solid blocker that cannot
+        ///              impart its velocity onto players as a collision force.
+        ///   Dynamic:   Stunned / Dying / Dead / black-hole — AddForce must work for
+        ///              melee knockback, explosion impulses, and suction physics.
+        /// </summary>
+        private void UpdateKinematicMode()
+        {
+            bool needsDynamic =
+                Time.fixedTime < _blackHoleSuppressedUntil
+                || _state == BearAIState.Stunned
+                || _state == BearAIState.Dying
+                || _state == BearAIState.Dead;
+
+            if (_rb.isKinematic == needsDynamic) // need to flip
+            {
+                if (needsDynamic)
+                {
+                    // kinematic → dynamic: hand off manual Y velocity to physics
+                    _rb.isKinematic = false;
+                    _rb.useGravity = true;
+                    _rb.linearVelocity = new Vector3(0f, _yVelocity, 0f);
+                }
+                else
+                {
+                    // dynamic → kinematic: capture current Y so we continue smoothly
+                    _yVelocity = _rb.linearVelocity.y;
+                    _rb.linearVelocity = Vector3.zero;
+                    _rb.isKinematic = true;
+                    _rb.useGravity = false;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Applies the XZ velocity set by MoveInDirection plus manual gravity to the
+        /// kinematic Rigidbody in a single MovePosition call per physics tick.
+        /// A downward raycast snaps the bear to the ground when grounded so it
+        /// doesn't hover above uneven terrain.
+        /// Self-colliders are filtered from the raycast results so the bear never
+        /// treats its own collider as the ground surface.
+        /// No-op when the Rigidbody is dynamic (physics handles it directly).
+        /// </summary>
+        private void ApplyKinematicPosition()
+        {
+            if (!_rb.isKinematic)
+                return;
+
+            // Accumulate gravity
+            _yVelocity += Physics.gravity.y * Time.fixedDeltaTime;
+
+            // Ground check — filter out the bear's own colliders
+            float targetY = _rb.position.y + _yVelocity * Time.fixedDeltaTime;
+
+            Vector3 origin = _rb.position + Vector3.up;
+            int hitCount = Physics.RaycastNonAlloc(
+                origin,
+                Vector3.down,
+                _groundHitBuffer,
+                1.5f,
+                _obstacleMask
+            );
+
+            float bestDist = float.MaxValue;
+            for (int i = 0; i < hitCount; i++)
+            {
+                ref RaycastHit h = ref _groundHitBuffer[i];
+                if (h.collider.transform.IsChildOf(transform))
+                    continue;
+                if (h.distance < bestDist)
+                {
+                    bestDist = h.distance;
+                    if (_rb.position.y <= h.point.y + 0.05f)
+                    {
+                        targetY = h.point.y;
+                        if (_yVelocity < 0f)
+                            _yVelocity = 0f;
+                    }
+                }
+            }
+
+            _rb.MovePosition(
+                new Vector3(
+                    _rb.position.x + _kinematicVelocity.x * Time.fixedDeltaTime,
+                    targetY,
+                    _rb.position.z + _kinematicVelocity.z * Time.fixedDeltaTime
+                )
+            );
+            _kinematicVelocity = Vector3.zero;
         }
 
         // ── State machine ─────────────────────────────────────────────────────
@@ -410,47 +514,13 @@ namespace IssaPlugin.Items
         }
 
         /// <summary>
-        /// Moves the bear in the given direction at the given speed, projecting
-        /// the velocity onto the terrain surface so the bear follows slopes.
-        /// Also applies gentle downward force to stay grounded.
+        /// Orients the bear toward <paramref name="worldDir"/> and stores the desired
+        /// XZ velocity for this tick. The actual position update is deferred to
+        /// <see cref="ApplyKinematicPosition"/> so the single MovePosition call combines
+        /// XZ movement with the gravity/ground-snap Y update.
         /// </summary>
         private void MoveInDirection(Vector3 worldDir, float speed)
         {
-            const float GroundCheckLift = 0.5f;
-            const float GroundCheckDist = 4f;
-
-            Vector3 moveVelocity = worldDir * speed;
-
-            // Project onto terrain surface to follow slopes naturally
-            if (
-                Physics.Raycast(
-                    transform.position + Vector3.up * GroundCheckLift,
-                    Vector3.down,
-                    out RaycastHit hit,
-                    GroundCheckDist,
-                    ItemHelper.GroundLayerMask
-                )
-            )
-            {
-                Vector3 surfaceDir = Vector3.ProjectOnPlane(worldDir, hit.normal).normalized;
-                moveVelocity = surfaceDir * speed;
-
-                // Use the full projected velocity — including its Y component — so the
-                // bear actually climbs slopes. The old snap-to-ground yVel replaced Y
-                // with ~0 every frame, which cancelled the uphill component entirely.
-                _rb.linearVelocity = moveVelocity;
-            }
-            else
-            {
-                // Airborne: preserve gravity-driven Y velocity
-                _rb.linearVelocity = new Vector3(
-                    moveVelocity.x,
-                    _rb.linearVelocity.y,
-                    moveVelocity.z
-                );
-            }
-
-            // Smoothly rotate to face movement direction
             if (worldDir.sqrMagnitude > 0.01f)
             {
                 Quaternion targetRot = Quaternion.LookRotation(worldDir, Vector3.up);
@@ -460,6 +530,8 @@ namespace IssaPlugin.Items
                     Configuration.BearTurnSpeed.Value * Time.fixedDeltaTime
                 );
             }
+
+            _kinematicVelocity = worldDir * speed;
         }
 
         /// <summary>
@@ -573,10 +645,9 @@ namespace IssaPlugin.Items
             // Use BearNetworkBridge (a NetworkBehaviour) — the canonical, hierarchy-safe
             // way to reach a player's connection in this codebase.
             var summConn = SummonerInfo.GetComponent<BearNetworkBridge>()?.connectionToClient;
-            summConn?.Send(new HitNotificationMessage
-            {
-                Message = $"Bear hit {target.PlayerId.PlayerName}!"
-            });
+            summConn?.Send(
+                new HitNotificationMessage { Message = $"Bear hit {target.PlayerId.PlayerName}!" }
+            );
         }
 
         // ── External events ───────────────────────────────────────────────────
@@ -590,6 +661,16 @@ namespace IssaPlugin.Items
         {
             if (_rb == null || _destroying)
                 return;
+
+            // AddForce requires a dynamic Rigidbody. TransitionTo(Stunned) has already
+            // been called before this method, but UpdateKinematicMode won't run until
+            // the next FixedUpdate, so we flip it immediately here.
+            if (_rb.isKinematic)
+            {
+                _rb.isKinematic = false;
+                _rb.useGravity = true;
+                _rb.linearVelocity = new Vector3(0f, _yVelocity, 0f);
+            }
 
             _rb.AddForce(direction * force, ForceMode.Impulse);
         }
@@ -620,6 +701,16 @@ namespace IssaPlugin.Items
             // Two fixed ticks ahead prevents a gap if the black hole's FixedUpdate
             // runs just before ours in the same frame.
             _blackHoleSuppressedUntil = Time.fixedTime + Time.fixedDeltaTime * 2f;
+
+            // The black hole calls AddForce on our Rigidbody BEFORE calling this method,
+            // so we must flip to dynamic immediately — UpdateKinematicMode won't run
+            // until our next FixedUpdate.
+            if (_rb != null && _rb.isKinematic)
+            {
+                _rb.isKinematic = false;
+                _rb.useGravity = true;
+                _rb.linearVelocity = new Vector3(0f, _yVelocity, 0f);
+            }
         }
 
         /// <summary>
@@ -713,6 +804,13 @@ namespace IssaPlugin.Items
                     break;
             }
 
+            // Drive the server-side Animator so root motion plays the correct clip.
+            // Clients receive their own update via BroadcastState → HandleBearState.
+            _animatorDriver?.ApplyState(
+                newState,
+                _currentTarget != null ? _currentTarget.transform.position : Vector3.zero
+            );
+
             // Notify all clients of the state change
             BroadcastState();
         }
@@ -732,7 +830,9 @@ namespace IssaPlugin.Items
 
         private void ZeroVelocity()
         {
-            if (_rb != null)
+            _kinematicVelocity = Vector3.zero;
+            _yVelocity = 0f;
+            if (_rb != null && !_rb.isKinematic)
             {
                 _rb.linearVelocity = Vector3.zero;
                 _rb.angularVelocity = Vector3.zero;

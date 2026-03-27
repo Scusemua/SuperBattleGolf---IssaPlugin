@@ -160,7 +160,6 @@ namespace IssaPlugin.Items
                 yield break;
             }
 
-
             // Pre-validate that we can deliver teleports to both players before committing.
             // For non-local players the connectionToClient must be present; if either is
             // missing we cancel the whole swap so it is always all-or-nothing.
@@ -206,24 +205,14 @@ namespace IssaPlugin.Items
             // registered client handler; call HandleTeleport directly instead.
             // Connections were pre-validated above so these sends are unconditional.
             if (isLocalPlayer)
-            {
                 HandleTeleport(new PositionSwapTeleportMessage { NewPosition = targetOldPos });
-            }
             else
-            {
-                connectionToClient?.Send(new PositionSwapTeleportMessage { NewPosition = targetOldPos });
-            }
-                
+                connectionToClient.Send(new PositionSwapTeleportMessage { NewPosition = targetOldPos });
 
-            // var targetBridge = targetInventory.GetComponent<PositionSwapNetworkBridge>();
             if (targetBridge.isLocalPlayer)
-            {
                 HandleTeleport(new PositionSwapTeleportMessage { NewPosition = initiatorOldPos });
-            }
             else
-            {
                 targetBridge.connectionToClient.Send(new PositionSwapTeleportMessage { NewPosition = initiatorOldPos });
-            }
 
             // Broadcast the execute event so all clients can play VFX and close UI.
             NetworkServer.SendToAll(new PositionSwapExecuteMessage
