@@ -10,7 +10,8 @@ namespace IssaPlugin.Items
     ///   Release: GlobalSessionLock&lt;T&gt;.Release();
     ///   Holder:  GlobalSessionLock&lt;T&gt;.Holder?._someField
     /// </summary>
-    internal static class GlobalSessionLock<T> where T : class
+    internal static class GlobalSessionLock<T>
+        where T : class
     {
         private static bool _active;
         private static T _holder;
@@ -27,7 +28,8 @@ namespace IssaPlugin.Items
         /// </summary>
         public static bool TryAcquire(T instance)
         {
-            if (_active) return false;
+            if (_active)
+                return false;
             _active = true;
             _holder = instance;
             return true;
