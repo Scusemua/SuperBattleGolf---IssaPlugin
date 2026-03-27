@@ -80,6 +80,21 @@ namespace IssaPlugin.Items
         /// Model held while the Position Swap item is equipped.
         public static GameObject PositionSwapHandheldPrefab { get; private set; }
 
+        // --- Poison Jar ---
+        public static Sprite PoisonJarIcon { get; private set; }
+
+        /// The networked jar projectile. Bundle asset name: <c>poison_jar.prefab</c>
+        public static GameObject PoisonJarPrefab { get; private set; }
+
+        /// The model the player holds while the Poison Jar is equipped.
+        /// Bundle asset name: <c>poison_jar_handheld.prefab</c>
+        public static GameObject PoisonJarHandheldPrefab { get; private set; }
+
+        /// Local-only splash VFX instantiated on all clients when the jar lands.
+        /// Not networked — each client instantiates and destroys its own copy.
+        /// Bundle asset name: <c>poison_splash.prefab</c>
+        public static GameObject PoisonSplashPrefab { get; private set; }
+
         /// Local-only VFX parented to each player during the swap countdown.
         /// Bundle asset name: <c>position_swap_orb.prefab</c>
         public static GameObject PositionSwapOrbPrefab { get; private set; }
@@ -200,6 +215,7 @@ namespace IssaPlugin.Items
             LoadAK47Assets();
             LoadHarrierAssets();
             LoadPositionSwapAssets();
+            LoadPoisonJarAssets();
 
             IssaPluginPlugin.Log.LogInfo("[Assets] IssaPluginBundle loaded.");
         }
@@ -505,6 +521,26 @@ namespace IssaPlugin.Items
             PositionSwapSmokePrefab = Load<GameObject>("position_swap_smoke.prefab");
             if (PositionSwapSmokePrefab != null)
                 StripNetworkComponents(PositionSwapSmokePrefab);
+        }
+
+        private static void LoadPoisonJarAssets()
+        {
+            PoisonJarIcon = LoadSprite("poison_bottle_icon.png");
+
+            PoisonJarHandheldPrefab = Load<GameObject>("posion_bottle.prefab");
+            if (PoisonJarHandheldPrefab != null)
+                DisableRigidbody(PoisonJarHandheldPrefab);
+
+            PoisonJarPrefab = Load<GameObject>("posion_bottle.prefab");
+            if (PoisonJarPrefab != null)
+            {
+                EnsureNetworkIdentity(PoisonJarPrefab, 0xD001A501u);
+                DisableRigidbody(PoisonJarPrefab);
+            }
+
+            PoisonSplashPrefab = Load<GameObject>("poison_vfx.prefab");
+            if (PoisonSplashPrefab != null)
+                StripNetworkComponents(PoisonSplashPrefab);
         }
 
         /// Ensures a prefab has a NetworkIdentity with a stable assetId so Mirror

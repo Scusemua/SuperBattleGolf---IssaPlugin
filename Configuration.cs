@@ -328,29 +328,37 @@ namespace IssaPlugin
         public static ConfigEntry<bool> BearFriendlyFire { get; private set; }
         public static ConfigEntry<bool> BearAttackFinishedPlayers { get; private set; }
 
-        // --- Drunk Overlay ---
-        public static ConfigEntry<bool>  DrunkGhostEnabled { get; private set; }
-        public static ConfigEntry<float> DrunkGhostOffsetX { get; private set; }
-        public static ConfigEntry<float> DrunkGhostOffsetY { get; private set; }
-        public static ConfigEntry<float> DrunkGhostAlpha   { get; private set; }
-        public static ConfigEntry<float> DrunkRollFreq1 { get; private set; }
-        public static ConfigEntry<float> DrunkRollAmp1 { get; private set; }
-        public static ConfigEntry<float> DrunkRollFreq2 { get; private set; }
-        public static ConfigEntry<float> DrunkRollAmp2 { get; private set; }
-        public static ConfigEntry<float> DrunkRollFreq3 { get; private set; }
-        public static ConfigEntry<float> DrunkRollAmp3 { get; private set; }
-        public static ConfigEntry<float> DrunkFovFreq1 { get; private set; }
-        public static ConfigEntry<float> DrunkFovAmp1 { get; private set; }
-        public static ConfigEntry<float> DrunkFovFreq2 { get; private set; }
-        public static ConfigEntry<float> DrunkFovAmp2 { get; private set; }
-        public static ConfigEntry<float> DrunkVigPulseFreq1 { get; private set; }
-        public static ConfigEntry<float> DrunkVigPulseFreq2 { get; private set; }
-        public static ConfigEntry<float> DrunkVigBaseAlpha { get; private set; }
-        public static ConfigEntry<float> DrunkVigPulseAmp1 { get; private set; }
-        public static ConfigEntry<float> DrunkVigPulseAmp2 { get; private set; }
-        public static ConfigEntry<float> DrunkTintBaseAlpha { get; private set; }
-        public static ConfigEntry<float> DrunkTintPulseAmp { get; private set; }
-        public static ConfigEntry<float> DrunkTintPulseFreq { get; private set; }
+        // --- Poison Jar ---
+        public static ConfigEntry<float> PoisonJarUses { get; private set; }
+        public static ConfigEntry<float> PoisonJarSpawnWeight { get; private set; }
+        public static ConfigEntry<float> PoisonJarThrowSpeed { get; private set; }
+        public static ConfigEntry<float> PoisonJarLobAngle { get; private set; }
+        public static ConfigEntry<float> PoisonJarRadius { get; private set; }
+        public static ConfigEntry<float> PoisonJarDuration { get; private set; }
+
+        // --- Poison Overlay ---
+        public static ConfigEntry<bool> PoisonGhostEnabled { get; private set; }
+        public static ConfigEntry<float> PoisonGhostOffsetX { get; private set; }
+        public static ConfigEntry<float> PoisonGhostOffsetY { get; private set; }
+        public static ConfigEntry<float> PoisonGhostAlpha { get; private set; }
+        public static ConfigEntry<float> PoisonRollFreq1 { get; private set; }
+        public static ConfigEntry<float> PoisonRollAmp1 { get; private set; }
+        public static ConfigEntry<float> PoisonRollFreq2 { get; private set; }
+        public static ConfigEntry<float> PoisonRollAmp2 { get; private set; }
+        public static ConfigEntry<float> PoisonRollFreq3 { get; private set; }
+        public static ConfigEntry<float> PoisonRollAmp3 { get; private set; }
+        public static ConfigEntry<float> PoisonFovFreq1 { get; private set; }
+        public static ConfigEntry<float> PoisonFovAmp1 { get; private set; }
+        public static ConfigEntry<float> PoisonFovFreq2 { get; private set; }
+        public static ConfigEntry<float> PoisonFovAmp2 { get; private set; }
+        public static ConfigEntry<float> PoisonVigPulseFreq1 { get; private set; }
+        public static ConfigEntry<float> PoisonVigPulseFreq2 { get; private set; }
+        public static ConfigEntry<float> PoisonVigBaseAlpha { get; private set; }
+        public static ConfigEntry<float> PoisonVigPulseAmp1 { get; private set; }
+        public static ConfigEntry<float> PoisonVigPulseAmp2 { get; private set; }
+        public static ConfigEntry<float> PoisonTintBaseAlpha { get; private set; }
+        public static ConfigEntry<float> PoisonTintPulseAmp { get; private set; }
+        public static ConfigEntry<float> PoisonTintPulseFreq { get; private set; }
 
         // --- Item Warnings ---
         public static ConfigEntry<bool> WarningsEnabled { get; private set; }
@@ -2263,136 +2271,175 @@ namespace IssaPlugin
                 "Position Swap",
                 false
             );
+            RegWarn(cfg, ItemWarningEnabledEntries, 117, "PoisonJarWarning", "Poison Jar", false);
 
-            // ── Drunk Overlay ──────────────────────────────────────────────────
-            DrunkGhostEnabled = cfg.Bind(
-                "DrunkOverlay",
+            // ── Poison Jar ────────────────────────────────────────────────────────
+            PoisonJarUses = cfg.Bind(
+                "PoisonJar",
+                "Uses",
+                1f,
+                "Number of uses per Poison Jar pickup."
+            );
+            PoisonJarSpawnWeight = cfg.Bind(
+                "PoisonJar",
+                "SpawnWeight",
+                1.0f,
+                "Relative spawn weight for the Poison Jar in the item pool."
+            );
+            PoisonJarThrowSpeed = cfg.Bind(
+                "PoisonJar",
+                "ThrowSpeed",
+                18.0f,
+                "Initial throw speed in metres per second."
+            );
+            PoisonJarLobAngle = cfg.Bind(
+                "PoisonJar",
+                "LobAngle",
+                0.35f,
+                "Upward component added to the throw direction (0 = flat, 1 = 45° up)."
+            );
+            PoisonJarRadius = cfg.Bind(
+                "PoisonJar",
+                "Radius",
+                8.0f,
+                "Radius in metres of the poison AoE. Also scales the splash VFX."
+            );
+            PoisonJarDuration = cfg.Bind(
+                "PoisonJar",
+                "Duration",
+                12.0f,
+                "How long (seconds) the poison visual lasts on affected players."
+            );
+
+            // ── Poison Overlay ──────────────────────────────────────────────────
+            PoisonGhostEnabled = cfg.Bind(
+                "PoisonOverlay",
                 "GhostEnabled",
                 true,
                 "Enable the double-vision ghost image."
             );
-            DrunkGhostOffsetX = cfg.Bind(
-                "DrunkOverlay",
+            PoisonGhostOffsetX = cfg.Bind(
+                "PoisonOverlay",
                 "GhostOffsetX",
                 0.04f,
                 "Horizontal ghost offset as a fraction of screen width (e.g. 0.04 = 4%)."
             );
-            DrunkGhostOffsetY = cfg.Bind(
-                "DrunkOverlay",
+            PoisonGhostOffsetY = cfg.Bind(
+                "PoisonOverlay",
                 "GhostOffsetY",
                 0.01f,
                 "Vertical ghost offset as a fraction of screen height."
             );
-            DrunkGhostAlpha = cfg.Bind(
-                "DrunkOverlay",
+            PoisonGhostAlpha = cfg.Bind(
+                "PoisonOverlay",
                 "GhostAlpha",
                 0.35f,
                 "Opacity of the ghost image (0–1)."
             );
-            DrunkRollFreq1 = cfg.Bind(
-                "DrunkOverlay",
+            PoisonRollFreq1 = cfg.Bind(
+                "PoisonOverlay",
                 "RollFreq1",
                 1.0f,
                 "Primary lean frequency (Hz)."
             );
-            DrunkRollAmp1 = cfg.Bind(
-                "DrunkOverlay",
+            PoisonRollAmp1 = cfg.Bind(
+                "PoisonOverlay",
                 "RollAmp1",
                 4.5f,
                 "Primary lean amplitude (degrees)."
             );
-            DrunkRollFreq2 = cfg.Bind(
-                "DrunkOverlay",
+            PoisonRollFreq2 = cfg.Bind(
+                "PoisonOverlay",
                 "RollFreq2",
                 0.28f,
                 "Slow drift frequency (Hz)."
             );
-            DrunkRollAmp2 = cfg.Bind(
-                "DrunkOverlay",
+            PoisonRollAmp2 = cfg.Bind(
+                "PoisonOverlay",
                 "RollAmp2",
                 12f,
                 "Slow drift amplitude (degrees)."
             );
-            DrunkRollFreq3 = cfg.Bind(
-                "DrunkOverlay",
+            PoisonRollFreq3 = cfg.Bind(
+                "PoisonOverlay",
                 "RollFreq3",
                 1.35f,
                 "Subtle tremor frequency (Hz)."
             );
-            DrunkRollAmp3 = cfg.Bind(
-                "DrunkOverlay",
+            PoisonRollAmp3 = cfg.Bind(
+                "PoisonOverlay",
                 "RollAmp3",
                 5f,
                 "Subtle tremor amplitude (degrees)."
             );
-            DrunkFovFreq1 = cfg.Bind(
-                "DrunkOverlay",
+            PoisonFovFreq1 = cfg.Bind(
+                "PoisonOverlay",
                 "FovFreq1",
                 0.5f,
                 "Primary FOV breathing frequency (Hz)."
             );
-            DrunkFovAmp1 = cfg.Bind(
-                "DrunkOverlay",
+            PoisonFovAmp1 = cfg.Bind(
+                "PoisonOverlay",
                 "FovAmp1",
                 5f,
                 "Primary FOV breathing amplitude (degrees)."
             );
-            DrunkFovFreq2 = cfg.Bind(
-                "DrunkOverlay",
+            PoisonFovFreq2 = cfg.Bind(
+                "PoisonOverlay",
                 "FovFreq2",
                 1.2f,
                 "Secondary FOV breathing frequency (Hz)."
             );
-            DrunkFovAmp2 = cfg.Bind(
-                "DrunkOverlay",
+            PoisonFovAmp2 = cfg.Bind(
+                "PoisonOverlay",
                 "FovAmp2",
                 8f,
                 "Secondary FOV breathing amplitude (degrees)."
             );
-            DrunkVigPulseFreq1 = cfg.Bind(
-                "DrunkOverlay",
+            PoisonVigPulseFreq1 = cfg.Bind(
+                "PoisonOverlay",
                 "VigPulseFreq1",
                 1.2f,
                 "Vignette primary pulse frequency (Hz)."
             );
-            DrunkVigPulseFreq2 = cfg.Bind(
-                "DrunkOverlay",
+            PoisonVigPulseFreq2 = cfg.Bind(
+                "PoisonOverlay",
                 "VigPulseFreq2",
                 6f,
                 "Vignette secondary pulse frequency (Hz)."
             );
-            DrunkVigBaseAlpha = cfg.Bind(
-                "DrunkOverlay",
+            PoisonVigBaseAlpha = cfg.Bind(
+                "PoisonOverlay",
                 "VigBaseAlpha",
                 0.50f,
                 "Vignette base opacity (0–1)."
             );
-            DrunkVigPulseAmp1 = cfg.Bind(
-                "DrunkOverlay",
+            PoisonVigPulseAmp1 = cfg.Bind(
+                "PoisonOverlay",
                 "VigPulseAmp1",
                 0.15f,
                 "Vignette primary pulse amplitude."
             );
-            DrunkVigPulseAmp2 = cfg.Bind(
-                "DrunkOverlay",
+            PoisonVigPulseAmp2 = cfg.Bind(
+                "PoisonOverlay",
                 "VigPulseAmp2",
                 0.08f,
                 "Vignette secondary pulse amplitude."
             );
-            DrunkTintBaseAlpha = cfg.Bind(
-                "DrunkOverlay",
+            PoisonTintBaseAlpha = cfg.Bind(
+                "PoisonOverlay",
                 "TintBaseAlpha",
                 0.1f,
                 "Full-screen tint base opacity (0–1)."
             );
-            DrunkTintPulseAmp = cfg.Bind(
-                "DrunkOverlay",
+            PoisonTintPulseAmp = cfg.Bind(
+                "PoisonOverlay",
                 "TintPulseAmp",
                 0.05f,
                 "Full-screen tint pulse amplitude."
             );
-            DrunkTintPulseFreq = cfg.Bind(
-                "DrunkOverlay",
+            PoisonTintPulseFreq = cfg.Bind(
+                "PoisonOverlay",
                 "TintPulseFreq",
                 3f,
                 "Full-screen tint pulse frequency (Hz)."

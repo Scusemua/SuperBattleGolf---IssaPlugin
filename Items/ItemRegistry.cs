@@ -30,6 +30,7 @@ namespace IssaPlugin.Items
         public static readonly ItemType AK47ItemType = (ItemType)114;
         public static readonly ItemType HarrierItemType = (ItemType)115;
         public static readonly ItemType PositionSwapItemType = (ItemType)116;
+        public static readonly ItemType PoisonJarItemType = (ItemType)117;
 
         // Static initialization order note: AllItems is a static field initializer that only
         // instantiates the definition objects; it does not call any abstract members. Properties like
@@ -55,6 +56,7 @@ namespace IssaPlugin.Items
                 new AK47ItemDefinition(),
                 new HarrierItemDefinition(),
                 new PositionSwapItemDefinition(),
+                new PoisonJarItemDefinition(),
             };
 
         private static IReadOnlyDictionary<int, CustomItemDefinition> _customItemDefinitionMap;
@@ -347,9 +349,7 @@ namespace IssaPlugin.Items
             int uses = msg.Uses > 0 ? msg.Uses : (def?.MaxUses ?? 1);
             bool added = DirectAddCustomItem(inventory, msg.ItemType, uses);
             if (!added)
-                IssaPluginPlugin.Log.LogWarning(
-                    "[GiveItem] Failed to add item (inventory full?)."
-                );
+                IssaPluginPlugin.Log.LogWarning("[GiveItem] Failed to add item (inventory full?).");
         }
     }
 }

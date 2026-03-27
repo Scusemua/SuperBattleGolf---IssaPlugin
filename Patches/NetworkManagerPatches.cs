@@ -964,6 +964,27 @@ namespace IssaPlugin.Patches
                 PositionSwapNetworkBridge.HandleCancelled
             );
 
+            // ── Poison Jar ────────────────────────────────────────────────────────
+            Writer<PoisonJarThrowMessage>.write =
+                PoisonJarMessageSerialization.WritePoisonJarThrowMessage;
+            Reader<PoisonJarThrowMessage>.read =
+                PoisonJarMessageSerialization.ReadPoisonJarThrowMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<PoisonJarThrowMessage>(
+                    (conn, msg) =>
+                        conn
+                            .identity?.GetComponent<PoisonJarNetworkBridge>()
+                            ?.ServerHandleThrow(msg.ThrowOrigin, msg.ThrowVelocity)
+                );
+
+            Writer<PoisonJarLandedMessage>.write =
+                PoisonJarMessageSerialization.WritePoisonJarLandedMessage;
+            Reader<PoisonJarLandedMessage>.read =
+                PoisonJarMessageSerialization.ReadPoisonJarLandedMessage;
+            NetworkClient.RegisterHandler<PoisonJarLandedMessage>(
+                PoisonJarNetworkBridge.HandleLanded
+            );
+
             // ── Hotkey item-giving (Client → Server) ─────────────────────────────
             Writer<GiveItemRequestMessage>.write =
                 GiveItemRequestMessageSerialization.WriteGiveItemRequestMessage;
@@ -1001,6 +1022,7 @@ namespace IssaPlugin.Patches
             RegisterPrefab(AssetLoader.BlackHoleGrenadePrefab);
             RegisterPrefab(AssetLoader.WallPrefab);
             RegisterPrefab(AssetLoader.HarrierPrefab);
+            RegisterPrefab(AssetLoader.PoisonJarPrefab);
         }
 
         private static void RegisterPrefab(GameObject prefab)

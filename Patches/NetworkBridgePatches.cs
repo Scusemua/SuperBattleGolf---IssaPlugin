@@ -44,6 +44,8 @@ namespace IssaPlugin.Patches
                 __instance.gameObject.AddComponent<HarrierNetworkBridge>();
             if (!__instance.GetComponent<PositionSwapNetworkBridge>())
                 __instance.gameObject.AddComponent<PositionSwapNetworkBridge>();
+            if (!__instance.GetComponent<PoisonJarNetworkBridge>())
+                __instance.gameObject.AddComponent<PoisonJarNetworkBridge>();
 
             IssaPluginPlugin.Log.LogDebug(
                 "[Network] Bridge components injected onto player object."
