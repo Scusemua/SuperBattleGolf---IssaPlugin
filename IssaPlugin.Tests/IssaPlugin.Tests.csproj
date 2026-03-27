@@ -81,5 +81,10 @@
     <Reference Include="Unity.Localization">
       <HintPath>..\Assembly\Unity.Localization.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>..\Assembly\UnityEngine.CoreModule.dll</HintPath>
+      <Private>true</Private>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Reference>
   </ItemGroup>
 </Project>

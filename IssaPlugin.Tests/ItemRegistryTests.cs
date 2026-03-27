@@ -336,7 +336,7 @@ namespace IssaPlugin.Tests
             var pistolFallbackNames = new HashSet<string>
             {
                 "Baseball Bat",
-                "Sniper Rifle",
+                "M200 Intervention",
                 "AK47",
             };
 
