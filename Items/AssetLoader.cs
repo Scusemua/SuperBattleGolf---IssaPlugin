@@ -83,6 +83,13 @@ namespace IssaPlugin.Items
         // --- Poison Jar ---
         public static Sprite PoisonJarIcon { get; private set; }
 
+        // --- Red Bull ---
+        public static Sprite RedBullIcon { get; private set; }
+
+        /// The can the player holds while the Red Bull item is equipped.
+        /// Bundle asset name: <c>red_bull_can.prefab</c>
+        public static GameObject RedBullHandheldPrefab { get; private set; }
+
         // --- Drone Swarm ---
         public static Sprite DroneSwarmIcon { get; private set; }
 
@@ -240,6 +247,7 @@ namespace IssaPlugin.Items
             LoadPositionSwapAssets();
             LoadPoisonJarAssets();
             LoadDroneSwarmAssets();
+            LoadRedBullAssets();
 
             IssaPluginPlugin.Log.LogInfo("[Assets] IssaPluginBundle loaded.");
         }
@@ -371,12 +379,12 @@ namespace IssaPlugin.Items
         /// so the original .ogg/.wav path is never valid at runtime.
         private static void LoadAudioAndVfx()
         {
-            AC130AboveClip = Load<AudioClip>("ac130_above.ogg");
-            HomerunAudioClip = Load<AudioClip>("homerun.ogg");
+            // AC130AboveClip = Load<AudioClip>("ac130_above.ogg");
+            // HomerunAudioClip = Load<AudioClip>("homerun.ogg");
 
             // Mayday assets — optional until added to the bundle; all usage sites null-check.
-            MaydayAlarmClip = Load<AudioClip>("missile_locked.ogg");
-            MaydayImpactClip = Load<AudioClip>("etfx_explosion_nuke.wav");
+            // MaydayAlarmClip = Load<AudioClip>("missile_locked.ogg");
+            // MaydayImpactClip = Load<AudioClip>("etfx_explosion_nuke.wav");
             MaydaySmokeTrailPrefab = Load<GameObject>("smoke_prefab.prefab");
             MaydayFireTrailPrefab = Load<GameObject>("fire_torch_intense.prefab");
             MaydayExplosionVfxPrefab = Load<GameObject>("NukeVerticalExplosionFire.prefab");
@@ -587,6 +595,15 @@ namespace IssaPlugin.Items
             DroneExplosionVfxPrefab = Load<GameObject>("drone_explosion.prefab");
             if (DroneExplosionVfxPrefab != null)
                 StripNetworkComponents(DroneExplosionVfxPrefab);
+        }
+
+        private static void LoadRedBullAssets()
+        {
+            RedBullIcon = LoadSprite("redbull_icon.png");
+
+            RedBullHandheldPrefab = Load<GameObject>("redbull.prefab");
+            if (RedBullHandheldPrefab != null)
+                DisableRigidbody(RedBullHandheldPrefab);
         }
 
         /// Ensures a prefab has a NetworkIdentity with a stable assetId so Mirror

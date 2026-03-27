@@ -328,16 +328,16 @@ namespace IssaPlugin.Items
 
         public void ClientDonutStartShooting(Vector3 startPosition)
         {
-            var go = Object.Instantiate(
-                AssetLoader.DonutLaserZoneRed,
-                startPosition,
-                Quaternion.identity
-            );
+            // var go = Object.Instantiate(
+            //     AssetLoader.DonutLaserZoneRed,
+            //     startPosition,
+            //     Quaternion.identity
+            // );
 
             _localLaserUsesRemaining--;
             DonutOverlay.UpdateLaserUses(_localLaserUsesRemaining);
             DonutOverlay.TriggerLaserFlash();
-            Destroy(go, 3.0f); // Destroy after 3 seconds.
+            // Destroy(go, 3.0f); // Destroy after 3 seconds.
         }
 
         // ================================================================

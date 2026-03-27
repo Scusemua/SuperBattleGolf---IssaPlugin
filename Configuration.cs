@@ -351,6 +351,14 @@ namespace IssaPlugin
         public static ConfigEntry<bool> DroneAttackFinishedPlayers { get; private set; }
         public static ConfigEntry<float> DroneSwarmMaxSessionDuration { get; private set; }
 
+        // --- Red Bull ---
+        public static ConfigEntry<Key> RedBullGiveKey { get; private set; }
+        public static ConfigEntry<float> RedBullUses { get; private set; }
+        public static ConfigEntry<float> RedBullSpawnWeight { get; private set; }
+        public static ConfigEntry<float> RedBullDuration { get; private set; }
+        public static ConfigEntry<float> RedBullExtraSpeedMultiplier { get; private set; }
+        public static ConfigEntry<float> RedBullJumpBonus { get; private set; }
+
         // --- Poison Jar ---
         public static ConfigEntry<Key> PoisonJarGiveKey { get; private set; }
         public static ConfigEntry<float> PoisonJarUses { get; private set; }
@@ -2644,6 +2652,38 @@ namespace IssaPlugin
                 "MaxSessionDuration",
                 75f,
                 "Safety cap (seconds) after which any remaining drones are force-destroyed."
+            );
+
+            RedBullGiveKey = cfg.Bind(
+                "RedBull",
+                "GiveKey",
+                Key.NumpadMultiply,
+                "Hotkey to give yourself a Red Bull (debug/testing)."
+            );
+            RedBullUses = cfg.Bind("RedBull", "Uses", 1f, "Number of uses per Red Bull item.");
+            RedBullSpawnWeight = cfg.Bind(
+                "RedBull",
+                "SpawnWeight",
+                1f,
+                "Relative spawn weight for Red Bull in the item pool."
+            );
+            RedBullDuration = cfg.Bind(
+                "RedBull",
+                "Duration",
+                8f,
+                "How long the Red Bull speed and jump boost lasts (seconds)."
+            );
+            RedBullExtraSpeedMultiplier = cfg.Bind(
+                "RedBull",
+                "ExtraSpeedMultiplier",
+                1.5f,
+                "Additional speed multiplier applied on top of the coffee speed-boost factor while Red Bull is active."
+            );
+            RedBullJumpBonus = cfg.Bind(
+                "RedBull",
+                "JumpBonus",
+                3f,
+                "Extra upward velocity (m/s) added to each jump while Red Bull is active."
             );
         }
     }
