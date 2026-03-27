@@ -327,6 +327,26 @@ namespace IssaPlugin
         public static ConfigEntry<bool> BearFriendlyFire { get; private set; }
         public static ConfigEntry<bool> BearAttackFinishedPlayers { get; private set; }
 
+        // --- Drunk Overlay ---
+        public static ConfigEntry<float> DrunkRollFreq1 { get; private set; }
+        public static ConfigEntry<float> DrunkRollAmp1 { get; private set; }
+        public static ConfigEntry<float> DrunkRollFreq2 { get; private set; }
+        public static ConfigEntry<float> DrunkRollAmp2 { get; private set; }
+        public static ConfigEntry<float> DrunkRollFreq3 { get; private set; }
+        public static ConfigEntry<float> DrunkRollAmp3 { get; private set; }
+        public static ConfigEntry<float> DrunkFovFreq1 { get; private set; }
+        public static ConfigEntry<float> DrunkFovAmp1 { get; private set; }
+        public static ConfigEntry<float> DrunkFovFreq2 { get; private set; }
+        public static ConfigEntry<float> DrunkFovAmp2 { get; private set; }
+        public static ConfigEntry<float> DrunkVigPulseFreq1 { get; private set; }
+        public static ConfigEntry<float> DrunkVigPulseFreq2 { get; private set; }
+        public static ConfigEntry<float> DrunkVigBaseAlpha { get; private set; }
+        public static ConfigEntry<float> DrunkVigPulseAmp1 { get; private set; }
+        public static ConfigEntry<float> DrunkVigPulseAmp2 { get; private set; }
+        public static ConfigEntry<float> DrunkTintBaseAlpha { get; private set; }
+        public static ConfigEntry<float> DrunkTintPulseAmp { get; private set; }
+        public static ConfigEntry<float> DrunkTintPulseFreq { get; private set; }
+
         // --- Item Warnings ---
         public static ConfigEntry<bool> WarningsEnabled { get; private set; }
         public static ConfigEntry<float> WarningDuration { get; private set; }
@@ -2230,6 +2250,116 @@ namespace IssaPlugin
                 "PositionSwapWarning",
                 "Position Swap",
                 false
+            );
+
+            // ── Drunk Overlay ──────────────────────────────────────────────────
+            DrunkRollFreq1 = cfg.Bind(
+                "DrunkOverlay",
+                "RollFreq1",
+                1.0f,
+                "Primary lean frequency (Hz)."
+            );
+            DrunkRollAmp1 = cfg.Bind(
+                "DrunkOverlay",
+                "RollAmp1",
+                4.5f,
+                "Primary lean amplitude (degrees)."
+            );
+            DrunkRollFreq2 = cfg.Bind(
+                "DrunkOverlay",
+                "RollFreq2",
+                0.28f,
+                "Slow drift frequency (Hz)."
+            );
+            DrunkRollAmp2 = cfg.Bind(
+                "DrunkOverlay",
+                "RollAmp2",
+                12f,
+                "Slow drift amplitude (degrees)."
+            );
+            DrunkRollFreq3 = cfg.Bind(
+                "DrunkOverlay",
+                "RollFreq3",
+                1.35f,
+                "Subtle tremor frequency (Hz)."
+            );
+            DrunkRollAmp3 = cfg.Bind(
+                "DrunkOverlay",
+                "RollAmp3",
+                5f,
+                "Subtle tremor amplitude (degrees)."
+            );
+            DrunkFovFreq1 = cfg.Bind(
+                "DrunkOverlay",
+                "FovFreq1",
+                0.5f,
+                "Primary FOV breathing frequency (Hz)."
+            );
+            DrunkFovAmp1 = cfg.Bind(
+                "DrunkOverlay",
+                "FovAmp1",
+                5f,
+                "Primary FOV breathing amplitude (degrees)."
+            );
+            DrunkFovFreq2 = cfg.Bind(
+                "DrunkOverlay",
+                "FovFreq2",
+                1.2f,
+                "Secondary FOV breathing frequency (Hz)."
+            );
+            DrunkFovAmp2 = cfg.Bind(
+                "DrunkOverlay",
+                "FovAmp2",
+                8f,
+                "Secondary FOV breathing amplitude (degrees)."
+            );
+            DrunkVigPulseFreq1 = cfg.Bind(
+                "DrunkOverlay",
+                "VigPulseFreq1",
+                1.2f,
+                "Vignette primary pulse frequency (Hz)."
+            );
+            DrunkVigPulseFreq2 = cfg.Bind(
+                "DrunkOverlay",
+                "VigPulseFreq2",
+                6f,
+                "Vignette secondary pulse frequency (Hz)."
+            );
+            DrunkVigBaseAlpha = cfg.Bind(
+                "DrunkOverlay",
+                "VigBaseAlpha",
+                0.50f,
+                "Vignette base opacity (0–1)."
+            );
+            DrunkVigPulseAmp1 = cfg.Bind(
+                "DrunkOverlay",
+                "VigPulseAmp1",
+                0.15f,
+                "Vignette primary pulse amplitude."
+            );
+            DrunkVigPulseAmp2 = cfg.Bind(
+                "DrunkOverlay",
+                "VigPulseAmp2",
+                0.08f,
+                "Vignette secondary pulse amplitude."
+            );
+            DrunkTintBaseAlpha = cfg.Bind(
+                "DrunkOverlay",
+                "TintBaseAlpha",
+                0.1f,
+                "Full-screen tint base opacity (0–1)."
+            );
+            DrunkTintPulseAmp = cfg.Bind(
+                "DrunkOverlay",
+                "TintPulseAmp",
+                0.05f,
+                "Full-screen tint pulse amplitude."
+            );
+            DrunkTintPulseFreq = cfg.Bind(
+                "DrunkOverlay",
+                "TintPulseFreq",
+                3f,
+                "Full-screen tint pulse frequency (Hz)."
             );
         }
     }
