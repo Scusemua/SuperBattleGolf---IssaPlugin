@@ -1,6 +1,6 @@
 # IssaMod
 
-Adds **16 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
+Adds **17 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
 
 For more information as well as the mod's source code, please see [the mod's GitHub repository](https://github.com/Scusemua/SuperBattleGolf---IssaPlugin/).
 
@@ -53,6 +53,9 @@ A rapid-fire sub-machine gun. Hold the fire button and spray bullets downrange a
 
 ### 🔄 Position Swap
 Pick any other player from the chooser overlay. Warning circle appear around both of you while a short countdown runs -- then you swap positions in a burst of smoke. Great for dumping someone into a bad lie or pulling yourself out of one. Can't be used on players sitting in a golf cart.
+
+### 🧪 Poison Jar
+Lob a jar of poison with an arc preview. On landing it shatters and douses anyone within the blast radius -- including you, if your aim is bad. Poisoned players suffer a full screen of visual distortion: camera roll, FOV breathing, double vision, and aim drift that makes lining up a shot genuinely difficult. The radius and duration are both configurable, so you can turn it into a small precise splash or a wide lingering cloud.
 
 ---
 
