@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 1494412348
+CRC: 4229230424
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 5a5f16df4f79341843a575e2006ee195
+    Hash: 3a3418784eb88fed28895c309333698b
   TypeTreeHash:
     serializedVersion: 2
-    Hash: 82d52513d6b19822b87b688cdb5147d6
+    Hash: 12d32a6d7b1bccbbbbab418431dfa151
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: d761370bebea33abf11fbec7c5aa5cb0
+    Hash: c59b5c747e82270c2005a70f3fb91a38
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -51,6 +51,8 @@ ClassTypes:
   Script: {instanceID: 0}
 - Class: 114
   Script: {fileID: 11500000, guid: 2f54e17d705a2894d88787e24190ebfa, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 628ef9b0c7e4fd24db54868035e11237, type: 3}
 - Class: 114
   Script: {fileID: 11500000, guid: 9b91ecbcc199f4492b9a91e820070131, type: 3}
 - Class: 114
@@ -144,6 +146,7 @@ Assets:
 - Assets/Assets/gravity_remote_icon.png
 - Assets/Assets/black_hole.prefab
 - Assets/Assets/sniper_rifle_icon.png
+- Assets/Assets/drone_swarm_tablet.prefab
 - Assets/Assets/freeze_effect_icon.png
 - Assets/Blink/Art/Animals/Stylized/Bear/Bear_Prefabs/Bear_4.prefab
 - Assets/Assets/DroppedCustomItem.prefab
@@ -156,6 +159,8 @@ Assets:
 - Assets/Assets/black_hole_grenade.prefab
 - Assets/Assets/poison_cloud_vfx.prefab
 - Assets/Assets/harrier_icon.png
+- Assets/Assets/drone_explosion.prefab
+- Assets/Assets/drone.prefab
 - Assets/Assets/spike_ball_icon.png
 - Assets/Assets/ac130_tablet_model.prefab
 - Assets/Assets/javelin_rocket_launcher.prefab
@@ -168,6 +173,7 @@ Assets:
 - Assets/Assets/Materials/Teddy/fabric_brown.mat
 - Assets/Assets/NukeExplosionFire.prefab
 - Assets/Assets/ac130_icon.png
+- Assets/Assets/drone_swarm_icon.png
 - Assets/Assets/blood_splatter_critical.prefab
 - Assets/Assets/nuclear_detonator.prefab
 - Assets/Assets/Glass.mat

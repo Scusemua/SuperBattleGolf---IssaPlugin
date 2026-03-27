@@ -298,8 +298,8 @@ namespace IssaPlugin.Items
 
             DonutLaserZoneRed = Load<GameObject>("laser_zone_red.prefab");
             ConfettiBlastRainbow = Load<GameObject>("ConfettiBlastRainbow.prefab");
-            // BloodSplatterPrefab = Load<GameObject>("blood_splatter_critical.prefab"); 
-            BloodSplatterPrefab = Load<GameObject>("blood_explosion_vfx.prefab"); 
+            // BloodSplatterPrefab = Load<GameObject>("blood_splatter_critical.prefab");
+            BloodSplatterPrefab = Load<GameObject>("blood_explosion_vfx.prefab");
         }
 
         private static void LoadAircraftPrefabs()
@@ -572,7 +572,7 @@ namespace IssaPlugin.Items
         {
             DroneSwarmIcon = LoadSprite("drone_swarm_icon.png");
 
-            DroneControllerPrefab = Load<GameObject>("drone_controller.prefab");
+            DroneControllerPrefab = Load<GameObject>("drone_swarm_tablet.prefab");
             if (DroneControllerPrefab != null)
                 DisableRigidbody(DroneControllerPrefab);
 

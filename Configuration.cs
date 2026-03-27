@@ -2512,7 +2512,7 @@ namespace IssaPlugin
             DroneSwarmGiveKey = cfg.Bind(
                 "DroneSwarm",
                 "GiveKey",
-                Key.Numpad0,
+                Key.NumpadEnter,
                 "Debug key to add the Drone Swarm item to your inventory."
             );
             DroneSwarmUses = cfg.Bind(

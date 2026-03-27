@@ -248,6 +248,10 @@ Assets used in the project:
     (https://skfb.ly/oBRyn) by misscanning
     Licensed under Creative Commons Attribution
 
+-   "Shahed-136"\
+    (https://skfb.ly/ozuFr) by KillCaptureDestroy 
+    Licensed under Creative Commons Attribution-NonCommercial 
+
 ---
 
 *IssaPlugin is a fan-made mod and is not affiliated with Brimstone or Oro Interactive.*

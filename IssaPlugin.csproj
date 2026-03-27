@@ -24,10 +24,6 @@
     <PackageReference Include="UnityEngine.Modules" Version="6000.2.4" IncludeAssets="compile" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework.TrimEnd(`0123456789`))' == 'net'">
-    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2" PrivateAssets="all" />
-  </ItemGroup>
-
   <ItemGroup>
     <Compile Remove="DECOMPILED_SOURCE\**" />
     <Content Remove="DECOMPILED_SOURCE**" />
@@ -40,6 +36,10 @@
     <Content Remove="SAMPLE_PLUGIN**" />
     <EmbeddedResource Remove="SAMPLE_PLUGIN**" />
     <None Remove="SAMPLE_PLUGIN**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="IssaPlugin.Tests\**" />
   </ItemGroup>
 
   <ItemGroup>
