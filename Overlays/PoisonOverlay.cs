@@ -11,8 +11,8 @@ namespace IssaPlugin.Overlays
     /// Effects:
     ///   - Camera Z-roll sway (compound sine, feels organic)
     ///   - Camera FOV breathing (slow pulse)
-    ///   - Warm amber vignette with pulsing opacity
-    ///   - Subtle full-screen amber tint
+    ///   - Green vignette with pulsing opacity
+    ///   - Subtle full-screen green tint
     ///   - Double-vision ghost (second camera → RenderTexture drawn offset)
     /// </summary>
     public class PoisonOverlay : MonoBehaviour
@@ -211,7 +211,7 @@ namespace IssaPlugin.Overlays
                 GUI.color = Color.white;
             }
 
-            // Subtle full-screen amber tint — very low alpha, slow pulse
+            // Subtle full-screen green tint — very low alpha, slow pulse
             if (_tintTex != null)
             {
                 float tintAlpha =
@@ -223,7 +223,7 @@ namespace IssaPlugin.Overlays
                 GUI.color = Color.white;
             }
 
-            // Warm amber vignette with pulsing opacity
+            // Warm green vignette with pulsing opacity
             if (_vignetteTex != null)
             {
                 float vigAlpha =
@@ -305,7 +305,7 @@ namespace IssaPlugin.Overlays
         }
 
         /// <summary>
-        /// Radial gradient: transparent center → warm amber edges.
+        /// Radial gradient: transparent center → green edges.
         /// Generated at low resolution and stretched via bilinear filtering.
         /// </summary>
         private static Texture2D GenerateGreenVignette(int w, int h)
@@ -322,7 +322,7 @@ namespace IssaPlugin.Overlays
                 {
                     float dist = Mathf.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy)) / maxDist;
                     float alpha = Mathf.Pow(Mathf.Clamp01(dist), 1.4f) * 0.8f;
-                    pixels[y * w + x] = new Color(0.35f, 0.75f, 0.05f, alpha);
+                    pixels[y * w + x] = new Color(0.35f, 0.85f, 0.05f, alpha);
                 }
             }
 
