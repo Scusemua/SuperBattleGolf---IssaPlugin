@@ -248,11 +248,13 @@ namespace IssaPlugin.Items
         {
             float dx = transform.position.x - WanderCenter.x;
             float dz = transform.position.z - WanderCenter.z;
-            float flatDist = Mathf.Sqrt(dx * dx + dz * dz);
+            float flatDistSq = dx * dx + dz * dz;
 
-            if (flatDist <= WanderRadius)
+            // Squared comparison avoids Sqrt in the common case (drone inside boundary).
+            if (flatDistSq <= WanderRadius * WanderRadius)
                 return Vector3.zero;
 
+            float flatDist = Mathf.Sqrt(flatDistSq);
             float excess = (flatDist - WanderRadius) / WanderRadius;
             return new Vector3(-dx, 0f, -dz).normalized * (excess * BoundaryRestoreWeight);
         }
@@ -286,15 +288,16 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            int num = Physics.OverlapSphereNonAlloc(
-                transform.position,
-                DroneCollisionRange,
-                PlayerGolfer.overlappingColliderBuffer,
-                GameManager.LayerSettings.RocketHittablesMask,
-                QueryTriggerInteraction.Ignore
-            );
-
-            if (num > 0)
+            // CheckSphere exits on the first hit and needs no external buffer,
+            // making it cheaper than OverlapSphereNonAlloc for a pure yes/no test.
+            if (
+                Physics.CheckSphere(
+                    transform.position,
+                    DroneCollisionRange,
+                    GameManager.LayerSettings.RocketHittablesMask,
+                    QueryTriggerInteraction.Ignore
+                )
+            )
             {
                 IssaPluginPlugin.Log.LogInfo("[Drone] Collision while diving.");
                 Detonate();
