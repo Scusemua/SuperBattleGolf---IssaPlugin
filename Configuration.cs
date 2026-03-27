@@ -2533,7 +2533,7 @@ namespace IssaPlugin
             DroneSwarmSpawnWeight = cfg.Bind(
                 "DroneSwarm",
                 "SpawnWeight",
-                1.0f,
+                3.5f,
                 "Relative spawn weight for Drone Swarm in the item pool."
             );
             BaseDroneCount = cfg.Bind(
@@ -2546,37 +2546,40 @@ namespace IssaPlugin
                 "DroneSwarm",
                 "PerPlayerScalingFactor",
                 0.1f,
-                "Increase the DroneCount as: DroneCount = BaseDroneCount * (1 + [NumPlayers * PerPlayerScalingFactor])."
+                new ConfigDescription(
+                    "Increase the DroneCount as: DroneCount = BaseDroneCount * (1 + [NumPlayers * PerPlayerScalingFactor]). Set to 0 to disable.",
+                    new AcceptableValueRange<float>(0f, 10f)
+                )
             );
             DroneAltitude = cfg.Bind(
                 "DroneSwarm",
                 "Altitude",
-                80f,
+                300f,
                 "Height (metres) at which drones circle above the player centroid."
             );
             DroneWanderRadius = cfg.Bind(
                 "DroneSwarm",
                 "WanderRadius",
-                40f,
+                150f,
                 "Maximum distance (metres) from the wander centre a drone waypoint may be placed."
             );
             DroneWanderSpeed = cfg.Bind(
                 "DroneSwarm",
                 "WanderSpeed",
-                25f,
+                125f,
                 "Cruise speed (metres/second) while drones are wandering before they dive."
             );
             DroneWanderTurnRate = cfg.Bind(
                 "DroneSwarm",
                 "WanderTurnRate",
-                60f,
+                45f,
                 "Maximum steering rate (degrees/second) while wandering. "
                     + "Lower = lazier, wider arcs. Higher = tighter turns."
             );
             DroneAltitudeVariance = cfg.Bind(
                 "DroneSwarm",
                 "AltitudeVariance",
-                10f,
+                25f,
                 "Half-range (metres) of random altitude variation added to each waypoint. "
                     + "Drones pick altitudes between Altitude ± AltitudeVariance."
             );
@@ -2589,25 +2592,25 @@ namespace IssaPlugin
             DroneCircleTimeMax = cfg.Bind(
                 "DroneSwarm",
                 "CircleTimeMax",
-                10f,
+                30f,
                 "Maximum seconds a drone circles before diving (randomised per drone)."
             );
             DroneDiveSpeed = cfg.Bind(
                 "DroneSwarm",
                 "DiveSpeed",
-                30f,
+                25f,
                 "Initial dive speed in metres per second."
             );
             DroneDiveAcceleration = cfg.Bind(
                 "DroneSwarm",
                 "DiveAcceleration",
-                20f,
+                50f,
                 "How many metres per second the dive speed increases each second."
             );
             DroneHomingStopDistance = cfg.Bind(
                 "DroneSwarm",
                 "HomingStopDistance",
-                5f,
+                75f,
                 "Distance from the target (metres) at which the drone stops tracking and flies "
                     + "straight, giving the target a chance to dodge. Set to 0 to always home."
             );
@@ -2620,7 +2623,7 @@ namespace IssaPlugin
             DroneExplosionScale = cfg.Bind(
                 "DroneSwarm",
                 "ExplosionScale",
-                1.5f,
+                1.05f,
                 "Scale multiplier for the drone impact explosion radius and force."
             );
             DroneFriendlyFire = cfg.Bind(
@@ -2638,7 +2641,7 @@ namespace IssaPlugin
             DroneSwarmMaxSessionDuration = cfg.Bind(
                 "DroneSwarm",
                 "MaxSessionDuration",
-                120f,
+                75f,
                 "Safety cap (seconds) after which any remaining drones are force-destroyed."
             );
         }
