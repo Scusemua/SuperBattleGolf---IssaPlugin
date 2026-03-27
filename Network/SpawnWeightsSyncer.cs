@@ -47,6 +47,11 @@ namespace IssaPlugin
 
         private static void BroadcastWeightsIfChanged()
         {
+            // Writers are registered in OnStartClient. Mirror clears them on disconnect, so
+            // don't attempt a send in the window between OnStopClient and the next OnStartClient.
+            if (!NetworkClient.active)
+                return;
+
             if (_cachedItemSpawnWeights == null)
             {
                 _cachedItemSpawnWeights = new Dictionary<int, float>();
