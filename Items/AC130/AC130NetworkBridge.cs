@@ -25,11 +25,9 @@ namespace IssaPlugin.Items
         //  Global server lock  (server only, static)
         // ================================================================
 
-        private static bool _globalSessionActive;
-        private static AC130NetworkBridge _activeSessionBridge;
-
         /// Server-side reference to the active gunship GameObject.
-        public static GameObject ActiveGunship => _activeSessionBridge?._serverGunship;
+        public static GameObject ActiveGunship =>
+            GlobalSessionLock<AC130NetworkBridge>.Holder?._serverGunship;
 
         // ================================================================
         //  Per-instance server state
@@ -140,7 +138,7 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            if (_globalSessionActive)
+            if (GlobalSessionLock<AC130NetworkBridge>.IsActive)
             {
                 IssaPluginPlugin.Log.LogWarning(
                     "[AC130] Another player's AC130 is already active."
@@ -167,7 +165,7 @@ namespace IssaPlugin.Items
             //  for mayday detection, external destruction, and disconnect cleanup.
             // ----------------------------------------------------------------
             Vector3 playerPos = inventory.PlayerInfo.transform.position;
-            GameObject gunshipGo = ServerSpawnGunship(playerPos);
+            GameObject gunshipGo = SpawnGunship(playerPos);
 
             if (gunshipGo == null)
             {
@@ -177,8 +175,7 @@ namespace IssaPlugin.Items
 
             _serverGunship = gunshipGo;
             _serverSessionActive = true;
-            _globalSessionActive = true;
-            _activeSessionBridge = this;
+            _ = GlobalSessionLock<AC130NetworkBridge>.TryAcquire(this);
 
             // Wire up external-destruction callback on the fly behaviour.
             _serverFlyBehaviour = gunshipGo.GetComponent<AC130FlyBehaviour>();
@@ -689,70 +686,6 @@ namespace IssaPlugin.Items
         }
 
         // ================================================================
-        //  Server: gunship spawning
-        // ================================================================
-
-        private static GameObject ServerSpawnGunship(Vector3 orbitCenter)
-        {
-            if (AssetLoader.AC130Prefab == null)
-            {
-                IssaPluginPlugin.Log.LogWarning(
-                    "[AC130] AC130 prefab not loaded — session will run without visual."
-                );
-                return null;
-            }
-
-            float startAngle = 0f;
-            float altitude = Configuration.AC130Altitude.Value;
-            float orbitRadius = Configuration.AC130OrbitRadius.Value;
-
-            Vector3 orbitEntry = AC130Helpers.OrbitPosition(
-                orbitCenter,
-                startAngle,
-                orbitRadius,
-                altitude
-            );
-            Vector3 approachDir = AC130Helpers.OrbitTangent(startAngle);
-            float approachDist = Configuration.AC130ApproachDistance.Value;
-            float approachSpeed = Configuration.AC130ApproachSpeed.Value;
-
-            Vector3 spawnPos = orbitEntry - approachDir * approachDist;
-
-            var ac130GameObj = Object.Instantiate(
-                AssetLoader.AC130Prefab,
-                spawnPos,
-                Quaternion.LookRotation(approachDir, Vector3.up)
-            );
-
-            // NetworkIdentity (with stable assetId) is baked into AC130Prefab in AssetLoader.
-            // AC130ClientSetup.Awake() (on the prefab) already adds Entity, LockOnTarget,
-            // and AC130GunshipMarker during Instantiate — add runtime-only components after.
-
-            // AC130HitReceiver (CustomHittable) needs Entity in its Awake;
-            // Entity was already added by AC130ClientSetup.Awake() during Instantiate above.
-            var hitReceiver = ac130GameObj.AddComponent<AC130HitReceiver>();
-
-            var flyComp = ac130GameObj.AddComponent<AC130FlyBehaviour>();
-            flyComp.orbitCenter = orbitCenter;
-            flyComp.orbitRadius = orbitRadius;
-            flyComp.altitude = altitude;
-            flyComp.orbitSpeed = Configuration.AC130OrbitSpeed.Value;
-            flyComp.currentAngle = startAngle;
-            flyComp.flyTarget = orbitEntry;
-            flyComp.flySpeed = approachSpeed;
-            flyComp.mode = AC130FlightMode.FlyIn;
-
-            // Spawn AFTER all setup so Start() fires post-Spawn, not pre-Spawn.
-            NetworkServer.Spawn(ac130GameObj);
-
-            IssaPluginPlugin.Log.LogInfo(
-                $"[AC130] Gunship spawned at approach distance {approachDist:F0}m."
-            );
-
-            return ac130GameObj;
-        }
-
-        // ================================================================
         //  Server: mayday
         // ================================================================
 
@@ -878,6 +811,70 @@ namespace IssaPlugin.Items
         //  Server internals
         // ================================================================
 
+        /// <summary>
+        /// Instantiates, configures, and network-spawns the AC-130 gunship prefab.
+        /// Returns the spawned GameObject, or null if the prefab is unavailable.
+        /// </summary>
+        private static GameObject SpawnGunship(Vector3 orbitCenter)
+        {
+            if (AssetLoader.AC130Prefab == null)
+            {
+                IssaPluginPlugin.Log.LogWarning(
+                    "[AC130] AC130 prefab not loaded — session will run without visual."
+                );
+                return null;
+            }
+
+            float startAngle = 0f;
+            float altitude = Configuration.AC130Altitude.Value;
+            float orbitRadius = Configuration.AC130OrbitRadius.Value;
+
+            Vector3 orbitEntry = AC130Helpers.OrbitPosition(
+                orbitCenter,
+                startAngle,
+                orbitRadius,
+                altitude
+            );
+            Vector3 approachDir = AC130Helpers.OrbitTangent(startAngle);
+            float approachDist = Configuration.AC130ApproachDistance.Value;
+            float approachSpeed = Configuration.AC130ApproachSpeed.Value;
+
+            Vector3 spawnPos = orbitEntry - approachDir * approachDist;
+
+            var ac130GameObj = Object.Instantiate(
+                AssetLoader.AC130Prefab,
+                spawnPos,
+                Quaternion.LookRotation(approachDir, Vector3.up)
+            );
+
+            // NetworkIdentity (with stable assetId) is baked into AC130Prefab in AssetLoader.
+            // AC130ClientSetup.Awake() (on the prefab) already adds Entity, LockOnTarget,
+            // and AC130GunshipMarker during Instantiate — add runtime-only components after.
+
+            // AC130HitReceiver (CustomHittable) needs Entity in its Awake;
+            // Entity was already added by AC130ClientSetup.Awake() during Instantiate above.
+            var hitReceiver = ac130GameObj.AddComponent<AC130HitReceiver>();
+
+            var flyComp = ac130GameObj.AddComponent<AC130FlyBehaviour>();
+            flyComp.orbitCenter = orbitCenter;
+            flyComp.orbitRadius = orbitRadius;
+            flyComp.altitude = altitude;
+            flyComp.orbitSpeed = Configuration.AC130OrbitSpeed.Value;
+            flyComp.currentAngle = startAngle;
+            flyComp.flyTarget = orbitEntry;
+            flyComp.flySpeed = approachSpeed;
+            flyComp.mode = AC130FlightMode.FlyIn;
+
+            // Spawn AFTER all setup so Start() fires post-Spawn, not pre-Spawn.
+            NetworkServer.Spawn(ac130GameObj);
+
+            IssaPluginPlugin.Log.LogInfo(
+                $"[AC130] Gunship spawned at approach distance {approachDist:F0}m."
+            );
+
+            return ac130GameObj;
+        }
+
         private IEnumerator ServerTimeoutRoutine()
         {
             yield return new WaitForSeconds(Configuration.AC130Duration.Value + 5f);
@@ -960,116 +957,14 @@ namespace IssaPlugin.Items
             ReleaseGlobalLock();
         }
 
-        private static void ReleaseGlobalLock()
-        {
-            _globalSessionActive = false;
-            _activeSessionBridge = null;
-        }
+        private static void ReleaseGlobalLock() => GlobalSessionLock<AC130NetworkBridge>.Release();
 
         public static void ForceReleaseGlobalLock()
         {
             IssaPluginPlugin.Log.LogWarning(
                 "[AC130] ForceReleaseGlobalLock called — resetting session state."
             );
-            _globalSessionActive = false;
-            _activeSessionBridge = null;
-        }
-
-        // ── NetworkMessage handlers (registered by NetworkManagerPatches) ─────
-
-        internal static void HandleAC130Sound(AC130SoundMessage msg)
-        {
-            var clip = AssetLoader.AC130AboveClip;
-            if (clip == null)
-            {
-                IssaPluginPlugin.Log.LogWarning("[AC130] Audio clip not loaded.");
-                return;
-            }
-
-            var go = new GameObject("AC130_Sound");
-            var src = go.AddComponent<AudioSource>();
-            src.clip = clip;
-            src.spatialBlend = 0f;
-            src.volume = 1f;
-            src.Play();
-            Destroy(go, clip.length + 0.1f);
-        }
-
-        internal static void HandleAC130MaydayVfx(AC130MaydayVfxMessage msg)
-        {
-            // Skip for the owning client — TargetBeginMayday handles the cockpit path.
-            // All other clients get the external smoke/fire mayday behaviour here.
-            var localBridge = NetworkClient.localPlayer?.GetComponent<AC130NetworkBridge>();
-            if (localBridge != null && localBridge.LocalSessionActive)
-                return;
-
-            if (!NetworkClient.spawned.TryGetValue(msg.GunshipNetId, out var ni) || ni == null)
-                return;
-
-            var gunship = ni.gameObject;
-            if (gunship.GetComponent<AC130MaydayBehaviour>() == null)
-            {
-                var mayday = gunship.AddComponent<AC130MaydayBehaviour>();
-                mayday.IsLocalPlayer = false;
-                mayday.OrbitCenter =
-                    gunship.GetComponent<AC130FlyBehaviour>()?.orbitCenter ?? Vector3.zero;
-            }
-        }
-
-        internal static void HandleAC130Damaged(AC130DamagedMessage msg)
-        {
-            if (AssetLoader.MaydaySmokeTrailPrefab == null)
-                return;
-
-            if (!NetworkClient.spawned.TryGetValue(msg.GunshipNetId, out var ni) || ni == null)
-                return;
-
-            IssaPluginPlugin.Log.LogInfo("[AC130] Spawning damage smoke trail.");
-            var smoke = Instantiate(
-                AssetLoader.MaydaySmokeTrailPrefab,
-                ni.transform.position,
-                Quaternion.identity
-            );
-            smoke.transform.SetParent(ni.transform, worldPositionStays: true);
-        }
-
-        internal static void HandleAC130MaydayImpact(AC130MaydayImpactMessage msg)
-        {
-            float duration = Configuration.AC130MaydayExplosionDuration.Value;
-
-            if (AssetLoader.MaydayExplosionVfxPrefab != null)
-            {
-                var vfxGo = Instantiate(
-                    AssetLoader.MaydayExplosionVfxPrefab,
-                    msg.ImpactPos,
-                    Quaternion.identity
-                );
-                Destroy(vfxGo, duration);
-            }
-            else
-            {
-                VfxManager.PlayPooledVfxLocalOnly(
-                    VfxType.RocketLauncherRocketExplosion,
-                    msg.ImpactPos,
-                    Quaternion.identity,
-                    Vector3.one * Configuration.AC130MaydayExplosionScale.Value
-                );
-            }
-
-            if (AssetLoader.ImpactVfxPrefab != null)
-            {
-                var debrisGo = Instantiate(
-                    AssetLoader.ImpactVfxPrefab,
-                    msg.ImpactPos,
-                    Quaternion.identity
-                );
-                Destroy(debrisGo, duration);
-            }
-
-            CameraModuleController.Shake(
-                GameManager.CameraGameplaySettings.RocketExplosionScreenshakeSettings,
-                msg.ImpactPos
-            );
+            GlobalSessionLock<AC130NetworkBridge>.Release();
         }
     }
 }
