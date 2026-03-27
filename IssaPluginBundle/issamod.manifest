@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 2315106161
+CRC: 1599115797
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: fa996b21f5299da8566e37bd3a0a0a7e
+    Hash: df0c59b1265d53d124ccfe50a412f1c1
   TypeTreeHash:
     serializedVersion: 2
     Hash: 82d52513d6b19822b87b688cdb5147d6
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 562a67bc43200df397df195556f802b8
+    Hash: 5039737e0ec95f9db6e2a320072e8c7f
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -75,6 +75,7 @@ SerializeReferenceClassIdentifiers: []
 Assets:
 - Assets/Assets/homerun.ogg
 - Assets/Assets/ac130_model.prefab
+- Assets/Assets/blood_explosion_vfx.prefab
 - Assets/Assets/Materials/sticky_grenade.mat
 - Assets/Assets/missile_icon.png
 - Assets/Assets/harrier.prefab
