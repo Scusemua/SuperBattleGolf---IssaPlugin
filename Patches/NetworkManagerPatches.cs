@@ -1,4 +1,3 @@
-using System.Collections;
 using HarmonyLib;
 using IssaPlugin;
 using IssaPlugin.Items;
@@ -1031,7 +1030,6 @@ namespace IssaPlugin.Patches
                 $"[NetworkManager] Registered '{prefab.name}' assetId={ni.assetId}."
             );
         }
-
     }
 
     /// Resets the registration flag when the client disconnects so that all
@@ -1045,5 +1043,4 @@ namespace IssaPlugin.Patches
 
         static void Postfix() => NetworkManagerRegisterPrefabsPatch.ResetRegistration();
     }
-
 }
