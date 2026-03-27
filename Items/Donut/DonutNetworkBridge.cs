@@ -24,15 +24,13 @@ namespace IssaPlugin.Items
         //  Global server lock  (server only, static)
         // ================================================================
 
-        private static bool _globalSessionActive;
-        private static DonutNetworkBridge _activeSessionBridge;
-
         // Transform whose position is repeatedly set to the raycast
         // to the ground by the Donut.
         private static Transform _donutLaserTarget = null;
 
         /// Server-side reference to the active Donut GameObject.
-        public static GameObject ActiveDonut => _activeSessionBridge?._serverDonut;
+        public static GameObject ActiveDonut =>
+            GlobalSessionLock<DonutNetworkBridge>.Holder?._serverDonut;
 
         public static Transform DonutLaserTarget
         {
@@ -112,7 +110,7 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            if (_globalSessionActive)
+            if (GlobalSessionLock<DonutNetworkBridge>.IsActive)
             {
                 IssaPluginPlugin.Log.LogWarning(
                     "[Donut] Another player's Donut is already active."
@@ -177,8 +175,7 @@ namespace IssaPlugin.Items
 
             _serverDonut = donutGo;
             _serverSessionActive = true;
-            _globalSessionActive = true;
-            _activeSessionBridge = this;
+            _ = GlobalSessionLock<DonutNetworkBridge>.TryAcquire(this);
 
             _laserUsesRemaining = (int)Configuration.DonutLaserUses.Value;
             _laserUseIndex = 0;
@@ -435,10 +432,15 @@ namespace IssaPlugin.Items
             ReleaseGlobalLock();
         }
 
-        private static void ReleaseGlobalLock()
+        private static void ReleaseGlobalLock() =>
+            GlobalSessionLock<DonutNetworkBridge>.Release();
+
+        public static void ForceReleaseGlobalLock()
         {
-            _globalSessionActive = false;
-            _activeSessionBridge = null;
+            IssaPluginPlugin.Log.LogWarning(
+                "[Donut] ForceReleaseGlobalLock called — resetting session state."
+            );
+            GlobalSessionLock<DonutNetworkBridge>.Release();
         }
 
         private IEnumerator ServerTimeoutRoutine()
@@ -451,6 +453,155 @@ namespace IssaPlugin.Items
         // ================================================================
         //  Client: local session coroutine
         // ================================================================
+
+        private readonly struct DonutCameraState
+        {
+            public readonly OrbitCameraModule OrbitModule;
+            public readonly float SavedPitch;
+            public readonly float SavedYaw;
+            public readonly bool SavedDisablePhysics;
+
+            public DonutCameraState(
+                OrbitCameraModule module,
+                float pitch,
+                float yaw,
+                bool disablePhysics
+            )
+            {
+                OrbitModule = module;
+                SavedPitch = pitch;
+                SavedYaw = yaw;
+                SavedDisablePhysics = disablePhysics;
+            }
+        }
+
+        private static DonutCameraState SetupOrbitCamera(Transform donutTransform)
+        {
+            CameraModuleController.TryGetOrbitModule(out var orbitModule);
+            float savedPitch = orbitModule?.Pitch ?? 0f;
+            float savedYaw = orbitModule?.Yaw ?? 0f;
+            bool savedPhys = orbitModule?.disablePhysics ?? false;
+
+            if (orbitModule != null)
+            {
+                orbitModule.SetSubject(donutTransform);
+                orbitModule.SetPitch(Configuration.DonutCameraPitch.Value);
+                orbitModule.SetDistanceAddition(Configuration.DonutCameraDistance.Value);
+                orbitModule.disablePhysics = true;
+                orbitModule.ForceUpdateModule();
+            }
+
+            return new DonutCameraState(orbitModule, savedPitch, savedYaw, savedPhys);
+        }
+
+        private static void TeardownOrbitCamera(DonutCameraState state)
+        {
+            if (state.OrbitModule == null)
+                return;
+            state.OrbitModule.SetDistanceAddition(0f);
+            state.OrbitModule.disablePhysics = state.SavedDisablePhysics;
+            var playerMovement = GameManager.LocalPlayerMovement;
+            if (playerMovement != null)
+                state.OrbitModule.SetSubject(playerMovement.transform);
+            state.OrbitModule.SetPitch(state.SavedPitch);
+            state.OrbitModule.SetYaw(state.SavedYaw);
+            state.OrbitModule.ForceUpdateModule();
+        }
+
+        /// <summary>
+        /// Reads one frame of input, sends network messages as side effects, and
+        /// returns false if the session should end immediately (Space pressed).
+        /// Escape sets _forceEnd and returns true so the current frame's remaining
+        /// work (movement send, overlay update) completes before the while condition
+        /// exits — matching the original fall-through behavior.
+        /// </summary>
+        private bool ProcessDonutInput(OrbitCameraModule orbitModule, ref float cameraYaw)
+        {
+            var mouse = Mouse.current;
+            var keyboard = Keyboard.current;
+
+            // Re-enable movement after laser cooldown.
+            if (!_canMove && Time.time - _localLastLaserTime >= Configuration.DonutLaserCooldown.Value)
+                _canMove = true;
+
+            // Space → cancel immediately (skips remaining frame work, matches original break).
+            if (keyboard != null && keyboard[Key.Space].wasPressedThisFrame)
+            {
+                IssaPluginPlugin.Log.LogInfo("[Donut] Donut cancelled by player.");
+                _forceEnd = true;
+                return false;
+            }
+
+            // Mouse X → rotate orbit yaw.
+            if (mouse != null)
+            {
+                float mouseX = mouse.delta.x.ReadValue() * Configuration.DonutMouseSensitivity.Value;
+                cameraYaw += mouseX;
+                if (cameraYaw >= 360f)
+                    cameraYaw -= 360f;
+                if (cameraYaw < 0f)
+                    cameraYaw += 360f;
+                orbitModule?.SetYaw(cameraYaw);
+            }
+
+            // Keep camera snapped to the Donut without lerp lag.
+            orbitModule?.ForceUpdateModule();
+
+            // WASD → world-space move direction (only when _canMove).
+            float fwd = 0f,
+                strafe = 0f;
+            if (keyboard != null && _canMove)
+            {
+                if (keyboard[Key.W].isPressed)
+                    fwd += 1f;
+                if (keyboard[Key.S].isPressed)
+                    fwd -= 1f;
+                if (keyboard[Key.A].isPressed)
+                    strafe -= 1f;
+                if (keyboard[Key.D].isPressed)
+                    strafe += 1f;
+
+                // Escape → set flag and fall through; while condition exits next frame (matches original).
+                if (keyboard[Key.Escape].wasPressedThisFrame)
+                    _forceEnd = true;
+            }
+
+            Vector3 worldMoveDir = Vector3.zero;
+            if (Mathf.Abs(fwd) > 0.001f || Mathf.Abs(strafe) > 0.001f)
+            {
+                Quaternion camYawRot = Quaternion.Euler(0f, cameraYaw, 0f);
+                worldMoveDir =
+                    camYawRot * Vector3.forward * fwd + camYawRot * Vector3.right * strafe;
+                if (worldMoveDir.sqrMagnitude > 1f)
+                    worldMoveDir.Normalize();
+            }
+
+            // Rate-limit movement sends: only send when direction changed or
+            // timer expires (20 Hz cap), matching the AC130 flight input pattern.
+            bool moveChanged = (worldMoveDir - _lastSentMoveDir).sqrMagnitude > 0.001f;
+            _moveSendTimer -= Time.deltaTime;
+            if (moveChanged || _moveSendTimer <= 0f)
+            {
+                NetworkClient.Send(new DonutMoveMessage { WorldMoveDir = worldMoveDir });
+                _lastSentMoveDir = worldMoveDir;
+                _moveSendTimer = InputSendInterval;
+            }
+
+            // Left click → fire laser.
+            if (
+                mouse != null
+                && mouse.leftButton.wasPressedThisFrame
+                && _localLaserUsesRemaining > 0
+                && Time.time - _localLastLaserTime >= Configuration.DonutLaserCooldown.Value
+            )
+            {
+                NetworkClient.Send(new DonutFireLaserMessage());
+                _localLastLaserTime = Time.time;
+                _canMove = false;
+            }
+
+            return true;
+        }
 
         private IEnumerator RunLocalSession(uint donutNetId)
         {
@@ -484,24 +635,8 @@ namespace IssaPlugin.Items
                 yield break;
             }
 
-            Transform donutTransform = donutIdentity.transform;
-
-            // ── Orbit camera setup ────────────────────────────────────────────
-            CameraModuleController.TryGetOrbitModule(out var orbitModule);
-            float savedPitch = orbitModule?.Pitch ?? 0f;
-            float savedYaw = orbitModule?.Yaw ?? 0f;
-            bool savedDisablePhysics = orbitModule?.disablePhysics ?? false;
-
-            float cameraYaw = savedYaw;
-
-            if (orbitModule != null)
-            {
-                orbitModule.SetSubject(donutTransform);
-                orbitModule.SetPitch(Configuration.DonutCameraPitch.Value);
-                orbitModule.SetDistanceAddition(Configuration.DonutCameraDistance.Value);
-                orbitModule.disablePhysics = true;
-                orbitModule.ForceUpdateModule();
-            }
+            var cameraState = SetupOrbitCamera(donutIdentity.transform);
+            float cameraYaw = cameraState.SavedYaw;
 
             _localLaserUsesRemaining = (int)Configuration.DonutLaserUses.Value;
             float sessionElapsed = 0f;
@@ -513,95 +648,9 @@ namespace IssaPlugin.Items
             while (!_forceEnd && sessionElapsed < sessionDuration)
             {
                 sessionElapsed += Time.deltaTime;
-
-                var mouse = Mouse.current;
-                var keyboard = Keyboard.current;
-
-                if (
-                    !_canMove
-                    && Time.time - _localLastLaserTime >= Configuration.DonutLaserCooldown.Value
-                )
-                {
-                    _canMove = true;
-                }
-
-                if (keyboard != null && Keyboard.current[Key.Space].wasPressedThisFrame)
-                {
-                    IssaPluginPlugin.Log.LogInfo("[Donut] Donut cancelled by player.");
-                    _forceEnd = true;
+                if (!ProcessDonutInput(cameraState.OrbitModule, ref cameraYaw))
                     break;
-                }
-
-                // Mouse X → rotate orbit camera yaw.
-                if (mouse != null)
-                {
-                    float mouseX =
-                        mouse.delta.x.ReadValue() * Configuration.DonutMouseSensitivity.Value;
-                    cameraYaw += mouseX;
-                    if (cameraYaw >= 360f)
-                        cameraYaw -= 360f;
-                    if (cameraYaw < 0f)
-                        cameraYaw += 360f;
-                    orbitModule?.SetYaw(cameraYaw);
-                }
-
-                // Keep camera snapped to the Donut without lerp lag.
-                orbitModule?.ForceUpdateModule();
-
-                // WASD → camera-relative world-space move direction.
-                float fwd = 0f,
-                    strafe = 0f;
-                if (keyboard != null && _canMove)
-                {
-                    if (keyboard[Key.W].isPressed)
-                        fwd += 1f;
-                    if (keyboard[Key.S].isPressed)
-                        fwd -= 1f;
-                    if (keyboard[Key.A].isPressed)
-                        strafe -= 1f;
-                    if (keyboard[Key.D].isPressed)
-                        strafe += 1f;
-
-                    if (keyboard[Key.Escape].wasPressedThisFrame)
-                        _forceEnd = true;
-                }
-
-                Vector3 worldMoveDir = Vector3.zero;
-                if (Mathf.Abs(fwd) > 0.001f || Mathf.Abs(strafe) > 0.001f)
-                {
-                    Quaternion camYawRot = Quaternion.Euler(0f, cameraYaw, 0f);
-                    worldMoveDir =
-                        camYawRot * Vector3.forward * fwd + camYawRot * Vector3.right * strafe;
-                    if (worldMoveDir.sqrMagnitude > 1f)
-                        worldMoveDir.Normalize();
-                }
-
-                // Rate-limit movement sends: only send when direction changed or
-                // timer expires (20 Hz cap), matching the AC130 flight input pattern.
-                bool moveChanged = (worldMoveDir - _lastSentMoveDir).sqrMagnitude > 0.001f;
-                _moveSendTimer -= Time.deltaTime;
-                if (moveChanged || _moveSendTimer <= 0f)
-                {
-                    NetworkClient.Send(new DonutMoveMessage { WorldMoveDir = worldMoveDir });
-                    _lastSentMoveDir = worldMoveDir;
-                    _moveSendTimer = InputSendInterval;
-                }
-
-                // Left click → fire laser.
-                if (
-                    mouse != null
-                    && mouse.leftButton.wasPressedThisFrame
-                    && _localLaserUsesRemaining > 0
-                    && Time.time - _localLastLaserTime >= Configuration.DonutLaserCooldown.Value
-                )
-                {
-                    NetworkClient.Send(new DonutFireLaserMessage());
-                    _localLastLaserTime = Time.time;
-                    _canMove = false;
-                }
-
                 DonutOverlay.UpdateTimeRemaining(sessionDuration - sessionElapsed);
-
                 yield return null;
             }
 
@@ -615,22 +664,7 @@ namespace IssaPlugin.Items
             }
 
             DonutOverlay.SetActive(false, 0);
-
-            // Restore orbit camera to normal player tracking.
-            if (orbitModule != null)
-            {
-                orbitModule.SetDistanceAddition(0f);
-                orbitModule.disablePhysics = savedDisablePhysics;
-
-                var playerMovement = GameManager.LocalPlayerMovement;
-                if (playerMovement != null)
-                    orbitModule.SetSubject(playerMovement.transform);
-
-                orbitModule.SetPitch(savedPitch);
-                orbitModule.SetYaw(savedYaw);
-                orbitModule.ForceUpdateModule();
-            }
-
+            TeardownOrbitCamera(cameraState);
             InputManager.Controls.Gameplay.Enable();
             LocalSessionActive = false;
 
