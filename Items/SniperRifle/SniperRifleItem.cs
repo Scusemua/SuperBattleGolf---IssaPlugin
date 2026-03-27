@@ -17,25 +17,6 @@ namespace IssaPlugin.Items
         /// <summary>True on the local client while the scope is being held (right-click).</summary>
         public static bool IsScoped { get; set; }
 
-        // ── Reflected fields on ScreenshakeSettings (private auto-property backing fields) ───
-
-        private static readonly FieldInfo ShakeDurationField = typeof(ScreenshakeSettings).GetField(
-            "<Duration>k__BackingField",
-            BindingFlags.NonPublic | BindingFlags.Instance
-        );
-
-        private static readonly FieldInfo ShakePositionCurveField =
-            typeof(ScreenshakeSettings).GetField(
-                "<PositionIntensityOverTime>k__BackingField",
-                BindingFlags.NonPublic | BindingFlags.Instance
-            );
-
-        private static readonly FieldInfo ShakeRotationCurveField =
-            typeof(ScreenshakeSettings).GetField(
-                "<RotationIntensityOverTime>k__BackingField",
-                BindingFlags.NonPublic | BindingFlags.Instance
-            );
-
         // ── Reflected private/internal methods on PlayerInventory ────────────
 
         private static readonly MethodInfo TryParseFirearmRaycastResultsMethod =
@@ -119,6 +100,7 @@ namespace IssaPlugin.Items
             Ray ray = new Ray(barrelEnd, dir);
 
             // ItemHelper.ApplyRecoil(inventory, dir, Configuration.SniperRifleRecoil.Value);
+            ScreenShakeHelper.ApplyScreenShake(Configuration.SniperRifleScreenShakeIntensity.Value);
 
             float maxShot = Configuration.SniperRifleMaxShotDistance.Value;
             int layerMask = GameManager.LayerSettings.GunHittablesMask;
@@ -141,8 +123,6 @@ namespace IssaPlugin.Items
                 VfxManager.PlayElephantGunMissForAllClients(inventory, ray.direction);
                 return;
             }
-
-            ApplyScreenShake(Configuration.SniperRifleScreenShakeIntensity.Value);
 
             var raycastHit = (RaycastHit)args[3];
             var hittable = args[4] as Hittable;
@@ -203,26 +183,6 @@ namespace IssaPlugin.Items
                 inventory,
                 new VfxManager.GunShotHitVfxData(hittable, false, localHitPoint, raycastHit.point)
             );
-        }
-
-        // ── Screen shake ─────────────────────────────────────────────────────
-
-        private static void ApplyScreenShake(float intensity)
-        {
-            if (intensity <= 0f)
-                return;
-
-            var settings = ScriptableObject.CreateInstance<ScreenshakeSettings>();
-            ShakeDurationField?.SetValue(settings, 0.35f);
-            ShakePositionCurveField?.SetValue(
-                settings,
-                AnimationCurve.EaseInOut(0f, intensity, 1f, 0f)
-            );
-            ShakeRotationCurveField?.SetValue(
-                settings,
-                AnimationCurve.EaseInOut(0f, intensity * 15f, 1f, 0f)
-            );
-            CameraModuleController.Shake(settings);
         }
     }
 }

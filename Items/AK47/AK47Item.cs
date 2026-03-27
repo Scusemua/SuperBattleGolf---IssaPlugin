@@ -75,7 +75,6 @@ namespace IssaPlugin.Items
                     break;
 
                 yield return new WaitForSeconds(Configuration.AK47FireRate.Value);
-
             } while (Mouse.current != null && Mouse.current.leftButton.isPressed);
 
             ItemHelper.SetCurrentItemUse(inventory, ItemUseType.None);
@@ -110,6 +109,7 @@ namespace IssaPlugin.Items
             Ray ray = new Ray(barrelEnd, dir);
 
             // ItemHelper.ApplyRecoil(inventory, dir, Configuration.AK47Recoil.Value);
+            ScreenShakeHelper.ApplyScreenShake(Configuration.AK47ScreenShakeIntensity.Value);
 
             float maxShot = Configuration.AK47MaxShotDistance.Value;
             int layerMask = GameManager.LayerSettings.GunHittablesMask;
@@ -198,7 +198,12 @@ namespace IssaPlugin.Items
                 _lastVfxTime = Time.time;
                 VfxManager.PlayElephantGunHitForAllClients(
                     inventory,
-                    new VfxManager.GunShotHitVfxData(hittable, false, localHitPoint, raycastHit.point)
+                    new VfxManager.GunShotHitVfxData(
+                        hittable,
+                        false,
+                        localHitPoint,
+                        raycastHit.point
+                    )
                 );
             }
         }
