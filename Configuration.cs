@@ -46,6 +46,7 @@ namespace IssaPlugin
         public static ConfigEntry<float> BomberWaitTime { get; private set; }
         public static ConfigEntry<float> BomberStripLength { get; private set; }
         public static ConfigEntry<float> BomberRocketAngularJitter { get; private set; }
+        public static ConfigEntry<float> BomberRocketSpawnDepth { get; private set; }
         public static ConfigEntry<float> BomberTargetingZoomSpeed { get; private set; }
         public static ConfigEntry<float> BomberTargetMoveSpeed { get; private set; }
         public static ConfigEntry<float> BomberTargetRotateSpeed { get; private set; }
@@ -328,6 +329,10 @@ namespace IssaPlugin
         public static ConfigEntry<bool> BearAttackFinishedPlayers { get; private set; }
 
         // --- Drunk Overlay ---
+        public static ConfigEntry<bool>  DrunkGhostEnabled { get; private set; }
+        public static ConfigEntry<float> DrunkGhostOffsetX { get; private set; }
+        public static ConfigEntry<float> DrunkGhostOffsetY { get; private set; }
+        public static ConfigEntry<float> DrunkGhostAlpha   { get; private set; }
         public static ConfigEntry<float> DrunkRollFreq1 { get; private set; }
         public static ConfigEntry<float> DrunkRollAmp1 { get; private set; }
         public static ConfigEntry<float> DrunkRollFreq2 { get; private set; }
@@ -522,6 +527,13 @@ namespace IssaPlugin
                 "RocketAngularJitter",
                 0.8f,
                 "Random angular jitter in degrees for each rocket's rotation."
+            );
+
+            BomberRocketSpawnDepth = cfg.Bind(
+                "StealthBomber",
+                "RocketSpawnDepth",
+                5f,
+                "How far below the bomber (in units) rockets spawn, to avoid colliding with the bomber on creation."
             );
 
             BomberTargetMoveSpeed = cfg.Bind(
@@ -2253,6 +2265,30 @@ namespace IssaPlugin
             );
 
             // ── Drunk Overlay ──────────────────────────────────────────────────
+            DrunkGhostEnabled = cfg.Bind(
+                "DrunkOverlay",
+                "GhostEnabled",
+                true,
+                "Enable the double-vision ghost image."
+            );
+            DrunkGhostOffsetX = cfg.Bind(
+                "DrunkOverlay",
+                "GhostOffsetX",
+                0.04f,
+                "Horizontal ghost offset as a fraction of screen width (e.g. 0.04 = 4%)."
+            );
+            DrunkGhostOffsetY = cfg.Bind(
+                "DrunkOverlay",
+                "GhostOffsetY",
+                0.01f,
+                "Vertical ghost offset as a fraction of screen height."
+            );
+            DrunkGhostAlpha = cfg.Bind(
+                "DrunkOverlay",
+                "GhostAlpha",
+                0.35f,
+                "Opacity of the ghost image (0–1)."
+            );
             DrunkRollFreq1 = cfg.Bind(
                 "DrunkOverlay",
                 "RollFreq1",

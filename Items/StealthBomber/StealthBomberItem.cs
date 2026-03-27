@@ -293,6 +293,8 @@ namespace IssaPlugin.Items
             System.Action onComplete
         )
         {
+            IssaPluginPlugin.Log.LogWarning("[Bomber] Running server-side stealth bomber phase.");
+
             SetCurrentItemUse(inventory, ItemUseType.Regular);
             if (equippedIndex >= 0)
                 ItemHelper.DecrementAndRemove(inventory, equippedIndex);
@@ -375,7 +377,6 @@ namespace IssaPlugin.Items
 
             float startTime = Time.time;
             int rocketsDropped = 0;
-            bool droppingFinished = false;
 
             while (true)
             {
@@ -391,35 +392,30 @@ namespace IssaPlugin.Items
 
                 Vector3 bomberPos = spawnPos + direction * distanceTravelled;
 
-                if (!droppingFinished)
+                if (distanceTravelled >= dropEndDist)
                 {
-                    if (distanceTravelled >= dropEndDist)
-                    {
-                        droppingFinished = true;
-                    }
-                    else
-                    {
-                        float offsetAmount = RandomGaussian(-spread, spread);
-                        offsetAmount = Mathf.Clamp(offsetAmount, -spread, spread);
-
-                        Vector3 offset = perpendicular * offsetAmount;
-                        // Vector3 offset = perpendicular * UnityEngine.Random.Range(-spread, spread);
-
-                        float angularJitter = Configuration.BomberRocketAngularJitter.Value;
-                        Quaternion jitter = Quaternion.Euler(
-                            UnityEngine.Random.Range(-angularJitter, angularJitter),
-                            UnityEngine.Random.Range(-angularJitter, angularJitter),
-                            0f
-                        );
-                        SpawnRocket(inventory, bomberPos + offset, jitter);
-                        rocketsDropped++;
-
-                        yield return new WaitForSeconds(rocketInterval);
-                        continue;
-                    }
+                    yield return null;
                 }
+                else
+                {
+                    float offsetAmount = RandomGaussian(-spread, spread);
+                    offsetAmount = Mathf.Clamp(offsetAmount, -spread, spread);
 
-                yield return null;
+                    Vector3 offset = perpendicular * offsetAmount;
+                    // Vector3 offset = perpendicular * UnityEngine.Random.Range(-spread, spread);
+
+                    float angularJitter = Configuration.BomberRocketAngularJitter.Value;
+                    Quaternion jitter = Quaternion.Euler(
+                        UnityEngine.Random.Range(-angularJitter, angularJitter),
+                        UnityEngine.Random.Range(-angularJitter, angularJitter),
+                        0f
+                    );
+                    SpawnRocket(inventory, bomberPos + offset + Vector3.down * Configuration.BomberRocketSpawnDepth.Value, jitter);
+                    rocketsDropped++;
+
+                    yield return new WaitForSeconds(rocketInterval);
+                    continue;
+                }
             }
 
             IssaPluginPlugin.Log.LogInfo(
@@ -648,7 +644,7 @@ namespace IssaPlugin.Items
                 ItemType.RocketLauncher
             );
 
-            IssaPluginPlugin.Log.LogDebug($"[Bomber] Spawning rocket at position={position}");
+            IssaPluginPlugin.Log.LogInfo($"[Bomber] Spawning rocket at position={position}");
 
             var rocket = Object.Instantiate(
                 GameManager.ItemSettings.RocketPrefab,
