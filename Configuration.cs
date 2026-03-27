@@ -334,6 +334,7 @@ namespace IssaPlugin
         public static ConfigEntry<float> DroneSwarmUses { get; private set; }
         public static ConfigEntry<float> DroneSwarmSpawnWeight { get; private set; }
         public static ConfigEntry<float> BaseDroneCount { get; private set; }
+        public static ConfigEntry<float> DronePerPlayerScalingFactor { get; private set; }
         public static ConfigEntry<float> DroneAltitude { get; private set; }
         public static ConfigEntry<float> DroneWanderRadius { get; private set; }
         public static ConfigEntry<float> DroneWanderSpeed { get; private set; }

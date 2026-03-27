@@ -100,7 +100,7 @@ namespace IssaPlugin.Items
             float dronePerPlayerScalingFactor = Configuration.DronePerPlayerScalingFactor.Value;
             float droneCountScaleFactor =
                 1 + (dronePerPlayerScalingFactor * GameManager.RemotePlayers.Count);
-            int droneCount = droneCount * droneCountScaleFactor;
+            droneCount = (int)(droneCount * droneCountScaleFactor);
             float altitude = Configuration.DroneAltitude.Value;
             float radius = Configuration.DroneWanderRadius.Value;
 
