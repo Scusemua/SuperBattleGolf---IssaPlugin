@@ -23,11 +23,11 @@ namespace IssaPlugin.Network
 
     public static class VoteMessageSerialization
     {
-        public static void WriteVoteStartMessage(NetworkWriter writer, VoteStartMessage msg)
-            => writer.WriteFloat(msg.TimeoutSeconds);
+        public static void WriteVoteStartMessage(NetworkWriter writer, VoteStartMessage msg) =>
+            writer.WriteFloat(msg.TimeoutSeconds);
 
-        public static VoteStartMessage ReadVoteStartMessage(NetworkReader reader)
-            => new VoteStartMessage { TimeoutSeconds = reader.ReadFloat() };
+        public static VoteStartMessage ReadVoteStartMessage(NetworkReader reader) =>
+            new VoteStartMessage { TimeoutSeconds = reader.ReadFloat() };
 
         public static void WriteVoteSubmitMessage(NetworkWriter writer, VoteSubmitMessage msg)
         {
