@@ -31,7 +31,7 @@ Summons AI-controlled battle bears onto the course. Bears chase down the nearest
 Turn the world into ice and watch as everybody helplessly slips around.
 
 ### 🌌 Low Gravity
-Reduces gravity across the entire course for a configurable duration. Shots fly further, players float on hits, and any ball already airborne gets a free extension. Can backfire badly on anyone with a long putt already in motion.
+Reduces gravity across the entire course for a configurable duration. Shots fly further, players float on hits, and any ball already airborne gets a free extension. Can backfire badly on anyone with a long putt already in motion. (And yes, the swing preview / power bar IS adjusted during low gravity.)
 
 ### 🎯 M200 Intervention
 A scoped sniper rifle. Right-click to zoom and show the scope overlay. Fire to hit instantly at any range without the backwards-knockback dive of the Elephant Gun. Tight spread when scoped, normal spread when hipfired. One shot, one hole in someone's plan.
