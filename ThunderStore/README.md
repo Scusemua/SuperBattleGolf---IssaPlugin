@@ -52,7 +52,7 @@ Plants a destructible brick wall wherever you're standing. Useful for blocking s
 A rapid-fire sub-machine gun. Hold the fire button and spray bullets downrange at high speed. Each bullet hits independently, so sustained fire on a target adds up fast. Accuracy degrades with range, so this one rewards getting close.
 
 ### 🔄 Position Swap
-Pick any other player from the chooser overlay. Warning orbs appear above both of you while a short countdown runs -- then you swap positions in a burst of smoke. Great for dumping someone into a bad lie or pulling yourself out of one. Can't be used on players sitting in a golf cart.
+Pick any other player from the chooser overlay. Warning circle appear around both of you while a short countdown runs -- then you swap positions in a burst of smoke. Great for dumping someone into a bad lie or pulling yourself out of one. Can't be used on players sitting in a golf cart.
 
 ---
 
