@@ -985,6 +985,57 @@ namespace IssaPlugin.Patches
                 PoisonJarNetworkBridge.HandleLanded
             );
 
+            // ── Drone Swarm ────────────────────────────────────────────────────────
+            Writer<DroneSwarmSummonMessage>.write =
+                DroneSwarmSummonMessageSerialization.WriteDroneSwarmSummonMessage;
+            Reader<DroneSwarmSummonMessage>.read =
+                DroneSwarmSummonMessageSerialization.ReadDroneSwarmSummonMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<DroneSwarmSummonMessage>(
+                    (conn, msg) =>
+                        conn.identity?.GetComponent<DroneSwarmNetworkBridge>()?.ServerSummonDrones()
+                );
+
+            Writer<DroneExplodedMessage>.write =
+                DroneExplodedMessageSerialization.WriteDroneExplodedMessage;
+            Reader<DroneExplodedMessage>.read =
+                DroneExplodedMessageSerialization.ReadDroneExplodedMessage;
+            NetworkClient.RegisterHandler<DroneExplodedMessage>(
+                DroneSwarmNetworkBridge.HandleDroneExploded
+            );
+
+            Writer<DroneSwarmSessionEndedMessage>.write =
+                DroneSwarmSessionEndedMessageSerialization.WriteDroneSwarmSessionEndedMessage;
+            Reader<DroneSwarmSessionEndedMessage>.read =
+                DroneSwarmSessionEndedMessageSerialization.ReadDroneSwarmSessionEndedMessage;
+            NetworkClient.RegisterHandler<DroneSwarmSessionEndedMessage>(
+                DroneSwarmNetworkBridge.HandleSessionEnded
+            );
+
+            Writer<DroneSwarmOverlayBeginMessage>.write =
+                DroneSwarmOverlayBeginMessageSerialization.WriteDroneSwarmOverlayBeginMessage;
+            Reader<DroneSwarmOverlayBeginMessage>.read =
+                DroneSwarmOverlayBeginMessageSerialization.ReadDroneSwarmOverlayBeginMessage;
+            NetworkClient.RegisterHandler<DroneSwarmOverlayBeginMessage>(
+                DroneSwarmNetworkBridge.HandleOverlayBegin
+            );
+
+            Writer<DroneDiedClientMessage>.write =
+                DroneDiedClientMessageSerialization.WriteDroneDiedClientMessage;
+            Reader<DroneDiedClientMessage>.read =
+                DroneDiedClientMessageSerialization.ReadDroneDiedClientMessage;
+            NetworkClient.RegisterHandler<DroneDiedClientMessage>(
+                DroneSwarmNetworkBridge.HandleDroneDied
+            );
+
+            Writer<DroneSwarmOverlayEndMessage>.write =
+                DroneSwarmOverlayEndMessageSerialization.WriteDroneSwarmOverlayEndMessage;
+            Reader<DroneSwarmOverlayEndMessage>.read =
+                DroneSwarmOverlayEndMessageSerialization.ReadDroneSwarmOverlayEndMessage;
+            NetworkClient.RegisterHandler<DroneSwarmOverlayEndMessage>(
+                DroneSwarmNetworkBridge.HandleOverlayEnd
+            );
+
             // ── Hotkey item-giving (Client → Server) ─────────────────────────────
             Writer<GiveItemRequestMessage>.write =
                 GiveItemRequestMessageSerialization.WriteGiveItemRequestMessage;
@@ -1023,6 +1074,7 @@ namespace IssaPlugin.Patches
             RegisterPrefab(AssetLoader.WallPrefab);
             RegisterPrefab(AssetLoader.HarrierPrefab);
             RegisterPrefab(AssetLoader.PoisonJarPrefab);
+            RegisterPrefab(AssetLoader.DronePrefab);
         }
 
         private static void RegisterPrefab(GameObject prefab)

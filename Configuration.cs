@@ -328,6 +328,25 @@ namespace IssaPlugin
         public static ConfigEntry<bool> BearFriendlyFire { get; private set; }
         public static ConfigEntry<bool> BearAttackFinishedPlayers { get; private set; }
 
+        // --- Drone Swarm ---
+        public static ConfigEntry<Key> DroneSwarmGiveKey { get; private set; }
+        public static ConfigEntry<float> DroneSwarmUses { get; private set; }
+        public static ConfigEntry<float> DroneSwarmSpawnWeight { get; private set; }
+        public static ConfigEntry<float> DroneCount { get; private set; }
+        public static ConfigEntry<float> DroneAltitude { get; private set; }
+        public static ConfigEntry<float> DroneOrbitRadius { get; private set; }
+        public static ConfigEntry<float> DroneOrbitSpeed { get; private set; }
+        public static ConfigEntry<float> DroneCircleTimeMin { get; private set; }
+        public static ConfigEntry<float> DroneCircleTimeMax { get; private set; }
+        public static ConfigEntry<float> DroneDiveSpeed { get; private set; }
+        public static ConfigEntry<float> DroneDiveAcceleration { get; private set; }
+        public static ConfigEntry<float> DroneHomingStopDistance { get; private set; }
+        public static ConfigEntry<float> DroneArrivalRadius { get; private set; }
+        public static ConfigEntry<float> DroneExplosionScale { get; private set; }
+        public static ConfigEntry<bool> DroneFriendlyFire { get; private set; }
+        public static ConfigEntry<bool> DroneAttackFinishedPlayers { get; private set; }
+        public static ConfigEntry<float> DroneSwarmMaxSessionDuration { get; private set; }
+
         // --- Poison Jar ---
         public static ConfigEntry<Key> PoisonJarGiveKey { get; private set; }
         public static ConfigEntry<float> PoisonJarUses { get; private set; }
@@ -2485,6 +2504,113 @@ namespace IssaPlugin
                 "AimNoisePitchFreq",
                 1.1f,
                 "Pitch aim drift frequency in Hz."
+            );
+
+            // ── Drone Swarm ───────────────────────────────────────────────────────
+            RegWarn(cfg, ItemWarningEnabledEntries, 118, "DroneSwarmWarning", "Drone Swarm", true);
+
+            DroneSwarmGiveKey = cfg.Bind(
+                "DroneSwarm",
+                "GiveKey",
+                Key.Numpad0,
+                "Debug key to add the Drone Swarm item to your inventory."
+            );
+            DroneSwarmUses = cfg.Bind(
+                "DroneSwarm",
+                "Uses",
+                1f,
+                "Number of uses per Drone Swarm pickup."
+            );
+            DroneSwarmSpawnWeight = cfg.Bind(
+                "DroneSwarm",
+                "SpawnWeight",
+                1.0f,
+                "Relative spawn weight for Drone Swarm in the item pool."
+            );
+            DroneCount = cfg.Bind(
+                "DroneSwarm",
+                "DroneCount",
+                5f,
+                "Number of drones spawned per use. Keep at or below 12 to avoid network overhead."
+            );
+            DroneAltitude = cfg.Bind(
+                "DroneSwarm",
+                "Altitude",
+                80f,
+                "Height (metres) at which drones circle above the player centroid."
+            );
+            DroneOrbitRadius = cfg.Bind(
+                "DroneSwarm",
+                "OrbitRadius",
+                40f,
+                "Radius (metres) of the orbit circle."
+            );
+            DroneOrbitSpeed = cfg.Bind(
+                "DroneSwarm",
+                "OrbitSpeed",
+                45f,
+                "How many degrees per second each drone advances around the orbit."
+            );
+            DroneCircleTimeMin = cfg.Bind(
+                "DroneSwarm",
+                "CircleTimeMin",
+                3f,
+                "Minimum seconds a drone circles before diving (randomised per drone)."
+            );
+            DroneCircleTimeMax = cfg.Bind(
+                "DroneSwarm",
+                "CircleTimeMax",
+                10f,
+                "Maximum seconds a drone circles before diving (randomised per drone)."
+            );
+            DroneDiveSpeed = cfg.Bind(
+                "DroneSwarm",
+                "DiveSpeed",
+                30f,
+                "Initial dive speed in metres per second."
+            );
+            DroneDiveAcceleration = cfg.Bind(
+                "DroneSwarm",
+                "DiveAcceleration",
+                20f,
+                "How many metres per second the dive speed increases each second."
+            );
+            DroneHomingStopDistance = cfg.Bind(
+                "DroneSwarm",
+                "HomingStopDistance",
+                15f,
+                "Distance from the target (metres) at which the drone stops tracking and flies "
+                    + "straight, giving the target a chance to dodge. Set to 0 to always home."
+            );
+            DroneArrivalRadius = cfg.Bind(
+                "DroneSwarm",
+                "ArrivalRadius",
+                3f,
+                "Distance from the aim point (metres) at which the drone detonates."
+            );
+            DroneExplosionScale = cfg.Bind(
+                "DroneSwarm",
+                "ExplosionScale",
+                1.5f,
+                "Scale multiplier for the drone impact explosion radius and force."
+            );
+            DroneFriendlyFire = cfg.Bind(
+                "DroneSwarm",
+                "FriendlyFire",
+                false,
+                "If true, drones may target the player who summoned them."
+            );
+            DroneAttackFinishedPlayers = cfg.Bind(
+                "DroneSwarm",
+                "AttackFinishedPlayers",
+                false,
+                "If true, drones may target players who have already holed out."
+            );
+            DroneSwarmMaxSessionDuration = cfg.Bind(
+                "DroneSwarm",
+                "MaxSessionDuration",
+                120f,
+                "Safety cap (seconds) after which any remaining drones are force-destroyed."
             );
         }
     }

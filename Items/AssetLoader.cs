@@ -83,6 +83,29 @@ namespace IssaPlugin.Items
         // --- Poison Jar ---
         public static Sprite PoisonJarIcon { get; private set; }
 
+        // --- Drone Swarm ---
+        public static Sprite DroneSwarmIcon { get; private set; }
+
+        /// <summary>
+        /// The model the player holds while the Drone Swarm item is equipped.
+        /// Bundle asset name: <c>drone_controller.prefab</c>
+        /// </summary>
+        public static GameObject DroneControllerPrefab { get; private set; }
+
+        /// <summary>
+        /// The networked drone object spawned for each swarm member.
+        /// Requires NetworkIdentity + NetworkTransform in the bundle.
+        /// Bundle asset name: <c>drone.prefab</c>
+        /// </summary>
+        public static GameObject DronePrefab { get; private set; }
+
+        /// <summary>
+        /// Local-only VFX instantiated on all clients when a drone detonates.
+        /// Not networked — each client instantiates and destroys its own copy.
+        /// Bundle asset name: <c>drone_explosion.prefab</c>
+        /// </summary>
+        public static GameObject DroneExplosionVfxPrefab { get; private set; }
+
         /// The networked jar projectile. Bundle asset name: <c>poison_jar.prefab</c>
         public static GameObject PoisonJarPrefab { get; private set; }
 
@@ -216,6 +239,7 @@ namespace IssaPlugin.Items
             LoadHarrierAssets();
             LoadPositionSwapAssets();
             LoadPoisonJarAssets();
+            LoadDroneSwarmAssets();
 
             IssaPluginPlugin.Log.LogInfo("[Assets] IssaPluginBundle loaded.");
         }
@@ -542,6 +566,27 @@ namespace IssaPlugin.Items
             PoisonSplashPrefab = Load<GameObject>("poison_cloud_vfx.prefab");
             if (PoisonSplashPrefab != null)
                 StripNetworkComponents(PoisonSplashPrefab);
+        }
+
+        private static void LoadDroneSwarmAssets()
+        {
+            DroneSwarmIcon = LoadSprite("drone_swarm_icon.png");
+
+            DroneControllerPrefab = Load<GameObject>("drone_controller.prefab");
+            if (DroneControllerPrefab != null)
+                DisableRigidbody(DroneControllerPrefab);
+
+            DronePrefab = Load<GameObject>("drone.prefab");
+            if (DronePrefab != null)
+            {
+                EnsureNetworkIdentity(DronePrefab, 0xD40E0001u);
+                // Rigidbody starts kinematic; DroneBehaviour sets it up in Start().
+                DisableRigidbody(DronePrefab);
+            }
+
+            DroneExplosionVfxPrefab = Load<GameObject>("drone_explosion.prefab");
+            if (DroneExplosionVfxPrefab != null)
+                StripNetworkComponents(DroneExplosionVfxPrefab);
         }
 
         /// Ensures a prefab has a NetworkIdentity with a stable assetId so Mirror

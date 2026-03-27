@@ -59,6 +59,7 @@ namespace IssaPlugin
             gameObject.AddComponent<ItemWarningOverlay>();
             gameObject.AddComponent<PositionSwapOverlay>();
             gameObject.AddComponent<PoisonOverlay>();
+            gameObject.AddComponent<DroneSwarmOverlay>();
 
             Log.LogInfo("IssaPlugin by Scusemua has loaded.");
         }
