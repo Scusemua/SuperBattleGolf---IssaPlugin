@@ -96,21 +96,18 @@ namespace IssaPlugin.Items
                 senderNetId: netId
             );
 
-            int droneCount  = (int)Configuration.DroneCount.Value;
-            float altitude  = Configuration.DroneAltitude.Value;
-            float radius    = Configuration.DroneOrbitRadius.Value;
+            int droneCount = (int)Configuration.DroneCount.Value;
+            float altitude = Configuration.DroneAltitude.Value;
+            float radius = Configuration.DroneWanderRadius.Value;
 
-            // Orbit centre = player centroid at ground level, lifted to altitude.
-            Vector3 orbitCenter = ComputeOrbitCenter(altitude);
+            // Wander centre = player centroid at ground level, lifted to altitude.
+            Vector3 wanderCenter = ComputeOrbitCenter(altitude);
 
             _serverSessionActive = true;
             _serverTimeout = StartCoroutine(ServerMaxDurationRoutine());
 
             for (int i = 0; i < droneCount; i++)
-            {
-                float startAngleDeg = 360f / droneCount * i;
-                SpawnOneDrone(startAngleDeg, orbitCenter, radius, droneCount, inventory.PlayerInfo);
-            }
+                SpawnOneDrone(wanderCenter, radius, inventory.PlayerInfo);
 
             connectionToClient.Send(new DroneSwarmOverlayBeginMessage { DroneCount = droneCount });
 
@@ -122,21 +119,20 @@ namespace IssaPlugin.Items
 
         // ── Server internals ──────────────────────────────────────────────────
 
-        private void SpawnOneDrone(
-            float startAngleDeg,
-            Vector3 orbitCenter,
-            float orbitRadius,
-            int totalDrones,
-            PlayerInfo summoner
-        )
+        private void SpawnOneDrone(Vector3 wanderCenter, float wanderRadius, PlayerInfo summoner)
         {
-            // Compute the drone's starting position on the orbit so it spawns
-            // in the right place rather than all clustering at the origin.
-            float angleRad = startAngleDeg * Mathf.Deg2Rad;
+            // Scatter each drone at a random position within the wander area so
+            // they don't all spawn on top of each other.
+            float spawnAngle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
+            float spawnRadius = Random.Range(wanderRadius * 0.2f, wanderRadius * 0.8f);
+            float altOffset = Random.Range(
+                -Configuration.DroneAltitudeVariance.Value,
+                Configuration.DroneAltitudeVariance.Value
+            );
             Vector3 spawnPos = new Vector3(
-                orbitCenter.x + Mathf.Sin(angleRad) * orbitRadius,
-                orbitCenter.y,
-                orbitCenter.z + Mathf.Cos(angleRad) * orbitRadius
+                wanderCenter.x + Mathf.Sin(spawnAngle) * spawnRadius,
+                wanderCenter.y + altOffset,
+                wanderCenter.z + Mathf.Cos(spawnAngle) * spawnRadius
             );
 
             var droneGo = Object.Instantiate(
@@ -153,22 +149,23 @@ namespace IssaPlugin.Items
             );
 
             var behaviour = droneGo.AddComponent<DroneBehaviour>();
-            behaviour.OrbitCenter          = orbitCenter;
-            behaviour.OrbitRadius          = orbitRadius;
-            behaviour.OrbitSpeed           = Configuration.DroneOrbitSpeed.Value;
-            behaviour.InitialOrbitAngle    = startAngleDeg;
-            behaviour.CircleTime           = Random.Range(
+            behaviour.WanderCenter = wanderCenter;
+            behaviour.WanderRadius = wanderRadius;
+            behaviour.WanderSpeed = Configuration.DroneWanderSpeed.Value;
+            behaviour.WanderTurnRate = Configuration.DroneWanderTurnRate.Value;
+            behaviour.AltitudeVariance = Configuration.DroneAltitudeVariance.Value;
+            behaviour.CircleTime = Random.Range(
                 Configuration.DroneCircleTimeMin.Value,
                 Configuration.DroneCircleTimeMax.Value
             );
-            behaviour.DiveSpeed            = Configuration.DroneDiveSpeed.Value;
-            behaviour.DiveAcceleration     = Configuration.DroneDiveAcceleration.Value;
-            behaviour.HomingStopDistance   = Configuration.DroneHomingStopDistance.Value;
-            behaviour.ArrivalRadius        = Configuration.DroneArrivalRadius.Value;
-            behaviour.ExplosionScale       = Configuration.DroneExplosionScale.Value;
-            behaviour.ThrowerInfo          = summoner;
-            behaviour.ItemUseId            = itemUseId;
-            behaviour.FriendlyFire         = Configuration.DroneFriendlyFire.Value;
+            behaviour.DiveSpeed = Configuration.DroneDiveSpeed.Value;
+            behaviour.DiveAcceleration = Configuration.DroneDiveAcceleration.Value;
+            behaviour.HomingStopDistance = Configuration.DroneHomingStopDistance.Value;
+            behaviour.ArrivalRadius = Configuration.DroneArrivalRadius.Value;
+            behaviour.ExplosionScale = Configuration.DroneExplosionScale.Value;
+            behaviour.ThrowerInfo = summoner;
+            behaviour.ItemUseId = itemUseId;
+            behaviour.FriendlyFire = Configuration.DroneFriendlyFire.Value;
             behaviour.AttackFinishedPlayers = Configuration.DroneAttackFinishedPlayers.Value;
 
             // Spawn AFTER full setup so Mirror calls Start() post-Spawn.
@@ -304,7 +301,11 @@ namespace IssaPlugin.Items
             if (AssetLoader.DroneExplosionVfxPrefab == null)
                 return;
 
-            Object.Instantiate(AssetLoader.DroneExplosionVfxPrefab, msg.Position, Quaternion.identity);
+            Object.Instantiate(
+                AssetLoader.DroneExplosionVfxPrefab,
+                msg.Position,
+                Quaternion.identity
+            );
         }
 
         /// <summary>Received by all clients when the swarm session ends.</summary>

@@ -10,19 +10,19 @@ namespace IssaPlugin.Items
     /// after NetworkServer.Spawn, so it only runs on the server. Clients receive
     /// position and rotation updates through the prefab's NetworkTransform.
     ///
-    /// Phase 1 — Circling: the drone orbits OrbitCenter at a fixed radius and
-    ///   altitude using a parametric circle, waiting for its per-drone random
-    ///   circle timer to expire.
+    /// Phase 1 — Wandering: each drone picks a random 3D waypoint within WanderRadius
+    ///   of WanderCenter, smoothly steers toward it at WanderSpeed, then picks another
+    ///   when it arrives. AltitudeVariance lets waypoints scatter vertically so drones
+    ///   weave at different heights. After the per-drone random circle timer expires,
+    ///   the drone transitions to Diving.
     ///
-    /// Phase 2 — Diving: the drone accelerates toward the locked target's live
-    ///   world position each frame. Once the drone comes within HomingStopDistance
-    ///   of the target (configurable), it stops updating the aim point and flies
-    ///   straight to the last-known position — giving the target a chance to dodge.
-    ///   Setting HomingStopDistance to 0 disables this behaviour and makes the
-    ///   drone always home until impact.
+    /// Phase 2 — Diving: the drone accelerates toward the locked target's live world
+    ///   position each frame. Once within HomingStopDistance of the target (configurable),
+    ///   it stops updating the aim point and flies straight — giving the target a chance
+    ///   to dodge. Setting HomingStopDistance to 0 makes the drone always home.
     ///
-    /// Detonation uses the temporary-Rocket + ServerExplode pattern (same as Nuke
-    /// and Harrier) so the game's own damage and ExplosionScaler systems apply.
+    /// Detonation uses the temporary-Rocket + ServerExplode pattern (same as Nuke and
+    /// Harrier) so the game's own damage and ExplosionScaler systems apply.
     /// </summary>
     public class DroneBehaviour : MonoBehaviour
     {
@@ -30,20 +30,24 @@ namespace IssaPlugin.Items
         //  Configuration — set by DroneSwarmNetworkBridge before Start fires
         // ----------------------------------------------------------------
 
-        /// World-space centre of the orbit circle.
-        public Vector3 OrbitCenter;
+        /// World-space centre of the wandering area.
+        public Vector3 WanderCenter;
 
-        /// Radius of the orbit circle in metres.
-        public float OrbitRadius = 40f;
+        /// Maximum distance from WanderCenter a waypoint may be placed (metres).
+        public float WanderRadius = 40f;
 
-        /// How many degrees per second the drone advances around the orbit.
-        public float OrbitSpeed = 45f;
+        /// Cruise speed while wandering (metres/second).
+        public float WanderSpeed = 25f;
 
-        /// Starting angle of this specific drone on the orbit, in degrees.
-        /// Assigned by the bridge so drones are spread evenly.
-        public float InitialOrbitAngle = 0f;
+        /// Maximum steering rate while wandering (degrees/second).
+        /// Lower = wider, lazier arcs. Higher = tighter turns.
+        public float WanderTurnRate = 60f;
 
-        /// How long (seconds) this drone circles before picking a target and diving.
+        /// Half-range for random altitude variation added to each new waypoint (metres).
+        /// Waypoints are placed between WanderCenter.y ± AltitudeVariance.
+        public float AltitudeVariance = 10f;
+
+        /// How long (seconds) this drone wanders before picking a target and diving.
         /// Randomised per-drone by the bridge.
         public float CircleTime = 5f;
 
@@ -79,16 +83,20 @@ namespace IssaPlugin.Items
         //  Internal state
         // ----------------------------------------------------------------
 
-        private enum Phase { Circling, Diving }
+        private enum Phase { Wandering, Diving }
 
-        private Phase _phase = Phase.Circling;
+        private Phase _phase = Phase.Wandering;
         private Rigidbody _rb;
 
-        private float _orbitAngle;    // radians, incremented each FixedUpdate
+        // ── Wandering ────────────────────────────────────────────────────
+        private Vector3 _wanderTarget;
+        private Vector3 _currentHeading;   // unit vector, updated each frame
         private float _circleTimer;
+        private const float WaypointArrivalRadius = 5f;
 
-        private Transform _diveTargetTransform; // null once homing has stopped
-        private Vector3 _homingTarget;           // world point the drone currently flies toward
+        // ── Diving ───────────────────────────────────────────────────────
+        private Transform _diveTargetTransform;
+        private Vector3 _homingTarget;
         private bool _homingActive;
         private float _currentDiveSpeed;
         private float _divingTimeoutTimer;
@@ -118,8 +126,14 @@ namespace IssaPlugin.Items
             _rb.isKinematic = true;
             _rb.useGravity = false;
 
-            _orbitAngle = InitialOrbitAngle * Mathf.Deg2Rad;
             _circleTimer = CircleTime;
+            _wanderTarget = PickRandomWaypoint();
+
+            // Steer toward the first waypoint immediately.
+            Vector3 toFirst = _wanderTarget - transform.position;
+            _currentHeading = toFirst.sqrMagnitude > 0.001f
+                ? toFirst.normalized
+                : Vector3.forward;
         }
 
         private void FixedUpdate()
@@ -130,33 +144,34 @@ namespace IssaPlugin.Items
 
             switch (_phase)
             {
-                case Phase.Circling: UpdateCircling(); break;
-                case Phase.Diving:   UpdateDiving();   break;
+                case Phase.Wandering: UpdateWandering(); break;
+                case Phase.Diving:    UpdateDiving();    break;
             }
         }
 
         // ----------------------------------------------------------------
-        //  Phase: Circling
+        //  Phase: Wandering
         // ----------------------------------------------------------------
 
-        private void UpdateCircling()
+        private void UpdateWandering()
         {
             _circleTimer -= Time.fixedDeltaTime;
 
-            // Advance orbit angle: positive increment produces counter-clockwise
-            // motion when viewed from above.
-            _orbitAngle += OrbitSpeed * Mathf.Deg2Rad * Time.fixedDeltaTime;
+            // Pick a new waypoint once the drone arrives near the current one.
+            if (Vector3.Distance(transform.position, _wanderTarget) < WaypointArrivalRadius)
+                _wanderTarget = PickRandomWaypoint();
 
-            // Parametric circle — X = sin(θ)·r, Z = cos(θ)·r.
-            float x = Mathf.Sin(_orbitAngle) * OrbitRadius;
-            float z = Mathf.Cos(_orbitAngle) * OrbitRadius;
-            Vector3 newPos = new Vector3(OrbitCenter.x + x, OrbitCenter.y, OrbitCenter.z + z);
-            _rb.MovePosition(newPos);
+            // Smoothly rotate heading toward the waypoint direction.
+            Vector3 desired = (_wanderTarget - transform.position).normalized;
+            _currentHeading = Vector3.RotateTowards(
+                _currentHeading,
+                desired,
+                WanderTurnRate * Mathf.Deg2Rad * Time.fixedDeltaTime,
+                0f
+            );
 
-            // Face the tangent direction of travel: d/dθ of (sin·r, 0, cos·r) = (cos, 0, −sin).
-            Vector3 tangent = new Vector3(Mathf.Cos(_orbitAngle), 0f, -Mathf.Sin(_orbitAngle));
-            if (tangent.sqrMagnitude > 0.001f)
-                _rb.MoveRotation(Quaternion.LookRotation(tangent));
+            _rb.MovePosition(transform.position + _currentHeading * (WanderSpeed * Time.fixedDeltaTime));
+            RotateTowardStep(_currentHeading);
 
             if (_circleTimer > 0f)
                 return;
@@ -182,6 +197,20 @@ namespace IssaPlugin.Items
             );
         }
 
+        private Vector3 PickRandomWaypoint()
+        {
+            float angle  = Random.Range(0f, 360f) * Mathf.Deg2Rad;
+            // Bias toward the outer half of the area so drones don't clump in the centre.
+            float radius = Random.Range(WanderRadius * 0.25f, WanderRadius);
+            float altOffset = Random.Range(-AltitudeVariance, AltitudeVariance);
+
+            return new Vector3(
+                WanderCenter.x + Mathf.Sin(angle) * radius,
+                WanderCenter.y + altOffset,
+                WanderCenter.z + Mathf.Cos(angle) * radius
+            );
+        }
+
         // ----------------------------------------------------------------
         //  Phase: Diving
         // ----------------------------------------------------------------
@@ -196,7 +225,7 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            // Update the homing aim point while we are still actively tracking.
+            // Update the homing aim point while still actively tracking.
             if (_homingActive
                 && _diveTargetTransform != null
                 && _diveTargetTransform.gameObject.activeInHierarchy)
@@ -210,7 +239,7 @@ namespace IssaPlugin.Items
                 if (!stopHoming)
                     _homingTarget = _diveTargetTransform.position;
                 else
-                    _homingActive = false; // from here the drone flies straight
+                    _homingActive = false;
             }
 
             // Arrival check before moving so we don't overshoot silently.
@@ -267,13 +296,12 @@ namespace IssaPlugin.Items
                 ServerExplodeMethod?.Invoke(tempRocket, new object[] { pos });
             }
 
-            // Destroy the drone object itself — this wakes the WatchDrone coroutine
-            // in DroneSwarmNetworkBridge which decrements the active count.
+            // Destroy this object — wakes the WatchDrone coroutine in the bridge.
             NetworkServer.Destroy(gameObject);
         }
 
         // ----------------------------------------------------------------
-        //  Target selection — called once when the circle timer expires
+        //  Target selection — called once when the wander timer expires
         // ----------------------------------------------------------------
 
         private Transform SelectRandomTarget()
@@ -310,15 +338,15 @@ namespace IssaPlugin.Items
         }
 
         // ----------------------------------------------------------------
-        //  Rotation helpers (identical to JavelinRocketBehaviour)
+        //  Rotation helpers (same pattern as JavelinRocketBehaviour)
         // ----------------------------------------------------------------
 
-        private void RotateTowardStep(Vector3 step)
+        private void RotateTowardStep(Vector3 direction)
         {
-            if (step.sqrMagnitude < 0.0001f)
+            if (direction.sqrMagnitude < 0.0001f)
                 return;
 
-            Quaternion target = DirectionToRotation(step.normalized);
+            Quaternion target = DirectionToRotation(direction.normalized);
             transform.rotation = Quaternion.RotateTowards(
                 transform.rotation,
                 target,

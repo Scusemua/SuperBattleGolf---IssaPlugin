@@ -334,8 +334,10 @@ namespace IssaPlugin
         public static ConfigEntry<float> DroneSwarmSpawnWeight { get; private set; }
         public static ConfigEntry<float> DroneCount { get; private set; }
         public static ConfigEntry<float> DroneAltitude { get; private set; }
-        public static ConfigEntry<float> DroneOrbitRadius { get; private set; }
-        public static ConfigEntry<float> DroneOrbitSpeed { get; private set; }
+        public static ConfigEntry<float> DroneWanderRadius { get; private set; }
+        public static ConfigEntry<float> DroneWanderSpeed { get; private set; }
+        public static ConfigEntry<float> DroneWanderTurnRate { get; private set; }
+        public static ConfigEntry<float> DroneAltitudeVariance { get; private set; }
         public static ConfigEntry<float> DroneCircleTimeMin { get; private set; }
         public static ConfigEntry<float> DroneCircleTimeMax { get; private set; }
         public static ConfigEntry<float> DroneDiveSpeed { get; private set; }
@@ -2539,17 +2541,31 @@ namespace IssaPlugin
                 80f,
                 "Height (metres) at which drones circle above the player centroid."
             );
-            DroneOrbitRadius = cfg.Bind(
+            DroneWanderRadius = cfg.Bind(
                 "DroneSwarm",
-                "OrbitRadius",
+                "WanderRadius",
                 40f,
-                "Radius (metres) of the orbit circle."
+                "Maximum distance (metres) from the wander centre a drone waypoint may be placed."
             );
-            DroneOrbitSpeed = cfg.Bind(
+            DroneWanderSpeed = cfg.Bind(
                 "DroneSwarm",
-                "OrbitSpeed",
-                45f,
-                "How many degrees per second each drone advances around the orbit."
+                "WanderSpeed",
+                25f,
+                "Cruise speed (metres/second) while drones are wandering before they dive."
+            );
+            DroneWanderTurnRate = cfg.Bind(
+                "DroneSwarm",
+                "WanderTurnRate",
+                60f,
+                "Maximum steering rate (degrees/second) while wandering. "
+                    + "Lower = lazier, wider arcs. Higher = tighter turns."
+            );
+            DroneAltitudeVariance = cfg.Bind(
+                "DroneSwarm",
+                "AltitudeVariance",
+                10f,
+                "Half-range (metres) of random altitude variation added to each waypoint. "
+                    + "Drones pick altitudes between Altitude ± AltitudeVariance."
             );
             DroneCircleTimeMin = cfg.Bind(
                 "DroneSwarm",
