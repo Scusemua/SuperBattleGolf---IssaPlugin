@@ -1,0 +1,85 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <!--
+      netstandard2.1 doesn't have a built-in test runner entry point, but
+      NUnit + NUnit3TestAdapter work fine for IDE and dotnet-test via the
+      Microsoft.NET.Test.Sdk shim.
+    -->
+    <SuppressTfmSupportBuildErrors>true</SuppressTfmSupportBuildErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />
+    <PackageReference Include="NUnit" Version="4.5.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="6.2.0" />
+    <!--
+      Provides UnityEngine stubs (Vector3, Mathf, etc.) so AC130Helpers
+      can be referenced without a live Unity install.
+      Pin to the same Unity version used by the mod project.
+    -->
+    <PackageReference Include="UnityEngine.Modules" Version="6000.2.4" IncludeAssets="compile" />
+  </ItemGroup>
+
+  <!--
+    Reference the mod project directly so tests can reach internal types.
+    Remove this and use the compiled .dll if you prefer not to share source.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\IssaPlugin.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="BepInEx">
+      <HintPath>..\Assembly\BepInEx.dll</HintPath>
+    </Reference>
+    <Reference Include="NUnit.Framework">
+      <HintPath>Assembly\nunit.framework.dll</HintPath>
+    </Reference>
+    <Reference Include="NUnitLite">
+      <HintPath>Assembly\nunitlite.dll</HintPath>
+    </Reference>
+    <Reference Include="NUnitLite-Runner">
+      <HintPath>Assembly\nunitlite-runner.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>Assembly\UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="SharedAssembly">
+      <HintPath>..\Assembly\SharedAssembly.dll</HintPath>
+    </Reference>
+    <Reference Include="Mirror">
+      <HintPath>..\Assembly\Mirror.dll</HintPath>
+    </Reference>
+    <Reference Include="GameAssembly">
+      <HintPath>..\Assembly\GameAssembly.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.InputForUIModule">
+      <HintPath>..\Assembly\UnityEngine.InputForUIModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule.dll">
+      <HintPath>..\Assembly\UnityEngine.InputLegacyModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.InputModule.dll">
+      <HintPath>..\Assembly\UnityEngine.InputModule.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.InputSystem.dll">
+      <HintPath>..\Assembly\Unity.InputSystem.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.InputSystem.ForUI.dll">
+      <HintPath>..\Assembly\Unity.InputSystem.ForUI.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.LocalizationModule">
+      <HintPath>..\Assembly\UnityEngine.LocalizationModule.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Localization">
+      <HintPath>..\Assembly\Unity.Localization.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>
