@@ -98,7 +98,10 @@ namespace IssaPlugin.Patches
             var donutMarker = Object.FindFirstObjectByType<DonutMarker>();
             if (donutMarker != null)
             {
-                float d = OrbitalLaserAircraftHelpers.XZDist(donutMarker.transform.position, holePos);
+                float d = OrbitalLaserAircraftHelpers.XZDist(
+                    donutMarker.transform.position,
+                    holePos
+                );
                 if (d < bestDist)
                 {
                     bestDist = d;
@@ -222,7 +225,7 @@ namespace IssaPlugin.Patches
             onHit = null;
             float bestDist = float.MaxValue;
 
-            // AC130 gunship — AC130GunshipMarker is added server-side in ServerSpawnGunship.
+            // AC130 gunship — AC130GunshipMarker is added server-side in AC130NetworkBridge.SpawnGunship.
             var gunshipMarker = Object.FindFirstObjectByType<AC130GunshipMarker>();
             if (gunshipMarker != null)
             {
