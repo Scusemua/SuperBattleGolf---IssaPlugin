@@ -107,6 +107,7 @@ namespace IssaPlugin.Items
         // the altitude band.  Expressed as a weight on the restoring direction.
         private const float BoundaryRestoreWeight = 3f;
         private const float AltitudeRestoreWeight = 2f;
+        private const float DroneCollisionRange = 2f;
 
         // ── Diving ───────────────────────────────────────────────────────
         private Transform _diveTargetTransform;
@@ -170,11 +171,6 @@ namespace IssaPlugin.Items
             }
         }
 
-        private void OnCollisionEnter(Collision collision)
-        {
-            Detonate();
-        }
-
         // ----------------------------------------------------------------
         //  Phase: Swarming
         // ----------------------------------------------------------------
@@ -189,8 +185,7 @@ namespace IssaPlugin.Items
             // gradually tilts _heading toward vertical, where yaw rotation around
             // world-up becomes a no-op — the drone gets stuck flying straight up or
             // down and appears motionless.  Altitude is handled separately below.
-            float yawRate =
-                (Mathf.PerlinNoise(t, _noiseOffset + 31.4f) * 2f - 1f) * WanderTurnRate;
+            float yawRate = (Mathf.PerlinNoise(t, _noiseOffset + 31.4f) * 2f - 1f) * WanderTurnRate;
             _heading = Quaternion.AngleAxis(yawRate * Time.fixedDeltaTime, Vector3.up) * _heading;
 
             // Keep heading strictly horizontal; clamp any accumulated float drift.
@@ -291,6 +286,21 @@ namespace IssaPlugin.Items
                 return;
             }
 
+            int num = Physics.OverlapSphereNonAlloc(
+                transform.position,
+                DroneCollisionRange,
+                PlayerGolfer.overlappingColliderBuffer,
+                GameManager.LayerSettings.RocketHittablesMask,
+                QueryTriggerInteraction.Ignore
+            );
+
+            if (num > 0)
+            {
+                IssaPluginPlugin.Log.LogInfo("[Drone] Collision while diving.");
+                Detonate();
+                return;
+            }
+
             // Update the homing aim point while still actively tracking.
             // Note: only null-check the transform — relying on activeInHierarchy
             // can suppress updates when the player GameObject is temporarily
@@ -341,6 +351,15 @@ namespace IssaPlugin.Items
             _exploded = true;
 
             Vector3 pos = transform.position;
+
+            // When the drone approaches from above, its position is higher than the
+            // player's.  The game computes knockback as (playerPos - explosionPos),
+            // so an explosion above the player produces a downward force that drives
+            // them through the terrain.  Cap the explosion Y to the target's feet so
+            // the vector always points upward/outward rather than downward.
+            if (_diveTargetTransform != null)
+                pos.y = Mathf.Min(pos.y, _diveTargetTransform.position.y + 0.5f);
+
             IssaPluginPlugin.Log.LogInfo($"[Drone] Detonating at {pos:F1}.");
 
             // Tell all clients to spawn the custom explosion VFX.

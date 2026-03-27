@@ -55,7 +55,7 @@ namespace IssaPlugin.Patches
                 int hitCount = Physics.OverlapSphereNonAlloc(
                     worldPosition,
                     scaledRange,
-                    overlappingColliderBuffer,
+                    ServerExplodeScalePatch.overlappingColliderBuffer,
                     layerMask,
                     QueryTriggerInteraction.Ignore
                 );
