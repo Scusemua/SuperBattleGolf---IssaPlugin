@@ -9,6 +9,8 @@ using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("IssaPlugin.Tests")]
+
 namespace IssaPlugin
 {
     [BepInPlugin(PluginInfo.PLUGIN_GUID, PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]
