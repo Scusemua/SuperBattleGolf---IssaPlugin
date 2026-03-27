@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 3810631965
+CRC: 820974024
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 5ee93ecf530d9ba0911350a1529b7540
+    Hash: 6127a0e5ba967539fd7dad45e4c270ec
   TypeTreeHash:
     serializedVersion: 2
     Hash: 12d32a6d7b1bccbbbbab418431dfa151
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 48b7ba8ad651b048bcc7fa3416a8c500
+    Hash: 3f77e6e7730411fa801efcdadd96000f
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -90,6 +90,7 @@ Assets:
 - Assets/Assets/ac130_tablet.prefab
 - Assets/Assets/warning_particle.prefab
 - Assets/Assets/donut_icon.png
+- Assets/Assets/redbull_icon.png
 - Assets/Assets/ak47.prefab
 - Assets/Assets/poison_bottle_icon.png
 - Assets/Assets/bear.prefab
@@ -117,6 +118,7 @@ Assets:
 - Assets/Assets/posion_bottle.prefab
 - Assets/Assets/ac130_icon.png
 - Assets/Assets/bomber_icon.png
+- Assets/Assets/redbull.prefab
 - Assets/Assets/black_hole_grenade.prefab
 - Assets/Assets/poison_cloud_vfx.prefab
 - Assets/Assets/harrier_icon.png
