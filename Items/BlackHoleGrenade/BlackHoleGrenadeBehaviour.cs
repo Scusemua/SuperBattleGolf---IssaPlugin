@@ -35,8 +35,10 @@ namespace IssaPlugin.Items
         public float GraceTime = 0.35f;
         public float SuckDuration = 6f;
         public float SuckRadius = 35f;
+
         /// Suction acceleration (m/s²) at the outer edge of the field.
         public float SuckForce = 8f;
+
         /// Suction acceleration (m/s²) right at the center.
         public float MaxSuckForce = 40f;
         public float SpitForce = 35f;
@@ -46,7 +48,12 @@ namespace IssaPlugin.Items
         //  State
         // ----------------------------------------------------------------
 
-        private enum Phase { Flying, Suck, Done }
+        private enum Phase
+        {
+            Flying,
+            Suck,
+            Done,
+        }
 
         private Phase _phase = Phase.Flying;
         private Rigidbody _rb;
@@ -169,7 +176,11 @@ namespace IssaPlugin.Items
                     new BlackHoleGrenadeLandedMessage
                     {
                         BlackHoleNetId = ni != null ? ni.netId : 0u,
-                        BlackHolePosition = new Vector3(transform.position.x, transform.position.y + 5f, transform.position.z),
+                        BlackHolePosition = new Vector3(
+                            transform.position.x,
+                            transform.position.y + 5f,
+                            transform.position.z
+                        ),
                         ThrowerInfo = ThrowerInfo,
                         SuckDuration = SuckDuration,
                         SuckRadius = SuckRadius,
@@ -220,8 +231,10 @@ namespace IssaPlugin.Items
                     continue;
 
                 // Skip golf balls if the config says not to affect them.
-                if (!Configuration.BlackHoleGrenadeAffectsGolfBalls.Value &&
-                    col.GetComponentInParent<GolfBall>() != null)
+                if (
+                    !Configuration.BlackHoleGrenadeAffectsGolfBalls.Value
+                    && col.GetComponentInParent<GolfBall>() != null
+                )
                     continue;
 
                 // Skip golf carts that have a driver: the driver's client has
@@ -240,11 +253,13 @@ namespace IssaPlugin.Items
                 float dist = toCenter.magnitude;
                 if (dist < 0.01f)
                     continue;
-                
+
                 float bonusForceMult = 1.0f;
                 if (col.GetComponentInParent<GolfCartInfo>() != null)
                 {
-                    bonusForceMult = Configuration.BlackHoleGrenadeBonusGolfCartForceMultiplier.Value;
+                    bonusForceMult = Configuration
+                        .BlackHoleGrenadeBonusGolfCartForceMultiplier
+                        .Value;
                 }
 
                 // Quadratic falloff — matches the client-side curve so proximity
@@ -293,8 +308,10 @@ namespace IssaPlugin.Items
                     continue;
                 if (col.GetComponentInParent<PlayerInfo>() != null)
                     continue;
-                if (!Configuration.BlackHoleGrenadeAffectsGolfBalls.Value &&
-                    col.GetComponentInParent<GolfBall>() != null)
+                if (
+                    !Configuration.BlackHoleGrenadeAffectsGolfBalls.Value
+                    && col.GetComponentInParent<GolfBall>() != null
+                )
                     continue;
 
                 var rb = col.attachedRigidbody;
