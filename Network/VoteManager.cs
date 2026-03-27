@@ -17,6 +17,7 @@ namespace IssaPlugin.Network
         // ── Server state ────────────────────────────────────────────────────────
         private bool _voteInProgress;
         private float _voteEndTime;
+
         // connectionId → (itemType int → voted enabled)
         private readonly Dictionary<int, Dictionary<int, bool>> _receivedVotes = new();
         private readonly HashSet<int> _pendingConnections = new();
@@ -25,12 +26,17 @@ namespace IssaPlugin.Network
         public static bool VoteActive { get; private set; }
         public static float VoteTimeRemaining { get; private set; }
         public static bool LocalVoteSubmitted { get; private set; }
+
         // Current selections shown in the overlay (itemType int → enabled)
         public static readonly Dictionary<int, bool> LocalVotes = new();
 
         private void Awake()
         {
-            if (Instance != null) { Destroy(this); return; }
+            if (Instance != null)
+            {
+                Destroy(this);
+                return;
+            }
             Instance = this;
         }
 
@@ -68,7 +74,8 @@ namespace IssaPlugin.Network
                 _pendingConnections.Add(conn.connectionId);
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[Vote] Starting with {timeout}s timeout, {_pendingConnections.Count} player(s).");
+                $"[Vote] Starting with {timeout}s timeout, {_pendingConnections.Count} player(s)."
+            );
 
             NetworkServer.SendToAll(new VoteStartMessage { TimeoutSeconds = timeout });
         }
@@ -77,14 +84,16 @@ namespace IssaPlugin.Network
 
         internal void HandleVoteSubmit(NetworkConnectionToClient conn, VoteSubmitMessage msg)
         {
-            if (!_voteInProgress) return;
+            if (!_voteInProgress)
+                return;
 
             int connId = conn.connectionId;
             _receivedVotes[connId] = msg.Votes;
             _pendingConnections.Remove(connId);
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[Vote] Vote from connection {connId} received. Pending: {_pendingConnections.Count}");
+                $"[Vote] Vote from connection {connId} received. Pending: {_pendingConnections.Count}"
+            );
 
             if (_pendingConnections.Count == 0)
                 TallyAndBroadcast();
@@ -92,20 +101,23 @@ namespace IssaPlugin.Network
 
         private void TallyAndBroadcast()
         {
-            if (!_voteInProgress) return;
+            if (!_voteInProgress)
+                return;
             _voteInProgress = false;
 
             var results = new Dictionary<int, bool>();
             foreach (var item in ItemRegistry.AllItems)
             {
                 int key = (int)item.ItemType;
-                int yes = 0, total = 0;
+                int yes = 0,
+                    total = 0;
                 foreach (var playerVotes in _receivedVotes.Values)
                 {
                     if (playerVotes.TryGetValue(key, out bool enabled))
                     {
                         total++;
-                        if (enabled) yes++;
+                        if (enabled)
+                            yes++;
                     }
                 }
                 // Majority wins; tie or no votes → preserve current host enabled state
@@ -174,9 +186,12 @@ namespace IssaPlugin.Network
         /// Called by VoteOverlay when the local player clicks Submit.
         public static void SubmitLocalVotes()
         {
-            if (!VoteActive || LocalVoteSubmitted) return;
+            if (!VoteActive || LocalVoteSubmitted)
+                return;
             LocalVoteSubmitted = true;
-            NetworkClient.Send(new VoteSubmitMessage { Votes = new Dictionary<int, bool>(LocalVotes) });
+            NetworkClient.Send(
+                new VoteSubmitMessage { Votes = new Dictionary<int, bool>(LocalVotes) }
+            );
         }
     }
 }
