@@ -19,11 +19,10 @@ namespace IssaPlugin.Items
 
         // ── Reflected fields on ScreenshakeSettings (private auto-property backing fields) ───
 
-        private static readonly FieldInfo ShakeDurationField =
-            typeof(ScreenshakeSettings).GetField(
-                "<Duration>k__BackingField",
-                BindingFlags.NonPublic | BindingFlags.Instance
-            );
+        private static readonly FieldInfo ShakeDurationField = typeof(ScreenshakeSettings).GetField(
+            "<Duration>k__BackingField",
+            BindingFlags.NonPublic | BindingFlags.Instance
+        );
 
         private static readonly FieldInfo ShakePositionCurveField =
             typeof(ScreenshakeSettings).GetField(
@@ -143,6 +142,8 @@ namespace IssaPlugin.Items
                 return;
             }
 
+            ApplyScreenShake(Configuration.SniperRifleScreenShakeIntensity.Value);
+
             var raycastHit = (RaycastHit)args[3];
             var hittable = args[4] as Hittable;
 
@@ -202,8 +203,6 @@ namespace IssaPlugin.Items
                 inventory,
                 new VfxManager.GunShotHitVfxData(hittable, false, localHitPoint, raycastHit.point)
             );
-
-            ApplyScreenShake(Configuration.SniperRifleScreenShakeIntensity.Value);
         }
 
         // ── Screen shake ─────────────────────────────────────────────────────
