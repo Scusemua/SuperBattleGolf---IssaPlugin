@@ -1036,6 +1036,25 @@ namespace IssaPlugin.Patches
                 DroneSwarmNetworkBridge.HandleOverlayEnd
             );
 
+            // ── Red Bull Trail ────────────────────────────────────────────────────
+            Writer<RedBullActivateMessage>.write = RedBullMessageSerialization.WriteActivate;
+            Reader<RedBullActivateMessage>.read = RedBullMessageSerialization.ReadActivate;
+            Writer<RedBullTrailBeginMessage>.write = RedBullMessageSerialization.WriteTrailBegin;
+            Reader<RedBullTrailBeginMessage>.read = RedBullMessageSerialization.ReadTrailBegin;
+            Writer<RedBullTrailEndMessage>.write = RedBullMessageSerialization.WriteTrailEnd;
+            Reader<RedBullTrailEndMessage>.read = RedBullMessageSerialization.ReadTrailEnd;
+            NetworkClient.RegisterHandler<RedBullTrailBeginMessage>(
+                RedBullNetworkBridge.HandleTrailBegin
+            );
+            NetworkClient.RegisterHandler<RedBullTrailEndMessage>(
+                RedBullNetworkBridge.HandleTrailEnd
+            );
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<RedBullActivateMessage>(
+                    (conn, msg) =>
+                        conn.identity?.GetComponent<RedBullNetworkBridge>()?.ServerActivate()
+                );
+
             // ── Hotkey item-giving (Client → Server) ─────────────────────────────
             Writer<GiveItemRequestMessage>.write =
                 GiveItemRequestMessageSerialization.WriteGiveItemRequestMessage;

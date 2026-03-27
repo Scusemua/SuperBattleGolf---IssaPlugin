@@ -41,7 +41,7 @@ namespace IssaPlugin.Items
         public static GameObject JavelinExplosionVfxPrefab { get; private set; }
         public static GameObject JavelinTrailVfxPrefab { get; private set; }
 
-        public static GameObject DonutLaserZoneRed { get; private set; }
+        // public static GameObject DonutLaserZoneRed { get; private set; }
         public static GameObject StickyGrenadePrefab { get; private set; }
 
         public static GameObject BearPrefab { get; private set; }
@@ -89,6 +89,11 @@ namespace IssaPlugin.Items
         /// The can the player holds while the Red Bull item is equipped.
         /// Bundle asset name: <c>red_bull_can.prefab</c>
         public static GameObject RedBullHandheldPrefab { get; private set; }
+
+        /// Local-only trail VFX parented to a player's transform while Red Bull is active.
+        /// Not networked — each client instantiates its own copy via RedBullNetworkBridge.
+        /// Bundle asset name: <c>red_bull_trail.prefab</c>
+        public static GameObject RedBullTrailPrefab { get; private set; }
 
         // --- Drone Swarm ---
         public static Sprite DroneSwarmIcon { get; private set; }
@@ -304,7 +309,7 @@ namespace IssaPlugin.Items
             TeddyBearPrefab = Load<GameObject>("teddy.prefab");
             DisableRigidbody(TeddyBearPrefab);
 
-            DonutLaserZoneRed = Load<GameObject>("laser_zone_red.prefab");
+            // DonutLaserZoneRed = Load<GameObject>("laser_zone_red.prefab");
             ConfettiBlastRainbow = Load<GameObject>("ConfettiBlastRainbow.prefab");
             // BloodSplatterPrefab = Load<GameObject>("blood_splatter_critical.prefab");
             BloodSplatterPrefab = Load<GameObject>("blood_explosion_vfx.prefab");
@@ -604,6 +609,10 @@ namespace IssaPlugin.Items
             RedBullHandheldPrefab = Load<GameObject>("redbull.prefab");
             if (RedBullHandheldPrefab != null)
                 DisableRigidbody(RedBullHandheldPrefab);
+
+            RedBullTrailPrefab = Load<GameObject>("red_bull_trail.prefab");
+            if (RedBullTrailPrefab != null)
+                StripNetworkComponents(RedBullTrailPrefab);
         }
 
         /// Ensures a prefab has a NetworkIdentity with a stable assetId so Mirror

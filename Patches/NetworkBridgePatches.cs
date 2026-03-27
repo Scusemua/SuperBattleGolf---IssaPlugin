@@ -48,6 +48,8 @@ namespace IssaPlugin.Patches
                 __instance.gameObject.AddComponent<PoisonJarNetworkBridge>();
             if (!__instance.GetComponent<DroneSwarmNetworkBridge>())
                 __instance.gameObject.AddComponent<DroneSwarmNetworkBridge>();
+            if (!__instance.GetComponent<RedBullNetworkBridge>())
+                __instance.gameObject.AddComponent<RedBullNetworkBridge>();
 
             IssaPluginPlugin.Log.LogDebug(
                 "[Network] Bridge components injected onto player object."

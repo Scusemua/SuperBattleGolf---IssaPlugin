@@ -47,6 +47,9 @@ namespace IssaPlugin.Items
 
             RedBullBehaviour.Activate(duration);
             ItemHelper.ConsumeEquippedItem(inventory);
+
+            // Tell the server to broadcast the trail VFX to all clients.
+            inventory.GetComponent<RedBullNetworkBridge>()?.ClientRequestTrail();
         }
     }
 }
