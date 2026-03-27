@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 1605667546
+CRC: 55122571
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: da1c43e00ee15710d4ef04fa2f32252c
+    Hash: 9da108648c29bbc293590c59e9eeb8e8
   TypeTreeHash:
     serializedVersion: 2
     Hash: 82d52513d6b19822b87b688cdb5147d6
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 254fec3608dc0410538a8fbef34dfd62
+    Hash: b4d0256e85e0793735e8ebc11b796cda
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -85,15 +85,15 @@ Assets:
 - Assets/Assets/warning_particle.prefab
 - Assets/Assets/donut_icon.png
 - Assets/Assets/predator_missile_tablet_model.prefab
+- Assets/Assets/Material.001.mat
 - Assets/Assets/predator_missile_ready.ogg
 - Assets/Assets/Materials/Teddy/Material.012.mat
-- Assets/Assets/Material.001.mat
-- Assets/Assets/bear.prefab
 - Assets/Assets/gravity_remote_model.fbx
+- Assets/Assets/bear.prefab
+- Assets/Assets/Dark 1.mat
 - Assets/Assets/big_plane.ogg
 - Assets/Assets/bat_icon.png
 - Assets/Assets/uzi.prefab
-- Assets/Assets/Dark 1.mat
 - Assets/Assets/Dark 2.mat
 - Assets/Assets/javelin_target_indicator.prefab
 - Assets/Assets/missile_locked.ogg
@@ -132,6 +132,7 @@ Assets:
 - Assets/Assets/ac130_tablet.prefab
 - Assets/Assets/jet_plane_flyby.ogg
 - Assets/Assets/ak47.prefab
+- Assets/Assets/poison_bottle_icon.png
 - Assets/Assets/position_swap_icon.png
 - Assets/Assets/laser_zone_red.prefab
 - Assets/Assets/bear_icon.png
@@ -140,17 +141,19 @@ Assets:
 - Assets/Assets/uzi_icon_v2.png
 - Assets/Assets/sports_car_handheld.prefab
 - Assets/Assets/gravity_remote_icon.png
-- Assets/Assets/black_hole.prefab
+- Assets/Assets/poison_vfx.prefab
 - Assets/Assets/sniper_rifle_icon.png
 - Assets/Assets/freeze_effect_icon.png
 - Assets/Blink/Art/Animals/Stylized/Bear/Bear_Prefabs/Bear_4.prefab
 - Assets/Assets/DroppedCustomItem.prefab
 - Assets/Assets/smoke_prefab.prefab
+- Assets/Assets/black_hole.prefab
 - Assets/Assets/sniper_scope.png
 - Assets/Assets/Brass.mat
 - Assets/Assets/nuclear_bomb.prefab
-- Assets/Assets/black_hole_grenade.prefab
+- Assets/Assets/posion_bottle.prefab
 - Assets/Assets/sports_car_icon.png
+- Assets/Assets/black_hole_grenade.prefab
 - Assets/Assets/harrier_icon.png
 - Assets/Assets/spike_ball_icon.png
 - Assets/Assets/ac130_tablet_model.prefab
