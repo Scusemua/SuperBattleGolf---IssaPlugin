@@ -15,9 +15,8 @@ namespace IssaPlugin.Items
             DroneSwarmSummonMessage msg
         ) { }
 
-        public static DroneSwarmSummonMessage ReadDroneSwarmSummonMessage(
-            NetworkReader reader
-        ) => new DroneSwarmSummonMessage();
+        public static DroneSwarmSummonMessage ReadDroneSwarmSummonMessage(NetworkReader reader) =>
+            new DroneSwarmSummonMessage();
     }
 
     // ── Server → All Clients ─────────────────────────────────────────────────
@@ -99,9 +98,8 @@ namespace IssaPlugin.Items
             DroneDiedClientMessage msg
         ) { }
 
-        public static DroneDiedClientMessage ReadDroneDiedClientMessage(
-            NetworkReader reader
-        ) => new DroneDiedClientMessage();
+        public static DroneDiedClientMessage ReadDroneDiedClientMessage(NetworkReader reader) =>
+            new DroneDiedClientMessage();
     }
 
     /// <summary>Sent to the summoning client when the session ends.</summary>
