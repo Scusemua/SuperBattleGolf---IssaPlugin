@@ -1160,7 +1160,7 @@ namespace IssaPlugin
             SniperRifleScreenShakeIntensity = cfg.Bind(
                 "SniperRifle",
                 "ScreenShakeIntensity",
-                0.1f,
+                0.65f,
                 "Intensity of the screen shake when firing. 0 disables it. Higher values shake more."
             );
 
