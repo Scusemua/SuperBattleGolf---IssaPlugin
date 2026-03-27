@@ -13,6 +13,7 @@ namespace IssaPlugin.Overlays
     ///   - Camera FOV breathing (slow pulse)
     ///   - Warm amber vignette with pulsing opacity
     ///   - Subtle full-screen amber tint
+    ///   - Double-vision ghost (second camera → RenderTexture drawn offset)
     /// </summary>
     public class DrunkOverlay : MonoBehaviour
     {
@@ -30,6 +31,11 @@ namespace IssaPlugin.Overlays
         private Texture2D _vignetteTex;
         private Texture2D _tintTex;
 
+        // Ghost / double-vision
+        private Camera _ghostCam;
+        private RenderTexture _ghostTex;
+        private int _ghostTexW, _ghostTexH;
+
         private const Key ToggleKey = Key.J;
 
         // ── Unity lifecycle ────────────────────────────────────────────────
@@ -40,6 +46,7 @@ namespace IssaPlugin.Overlays
         {
             if (Instance == this) Instance = null;
             RestoreCamera();
+            DestroyGhostCamera();
             if (_vignetteTex != null) Destroy(_vignetteTex);
             if (_tintTex != null) Destroy(_tintTex);
         }
@@ -60,6 +67,7 @@ namespace IssaPlugin.Overlays
                 else
                 {
                     RestoreCamera();
+                    DestroyGhostCamera();
                 }
             }
 
@@ -98,6 +106,18 @@ namespace IssaPlugin.Overlays
             float fovDelta = Mathf.Sin(_time * Configuration.DrunkFovFreq1.Value) * Configuration.DrunkFovAmp1.Value
                            + Mathf.Sin(_time * Configuration.DrunkFovFreq2.Value) * Configuration.DrunkFovAmp2.Value;
             cam.fieldOfView = _baseFov + fovDelta;
+
+            // Ghost camera — snap to main cam and render to texture
+            if (Configuration.DrunkGhostEnabled.Value)
+            {
+                EnsureGhostCamera(cam);
+                _ghostCam.transform.SetPositionAndRotation(cam.transform.position, cam.transform.rotation);
+                _ghostCam.fieldOfView    = cam.fieldOfView;
+                _ghostCam.cullingMask    = cam.cullingMask;
+                _ghostCam.nearClipPlane  = cam.nearClipPlane;
+                _ghostCam.farClipPlane   = cam.farClipPlane;
+                _ghostCam.Render();
+            }
         }
 
         private void RestoreCamera()
@@ -125,6 +145,16 @@ namespace IssaPlugin.Overlays
 
             EnsureTextures();
 
+            // Ghost image — drawn first so tint/vignette layer on top
+            if (Configuration.DrunkGhostEnabled.Value && _ghostTex != null)
+            {
+                float offsetX = Configuration.DrunkGhostOffsetX.Value * sw;
+                float offsetY = Configuration.DrunkGhostOffsetY.Value * sh;
+                GUI.color = new Color(1f, 1f, 1f, Configuration.DrunkGhostAlpha.Value);
+                GUI.DrawTexture(new Rect(offsetX, offsetY, sw, sh), _ghostTex);
+                GUI.color = Color.white;
+            }
+
             // Subtle full-screen amber tint — very low alpha, slow pulse
             if (_tintTex != null)
             {
@@ -144,6 +174,49 @@ namespace IssaPlugin.Overlays
                 GUI.DrawTexture(new Rect(0, 0, sw, sh), _vignetteTex, ScaleMode.StretchToFill);
                 GUI.color = Color.white;
             }
+        }
+
+        // ── Ghost camera helpers ───────────────────────────────────────────
+
+        private void EnsureGhostCamera(Camera src)
+        {
+            int w = Screen.width, h = Screen.height;
+
+            // Recreate RenderTexture if the screen size changed
+            if (_ghostTex != null && (_ghostTexW != w || _ghostTexH != h))
+            {
+                _ghostCam.targetTexture = null;
+                Destroy(_ghostTex);
+                _ghostTex = null;
+            }
+
+            if (_ghostTex == null)
+            {
+                _ghostTex = new RenderTexture(w, h, 24);
+                _ghostTexW = w;
+                _ghostTexH = h;
+                if (_ghostCam != null)
+                    _ghostCam.targetTexture = _ghostTex;
+            }
+
+            if (_ghostCam == null)
+            {
+                var go = new GameObject("DrunkGhostCamera") { hideFlags = HideFlags.HideAndDontSave };
+                _ghostCam = go.AddComponent<Camera>();
+                _ghostCam.enabled = false; // manual Render() only
+                _ghostCam.targetTexture = _ghostTex;
+            }
+        }
+
+        private void DestroyGhostCamera()
+        {
+            if (_ghostCam != null)
+            {
+                _ghostCam.targetTexture = null;
+                Destroy(_ghostCam.gameObject);
+                _ghostCam = null;
+            }
+            if (_ghostTex != null) { Destroy(_ghostTex); _ghostTex = null; }
         }
 
         // ── Texture helpers ────────────────────────────────────────────────
