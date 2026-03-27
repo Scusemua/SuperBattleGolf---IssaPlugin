@@ -30,8 +30,11 @@ namespace IssaPlugin.Overlays
 
         // ── Styles ────────────────────────────────────────────────────────────
         private GUIStyle _warningStyle;
+        private const int _warningStyleFontSize = 24;
         private GUIStyle _pipStyle;
+        private const int _pipStyleFontSize = 36;
         private GUIStyle _labelStyle;
+        private const int _labelStyleFontSize = 20;
 
         // ── Animation state ───────────────────────────────────────────────────
         private float _time;
@@ -196,16 +199,20 @@ namespace IssaPlugin.Overlays
         private void DrawBottomBar(float sw, float sh)
         {
             GUI.color = new Color(DroneBlue.r, DroneBlue.g, DroneBlue.b, 0.50f);
-            DrawRect(0, sh - 36f, sw, 36f);
+            DrawRect(0, sh - 75f, sw, 75f);
             GUI.color = Color.white;
 
             _warningStyle.normal.textColor = new Color(0.85f, 0.97f, 1f, 0.95f);
-            GUI.Label(new Rect(0, sh - 34f, sw, 18f), "DRONE SWARM", _warningStyle);
+            GUI.Label(
+                new Rect(0, sh - 55f, sw, _warningStyleFontSize),
+                "DRONE SWARM",
+                _warningStyle
+            );
 
             _labelStyle.normal.textColor = DroneBlueDim;
             GUI.Label(
-                new Rect(0, sh - 18f, sw, 16f),
-                "Drones circle the map and dive at players",
+                new Rect(0, sh - 25f, sw, _labelStyleFontSize),
+                "Drones are circling overhead. Watch out!",
                 _labelStyle
             );
         }
@@ -242,7 +249,7 @@ namespace IssaPlugin.Overlays
                 _warningStyle = new GUIStyle(GUI.skin.label)
                 {
                     alignment = TextAnchor.MiddleCenter,
-                    fontSize = 13,
+                    fontSize = _warningStyleFontSize,
                     fontStyle = FontStyle.Bold,
                 };
                 _warningStyle.normal.textColor = Color.white;
@@ -253,7 +260,7 @@ namespace IssaPlugin.Overlays
                 _pipStyle = new GUIStyle(GUI.skin.label)
                 {
                     alignment = TextAnchor.MiddleCenter,
-                    fontSize = 22,
+                    fontSize = _pipStyleFontSize,
                     fontStyle = FontStyle.Bold,
                 };
                 _pipStyle.normal.textColor = DroneBlue;
@@ -264,7 +271,7 @@ namespace IssaPlugin.Overlays
                 _labelStyle = new GUIStyle(GUI.skin.label)
                 {
                     alignment = TextAnchor.MiddleCenter,
-                    fontSize = 12,
+                    fontSize = _labelStyleFontSize,
                     fontStyle = FontStyle.Bold,
                 };
                 _labelStyle.normal.textColor = DroneBlueDim;

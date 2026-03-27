@@ -261,6 +261,7 @@ namespace IssaPlugin
         public static ConfigEntry<float> AK47Inaccuracy { get; private set; }
         public static ConfigEntry<float> AK47MaxAimingDistance { get; private set; }
         public static ConfigEntry<float> AK47MaxShotDistance { get; private set; }
+        public static ConfigEntry<float> AK47ScreenShakeIntensity { get; private set; }
 
         // public static ConfigEntry<float> AK47Recoil { get; private set; }
 
@@ -1182,7 +1183,7 @@ namespace IssaPlugin
                 "SniperRifle",
                 "ScreenShakeIntensity",
                 0.65f,
-                "Intensity of the screen shake when firing. 0 disables it. Higher values shake more."
+                "Intensity of the screen shake when firing the Sniper Rifle. 0 disables it. Higher values shake more."
             );
 
             // SniperRifleRecoil = cfg.Bind(
@@ -1810,6 +1811,12 @@ namespace IssaPlugin
                 "MaxShotDistance",
                 500f,
                 "Max raycast distance for each bullet."
+            );
+            AK47ScreenShakeIntensity = cfg.Bind(
+                "AK47",
+                "ScreenShakeIntensity",
+                0.25f,
+                "Intensity of the screen shake when firing the AK47. 0 disables it. Higher values shake more."
             );
 
             // AK47Recoil = cfg.Bind(
@@ -2594,7 +2601,7 @@ namespace IssaPlugin
             DroneHomingStopDistance = cfg.Bind(
                 "DroneSwarm",
                 "HomingStopDistance",
-                15f,
+                5f,
                 "Distance from the target (metres) at which the drone stops tracking and flies "
                     + "straight, giving the target a chance to dodge. Set to 0 to always home."
             );

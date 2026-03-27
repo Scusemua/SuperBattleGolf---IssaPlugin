@@ -170,6 +170,11 @@ namespace IssaPlugin.Items
             }
         }
 
+        private void OnCollisionEnter(Collision collision)
+        {
+            Detonate();
+        }
+
         // ----------------------------------------------------------------
         //  Phase: Swarming
         // ----------------------------------------------------------------
@@ -180,48 +185,43 @@ namespace IssaPlugin.Items
 
             float t = Time.time * NoiseTimeScale + _noiseOffset;
 
-            // Noise drives signed angular velocity (deg/s) rather than a goal
-            // direction.  The drone continuously turns left/right and up/down at
-            // a noise-driven rate — producing bee-like waggling instead of smooth
-            // arcs toward a sampled goal.
-            float yawRate = (Mathf.PerlinNoise(t, _noiseOffset + 31.4f) * 2f - 1f) * WanderTurnRate;
-            float pitchRate =
-                (Mathf.PerlinNoise(_noiseOffset + 73.1f, t + _noiseOffset * 0.5f) * 2f - 1f)
-                * WanderTurnRate
-                * 0.35f; // less vertical variation than horizontal
-
-            // Yaw: rotate around world-up.
+            // Yaw-only noise: pitch is intentionally omitted.  Noise-driven pitch
+            // gradually tilts _heading toward vertical, where yaw rotation around
+            // world-up becomes a no-op — the drone gets stuck flying straight up or
+            // down and appears motionless.  Altitude is handled separately below.
+            float yawRate =
+                (Mathf.PerlinNoise(t, _noiseOffset + 31.4f) * 2f - 1f) * WanderTurnRate;
             _heading = Quaternion.AngleAxis(yawRate * Time.fixedDeltaTime, Vector3.up) * _heading;
 
-            // Pitch: rotate around heading's right axis.  Skip when heading is
-            // near-vertical to avoid gimbal degeneracy.
-            Vector3 pitchAxis = Vector3.Cross(_heading, Vector3.up);
-            if (pitchAxis.sqrMagnitude > 0.001f)
-            {
-                _heading =
-                    Quaternion.AngleAxis(pitchRate * Time.fixedDeltaTime, pitchAxis.normalized)
-                    * _heading;
-            }
+            // Keep heading strictly horizontal; clamp any accumulated float drift.
+            _heading.y = 0f;
+            if (_heading.sqrMagnitude < 0.001f)
+                _heading = Vector3.forward;
+            else
+                _heading.Normalize();
 
-            // Boundary / altitude corrections steer the heading back into the
-            // safe zone.  The correction magnitude scales the rotation rate so
-            // drones curve harder the further outside they drift.
-            Vector3 correction = BoundaryForce() + AltitudeForce();
-            if (correction.sqrMagnitude > 0.001f)
+            // Horizontal boundary correction: steer back toward WanderCenter XZ.
+            Vector3 boundary = BoundaryForce();
+            if (boundary.sqrMagnitude > 0.001f)
             {
+                // Project onto XZ so this correction never tilts _heading vertically.
+                Vector3 horizBoundary = new Vector3(boundary.x, 0f, boundary.z).normalized;
                 _heading = Vector3.RotateTowards(
                     _heading,
-                    correction.normalized,
-                    correction.magnitude * WanderTurnRate * Mathf.Deg2Rad * Time.fixedDeltaTime,
+                    horizBoundary,
+                    boundary.magnitude * WanderTurnRate * Mathf.Deg2Rad * Time.fixedDeltaTime,
                     0f
                 );
             }
 
-            _heading.Normalize();
+            // Vertical altitude correction: added as a separate velocity component
+            // so it doesn't tilt _heading.  Scaled to 40 % of WanderSpeed — gentle
+            // enough not to dominate horizontal movement.
+            Vector3 altVelocity = AltitudeForce() * (WanderSpeed * 0.4f);
+            Vector3 velocity = _heading * WanderSpeed + altVelocity;
 
-            // Always move — constant velocity, no coasting.
-            _rb.MovePosition(transform.position + _heading * (WanderSpeed * Time.fixedDeltaTime));
-            RotateTowardStep(_heading);
+            _rb.MovePosition(transform.position + velocity * Time.fixedDeltaTime);
+            RotateTowardStep(velocity);
 
             if (_swarmTimer > 0f)
                 return;
@@ -326,8 +326,8 @@ namespace IssaPlugin.Items
             if (step.magnitude > dist)
                 step = toTarget;
 
-            _rb.MovePosition(transform.position + step);
             RotateTowardStep(step);
+            _rb.MovePosition(transform.position + step);
         }
 
         // ----------------------------------------------------------------
@@ -426,11 +426,13 @@ namespace IssaPlugin.Items
             if (direction.sqrMagnitude < 0.0001f)
                 return;
 
+            // Use _rb.MoveRotation so both position and rotation go through the
+            // physics engine in the same tick.  Writing transform.rotation directly
+            // while a MovePosition is pending on a kinematic Rigidbody cancels the
+            // pending position update in some Unity versions.
             Quaternion target = DirectionToRotation(direction.normalized);
-            transform.rotation = Quaternion.RotateTowards(
-                transform.rotation,
-                target,
-                720f * Time.fixedDeltaTime
+            _rb.MoveRotation(
+                Quaternion.RotateTowards(transform.rotation, target, 720f * Time.fixedDeltaTime)
             );
         }
 
