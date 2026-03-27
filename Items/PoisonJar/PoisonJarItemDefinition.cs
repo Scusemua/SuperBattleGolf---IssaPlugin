@@ -25,7 +25,19 @@ namespace IssaPlugin.Items
             get => Configuration.PoisonJarSpawnWeight.Value;
             set => Configuration.PoisonJarSpawnWeight.Value = value;
         }
-        public override Key GiveKey => Key.None;
+        public override Key GiveKey => Configuration.PoisonJarGiveKey.Value;
+
+        public override void OnEquip(PlayerInventory inventory)
+        {
+            var preview = inventory.GetComponent<StickyGrenadeTrajectoryPreview>();
+            if (preview == null)
+            {
+                preview = inventory.gameObject.AddComponent<StickyGrenadeTrajectoryPreview>();
+                preview.TargetItemType = ItemRegistry.PoisonJarItemType;
+                preview.ThrowSpeed = () => Configuration.PoisonJarThrowSpeed.Value;
+                preview.LobAngle = () => Configuration.PoisonJarLobAngle.Value;
+            }
+        }
 
         public override void OnUse(PlayerInventory inventory)
         {

@@ -329,6 +329,7 @@ namespace IssaPlugin
         public static ConfigEntry<bool> BearAttackFinishedPlayers { get; private set; }
 
         // --- Poison Jar ---
+        public static ConfigEntry<Key> PoisonJarGiveKey { get; private set; }
         public static ConfigEntry<float> PoisonJarUses { get; private set; }
         public static ConfigEntry<float> PoisonJarSpawnWeight { get; private set; }
         public static ConfigEntry<float> PoisonJarThrowSpeed { get; private set; }
@@ -2274,6 +2275,12 @@ namespace IssaPlugin
             RegWarn(cfg, ItemWarningEnabledEntries, 117, "PoisonJarWarning", "Poison Jar", false);
 
             // ── Poison Jar ────────────────────────────────────────────────────────
+            PoisonJarGiveKey = cfg.Bind(
+                "PoisonJar",
+                "GiveKey",
+                Key.NumpadPeriod,
+                "Debug key to add the Poison Jar to your inventory."
+            );
             PoisonJarUses = cfg.Bind(
                 "PoisonJar",
                 "Uses",
@@ -2301,13 +2308,13 @@ namespace IssaPlugin
             PoisonJarRadius = cfg.Bind(
                 "PoisonJar",
                 "Radius",
-                8.0f,
+                2.0f,
                 "Radius in metres of the poison AoE. Also scales the splash VFX."
             );
             PoisonJarDuration = cfg.Bind(
                 "PoisonJar",
                 "Duration",
-                12.0f,
+                10.0f,
                 "How long (seconds) the poison visual lasts on affected players."
             );
 

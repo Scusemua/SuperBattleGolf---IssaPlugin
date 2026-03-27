@@ -41,9 +41,19 @@ namespace IssaPlugin.Items
             if (_graceTimer > 0f)
                 return;
 
+            // Only check for landing once the jar is descending — avoids false positives
+            // while the jar is still rising through geometry near the throw origin.
+            if (_rb != null && _rb.linearVelocity.y > 0f)
+                return;
+
             // Check for ground / terrain contact (0.4 m radius matches a typical grenade size)
-            if (Physics.CheckSphere(transform.position, 0.4f, ItemHelper.GroundLayerMask))
-                Land();
+            // if (Physics.CheckSphere(transform.position, 0.4f, ItemHelper.GroundLayerMask))
+            //     Land();
+        }
+
+        private void OnCollisionEnter(Collision collision)
+        {
+            Land();
         }
 
         private void Land()

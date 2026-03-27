@@ -22,11 +22,13 @@ namespace IssaPlugin.Overlays
         private bool _manualActive; // toggled by the J debug key
         private float _poisonEndTime = -1f; // realtimeSinceStartup when poison expires; -1 = not poisoned
         private bool _wasActive;
+        private bool _isActive; // cached each Update, shared by LateUpdate and OnGUI
         private float _time; // elapsed seconds while active
 
         private bool IsActive => _manualActive || Time.realtimeSinceStartup < _poisonEndTime;
 
         // Camera state saved on activation so we can restore on deactivation
+        private Camera _mainCam; // cached on first active frame; cleared on deactivation
         private float _baseFov;
         private float _baseRollZ;
         private bool _camStateStored;
@@ -79,22 +81,22 @@ namespace IssaPlugin.Overlays
             if (kb != null && kb[ToggleKey].wasPressedThisFrame)
                 _manualActive = !_manualActive;
 
-            bool active = IsActive;
+            _isActive = IsActive;
 
-            if (active && !_wasActive)
+            if (_isActive && !_wasActive)
             {
                 _time = 0f;
                 _camStateStored = false;
             }
-            else if (!active && _wasActive)
+            else if (!_isActive && _wasActive)
             {
                 RestoreCamera();
                 DestroyGhostCamera();
             }
 
-            _wasActive = active;
+            _wasActive = _isActive;
 
-            if (active)
+            if (_isActive)
                 _time += Time.deltaTime;
         }
 
@@ -102,20 +104,23 @@ namespace IssaPlugin.Overlays
 
         private void LateUpdate()
         {
-            if (!IsActive)
+            if (!_isActive)
                 return;
 
-            var cam = Camera.main;
-            if (cam == null)
-                return;
-
-            // Capture baseline on the first active frame
+            // Capture baseline and cache Camera.main on the first active frame
             if (!_camStateStored)
             {
-                _baseFov = cam.fieldOfView;
-                _baseRollZ = cam.transform.eulerAngles.z;
+                _mainCam = Camera.main;
+                if (_mainCam == null)
+                    return;
+                _baseFov = _mainCam.fieldOfView;
+                _baseRollZ = _mainCam.transform.eulerAngles.z;
                 _camStateStored = true;
             }
+
+            var cam = _mainCam;
+            if (cam == null)
+                return;
 
             // Compound sine roll — multiple frequencies feel organic rather than mechanical
             float roll =
@@ -167,6 +172,7 @@ namespace IssaPlugin.Overlays
                 cam.transform.eulerAngles = euler;
                 cam.fieldOfView = _baseFov;
             }
+            _mainCam = null;
             _camStateStored = false;
         }
 
@@ -174,7 +180,7 @@ namespace IssaPlugin.Overlays
 
         private void OnGUI()
         {
-            if (!IsActive)
+            if (!_isActive)
                 return;
 
             float sw = Screen.width;
