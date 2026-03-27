@@ -241,6 +241,10 @@ Assets used in the project:
     (https://skfb.ly/6DUUx) by Yanez Designs 
     Licensed under Creative Commons Attribution 
 
+-   "Wednesday Addams Signature Poison Bottle"\
+    (https://skfb.ly/oBRyn) by misscanning
+    Licensed under Creative Commons Attribution
+
 ---
 
 *IssaPlugin is a fan-made mod and is not affiliated with Brimstone or Oro Interactive.*
