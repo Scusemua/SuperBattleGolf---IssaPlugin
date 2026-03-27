@@ -19,8 +19,7 @@ namespace IssaPlugin.Items
             HitNotificationMessage msg
         ) => writer.WriteString(msg.Message);
 
-        public static HitNotificationMessage ReadHitNotificationMessage(
-            NetworkReader reader
-        ) => new HitNotificationMessage { Message = reader.ReadString() };
+        public static HitNotificationMessage ReadHitNotificationMessage(NetworkReader reader) =>
+            new HitNotificationMessage { Message = reader.ReadString() };
     }
 }
