@@ -1,6 +1,6 @@
 # IssaMod
 
-Adds **18 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
+Adds **19 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
 
 For more information as well as the mod's source code, please see [the mod's GitHub repository](https://github.com/Scusemua/SuperBattleGolf---IssaPlugin/).
 
@@ -59,6 +59,9 @@ Lob a jar of poison with an arc preview. On landing it shatters and douses anyon
 
 ### 🛸 Drone Swarm
 Deploys a swarm of kamikaze drones that fan out overhead and circle the course. Each drone flies independently with erratic noise-driven steering, then picks a random target and dives. They home in continuously until they get close, then lock their aim point and fly straight -- so a target that moves fast enough can actually dodge. The swarm size scales with the number of players in the match. A HUD counter shows how many drones are still airborne. Session ends when every drone has either detonated or the time limit expires.
+
+### 🐂 Red Bull
+Gives you wings. Cracks open a can and grants a speed boost more powerful than coffee, plus a jump height boost that lasts for its duration. Use it to cross the course fast, escape a bad situation, or just make yourself a much harder target to hit.
 
 ---
 
