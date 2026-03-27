@@ -98,10 +98,10 @@ namespace IssaPlugin.Items
         private Vector3 _heading; // unit vector, rotated toward noise direction each frame
         private float _swarmTimer;
 
-        // How fast the noise field evolves — controls direction-change frequency.
-        // Not exposed as config: the interaction with WanderTurnRate is complex enough
-        // that a single "turn rate" knob is easier to reason about.
-        private const float NoiseTimeScale = 0.4f;
+        // How fast the angular-velocity noise oscillates.  Higher = more frequent
+        // direction reversals.  At 2.5 each drone changes turn-direction roughly 5
+        // times per second, producing a tight bee-like waggle.
+        private const float NoiseTimeScale = 2.5f;
 
         // How strongly drones are pushed back when they leave WanderRadius (XZ) or
         // the altitude band.  Expressed as a weight on the restoring direction.
@@ -145,9 +145,12 @@ namespace IssaPlugin.Items
             _noiseOffset = Random.Range(0f, 1000f);
             _swarmTimer = CircleTime;
 
-            // Bootstrap the heading from the first noise sample so the drone
-            // is already pointing in a meaningful direction from frame one.
-            _heading = SampleNoiseDirection(0f);
+            // Bootstrap an arbitrary forward heading; noise will steer it immediately.
+            _heading = Random.onUnitSphere;
+            _heading.y = 0f;
+            if (_heading.sqrMagnitude < 0.001f)
+                _heading = Vector3.forward;
+            _heading.Normalize();
         }
 
         private void FixedUpdate()
@@ -175,22 +178,46 @@ namespace IssaPlugin.Items
         {
             _swarmTimer -= Time.fixedDeltaTime;
 
-            // Build a desired direction from noise and soft boundary forces.
             float t = Time.time * NoiseTimeScale + _noiseOffset;
-            Vector3 desired = SampleNoiseDirection(t);
-            desired += BoundaryForce();
-            desired += AltitudeForce();
 
-            if (desired.sqrMagnitude > 0.001f)
-                desired.Normalize();
+            // Noise drives signed angular velocity (deg/s) rather than a goal
+            // direction.  The drone continuously turns left/right and up/down at
+            // a noise-driven rate — producing bee-like waggling instead of smooth
+            // arcs toward a sampled goal.
+            float yawRate = (Mathf.PerlinNoise(t, _noiseOffset + 31.4f) * 2f - 1f) * WanderTurnRate;
+            float pitchRate =
+                (Mathf.PerlinNoise(_noiseOffset + 73.1f, t + _noiseOffset * 0.5f) * 2f - 1f)
+                * WanderTurnRate
+                * 0.35f; // less vertical variation than horizontal
 
-            // Smoothly rotate heading toward the desired direction.
-            _heading = Vector3.RotateTowards(
-                _heading,
-                desired,
-                WanderTurnRate * Mathf.Deg2Rad * Time.fixedDeltaTime,
-                0f
-            );
+            // Yaw: rotate around world-up.
+            _heading = Quaternion.AngleAxis(yawRate * Time.fixedDeltaTime, Vector3.up) * _heading;
+
+            // Pitch: rotate around heading's right axis.  Skip when heading is
+            // near-vertical to avoid gimbal degeneracy.
+            Vector3 pitchAxis = Vector3.Cross(_heading, Vector3.up);
+            if (pitchAxis.sqrMagnitude > 0.001f)
+            {
+                _heading =
+                    Quaternion.AngleAxis(pitchRate * Time.fixedDeltaTime, pitchAxis.normalized)
+                    * _heading;
+            }
+
+            // Boundary / altitude corrections steer the heading back into the
+            // safe zone.  The correction magnitude scales the rotation rate so
+            // drones curve harder the further outside they drift.
+            Vector3 correction = BoundaryForce() + AltitudeForce();
+            if (correction.sqrMagnitude > 0.001f)
+            {
+                _heading = Vector3.RotateTowards(
+                    _heading,
+                    correction.normalized,
+                    correction.magnitude * WanderTurnRate * Mathf.Deg2Rad * Time.fixedDeltaTime,
+                    0f
+                );
+            }
+
+            _heading.Normalize();
 
             // Always move — constant velocity, no coasting.
             _rb.MovePosition(transform.position + _heading * (WanderSpeed * Time.fixedDeltaTime));
@@ -218,17 +245,6 @@ namespace IssaPlugin.Items
             IssaPluginPlugin.Log.LogInfo(
                 $"[Drone] Transitioning to dive — target {target.name} at {target.position:F1}."
             );
-        }
-
-        /// Returns a unit direction from two independent Perlin noise samples.
-        /// Using offset coordinates for each axis prevents XZ from being correlated.
-        private Vector3 SampleNoiseDirection(float t)
-        {
-            float nx = Mathf.PerlinNoise(t, _noiseOffset + 31.4f) * 2f - 1f;
-            float nz = Mathf.PerlinNoise(_noiseOffset + 73.1f, t) * 2f - 1f;
-            // Y is intentionally omitted here; altitude is handled by AltitudeForce
-            // so the horizontal wandering is decoupled from vertical drift.
-            return new Vector3(nx, 0f, nz).normalized;
         }
 
         /// Returns a push-back vector when the drone drifts outside WanderRadius (XZ only).
@@ -276,11 +292,10 @@ namespace IssaPlugin.Items
             }
 
             // Update the homing aim point while still actively tracking.
-            if (
-                _homingActive
-                && _diveTargetTransform != null
-                && _diveTargetTransform.gameObject.activeInHierarchy
-            )
+            // Note: only null-check the transform — relying on activeInHierarchy
+            // can suppress updates when the player GameObject is temporarily
+            // considered inactive (e.g. during certain animation states).
+            if (_homingActive && _diveTargetTransform != null)
             {
                 float distToTarget = Vector3.Distance(
                     transform.position,
@@ -356,37 +371,46 @@ namespace IssaPlugin.Items
         //  Target selection — called once when the swarm timer expires
         // ----------------------------------------------------------------
 
+        // Reuse a static list to avoid heap allocation on each target-selection call.
+        private static readonly List<Transform> _candidateScratch = [];
+
         private Transform SelectRandomTarget()
         {
-            var candidates = new List<Transform>();
-            foreach (var inv in FindObjectsByType<PlayerInventory>(FindObjectsSortMode.None))
-            {
-                if (IsValidTarget(inv))
-                    candidates.Add(inv.transform);
-            }
+            // Use the same GameManager player lists that BearBehaviour uses — these
+            // hold the authoritative, live-position transforms for every player and
+            // require no scene search.
+            _candidateScratch.Clear();
 
-            if (candidates.Count == 0)
-                return null;
+            var local = GameManager.LocalPlayerInfo;
+            if (local != null && IsValidTarget(local))
+                _candidateScratch.Add(local.transform);
 
-            return candidates[Random.Range(0, candidates.Count)];
+            var remotes = GameManager.RemotePlayers;
+            if (remotes != null)
+                foreach (var p in remotes)
+                    if (IsValidTarget(p))
+                        _candidateScratch.Add(p.transform);
+
+            return _candidateScratch.Count == 0
+                ? null
+                : _candidateScratch[Random.Range(0, _candidateScratch.Count)];
         }
 
-        private bool IsValidTarget(PlayerInventory inv)
+        private bool IsValidTarget(PlayerInfo player)
         {
-            if (inv == null || inv.gameObject == null || !inv.gameObject.activeInHierarchy)
+            if (player == null || !player.gameObject.activeInHierarchy)
                 return false;
 
             if (
                 !FriendlyFire
                 && ThrowerInfo != null
-                && inv.PlayerInfo?.PlayerId.Guid == ThrowerInfo.PlayerId.Guid
+                && player.PlayerId.Guid == ThrowerInfo.PlayerId.Guid
             )
                 return false;
 
             if (
                 !AttackFinishedPlayers
-                && inv.PlayerInfo?.AsGolfer != null
-                && inv.PlayerInfo.AsGolfer.MatchResolution == PlayerMatchResolution.Scored
+                && player.AsGolfer?.MatchResolution == PlayerMatchResolution.Scored
             )
                 return false;
 

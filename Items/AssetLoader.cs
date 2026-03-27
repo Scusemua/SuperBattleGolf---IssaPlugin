@@ -570,7 +570,7 @@ namespace IssaPlugin.Items
 
         private static void LoadDroneSwarmAssets()
         {
-            DroneSwarmIcon = LoadSprite("drone_swarm_icon_v2.png");
+            DroneSwarmIcon = LoadSprite("drone_swarm_icon.png");
 
             DroneControllerPrefab = Load<GameObject>("drone_swarm_tablet.prefab");
             if (DroneControllerPrefab != null)

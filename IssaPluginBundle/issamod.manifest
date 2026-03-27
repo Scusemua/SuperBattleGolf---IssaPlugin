@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 3586740427
+CRC: 3689411532
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: d29ab6f126430e16c3063c6133434ca8
+    Hash: b7b00539caac4089715c5ea73e6f0da8
   TypeTreeHash:
     serializedVersion: 2
     Hash: 12d32a6d7b1bccbbbbab418431dfa151
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 5fa2a91c642f9a3087a114b850a6d8f8
+    Hash: c447466e1be051b480f434284f281929
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -111,7 +111,6 @@ Assets:
 - Assets/Assets/etfx_explosion_nuke.wav
 - Assets/Assets/Materials/Teddy/Nose.002.mat
 - Assets/Assets/sports_car.prefab
-- Assets/Assets/drone_swarm_icon_v2.png
 - Assets/Assets/bomber_icon.png
 - Assets/Assets/plane_falling.ogg
 - Assets/Assets/wall.prefab
@@ -158,6 +157,7 @@ Assets:
 - Assets/Assets/nuclear_bomb.prefab
 - Assets/Assets/posion_bottle.prefab
 - Assets/Assets/sports_car_icon.png
+- Assets/Assets/ac130_icon.png
 - Assets/Assets/black_hole_grenade.prefab
 - Assets/Assets/poison_cloud_vfx.prefab
 - Assets/Assets/harrier_icon.png
@@ -174,7 +174,6 @@ Assets:
 - Assets/Assets/Grey.mat
 - Assets/Assets/Materials/Teddy/fabric_brown.mat
 - Assets/Assets/NukeExplosionFire.prefab
-- Assets/Assets/ac130_icon.png
 - Assets/Assets/blood_splatter_critical.prefab
 - Assets/Assets/nuclear_detonator.prefab
 - Assets/Assets/Glass.mat

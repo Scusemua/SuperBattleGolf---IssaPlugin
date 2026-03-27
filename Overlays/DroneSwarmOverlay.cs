@@ -36,17 +36,18 @@ namespace IssaPlugin.Overlays
         // ── Animation state ───────────────────────────────────────────────────
         private float _time;
         private float _deltaTime;
-        private float _sw, _sh;
+        private float _sw,
+            _sh;
 
         // Drone-destroyed flash
         private float _killFlashAlpha;
         private const float KillFlashDecay = 3.5f;
 
         // Colours
-        private static readonly Color DroneBlue    = new Color(0.10f, 0.60f, 0.90f, 1f);
+        private static readonly Color DroneBlue = new Color(0.10f, 0.60f, 0.90f, 1f);
         private static readonly Color DroneBlueDim = new Color(0.10f, 0.60f, 0.90f, 0.45f);
-        private static readonly Color DeadGrey     = new Color(0.25f, 0.25f, 0.25f, 0.55f);
-        private static readonly Color WarningCyan  = new Color(0.20f, 0.90f, 0.95f, 1f);
+        private static readonly Color DeadGrey = new Color(0.25f, 0.25f, 0.25f, 0.55f);
+        private static readonly Color WarningCyan = new Color(0.20f, 0.90f, 0.95f, 1f);
 
         // ── Unity lifecycle ───────────────────────────────────────────────────
 
@@ -141,10 +142,10 @@ namespace IssaPlugin.Overlays
                 return;
 
             const float PipSize = 34f;
-            const float PipGap  = 6f;
+            const float PipGap = 6f;
             float totalW = _totalDrones * PipSize + (_totalDrones - 1) * PipGap;
             float startX = sw * 0.5f - totalW * 0.5f;
-            float pipY   = 14f;
+            float pipY = 14f;
 
             for (int i = 0; i < _totalDrones; i++)
             {
@@ -173,21 +174,22 @@ namespace IssaPlugin.Overlays
             }
 
             _labelStyle.normal.textColor = DroneBlueDim;
-            string label = _aliveDrones == 0
-                ? "ALL DRONES DESTROYED"
-                : $"{_aliveDrones} DRONE{(_aliveDrones == 1 ? "" : "S")} ACTIVE";
+            string label =
+                _aliveDrones == 0
+                    ? "ALL DRONES DESTROYED"
+                    : $"{_aliveDrones} DRONE{(_aliveDrones == 1 ? "" : "S")} ACTIVE";
             GUI.Label(new Rect(0, pipY + PipSize + 2f, sw, 20f), label, _labelStyle);
         }
 
         private void DrawCornerBrackets(float sw, float sh, float pulse)
         {
-            const float Size  = 44f;
+            const float Size = 44f;
             const float Thick = 2f;
 
             Color c = new Color(DroneBlue.r, DroneBlue.g, DroneBlue.b, pulse * 0.85f);
-            DrawCornerBracket(0,        0,        Size, Thick, true,  true,  c);
-            DrawCornerBracket(sw - Size, 0,        Size, Thick, false, true,  c);
-            DrawCornerBracket(0,        sh - Size, Size, Thick, true,  false, c);
+            DrawCornerBracket(0, 0, Size, Thick, true, true, c);
+            DrawCornerBracket(sw - Size, 0, Size, Thick, false, true, c);
+            DrawCornerBracket(0, sh - Size, Size, Thick, true, false, c);
             DrawCornerBracket(sw - Size, sh - Size, Size, Thick, false, false, c);
         }
 
