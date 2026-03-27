@@ -112,12 +112,12 @@ namespace IssaPlugin.Patches
 
             // ------------------------
             // ---- AC130 Messages ----
-            NetworkClient.RegisterHandler<AC130SoundMessage>(AC130NetworkBridge.HandleAC130Sound);
+            NetworkClient.RegisterHandler<AC130SoundMessage>(AC130ClientHandlers.HandleAC130Sound);
             Writer<AC130SoundMessage>.write = AC130SoundMessageSerialization.WriteAC130SoundMessage;
             Reader<AC130SoundMessage>.read = AC130SoundMessageSerialization.ReadAC130SoundMessage;
 
             NetworkClient.RegisterHandler<AC130MaydayVfxMessage>(
-                AC130NetworkBridge.HandleAC130MaydayVfx
+                AC130ClientHandlers.HandleAC130MaydayVfx
             );
             Writer<AC130MaydayVfxMessage>.write =
                 AC130MaydayVfxMessageSerialization.WriteAC130MaydayVfxMessage;
@@ -125,7 +125,7 @@ namespace IssaPlugin.Patches
                 AC130MaydayVfxMessageSerialization.ReadAC130MaydayVfxMessage;
 
             NetworkClient.RegisterHandler<AC130DamagedMessage>(
-                AC130NetworkBridge.HandleAC130Damaged
+                AC130ClientHandlers.HandleAC130Damaged
             );
             Writer<AC130DamagedMessage>.write =
                 AC130DamagedMessageSerialization.WriteAC130DamagedMessage;
@@ -133,7 +133,7 @@ namespace IssaPlugin.Patches
                 AC130DamagedMessageSerialization.ReadAC130DamagedMessage;
 
             NetworkClient.RegisterHandler<AC130MaydayImpactMessage>(
-                AC130NetworkBridge.HandleAC130MaydayImpact
+                AC130ClientHandlers.HandleAC130MaydayImpact
             );
             Writer<AC130MaydayImpactMessage>.write =
                 AC130MaydayImpactMessageSerialization.WriteAC130MaydayImpactMessage;
