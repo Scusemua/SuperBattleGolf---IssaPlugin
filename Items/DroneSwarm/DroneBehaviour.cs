@@ -10,11 +10,13 @@ namespace IssaPlugin.Items
     /// after NetworkServer.Spawn, so it only runs on the server. Clients receive
     /// position and rotation updates through the prefab's NetworkTransform.
     ///
-    /// Phase 1 — Wandering: each drone picks a random 3D waypoint within WanderRadius
-    ///   of WanderCenter, smoothly steers toward it at WanderSpeed, then picks another
-    ///   when it arrives. AltitudeVariance lets waypoints scatter vertically so drones
-    ///   weave at different heights. After the per-drone random circle timer expires,
-    ///   the drone transitions to Diving.
+    /// Phase 1 — Swarming: each drone flies with Perlin-noise-driven steering.
+    ///   Every frame a desired direction is sampled from two independent noise fields
+    ///   (one for XZ, one for Y), smoothly rotated toward via Vector3.RotateTowards,
+    ///   and then applied as a constant velocity — so the drone is always moving.
+    ///   Each drone has a unique noise offset so all drones move independently.
+    ///   Soft boundary forces prevent drones from leaving the wander area.
+    ///   After the per-drone random swarm timer expires, transitions to Diving.
     ///
     /// Phase 2 — Diving: the drone accelerates toward the locked target's live world
     ///   position each frame. Once within HomingStopDistance of the target (configurable),
@@ -30,24 +32,23 @@ namespace IssaPlugin.Items
         //  Configuration — set by DroneSwarmNetworkBridge before Start fires
         // ----------------------------------------------------------------
 
-        /// World-space centre of the wandering area.
+        /// World-space centre of the swarming area.
         public Vector3 WanderCenter;
 
-        /// Maximum distance from WanderCenter a waypoint may be placed (metres).
+        /// Radius (metres) of the soft boundary that keeps drones contained.
         public float WanderRadius = 40f;
 
-        /// Cruise speed while wandering (metres/second).
+        /// Constant flight speed while swarming (metres/second).
         public float WanderSpeed = 25f;
 
-        /// Maximum steering rate while wandering (degrees/second).
-        /// Lower = wider, lazier arcs. Higher = tighter turns.
-        public float WanderTurnRate = 60f;
+        /// Maximum steering rate while swarming (degrees/second).
+        /// Higher values produce tighter, more erratic weaving.
+        public float WanderTurnRate = 90f;
 
-        /// Half-range for random altitude variation added to each new waypoint (metres).
-        /// Waypoints are placed between WanderCenter.y ± AltitudeVariance.
+        /// Altitude band half-extent above/below WanderCenter.y the drones roam (metres).
         public float AltitudeVariance = 10f;
 
-        /// How long (seconds) this drone wanders before picking a target and diving.
+        /// How long (seconds) this drone swarms before picking a target and diving.
         /// Randomised per-drone by the bridge.
         public float CircleTime = 5f;
 
@@ -83,16 +84,29 @@ namespace IssaPlugin.Items
         //  Internal state
         // ----------------------------------------------------------------
 
-        private enum Phase { Wandering, Diving }
+        private enum Phase
+        {
+            Swarming,
+            Diving,
+        }
 
-        private Phase _phase = Phase.Wandering;
+        private Phase _phase = Phase.Swarming;
         private Rigidbody _rb;
 
-        // ── Wandering ────────────────────────────────────────────────────
-        private Vector3 _wanderTarget;
-        private Vector3 _currentHeading;   // unit vector, updated each frame
-        private float _circleTimer;
-        private const float WaypointArrivalRadius = 5f;
+        // ── Swarming ─────────────────────────────────────────────────────
+        private float _noiseOffset; // unique per drone; shifts into a different part of the field
+        private Vector3 _heading; // unit vector, rotated toward noise direction each frame
+        private float _swarmTimer;
+
+        // How fast the noise field evolves — controls direction-change frequency.
+        // Not exposed as config: the interaction with WanderTurnRate is complex enough
+        // that a single "turn rate" knob is easier to reason about.
+        private const float NoiseTimeScale = 0.4f;
+
+        // How strongly drones are pushed back when they leave WanderRadius (XZ) or
+        // the altitude band.  Expressed as a weight on the restoring direction.
+        private const float BoundaryRestoreWeight = 3f;
+        private const float AltitudeRestoreWeight = 2f;
 
         // ── Diving ───────────────────────────────────────────────────────
         private Transform _diveTargetTransform;
@@ -126,14 +140,14 @@ namespace IssaPlugin.Items
             _rb.isKinematic = true;
             _rb.useGravity = false;
 
-            _circleTimer = CircleTime;
-            _wanderTarget = PickRandomWaypoint();
+            // Each drone gets a large random offset so they all sample different
+            // regions of the Perlin field and never move in sync.
+            _noiseOffset = Random.Range(0f, 1000f);
+            _swarmTimer = CircleTime;
 
-            // Steer toward the first waypoint immediately.
-            Vector3 toFirst = _wanderTarget - transform.position;
-            _currentHeading = toFirst.sqrMagnitude > 0.001f
-                ? toFirst.normalized
-                : Vector3.forward;
+            // Bootstrap the heading from the first noise sample so the drone
+            // is already pointing in a meaningful direction from frame one.
+            _heading = SampleNoiseDirection(0f);
         }
 
         private void FixedUpdate()
@@ -144,44 +158,53 @@ namespace IssaPlugin.Items
 
             switch (_phase)
             {
-                case Phase.Wandering: UpdateWandering(); break;
-                case Phase.Diving:    UpdateDiving();    break;
+                case Phase.Swarming:
+                    UpdateSwarming();
+                    break;
+                case Phase.Diving:
+                    UpdateDiving();
+                    break;
             }
         }
 
         // ----------------------------------------------------------------
-        //  Phase: Wandering
+        //  Phase: Swarming
         // ----------------------------------------------------------------
 
-        private void UpdateWandering()
+        private void UpdateSwarming()
         {
-            _circleTimer -= Time.fixedDeltaTime;
+            _swarmTimer -= Time.fixedDeltaTime;
 
-            // Pick a new waypoint once the drone arrives near the current one.
-            if (Vector3.Distance(transform.position, _wanderTarget) < WaypointArrivalRadius)
-                _wanderTarget = PickRandomWaypoint();
+            // Build a desired direction from noise and soft boundary forces.
+            float t = Time.time * NoiseTimeScale + _noiseOffset;
+            Vector3 desired = SampleNoiseDirection(t);
+            desired += BoundaryForce();
+            desired += AltitudeForce();
 
-            // Smoothly rotate heading toward the waypoint direction.
-            Vector3 desired = (_wanderTarget - transform.position).normalized;
-            _currentHeading = Vector3.RotateTowards(
-                _currentHeading,
+            if (desired.sqrMagnitude > 0.001f)
+                desired.Normalize();
+
+            // Smoothly rotate heading toward the desired direction.
+            _heading = Vector3.RotateTowards(
+                _heading,
                 desired,
                 WanderTurnRate * Mathf.Deg2Rad * Time.fixedDeltaTime,
                 0f
             );
 
-            _rb.MovePosition(transform.position + _currentHeading * (WanderSpeed * Time.fixedDeltaTime));
-            RotateTowardStep(_currentHeading);
+            // Always move — constant velocity, no coasting.
+            _rb.MovePosition(transform.position + _heading * (WanderSpeed * Time.fixedDeltaTime));
+            RotateTowardStep(_heading);
 
-            if (_circleTimer > 0f)
+            if (_swarmTimer > 0f)
                 return;
 
-            // Timer expired — try to pick a target.
+            // Timer expired — pick a target and dive.
             Transform target = SelectRandomTarget();
             if (target == null)
             {
                 // No valid targets yet; retry after a short interval.
-                _circleTimer = NoTargetRetryInterval;
+                _swarmTimer = NoTargetRetryInterval;
                 return;
             }
 
@@ -197,18 +220,45 @@ namespace IssaPlugin.Items
             );
         }
 
-        private Vector3 PickRandomWaypoint()
+        /// Returns a unit direction from two independent Perlin noise samples.
+        /// Using offset coordinates for each axis prevents XZ from being correlated.
+        private Vector3 SampleNoiseDirection(float t)
         {
-            float angle  = Random.Range(0f, 360f) * Mathf.Deg2Rad;
-            // Bias toward the outer half of the area so drones don't clump in the centre.
-            float radius = Random.Range(WanderRadius * 0.25f, WanderRadius);
-            float altOffset = Random.Range(-AltitudeVariance, AltitudeVariance);
+            float nx = Mathf.PerlinNoise(t, _noiseOffset + 31.4f) * 2f - 1f;
+            float nz = Mathf.PerlinNoise(_noiseOffset + 73.1f, t) * 2f - 1f;
+            // Y is intentionally omitted here; altitude is handled by AltitudeForce
+            // so the horizontal wandering is decoupled from vertical drift.
+            return new Vector3(nx, 0f, nz).normalized;
+        }
 
-            return new Vector3(
-                WanderCenter.x + Mathf.Sin(angle) * radius,
-                WanderCenter.y + altOffset,
-                WanderCenter.z + Mathf.Cos(angle) * radius
-            );
+        /// Returns a push-back vector when the drone drifts outside WanderRadius (XZ only).
+        /// Grows linearly with excess distance so drones curve back rather than snap.
+        private Vector3 BoundaryForce()
+        {
+            float dx = transform.position.x - WanderCenter.x;
+            float dz = transform.position.z - WanderCenter.z;
+            float flatDist = Mathf.Sqrt(dx * dx + dz * dz);
+
+            if (flatDist <= WanderRadius)
+                return Vector3.zero;
+
+            float excess = (flatDist - WanderRadius) / WanderRadius;
+            return new Vector3(-dx, 0f, -dz).normalized * (excess * BoundaryRestoreWeight);
+        }
+
+        /// Returns a vertical push when the drone leaves the altitude band.
+        private Vector3 AltitudeForce()
+        {
+            float altMin = WanderCenter.y - AltitudeVariance;
+            float altMax = WanderCenter.y + AltitudeVariance;
+            float y = transform.position.y;
+
+            if (y < altMin)
+                return Vector3.up * ((altMin - y) / AltitudeVariance * AltitudeRestoreWeight);
+            if (y > altMax)
+                return Vector3.down * ((y - altMax) / AltitudeVariance * AltitudeRestoreWeight);
+
+            return Vector3.zero;
         }
 
         // ----------------------------------------------------------------
@@ -226,9 +276,11 @@ namespace IssaPlugin.Items
             }
 
             // Update the homing aim point while still actively tracking.
-            if (_homingActive
+            if (
+                _homingActive
                 && _diveTargetTransform != null
-                && _diveTargetTransform.gameObject.activeInHierarchy)
+                && _diveTargetTransform.gameObject.activeInHierarchy
+            )
             {
                 float distToTarget = Vector3.Distance(
                     transform.position,
@@ -255,7 +307,7 @@ namespace IssaPlugin.Items
 
             // Compute movement step — don't overshoot the target position.
             Vector3 toTarget = _homingTarget - transform.position;
-            Vector3 step = toTarget.normalized * (_currentDiveSpeed * Time.fixedDeltaTime);
+            Vector3 step = toTarget.normalized * _currentDiveSpeed * Time.fixedDeltaTime;
             if (step.magnitude > dist)
                 step = toTarget;
 
@@ -281,7 +333,7 @@ namespace IssaPlugin.Items
 
             // Spawn a temporary game Rocket and immediately ServerExplode it so the
             // game's own damage radius and ExplosionScaler handle knockback correctly.
-            var tempRocket = Object.Instantiate(
+            var tempRocket = Instantiate(
                 GameManager.ItemSettings.RocketPrefab,
                 pos,
                 Quaternion.identity
@@ -301,13 +353,13 @@ namespace IssaPlugin.Items
         }
 
         // ----------------------------------------------------------------
-        //  Target selection — called once when the wander timer expires
+        //  Target selection — called once when the swarm timer expires
         // ----------------------------------------------------------------
 
         private Transform SelectRandomTarget()
         {
             var candidates = new List<Transform>();
-            foreach (var inv in Object.FindObjectsByType<PlayerInventory>(FindObjectsSortMode.None))
+            foreach (var inv in FindObjectsByType<PlayerInventory>(FindObjectsSortMode.None))
             {
                 if (IsValidTarget(inv))
                     candidates.Add(inv.transform);
@@ -324,14 +376,18 @@ namespace IssaPlugin.Items
             if (inv == null || inv.gameObject == null || !inv.gameObject.activeInHierarchy)
                 return false;
 
-            if (!FriendlyFire
+            if (
+                !FriendlyFire
                 && ThrowerInfo != null
-                && inv.PlayerInfo?.PlayerId.Guid == ThrowerInfo.PlayerId.Guid)
+                && inv.PlayerInfo?.PlayerId.Guid == ThrowerInfo.PlayerId.Guid
+            )
                 return false;
 
-            if (!AttackFinishedPlayers
+            if (
+                !AttackFinishedPlayers
                 && inv.PlayerInfo?.AsGolfer != null
-                && inv.PlayerInfo.AsGolfer.MatchResolution == PlayerMatchResolution.Scored)
+                && inv.PlayerInfo.AsGolfer.MatchResolution == PlayerMatchResolution.Scored
+            )
                 return false;
 
             return true;
@@ -359,9 +415,10 @@ namespace IssaPlugin.Items
             if (direction.sqrMagnitude < 0.001f)
                 return Quaternion.identity;
 
-            Vector3 up = Mathf.Abs(Vector3.Dot(direction, Vector3.up)) > 0.99f
-                ? Vector3.forward
-                : Vector3.up;
+            Vector3 up =
+                Mathf.Abs(Vector3.Dot(direction, Vector3.up)) > 0.99f
+                    ? Vector3.forward
+                    : Vector3.up;
 
             return Quaternion.LookRotation(direction, up);
         }
