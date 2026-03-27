@@ -333,7 +333,7 @@ namespace IssaPlugin
         public static ConfigEntry<Key> DroneSwarmGiveKey { get; private set; }
         public static ConfigEntry<float> DroneSwarmUses { get; private set; }
         public static ConfigEntry<float> DroneSwarmSpawnWeight { get; private set; }
-        public static ConfigEntry<float> DroneCount { get; private set; }
+        public static ConfigEntry<float> BaseDroneCount { get; private set; }
         public static ConfigEntry<float> DroneAltitude { get; private set; }
         public static ConfigEntry<float> DroneWanderRadius { get; private set; }
         public static ConfigEntry<float> DroneWanderSpeed { get; private set; }
@@ -2536,11 +2536,17 @@ namespace IssaPlugin
                 1.0f,
                 "Relative spawn weight for Drone Swarm in the item pool."
             );
-            DroneCount = cfg.Bind(
+            BaseDroneCount = cfg.Bind(
                 "DroneSwarm",
-                "DroneCount",
-                5f,
+                "BaseDroneCount",
+                25f,
                 "Number of drones spawned per use. Keep at or below 12 to avoid network overhead."
+            );
+            DronePerPlayerScalingFactor = cfg.Bind(
+                "DroneSwarm",
+                "PerPlayerScalingFactor",
+                0.1f,
+                "Increase the DroneCount as: DroneCount = BaseDroneCount * (1 + [NumPlayers * PerPlayerScalingFactor])."
             );
             DroneAltitude = cfg.Bind(
                 "DroneSwarm",
