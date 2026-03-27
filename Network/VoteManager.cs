@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using IssaPlugin.Items;
 using Mirror;
 using UnityEngine;
@@ -105,24 +106,11 @@ namespace IssaPlugin.Network
                 return;
             _voteInProgress = false;
 
-            var results = new Dictionary<int, bool>();
-            foreach (var item in ItemRegistry.AllItems)
-            {
-                int key = (int)item.ItemType;
-                int yes = 0,
-                    total = 0;
-                foreach (var playerVotes in _receivedVotes.Values)
-                {
-                    if (playerVotes.TryGetValue(key, out bool enabled))
-                    {
-                        total++;
-                        if (enabled)
-                            yes++;
-                    }
-                }
-                // Majority wins; tie or no votes → preserve current host enabled state
-                results[key] = total == 0 ? item.Enabled : (yes * 2 > total);
-            }
+            var results = VoteTally.Compute(
+                _receivedVotes,
+                ItemRegistry.AllItems.Select(i => (int)i.ItemType),
+                key => ItemRegistry.GetDefinition((ItemType)key)?.Enabled ?? false
+            );
 
             ApplyResults(results);
 
