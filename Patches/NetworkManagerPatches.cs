@@ -977,8 +977,7 @@ namespace IssaPlugin.Patches
             if (NetworkServer.active)
                 NetworkServer.RegisterHandler<PoisonJarThrowMessage>(
                     (conn, msg) =>
-                        conn
-                            .identity?.GetComponent<PoisonJarNetworkBridge>()
+                        GetBridge<PoisonJarNetworkBridge>(conn)
                             ?.ServerHandleThrow(msg.ThrowOrigin, msg.ThrowVelocity)
                 );
 
@@ -998,7 +997,7 @@ namespace IssaPlugin.Patches
             if (NetworkServer.active)
                 NetworkServer.RegisterHandler<DroneSwarmSummonMessage>(
                     (conn, msg) =>
-                        conn.identity?.GetComponent<DroneSwarmNetworkBridge>()?.ServerSummonDrones()
+                        GetBridge<DroneSwarmNetworkBridge>(conn)?.ServerSummonDrones()
                 );
 
             Writer<DroneExplodedMessage>.write =
@@ -1057,7 +1056,7 @@ namespace IssaPlugin.Patches
             if (NetworkServer.active)
                 NetworkServer.RegisterHandler<RedBullActivateMessage>(
                     (conn, msg) =>
-                        conn.identity?.GetComponent<RedBullNetworkBridge>()?.ServerActivate()
+                        GetBridge<RedBullNetworkBridge>(conn)?.ServerActivate()
                 );
 
             // ── Coffee Dispenser Red Bull visual swap ─────────────────────────────
