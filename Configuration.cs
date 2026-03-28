@@ -91,6 +91,9 @@ namespace IssaPlugin
         public static ConfigEntry<float> AC130YawLimit { get; private set; }
         public static ConfigEntry<float> AC130PitchLimit { get; private set; }
         public static ConfigEntry<float> AC130MouseSensitivity { get; private set; }
+        public static ConfigEntry<float> AC130HeavyFireCooldown { get; private set; }
+        public static ConfigEntry<float> AC130HeavyShotsBeforeReload { get; private set; }
+        public static ConfigEntry<float> AC130HeavyReloadTime { get; private set; }
 
         // --- AC130 Mayday ---
         public static ConfigEntry<bool> AC130MaydayEnabled { get; private set; }
@@ -196,6 +199,7 @@ namespace IssaPlugin
 
         // --- Explosion Scaling ---
         public static ConfigEntry<float> AC130ExplosionScale { get; private set; }
+        public static ConfigEntry<float> AC130HeavyRocketExplosionScale { get; private set; }
         public static ConfigEntry<float> PredatorMissileExplosionScale { get; private set; }
         public static ConfigEntry<float> StealthBomberExplosionScale { get; private set; }
         public static ConfigEntry<float> JavelinExplosionScale { get; private set; }
@@ -751,8 +755,29 @@ namespace IssaPlugin
             AC130FireCooldown = cfg.Bind(
                 "AC130",
                 "FireCooldown",
-                0.8f,
+                0.35f,
                 "Minimum seconds between rocket fires."
+            );
+
+            AC130HeavyFireCooldown = cfg.Bind(
+                "AC130",
+                "HeavyFireCooldown",
+                3f,
+                "Minimum seconds between heavy (big shot) rocket fires."
+            );
+
+            AC130HeavyShotsBeforeReload = cfg.Bind(
+                "AC130",
+                "HeavyShotsBeforeReload",
+                3f,
+                "Number of big shots before the heavy rocket must reload."
+            );
+
+            AC130HeavyReloadTime = cfg.Bind(
+                "AC130",
+                "HeavyReloadTime",
+                8f,
+                "Time in seconds for the heavy rocket to reload after depleting all big shots."
             );
 
             AC130RocketAngularJitter = cfg.Bind(
@@ -765,7 +790,7 @@ namespace IssaPlugin
             AC130BoostMultiplier = cfg.Bind(
                 "AC130",
                 "BoostMultiplier",
-                1.25f,
+                2.25f,
                 "Multiplier applied to orbit speed when holding Left Shift."
             );
 
@@ -877,6 +902,13 @@ namespace IssaPlugin
                 "AC130Scale",
                 2.25f,
                 "Multiplier for AC130 rocket explosions. Affects blast radius, knockback, and VFX size."
+            );
+
+            AC130HeavyRocketExplosionScale = cfg.Bind(
+                "Explosions",
+                "AC130HeavyRocketScale",
+                5.0f,
+                "Multiplier for AC130 heavy (big shot) rocket explosions. Affects blast radius, knockback, and VFX size."
             );
 
             PredatorMissileExplosionScale = cfg.Bind(
@@ -1520,7 +1552,7 @@ namespace IssaPlugin
             NukeExplosionScale = cfg.Bind(
                 "Explosions",
                 "NukeScale",
-                8.0f,
+                6.0f,
                 "Explosion scale multiplier for the Nuke's detonation rocket. "
                     + "Affects blast radius, knockback force, and VFX size."
             );
@@ -1528,7 +1560,7 @@ namespace IssaPlugin
             NukeSkyBlastForce = cfg.Bind(
                 "Nuke",
                 "SkyBlastForce",
-                100f,
+                350f,
                 "Extra upward impulse force applied to all rigidbodies within SkyBlastRadius "
                     + "after detonation. Stacks on top of the standard explosion knockback."
             );
@@ -1536,7 +1568,7 @@ namespace IssaPlugin
             NukeSkyBlastRadius = cfg.Bind(
                 "Nuke",
                 "SkyBlastRadius",
-                300f,
+                350f,
                 "Radius (units) of the secondary sky blast. Should be large enough to "
                     + "cover the whole map so no one escapes."
             );
@@ -1544,7 +1576,7 @@ namespace IssaPlugin
             NukeSkyBlastVerticalBias = cfg.Bind(
                 "Nuke",
                 "SkyBlastVerticalBias",
-                0.6f,
+                0.7f,
                 "Controls how much of the sky blast force goes upward versus outward (0 = all outward, 1 = all straight up). "
                     + "The horizontal direction is still relative to the explosion point, so players are pushed away from the blast site."
             );
@@ -1559,7 +1591,7 @@ namespace IssaPlugin
             NukeExplosionVfxScale = cfg.Bind(
                 "Nuke",
                 "ExplosionVfxScale",
-                1.0f,
+                5.0f,
                 "Uniform scale applied to the nuke explosion VFX transform on each client. "
                     + "Increase this to make the particle systems appear larger."
             );

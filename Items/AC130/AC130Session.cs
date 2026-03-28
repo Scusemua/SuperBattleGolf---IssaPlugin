@@ -24,6 +24,16 @@ namespace IssaPlugin.Items
         public float Elapsed;
         public float Cooldown;
 
+        // Heavy rocket state
+        public readonly float HeavyFireCooldown;
+        public readonly int HeavyMaxShots;
+        public readonly float HeavyReloadTime;
+        public bool HeavyMode;
+        public int HeavyShotsLeft;
+        public bool HeavyReloading;
+        public float HeavyReloadTimer;
+        public float HeavyCooldown;
+
         // Scene objects
         public readonly Vector3 OrbitCenter;
         public readonly GameObject PivotGo;
@@ -52,6 +62,14 @@ namespace IssaPlugin.Items
             BoostedOrbitSpeed = BaseOrbitSpeed * Configuration.AC130BoostMultiplier.Value;
             AltitudeOffsetMax = Configuration.AC130AltitudeOffsetMax.Value;
             AltitudeAdjustSpeed = Configuration.AC130AltitudeAdjustSpeed.Value;
+
+            HeavyFireCooldown = Configuration.AC130HeavyFireCooldown.Value;
+            HeavyMaxShots = Mathf.Max(
+                1,
+                Mathf.RoundToInt(Configuration.AC130HeavyShotsBeforeReload.Value)
+            );
+            HeavyReloadTime = Configuration.AC130HeavyReloadTime.Value;
+            HeavyShotsLeft = HeavyMaxShots;
 
             // Save OrbitModule state so we can restore it during Cleanup.
             CameraModuleController.TryGetOrbitModule(out OrbitModule);

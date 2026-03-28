@@ -30,8 +30,10 @@ namespace IssaPlugin.Patches
     [HarmonyPatch]
     static class CoffeeDispenserRedBullPatch
     {
-        private static readonly FieldInfo ItemTypeField =
-            AccessTools.Field(typeof(PhysicalItem), "itemType");
+        private static readonly FieldInfo ItemTypeField = AccessTools.Field(
+            typeof(PhysicalItem),
+            "itemType"
+        );
 
         static MethodBase TargetMethod() =>
             AccessTools.Method(typeof(PhysicalItem), "OnStartServer");
@@ -58,7 +60,6 @@ namespace IssaPlugin.Patches
             yield return null;
             NetworkServer.SendToAll(new CoffeeDispenserRedBullMessage { NetId = netId });
         }
-
     }
 
     /// <summary>
@@ -68,8 +69,10 @@ namespace IssaPlugin.Patches
     /// </summary>
     static class CoffeeDispenserClientHandlers
     {
-        private static readonly FieldInfo ItemTypeField =
-            AccessTools.Field(typeof(PhysicalItem), "itemType");
+        private static readonly FieldInfo ItemTypeField = AccessTools.Field(
+            typeof(PhysicalItem),
+            "itemType"
+        );
 
         public static void HandleVisualSwap(CoffeeDispenserRedBullMessage msg)
         {
@@ -88,29 +91,35 @@ namespace IssaPlugin.Patches
             // Fix the interaction prompt: clients read itemType for the "pick up X" string.
             ItemTypeField.SetValue(physicalItem, ItemRegistry.RedBullItemType);
 
-            // Hide the coffee can mesh renderers.
-            foreach (var r in physicalItem.GetComponentsInChildren<MeshRenderer>())
-                r.enabled = false;
-
-            // Parent the Red Bull can model as a local visual child.
             if (AssetLoader.RedBullHandheldPrefab == null)
                 return;
 
-            var visual = Object.Instantiate(AssetLoader.RedBullHandheldPrefab);
+            // Swap mesh data in-place on the existing coffee can renderers.
+            // This avoids instantiating any new GameObject — no child is parented under
+            // the PhysicalItem's Rigidbody, so there is no risk of new Colliders joining
+            // the compound collider and disrupting the server-side physics simulation.
+            var srcFilters =
+                AssetLoader.RedBullHandheldPrefab.GetComponentsInChildren<MeshFilter>();
+            var dstFilters = physicalItem.GetComponentsInChildren<MeshFilter>();
 
-            // Strip physics components so the visual doesn't alter the PhysicalItem's
-            // compound collider or add an independent Rigidbody.  On the listen-server
-            // host the server and client share the same scene, so any Collider parented
-            // under the PhysicalItem's Rigidbody would affect the server-side physics
-            // and cause the can to clip through the dispenser machine.
-            foreach (var col in visual.GetComponentsInChildren<Collider>())
-                Object.Destroy(col);
-            foreach (var rb in visual.GetComponentsInChildren<Rigidbody>())
-                Object.Destroy(rb);
+            int count = Mathf.Min(srcFilters.Length, dstFilters.Length);
+            for (int i = 0; i < count; i++)
+            {
+                dstFilters[i].sharedMesh = srcFilters[i].sharedMesh;
 
-            visual.transform.SetParent(physicalItem.transform, false);
-            visual.transform.localPosition = Vector3.zero;
-            visual.transform.localRotation = Quaternion.identity;
+                var srcMr = srcFilters[i].GetComponent<MeshRenderer>();
+                var dstMr = dstFilters[i].GetComponent<MeshRenderer>();
+                if (srcMr != null && dstMr != null)
+                    dstMr.sharedMaterials = srcMr.sharedMaterials;
+            }
+
+            // If the coffee can has more meshes than the RedBull model, hide the extras.
+            for (int i = count; i < dstFilters.Length; i++)
+            {
+                var mr = dstFilters[i].GetComponent<MeshRenderer>();
+                if (mr != null)
+                    mr.enabled = false;
+            }
         }
     }
 }

@@ -114,6 +114,7 @@ namespace IssaPlugin.Items
     public struct AC130FireMessage : NetworkMessage
     {
         public Vector3 AimDirection;
+        public bool IsHeavy;
     }
 
     public static class AC130FireMessageSerialization
@@ -121,11 +122,16 @@ namespace IssaPlugin.Items
         public static void WriteAC130FireMessage(NetworkWriter writer, AC130FireMessage msg)
         {
             writer.WriteVector3(msg.AimDirection);
+            writer.WriteBool(msg.IsHeavy);
         }
 
         public static AC130FireMessage ReadAC130FireMessage(NetworkReader reader)
         {
-            return new AC130FireMessage { AimDirection = reader.ReadVector3() };
+            return new AC130FireMessage
+            {
+                AimDirection = reader.ReadVector3(),
+                IsHeavy = reader.ReadBool(),
+            };
         }
     }
 

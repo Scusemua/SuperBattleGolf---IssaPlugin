@@ -293,7 +293,8 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<AC130FireMessage>(
                     (conn, msg) =>
                     {
-                        GetBridge<AC130NetworkBridge>(conn)?.ServerFireAC130(msg.AimDirection);
+                        GetBridge<AC130NetworkBridge>(conn)
+                            ?.ServerFireAC130(msg.AimDirection, msg.IsHeavy);
                     }
                 );
 

@@ -24,6 +24,16 @@ namespace IssaPlugin
         private static float _duration;
         private static bool _maydayActive;
 
+        // Heavy rocket HUD state
+        private static bool _heavyMode;
+        private static int _heavyShotsLeft;
+        private static int _heavyMaxShots;
+        private static bool _heavyReloading;
+        private static float _heavyReloadProgress; // 0 = just started, 1 = done
+
+        private GUIStyle _modeStyle;
+        private GUIStyle _heavyAmmoStyle;
+
         // Glass crack procedural overlay — generated once, reused during mayday.
         private static Texture2D _glassCrackTex;
         private static bool _glassCrackGenerated;
@@ -59,6 +69,22 @@ namespace IssaPlugin
             _maydayActive = active;
             if (active && !_glassCrackGenerated)
                 _glassCrackTex = GenerateGlassCrack(Screen.width, Screen.height);
+        }
+
+        /// <summary>Called every frame by AC130NetworkBridge during the on-station phase.</summary>
+        public static void UpdateHeavyRocketInfo(
+            bool heavyMode,
+            int shotsLeft,
+            int maxShots,
+            bool reloading,
+            float reloadProgress
+        )
+        {
+            _heavyMode = heavyMode;
+            _heavyShotsLeft = shotsLeft;
+            _heavyMaxShots = maxShots;
+            _heavyReloading = reloading;
+            _heavyReloadProgress = reloadProgress;
         }
 
         // ----------------------------------------------------------------
@@ -202,13 +228,66 @@ namespace IssaPlugin
                 : new Color(0f, 1f, 0.2f, 0.9f);
             GUI.Label(new Rect(w - 220f, 12, 200, 30), $"TIME: {timeRemaining:F1}s", _timerStyle);
 
+            // Mode indicator — top right, below timer.
+            string modeLabel = _heavyMode ? "MODE: BIG SHOT" : "MODE: REGULAR";
+            _modeStyle.normal.textColor = _heavyMode
+                ? new Color(1f, 0.45f, 0f, 1f)
+                : new Color(0f, 1f, 0.2f, 0.9f);
+            GUI.Label(new Rect(w - 220f, 44, 200, 26), modeLabel, _modeStyle);
+
+            // Big shot ammo panel — top right, below mode label.
+            if (_heavyMode)
+            {
+                if (_heavyReloading)
+                {
+                    // Reload progress bar.
+                    GUI.Label(new Rect(w - 220f, 72, 200, 22), "RELOADING", _heavyAmmoStyle);
+                    float barW = 180f;
+                    float barH = 8f;
+                    float barX = w - 210f;
+                    float barY = 96f;
+                    // Track background.
+                    GUI.color = new Color(1f, 1f, 1f, 0.2f);
+                    GUI.DrawTexture(new Rect(barX, barY, barW, barH), Texture2D.whiteTexture);
+                    // Fill.
+                    GUI.color = new Color(1f, 0.45f, 0f, 0.85f);
+                    GUI.DrawTexture(
+                        new Rect(barX, barY, barW * _heavyReloadProgress, barH),
+                        Texture2D.whiteTexture
+                    );
+                    GUI.color = Color.white;
+                }
+                else
+                {
+                    // Shot pips — filled orange squares for remaining, dark for spent.
+                    float pipSize = 14f;
+                    float pipGap = 5f;
+                    float totalW = _heavyMaxShots * (pipSize + pipGap) - pipGap;
+                    float startX = w - 210f + (180f - totalW) / 2f;
+                    float pipY = 76f;
+                    for (int i = 0; i < _heavyMaxShots; i++)
+                    {
+                        float px = startX + i * (pipSize + pipGap);
+                        GUI.color =
+                            i < _heavyShotsLeft
+                                ? new Color(1f, 0.45f, 0f, 0.9f)
+                                : new Color(0.3f, 0.3f, 0.3f, 0.5f);
+                        GUI.DrawTexture(
+                            new Rect(px, pipY, pipSize, pipSize),
+                            Texture2D.whiteTexture
+                        );
+                    }
+                    GUI.color = Color.white;
+                }
+            }
+
             // Bottom bar.
             if (_bgTex != null)
                 GUI.DrawTexture(new Rect(0, h - 80, w, 80), _bgTex);
             GUI.Label(new Rect(0, h - 75, w, 35), "AC-130 GUNSHIP", _titleStyle);
             GUI.Label(
                 new Rect(0, h - 42, w, 30),
-                "Aim: Mouse   |   Click: Shoot   |   Q/E: Raise/Lower   |   Shift: Speed Up   |   Space: Exit",
+                "1: Regular   2: Big Shot   |   Aim: Mouse   |   Click: Shoot   |   Q/E: Raise/Lower   |   Shift: Speed Up   |   Space: Exit",
                 _instructionStyle
             );
         }
@@ -363,6 +442,28 @@ namespace IssaPlugin
                     alignment = TextAnchor.MiddleCenter,
                 };
                 _maydayStyle.normal.textColor = new Color(1f, 0.1f, 0.1f, 1f);
+            }
+
+            if (_modeStyle == null)
+            {
+                _modeStyle = new GUIStyle(GUI.skin.label)
+                {
+                    fontSize = 18,
+                    fontStyle = FontStyle.Bold,
+                    alignment = TextAnchor.MiddleRight,
+                };
+                _modeStyle.normal.textColor = new Color(0f, 1f, 0.2f, 0.9f);
+            }
+
+            if (_heavyAmmoStyle == null)
+            {
+                _heavyAmmoStyle = new GUIStyle(GUI.skin.label)
+                {
+                    fontSize = 16,
+                    fontStyle = FontStyle.Bold,
+                    alignment = TextAnchor.MiddleRight,
+                };
+                _heavyAmmoStyle.normal.textColor = new Color(1f, 0.45f, 0f, 1f);
             }
         }
 

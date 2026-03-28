@@ -39,6 +39,7 @@ namespace IssaPlugin.Items
         private AC130FlyBehaviour _serverFlyBehaviour;
         private AC130MaydayBehaviour _serverMaydayBehaviour;
         private float _serverLastFireTime;
+        private float _serverLastHeavyFireTime;
 
         /// <summary>
         /// Set by CmdPrepareGunshipRocket when the owning client has the gunship
@@ -249,16 +250,22 @@ namespace IssaPlugin.Items
             EndServerSession();
         }
 
-        public void ServerFireAC130(Vector3 aimDirection)
+        public void ServerFireAC130(Vector3 aimDirection, bool isHeavy)
         {
             if (!_serverSessionActive || _serverGunship == null)
                 return;
 
             // Server-side rate limit — the client enforces its own cooldown too,
             // but this prevents a lagging or malicious client from over-firing.
-            if (Time.time - _serverLastFireTime < Configuration.AC130FireCooldown.Value)
+            float cooldown = isHeavy
+                ? Configuration.AC130HeavyFireCooldown.Value
+                : Configuration.AC130FireCooldown.Value;
+            ref float lastFireTime = ref (
+                isHeavy ? ref _serverLastHeavyFireTime : ref _serverLastFireTime
+            );
+            if (Time.time - lastFireTime < cooldown)
                 return;
-            _serverLastFireTime = Time.time;
+            lastFireTime = Time.time;
 
             var inventory = GetComponent<PlayerInventory>();
             if (inventory == null)
@@ -277,7 +284,15 @@ namespace IssaPlugin.Items
             // gunship mesh — otherwise it immediately self-collides and explodes.
             Quaternion fireRotation = Quaternion.LookRotation(aimDirection, Vector3.up);
             Vector3 spawnPos = _serverGunship.transform.position + aimDirection * 15f;
-            AC130Item.SpawnRocketInDirection(inventory, spawnPos, jitter * fireRotation);
+            float explosionScale = isHeavy
+                ? Configuration.AC130HeavyRocketExplosionScale.Value
+                : Configuration.AC130ExplosionScale.Value;
+            AC130Item.SpawnRocketInDirection(
+                inventory,
+                spawnPos,
+                jitter * fireRotation,
+                explosionScale
+            );
         }
 
         public void ServerTriggerMayday()
@@ -537,6 +552,20 @@ namespace IssaPlugin.Items
             {
                 session.Elapsed += Time.deltaTime;
                 session.Cooldown -= Time.deltaTime;
+                if (session.HeavyCooldown > 0f)
+                    session.HeavyCooldown -= Time.deltaTime;
+
+                // Heavy rocket reload countdown.
+                if (session.HeavyReloading)
+                {
+                    session.HeavyReloadTimer -= Time.deltaTime;
+                    if (session.HeavyReloadTimer <= 0f)
+                    {
+                        session.HeavyShotsLeft = session.HeavyMaxShots;
+                        session.HeavyReloading = false;
+                        IssaPluginPlugin.Log.LogInfo("[AC130] Heavy rocket reloaded.");
+                    }
+                }
 
                 var keyboard = Keyboard.current;
                 var mouse = Mouse.current;
@@ -545,6 +574,21 @@ namespace IssaPlugin.Items
                 {
                     IssaPluginPlugin.Log.LogInfo("[AC130] Player exited early.");
                     break;
+                }
+
+                // Mode switch: 1 = regular, 2 = big shot.
+                if (keyboard != null)
+                {
+                    if (keyboard[Key.Digit1].wasPressedThisFrame)
+                    {
+                        session.HeavyMode = false;
+                        IssaPluginPlugin.Log.LogInfo("[AC130] Switched to regular rockets.");
+                    }
+                    if (keyboard[Key.Digit2].wasPressedThisFrame)
+                    {
+                        session.HeavyMode = true;
+                        IssaPluginPlugin.Log.LogInfo("[AC130] Switched to big shot.");
+                    }
                 }
 
                 CheckMaydayHotkey();
@@ -634,13 +678,58 @@ namespace IssaPlugin.Items
 
                 AC130Overlay.UpdateAimInfo(crosshairWorld, session.Elapsed, session.Duration);
 
+                float reloadProgress = session.HeavyReloading
+                    ? 1f - (session.HeavyReloadTimer / session.HeavyReloadTime)
+                    : 1f;
+                AC130Overlay.UpdateHeavyRocketInfo(
+                    session.HeavyMode,
+                    session.HeavyShotsLeft,
+                    session.HeavyMaxShots,
+                    session.HeavyReloading,
+                    reloadProgress
+                );
+
                 bool firePressed = mouse != null && mouse.leftButton.wasPressedThisFrame;
-                if (firePressed && session.Cooldown <= 0f)
+                if (firePressed)
                 {
-                    NetworkClient.Send(new AC130FireMessage { AimDirection = aimDirection });
-                    session.Cooldown = session.FireCooldown;
-                    session.GunshipCam?.TriggerFireShake();
-                    IssaPluginPlugin.Log.LogInfo($"[AC130] Rocket fired toward {crosshairWorld}.");
+                    if (session.HeavyMode)
+                    {
+                        bool canFire =
+                            session.HeavyCooldown <= 0f
+                            && !session.HeavyReloading
+                            && session.HeavyShotsLeft > 0;
+                        if (canFire)
+                        {
+                            NetworkClient.Send(
+                                new AC130FireMessage { AimDirection = aimDirection, IsHeavy = true }
+                            );
+                            session.HeavyCooldown = session.HeavyFireCooldown;
+                            session.HeavyShotsLeft--;
+                            if (session.HeavyShotsLeft <= 0)
+                            {
+                                session.HeavyReloading = true;
+                                session.HeavyReloadTimer = session.HeavyReloadTime;
+                                IssaPluginPlugin.Log.LogInfo(
+                                    "[AC130] Heavy rocket out of ammo — reloading."
+                                );
+                            }
+                            session.GunshipCam?.TriggerFireShake();
+                            IssaPluginPlugin.Log.LogInfo(
+                                $"[AC130] Big shot fired toward {crosshairWorld}. Shots left: {session.HeavyShotsLeft}"
+                            );
+                        }
+                    }
+                    else if (session.Cooldown <= 0f)
+                    {
+                        NetworkClient.Send(
+                            new AC130FireMessage { AimDirection = aimDirection, IsHeavy = false }
+                        );
+                        session.Cooldown = session.FireCooldown;
+                        session.GunshipCam?.TriggerFireShake();
+                        IssaPluginPlugin.Log.LogInfo(
+                            $"[AC130] Rocket fired toward {crosshairWorld}."
+                        );
+                    }
                 }
 
                 yield return null;

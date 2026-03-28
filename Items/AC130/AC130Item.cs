@@ -63,11 +63,15 @@ namespace IssaPlugin.Items
         public static void SpawnRocketInDirection(
             PlayerInventory inventory,
             Vector3 position,
-            Quaternion worldRotation
+            Quaternion worldRotation,
+            float explosionScale = -1f
         )
         {
             if (!NetworkServer.active)
                 return;
+
+            if (explosionScale < 0f)
+                explosionScale = Configuration.AC130ExplosionScale.Value;
 
             _useIndex++;
             var itemUseId = new ItemUseId(
@@ -94,7 +98,7 @@ namespace IssaPlugin.Items
             rocket.ServerInitialize(inventory.PlayerInfo, null, itemUseId);
             NetworkServer.Spawn(rocket.gameObject, (NetworkConnectionToClient)null);
 
-            ExplosionScaler.Register(rocket, Configuration.AC130ExplosionScale.Value);
+            ExplosionScaler.Register(rocket, explosionScale);
         }
 
         // ----------------------------------------------------------------
