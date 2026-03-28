@@ -635,7 +635,7 @@ namespace IssaPlugin
             MissileFallSpeed = cfg.Bind(
                 "PredatorMissile",
                 "FallSpeed",
-                30f,
+                75f,
                 "Downward speed of the missile in units per second."
             );
 
@@ -2541,7 +2541,7 @@ namespace IssaPlugin
                 "Number of uses per Drone Swarm pickup."
             );
             DroneSwarmSpawnWeight = cfg.Bind(
-                "DroneSwarm",
+                "ItemBoxSpawns",
                 "SpawnWeight",
                 3.5f,
                 "Relative spawn weight for Drone Swarm in the item pool."
