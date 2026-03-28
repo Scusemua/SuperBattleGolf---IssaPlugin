@@ -295,7 +295,7 @@ namespace IssaPlugin.Items
             PositionSwapIcon = LoadSprite("position_swap_icon.png");
             PoisonJarIcon = LoadSprite("poison_bottle_icon.png");
             DroneSwarmIcon = LoadSprite("drone_swarm_icon.png");
-            ElectricGrappleIcon = LoadSprite("electric_whip_icon.png");
+            ElectricGrappleIcon = LoadSprite("gravity_gun_icon.png");
             RedBullIcon = LoadSprite("redbull_icon.png");
 
             SniperScopeTexture = LoadTexture2D("sniper_scope.png");
