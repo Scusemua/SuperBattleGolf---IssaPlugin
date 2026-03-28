@@ -165,7 +165,8 @@ namespace IssaPlugin.Items
             //  for mayday detection, external destruction, and disconnect cleanup.
             // ----------------------------------------------------------------
             Vector3 playerPos = inventory.PlayerInfo.transform.position;
-            GameObject gunshipGo = SpawnGunship(playerPos);
+            Vector3 orbitCenter = AC130Helpers.ComputeMapCenter(playerPos);
+            GameObject gunshipGo = SpawnGunship(orbitCenter);
 
             if (gunshipGo == null)
             {
@@ -235,7 +236,7 @@ namespace IssaPlugin.Items
                 new AC130BeginClientMessage
                 {
                     GunshipNetId = gunshipIdentity.netId,
-                    OrbitCenter = playerPos,
+                    OrbitCenter = orbitCenter,
                 }
             );
             _serverTimeout = StartCoroutine(ServerTimeoutRoutine());
