@@ -84,26 +84,28 @@ A config file is generated at `BepInEx/config/com.scusemua.IssaPlugin.cfg` on fi
 
 All settings take effect immediately on the next session without restarting the game.
 
+**Note:** I highly recommend getting AtomicStudio's [ModConfig](https://thunderstore.io/c/super-battle-golf/p/AtomicStudio/ModConfig/) mod to go along with this mod, as it makes it very easy to tweak the numerous available settings.
+
 ---
 
 ## Compatibility
 
-- **Multiplayer:** All items are fully networked. The host runs as the server; all item behavior is server-authoritative. Clients DO need the mod installed to join a modded lobby.
+- **Multiplayer:** All items are fully networked. The host runs as the server; all item behavior is server-authoritative. Clients do require the mod.
 - **Existing items:** No base game items are removed or rebalanced. This mod only adds.
-- **Other mods:** Should be compatible with anything that doesn't patch the same inventory or item-spawning hooks. In particular, this mod is compatible with AtomicStudio's [ModConfig](https://thunderstore.io/c/super-battle-golf/p/AtomicStudio/ModConfig/) mod, which makes it very easy to tweak the numerous available settings, and with AtomicStudio's [ItemSpawner](https://thunderstore.io/c/super-battle-golf/p/AtomicStudio/ItemSpawner/) mod. Note that the host can change settings during the game, and they will take effect the next time the associated item is used. Spawn pool weights are synchronized on a five second interval as well.
+- **Other mods:** Should be compatible with anything that doesn't patch the same inventory or item-spawning hooks. In particular, this mod is compatible with AtomicStudio's [ModConfig](https://thunderstore.io/c/super-battle-golf/p/AtomicStudio/ModConfig/) mod, as described above, as well as AtomicStudio's [ItemSpawner](https://thunderstore.io/c/super-battle-golf/p/AtomicStudio/ItemSpawner/) mod. Note that the host can change settings during the game, and they will take effect the next time the associated item is used. Spawn pool weights are synchronized on a five second interval as well.
 
 ---
 
 ## Console Commands
 
 - **`vote <timeout>`** — Host only. Starts a vote among all players to enable or disable individual custom items. The timeout (in seconds) controls how long the vote stays open before closing automatically.
+- **`giveCustomItem <item name>** - Give yourself a custom item.
 
 ---
 
 ## Known Issues / Notes
 
 - The Donut, AC-130, and Stealth Bomber all appear as valid lock-on targets for the rocket launcher. This is intentional.
-- The AK-47 sometimes triggers the game's anti-cheat, as it fires rather rapidly. I am working on a fix. (It may already be fixed.)
 
 ---
 
