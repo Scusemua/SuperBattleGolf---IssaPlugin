@@ -358,6 +358,7 @@ namespace IssaPlugin
         public static ConfigEntry<float> RedBullDuration { get; private set; }
         public static ConfigEntry<float> RedBullExtraSpeedMultiplier { get; private set; }
         public static ConfigEntry<float> RedBullJumpBonus { get; private set; }
+        public static ConfigEntry<float> RedBullDispenserChance { get; private set; }
 
         // --- Poison Jar ---
         public static ConfigEntry<Key> PoisonJarGiveKey { get; private set; }
@@ -2684,6 +2685,12 @@ namespace IssaPlugin
                 "JumpBonus",
                 3f,
                 "Extra upward velocity (m/s) added to each jump while Red Bull is active."
+            );
+            RedBullDispenserChance = cfg.Bind(
+                "RedBull",
+                "DispenserChance",
+                0.25f,
+                "Probability (0–1) that the coffee dispenser gives a Red Bull instead of a coffee. 0 = never, 1 = always."
             );
         }
     }
