@@ -365,6 +365,24 @@ namespace IssaPlugin
         public static ConfigEntry<float> RedBullJumpBonus { get; private set; }
         public static ConfigEntry<float> RedBullDispenserChance { get; private set; }
 
+        // --- Super Donut ---
+        public static ConfigEntry<Key> SuperDonutGiveKey { get; private set; }
+        public static ConfigEntry<float> SuperDonutUses { get; private set; }
+        public static ConfigEntry<float> SuperDonutSpawnWeight { get; private set; }
+
+        // --- Electric Grapple ---
+        public static ConfigEntry<Key> GrappleGiveKey { get; private set; }
+        public static ConfigEntry<float> GrappleUses { get; private set; }
+        public static ConfigEntry<float> GrappleSpawnWeight { get; private set; }
+        public static ConfigEntry<float> GrappleLockOnRange { get; private set; }
+        public static ConfigEntry<float> GrappleLockOnConeAngleDeg { get; private set; }
+        public static ConfigEntry<float> GrappleTetherRadius { get; private set; }
+        public static ConfigEntry<float> GrappleTetherDuration { get; private set; }
+        public static ConfigEntry<float> GrappleSpringForce { get; private set; }
+        public static ConfigEntry<float> GrappleMaxPullSpeed { get; private set; }
+        public static ConfigEntry<float> GrappleInputSendInterval { get; private set; }
+        public static ConfigEntry<Key> GrappleReleaseKey { get; private set; }
+
         // --- Poison Jar ---
         public static ConfigEntry<Key> PoisonJarGiveKey { get; private set; }
         public static ConfigEntry<float> PoisonJarUses { get; private set; }
@@ -476,6 +494,12 @@ namespace IssaPlugin
             Reg(cfg, ItemEnabledEntries, 113, "PlaceableWallEnabled", "Placeable Wall");
             Reg(cfg, ItemEnabledEntries, 114, "AK47Enabled", "AK-47");
             Reg(cfg, ItemEnabledEntries, 115, "HarrierEnabled", "Harrier Jet");
+            Reg(cfg, ItemEnabledEntries, 116, "PositionSwapEnabled", "Position Swap");
+            Reg(cfg, ItemEnabledEntries, 117, "PoisonJarEnabled", "Poison Jar");
+            Reg(cfg, ItemEnabledEntries, 118, "DroneSwarmEnabled", "Drone Swarm");
+            Reg(cfg, ItemEnabledEntries, 119, "RedBullEnabled", "Red Bull");
+            Reg(cfg, ItemEnabledEntries, 120, "SuperDonutEnabled", "Super Donut");
+            Reg(cfg, ItemEnabledEntries, 121, "GrappleEnabled", "Electric Grapple");
 
             // --- Baseball Bat ---
             BaseballBatPowerMultiplier = cfg.Bind(
@@ -2732,6 +2756,93 @@ namespace IssaPlugin
                 "DispenserChance",
                 0.25f,
                 "Probability (0–1) that the coffee dispenser gives a Red Bull instead of a coffee. 0 = never, 1 = always."
+            );
+
+            SuperDonutGiveKey = cfg.Bind(
+                "SuperDonut",
+                "GiveKey",
+                Key.NumpadDivide,
+                "Hotkey to give yourself a Super Donut (debug/testing)."
+            );
+            SuperDonutUses = cfg.Bind(
+                "SuperDonut",
+                "Uses",
+                1f,
+                "Number of Super Donut uses per pickup."
+            );
+            SuperDonutSpawnWeight = cfg.Bind(
+                "SuperDonut",
+                "SpawnWeight",
+                0.1f,
+                "Relative spawn weight for Super Donut in the item pool. Keep low — fires at every other player at once."
+            );
+
+            // --- Electric Grapple ---
+            GrappleGiveKey = cfg.Bind(
+                "Grapple",
+                "GrappleGiveKey",
+                Key.NumpadDivide,
+                "Hotkey to give yourself an Electric Grapple (debug/testing)."
+            );
+            GrappleUses = cfg.Bind(
+                "Grapple",
+                "Uses",
+                1f,
+                "Number of uses per Electric Grapple pickup."
+            );
+            GrappleSpawnWeight = cfg.Bind(
+                "ItemBoxSpawns",
+                "GrappleSpawnWeight",
+                10f,
+                "Relative spawn weight for the Electric Grapple in the item pool."
+            );
+            GrappleLockOnRange = cfg.Bind(
+                "Grapple",
+                "LockOnRange",
+                25f,
+                "Maximum distance (units) at which the grapple can lock onto a target."
+            );
+            GrappleLockOnConeAngleDeg = cfg.Bind(
+                "Grapple",
+                "LockOnConeAngleDeg",
+                40f,
+                "Half-angle (degrees) of the aim cone used to filter lock-on candidates."
+            );
+            GrappleTetherRadius = cfg.Bind(
+                "Grapple",
+                "TetherRadius",
+                8f,
+                "Distance (units) at which the target orbits the wielder while tethered."
+            );
+            GrappleTetherDuration = cfg.Bind(
+                "Grapple",
+                "TetherDuration",
+                5f,
+                "Maximum tether duration in seconds before automatic release."
+            );
+            GrappleSpringForce = cfg.Bind(
+                "Grapple",
+                "SpringForce",
+                12f,
+                "Spring stiffness coefficient; higher values pull the target faster."
+            );
+            GrappleMaxPullSpeed = cfg.Bind(
+                "Grapple",
+                "MaxPullSpeed",
+                18f,
+                "Maximum velocity change (m/s) applied to the target per physics tick."
+            );
+            GrappleInputSendInterval = cfg.Bind(
+                "Grapple",
+                "InputSendInterval",
+                0.05f,
+                "Interval (seconds) between aim-tick messages sent to the server (~20 Hz)."
+            );
+            GrappleReleaseKey = cfg.Bind(
+                "Grapple",
+                "ReleaseKey",
+                Key.Q,
+                "Key the wielder presses to manually release the tether."
             );
         }
     }

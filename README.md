@@ -260,6 +260,10 @@ Assets used in the project:
     (https://skfb.ly/ozuFr) by KillCaptureDestroy 
     Licensed under Creative Commons Attribution-NonCommercial 
 
+-   "Gravity Gun (Retry School)"
+    (https://skfb.ly/pxyOF) by Pixman 
+    Licensed under Creative Commons Attribution
+
 ---
 
 *IssaPlugin is a fan-made mod and is not affiliated with Brimstone or Oro Interactive.*

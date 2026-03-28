@@ -83,6 +83,13 @@ namespace IssaPlugin.Items
         // --- Poison Jar ---
         public static Sprite PoisonJarIcon { get; private set; }
 
+        // --- Super Donut ---
+        /// Falls back to <see cref="DonutIcon"/> at runtime if the asset is absent.
+        public static Sprite SuperDonutIcon { get; private set; }
+
+        /// Falls back to <see cref="DonutHandheldPrefab"/> at runtime if the asset is absent.
+        public static GameObject SuperDonutHandheldPrefab { get; private set; }
+
         // --- Red Bull ---
         public static Sprite RedBullIcon { get; private set; }
 
@@ -94,6 +101,14 @@ namespace IssaPlugin.Items
         /// Not networked — each client instantiates its own copy via RedBullNetworkBridge.
         /// Bundle asset name: <c>red_bull_trail.prefab</c>
         public static GameObject RedBullTrailPrefab { get; private set; }
+
+        // --- Electric Grapple ---
+        /// Falls back to the rocket launcher icon at runtime if the asset is absent.
+        public static Sprite ElectricGrappleIcon { get; private set; }
+
+        /// The model the player holds while the Electric Grapple item is equipped.
+        /// Bundle asset name: <c>electric_whip.prefab</c>
+        public static GameObject ElectricWhipHandheldPrefab { get; private set; }
 
         // --- Drone Swarm ---
         public static Sprite DroneSwarmIcon { get; private set; }
@@ -253,6 +268,8 @@ namespace IssaPlugin.Items
             LoadPoisonJarAssets();
             LoadDroneSwarmAssets();
             LoadRedBullAssets();
+            LoadSuperDonutAssets();
+            LoadGrappleAssets();
 
             IssaPluginPlugin.Log.LogInfo("[Assets] IssaPluginBundle loaded.");
         }
@@ -266,7 +283,7 @@ namespace IssaPlugin.Items
             FreezeIcon = LoadSprite("freeze_effect_icon.png");
             LowGravityIcon = LoadSprite("gravity_remote_icon.png");
             SniperRifleIcon = LoadSprite("sniper_rifle_icon.png");
-            DonutIcon = LoadSprite("donut_icon.png");
+            DonutIcon = LoadSprite("donut_icon_v2.png");
             JavelinIcon = LoadSprite("javelin_icon.png");
             StickyGrenadeIcon = LoadSprite("spike_ball_icon.png");
             BearIcon = LoadSprite("bear_icon.png");
@@ -276,6 +293,10 @@ namespace IssaPlugin.Items
             AK47Icon = LoadSprite("ak47_icon.png");
             HarrierIcon = LoadSprite("harrier_icon.png");
             PositionSwapIcon = LoadSprite("position_swap_icon.png");
+            PoisonJarIcon = LoadSprite("poison_bottle_icon.png");
+            DroneSwarmIcon = LoadSprite("drone_swarm_icon.png");
+            ElectricGrappleIcon = LoadSprite("electric_whip_icon.png");
+            RedBullIcon = LoadSprite("redbull_icon.png");
 
             SniperScopeTexture = LoadTexture2D("sniper_scope.png");
             if (SniperScopeTexture == null)
@@ -563,8 +584,6 @@ namespace IssaPlugin.Items
 
         private static void LoadPoisonJarAssets()
         {
-            PoisonJarIcon = LoadSprite("poison_bottle_icon.png");
-
             PoisonJarHandheldPrefab = Load<GameObject>("posion_bottle.prefab");
             if (PoisonJarHandheldPrefab != null)
                 DisableRigidbody(PoisonJarHandheldPrefab);
@@ -583,8 +602,6 @@ namespace IssaPlugin.Items
 
         private static void LoadDroneSwarmAssets()
         {
-            DroneSwarmIcon = LoadSprite("drone_swarm_icon.png");
-
             DroneControllerPrefab = Load<GameObject>("drone_swarm_tablet.prefab");
             if (DroneControllerPrefab != null)
                 DisableRigidbody(DroneControllerPrefab);
@@ -602,10 +619,27 @@ namespace IssaPlugin.Items
                 StripNetworkComponents(DroneExplosionVfxPrefab);
         }
 
+        private static void LoadGrappleAssets()
+        {
+            ElectricWhipHandheldPrefab = Load<GameObject>("gravity_gun.prefab");
+            DisableRigidbody(ElectricWhipHandheldPrefab);
+        }
+
+        private static void LoadSuperDonutAssets()
+        {
+            // Optional dedicated assets — falls back to Donut assets at runtime if absent.
+            // Add super_donut_icon.png and super_donut_model.prefab to the bundle to override.
+            SuperDonutIcon = _bundle.LoadAsset<Texture2D>("super_donut_icon.png") is Texture2D tex
+                ? Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f))
+                : null;
+
+            SuperDonutHandheldPrefab = _bundle.LoadAsset<GameObject>("super_donut_model.prefab");
+            if (SuperDonutHandheldPrefab != null)
+                DisableRigidbody(SuperDonutHandheldPrefab);
+        }
+
         private static void LoadRedBullAssets()
         {
-            RedBullIcon = LoadSprite("redbull_icon.png");
-
             RedBullHandheldPrefab = Load<GameObject>("redbull.prefab");
             if (RedBullHandheldPrefab != null)
                 DisableRigidbody(RedBullHandheldPrefab);

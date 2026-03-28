@@ -516,6 +516,33 @@ namespace IssaPlugin.Patches
                     ?.ClientDonutStartShooting(msg.StartPosition);
             });
 
+            // ── Super Donut Messages ──────────────────────────────────────────
+
+            // Client → Server
+            Writer<SuperDonutStartMessage>.write =
+                SuperDonutMessageSerialization.WriteSuperDonutStartMessage;
+            Reader<SuperDonutStartMessage>.read =
+                SuperDonutMessageSerialization.ReadSuperDonutStartMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<SuperDonutStartMessage>(
+                    (conn, msg) =>
+                    {
+                        GetBridge<SuperDonutNetworkBridge>(conn)?.ServerFireBarrage();
+                    }
+                );
+
+            // Server → All Clients
+            Writer<SuperDonutFiredMessage>.write =
+                SuperDonutMessageSerialization.WriteSuperDonutFiredMessage;
+            Reader<SuperDonutFiredMessage>.read =
+                SuperDonutMessageSerialization.ReadSuperDonutFiredMessage;
+            NetworkClient.RegisterHandler<SuperDonutFiredMessage>(msg =>
+            {
+                IssaPluginPlugin.Log.LogInfo(
+                    $"[SuperDonut] Barrage fired — {msg.TargetCount} laser(s) incoming."
+                );
+            });
+
             // ── Javelin Messages ──────────────────────────────────────────────
 
             // Client → Server
@@ -1069,6 +1096,70 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<GiveItemRequestMessage>(
                     ItemRegistry.ServerHandleGiveItemRequest
                 );
+
+            // ── Electric Grapple ─────────────────────────────────────────────────
+            Writer<GrappleLockOnMessage>.write =
+                GrappleLockOnMessageSerialization.WriteGrappleLockOnMessage;
+            Reader<GrappleLockOnMessage>.read =
+                GrappleLockOnMessageSerialization.ReadGrappleLockOnMessage;
+
+            Writer<GrappleAimTickMessage>.write =
+                GrappleAimTickMessageSerialization.WriteGrappleAimTickMessage;
+            Reader<GrappleAimTickMessage>.read =
+                GrappleAimTickMessageSerialization.ReadGrappleAimTickMessage;
+
+            Writer<GrappleReleaseMessage>.write =
+                GrappleReleaseMessageSerialization.WriteGrappleReleaseMessage;
+            Reader<GrappleReleaseMessage>.read =
+                GrappleReleaseMessageSerialization.ReadGrappleReleaseMessage;
+
+            Writer<GrappleConnectedMessage>.write =
+                GrappleConnectedMessageSerialization.WriteGrappleConnectedMessage;
+            Reader<GrappleConnectedMessage>.read =
+                GrappleConnectedMessageSerialization.ReadGrappleConnectedMessage;
+
+            Writer<GrappleTetherTickMessage>.write =
+                GrappleTetherTickMessageSerialization.WriteGrappleTetherTickMessage;
+            Reader<GrappleTetherTickMessage>.read =
+                GrappleTetherTickMessageSerialization.ReadGrappleTetherTickMessage;
+
+            Writer<GrappleDisconnectedMessage>.write =
+                GrappleDisconnectedMessageSerialization.WriteGrappleDisconnectedMessage;
+            Reader<GrappleDisconnectedMessage>.read =
+                GrappleDisconnectedMessageSerialization.ReadGrappleDisconnectedMessage;
+
+            Writer<GrappleBusyMessage>.write =
+                GrappleBusyMessageSerialization.WriteGrappleBusyMessage;
+            Reader<GrappleBusyMessage>.read =
+                GrappleBusyMessageSerialization.ReadGrappleBusyMessage;
+
+            NetworkClient.RegisterHandler<GrappleConnectedMessage>(
+                GrappleNetworkBridge.HandleGrappleConnected
+            );
+            NetworkClient.RegisterHandler<GrappleTetherTickMessage>(
+                GrappleNetworkBridge.HandleGrappleTetherTick
+            );
+            NetworkClient.RegisterHandler<GrappleDisconnectedMessage>(
+                GrappleNetworkBridge.HandleGrappleDisconnected
+            );
+            NetworkClient.RegisterHandler<GrappleBusyMessage>(
+                GrappleNetworkBridge.HandleGrappleBusy
+            );
+
+            if (NetworkServer.active)
+            {
+                NetworkServer.RegisterHandler<GrappleLockOnMessage>(
+                    (conn, msg) =>
+                        GetBridge<GrappleNetworkBridge>(conn)?.ServerHandleLockOn(conn, msg)
+                );
+                NetworkServer.RegisterHandler<GrappleAimTickMessage>(
+                    (conn, msg) =>
+                        GetBridge<GrappleNetworkBridge>(conn)?.ServerHandleAimTick(conn, msg)
+                );
+                NetworkServer.RegisterHandler<GrappleReleaseMessage>(
+                    (conn, msg) => GetBridge<GrappleNetworkBridge>(conn)?.ServerHandleRelease(conn)
+                );
+            }
 
             // ── Scaled explosion VFX (Server → All Clients) ──────────────────────
             Writer<ScaledExplosionVfxMessage>.write =

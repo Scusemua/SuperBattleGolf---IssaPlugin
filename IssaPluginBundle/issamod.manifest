@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 1534916961
+CRC: 3757499089
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: e683c1a6aea46704e069743244b4d569
+    Hash: b20b02f6d7d82a5972492d68a5ee2262
   TypeTreeHash:
     serializedVersion: 2
     Hash: 12d32a6d7b1bccbbbbab418431dfa151
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 28bed3cd2aa80bd8c8062ab02cfde85b
+    Hash: ddc9158d65d871378b6f19ab143e28d1
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -87,17 +87,20 @@ Assets:
 - Assets/Assets/bomber_proxy.prefab
 - Assets/Assets/ConfettiBlastRainbow.prefab
 - Assets/Assets/javelin_trail.prefab
-- Assets/Assets/ac130_tablet.prefab
+- Assets/Assets/gravity_gun.prefab
 - Assets/Assets/warning_particle.prefab
-- Assets/Assets/donut_icon.png
+- Assets/Assets/ac130_tablet.prefab
 - Assets/Assets/red_bull_trail.prefab
 - Assets/Assets/redbull_icon.png
 - Assets/Assets/ak47.prefab
-- Assets/Assets/poison_bottle_icon.png
+- Assets/Assets/donut_icon.png
 - Assets/Assets/bear.prefab
 - Assets/Assets/position_swap_icon.png
+- Assets/Assets/super_donut_icon.png
+- Assets/Assets/poison_bottle_icon.png
 - Assets/Assets/bear_icon.png
 - Assets/Assets/bat_icon.png
+- Assets/Assets/donut_icon_v2.png
 - Assets/Assets/harrier_tablet.prefab
 - Assets/Assets/javelin_target_indicator.prefab
 - Assets/Assets/bat_model.prefab
@@ -137,8 +140,9 @@ Assets:
 - Assets/Assets/ac130_impact_vfx.prefab
 - Assets/Assets/stealth_bomber_tablet.prefab
 - Assets/Assets/ak47_icon.png
-- Assets/Assets/snowball.prefab
+- Assets/Assets/electric_whip_icon.png
 - Assets/Assets/NukeExplosionFire.prefab
+- Assets/Assets/snowball.prefab
 - Assets/Assets/predator_missile_tablet.prefab
 - Assets/Assets/blood_splatter_critical.prefab
 - Assets/Assets/nuclear_detonator.prefab
