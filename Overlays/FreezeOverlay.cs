@@ -13,7 +13,7 @@ namespace IssaPlugin.Overlays
         public static FreezeOverlay Instance { get; private set; }
 
         // ── Effect state ──────────────────────────────────────────────────
-        private bool  _frozen;
+        private bool _frozen;
         private float _startTime;
         private float _duration;
 
@@ -21,11 +21,11 @@ namespace IssaPlugin.Overlays
         private Texture2D _frostTexture;
         private Texture2D _barBgTexture;
         private Texture2D _barFillTexture;
-        private int       _cachedBarW = -1; // screen width for which bar textures were built
+        private int _cachedBarW = -1; // screen width for which bar textures were built
 
         // Icy blue fill colour
         private static readonly Color FillColor = new Color(0.3f, 0.7f, 1.0f, 0.9f);
-        private static readonly Color BgColor   = new Color(0f,   0f,   0f,   0.55f);
+        private static readonly Color BgColor = new Color(0f, 0f, 0f, 0.55f);
 
         // Lazily initialised inside OnGUI (GUI.skin only valid during GUI events)
         private GUIStyle _labelStyle;
@@ -36,9 +36,11 @@ namespace IssaPlugin.Overlays
 
         private void OnDestroy()
         {
-            if (Instance == this) Instance = null;
+            if (Instance == this)
+                Instance = null;
             DestroyBarTextures();
-            if (_frostTexture != null) Destroy(_frostTexture);
+            if (_frostTexture != null)
+                Destroy(_frostTexture);
         }
 
         private void Start()
@@ -55,7 +57,7 @@ namespace IssaPlugin.Overlays
             _frozen = frozen;
             if (frozen)
             {
-                _duration  = duration;
+                _duration = duration;
                 _startTime = Time.time;
             }
         }
@@ -86,8 +88,8 @@ namespace IssaPlugin.Overlays
             if (_barBgTexture == null || _barFillTexture == null)
                 return;
 
-            float elapsed   = Time.time - _startTime;
-            float fraction  = Mathf.Clamp01(1f - elapsed / _duration);
+            float elapsed = Time.time - _startTime;
+            float fraction = Mathf.Clamp01(1f - elapsed / _duration);
             float remaining = Mathf.Max(0f, _duration - elapsed);
 
             float barW = EffectBarLayout.GetBarWidth();
@@ -108,11 +110,15 @@ namespace IssaPlugin.Overlays
             _labelStyle ??= new GUIStyle(GUI.skin.label)
             {
                 alignment = TextAnchor.MiddleCenter,
-                fontSize  = 13,
+                fontSize = 13,
                 fontStyle = FontStyle.Bold,
             };
             _labelStyle.normal.textColor = Color.white;
-            GUI.Label(new Rect(barX, barY, barW, barH), $"FREEZE WORLD  {remaining:F1}s", _labelStyle);
+            GUI.Label(
+                new Rect(barX, barY, barW, barH),
+                $"FREEZE WORLD  {remaining:F1}s",
+                _labelStyle
+            );
         }
 
         // ── Texture helpers ───────────────────────────────────────────────
@@ -120,17 +126,25 @@ namespace IssaPlugin.Overlays
         private void RebuildBarTextures(int barW)
         {
             DestroyBarTextures();
-            int barH   = (int)EffectBarLayout.BarHeight;
+            int barH = (int)EffectBarLayout.BarHeight;
             int radius = barH / 3;
-            _barBgTexture   = GenerateRoundedRectTexture(barW, barH, radius, BgColor);
+            _barBgTexture = GenerateRoundedRectTexture(barW, barH, radius, BgColor);
             _barFillTexture = GenerateRoundedRectTexture(barW, barH, radius, FillColor);
-            _cachedBarW     = barW;
+            _cachedBarW = barW;
         }
 
         private void DestroyBarTextures()
         {
-            if (_barBgTexture   != null) { Destroy(_barBgTexture);   _barBgTexture   = null; }
-            if (_barFillTexture != null) { Destroy(_barFillTexture); _barFillTexture = null; }
+            if (_barBgTexture != null)
+            {
+                Destroy(_barBgTexture);
+                _barBgTexture = null;
+            }
+            if (_barFillTexture != null)
+            {
+                Destroy(_barFillTexture);
+                _barFillTexture = null;
+            }
             _cachedBarW = -1;
         }
 
@@ -140,12 +154,12 @@ namespace IssaPlugin.Overlays
         /// </summary>
         private static Texture2D GenerateRoundedRectTexture(int w, int h, int radius, Color color)
         {
-            var tex    = new Texture2D(w, h, TextureFormat.RGBA32, false);
+            var tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
             var pixels = new Color[w * h];
 
             for (int y = 0; y < h; y++)
-                for (int x = 0; x < w; x++)
-                    pixels[y * w + x] = IsInsideRoundedRect(x, y, w, h, radius) ? color : Color.clear;
+            for (int x = 0; x < w; x++)
+                pixels[y * w + x] = IsInsideRoundedRect(x, y, w, h, radius) ? color : Color.clear;
 
             tex.SetPixels(pixels);
             tex.filterMode = FilterMode.Bilinear;
@@ -158,10 +172,10 @@ namespace IssaPlugin.Overlays
         /// </summary>
         private static bool IsInsideRoundedRect(int x, int y, int w, int h, int r)
         {
-            bool inLeftZone  = x < r;
+            bool inLeftZone = x < r;
             bool inRightZone = x >= w - r;
-            bool inTopZone   = y < r;
-            bool inBotZone   = y >= h - r;
+            bool inTopZone = y < r;
+            bool inBotZone = y >= h - r;
 
             // Not in any corner zone — always inside
             if (!((inLeftZone || inRightZone) && (inTopZone || inBotZone)))
@@ -169,7 +183,7 @@ namespace IssaPlugin.Overlays
 
             // Find the centre of the nearest corner circle and check distance
             int cx = inLeftZone ? r : (w - 1 - r);
-            int cy = inTopZone  ? r : (h - 1 - r);
+            int cy = inTopZone ? r : (h - 1 - r);
 
             float dx = x - cx;
             float dy = y - cy;
@@ -181,19 +195,19 @@ namespace IssaPlugin.Overlays
         /// </summary>
         private static Texture2D GenerateFrostTexture(int w, int h)
         {
-            var tex    = new Texture2D(w, h, TextureFormat.RGBA32, false);
-            float cx   = w * 0.5f;
-            float cy   = h * 0.5f;
+            var tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
+            float cx = w * 0.5f;
+            float cy = h * 0.5f;
             float maxD = Mathf.Sqrt(cx * cx + cy * cy);
 
             var pixels = new Color[w * h];
             for (int y = 0; y < h; y++)
-                for (int x = 0; x < w; x++)
-                {
-                    float dist  = Mathf.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy)) / maxD;
-                    float alpha = Mathf.Pow(Mathf.Clamp01(dist), 0.5f) * 0.825f;
-                    pixels[y * w + x] = new Color(0.1f, 0.25f, 1.0f, alpha);
-                }
+            for (int x = 0; x < w; x++)
+            {
+                float dist = Mathf.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy)) / maxD;
+                float alpha = Mathf.Pow(Mathf.Clamp01(dist), 0.5f) * 0.825f;
+                pixels[y * w + x] = new Color(0.1f, 0.25f, 1.0f, alpha);
+            }
 
             tex.SetPixels(pixels);
             tex.Apply();

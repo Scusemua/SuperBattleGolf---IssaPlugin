@@ -17,7 +17,7 @@ namespace IssaPlugin.Overlays
     ///
     /// The component removes itself when the Grapple item is no longer equipped.
     /// </summary>
-    public class GrappleOverlay : MonoBehaviour
+    public class GravityGunOverlay : MonoBehaviour
     {
         // ── Styles ────────────────────────────────────────────────────────────
         private GUIStyle _titleStyle;
