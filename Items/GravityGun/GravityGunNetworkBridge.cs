@@ -8,17 +8,17 @@ namespace IssaPlugin.Items
     /// <summary>
     /// Attached to every player object via NetworkBridgePatches.
     ///
-    /// The Electric Grapple fires an electric tether at a locked-on opponent.
+    /// The Gravity Gun fires an electric tether at a locked-on opponent.
     /// While the session is active, the wielder's aim direction is forwarded to
     /// the target at ~20 Hz so the target's spring coroutine pulls them toward
     /// <c>wielderPos + aimDir * tetherRadius</c>, creating a "ball on a string"
     /// orbit effect.  The target flies off at their accumulated velocity when the
     /// wielder releases or the timer expires.
     ///
-    /// Global one-at-a-time lock via GlobalSessionLock&lt;GrappleNetworkBridge&gt;
+    /// Global one-at-a-time lock via GlobalSessionLock&lt;GravityGunNetworkBridge&gt;
     /// (same pattern as AC130/Donut).
     /// </summary>
-    public class GrappleNetworkBridge : NetworkBridgeBase
+    public class GravityGunNetworkBridge : NetworkBridgeBase
     {
         // =====================================================================
         //  Server-side per-instance state
@@ -37,11 +37,11 @@ namespace IssaPlugin.Items
         //  Owning-client per-instance state
         // =====================================================================
 
-        /// True while the local player has an active grapple session as wielder.
+        /// True while the local player has an active Gravity Gun session as wielder.
         public bool LocalSessionActive { get; private set; }
 
         private float _sendTimer;
-        private uint _lockedTargetNetId; // confirmed by server via GrappleConnectedMessage
+        private uint _lockedTargetNetId; // confirmed by server via GravityGunConnectedMessage
 
         // =====================================================================
         //  Static shared state (safe: only one session at a time via lock)
@@ -84,23 +84,23 @@ namespace IssaPlugin.Items
                 if (cam != null)
                 {
                     NetworkClient.Send(
-                        new GrappleAimTickMessage
+                        new GravityGunAimTickMessage
                         {
                             WielderPos = transform.position,
                             AimDir = cam.transform.forward,
                         }
                     );
                 }
-                _sendTimer = Configuration.GrappleInputSendInterval.Value;
+                _sendTimer = Configuration.GravityGunInputSendInterval.Value;
             }
 
             // ── Release input ─────────────────────────────────────────────────
             var keyboard = Keyboard.current;
             if (keyboard != null)
             {
-                var releaseKey = Configuration.GrappleReleaseKey.Value;
+                var releaseKey = Configuration.GravityGunReleaseKey.Value;
                 if (keyboard[releaseKey].wasPressedThisFrame)
-                    NetworkClient.Send(new GrappleReleaseMessage());
+                    NetworkClient.Send(new GravityGunReleaseMessage());
             }
         }
 
@@ -108,7 +108,7 @@ namespace IssaPlugin.Items
         //  Client — initiating the lock-on
         // =====================================================================
 
-        /// Called from GrappleItemDefinition.OnUse → GetComponent<GrappleNetworkBridge>().
+        /// Called from GravityGunItemDefinition.OnUse → GetComponent<GravityGunNetworkBridge>().
         public void ClientUse()
         {
             if (!isOwned)
@@ -120,9 +120,9 @@ namespace IssaPlugin.Items
 
             Vector3 camPos = cam.transform.position;
             Vector3 camFwd = cam.transform.forward;
-            float range = Configuration.GrappleLockOnRange.Value;
+            float range = Configuration.GravityGunLockOnRange.Value;
             float cosHalf = Mathf.Cos(
-                Configuration.GrappleLockOnConeAngleDeg.Value * 0.5f * Mathf.Deg2Rad
+                Configuration.GravityGunLockOnConeAngleDeg.Value * 0.5f * Mathf.Deg2Rad
             );
 
             // Best candidate across players AND golf carts.
@@ -183,44 +183,46 @@ namespace IssaPlugin.Items
 
             if (bestNetId == null)
             {
-                IssaPluginPlugin.Log.LogInfo("[Grapple] ClientUse: no valid target in cone.");
+                IssaPluginPlugin.Log.LogInfo("[GravityGun] ClientUse: no valid target in cone.");
                 return;
             }
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[Grapple] ClientUse: locking onto netId={bestNetId.netId}."
+                $"[GravityGun] ClientUse: locking onto netId={bestNetId.netId}."
             );
-            NetworkClient.Send(new GrappleLockOnMessage { TargetNetId = bestNetId.netId });
+            NetworkClient.Send(new GravityGunLockOnMessage { TargetNetId = bestNetId.netId });
         }
 
         // =====================================================================
         //  Server — handling lock-on request
         // =====================================================================
 
-        public void ServerHandleLockOn(NetworkConnectionToClient conn, GrappleLockOnMessage msg)
+        public void ServerHandleLockOn(NetworkConnectionToClient conn, GravityGunLockOnMessage msg)
         {
             if (!isServer)
                 return;
 
             // ── 1. Acquire global session lock ────────────────────────────────
-            if (!GlobalSessionLock<GrappleNetworkBridge>.TryAcquire(this))
+            if (!GlobalSessionLock<GravityGunNetworkBridge>.TryAcquire(this))
             {
-                IssaPluginPlugin.Log.LogInfo("[Grapple] Server: session busy — rejecting lock-on.");
-                connectionToClient?.Send(new GrappleBusyMessage());
+                IssaPluginPlugin.Log.LogInfo(
+                    "[GravityGun] Server: session busy — rejecting lock-on."
+                );
+                connectionToClient?.Send(new GravityGunBusyMessage());
                 return;
             }
 
-            // ── 2. Validate wielder has grapple equipped ──────────────────────
+            // ── 2. Validate wielder has Gravity Gun equipped ──────────────────────
             var inventory = GetComponent<PlayerInventory>();
             if (
                 inventory == null
-                || inventory.GetEffectivelyEquippedItem(true) != ItemRegistry.GrappleItemType
+                || inventory.GetEffectivelyEquippedItem(true) != ItemRegistry.GravityGunItemType
             )
             {
                 IssaPluginPlugin.Log.LogWarning(
-                    "[Grapple] Server: wielder does not have grapple equipped."
+                    "[GravityGun] Server: wielder does not have Gravity Gun equipped."
                 );
-                GlobalSessionLock<GrappleNetworkBridge>.Release();
+                GlobalSessionLock<GravityGunNetworkBridge>.Release();
                 return;
             }
 
@@ -228,9 +230,9 @@ namespace IssaPlugin.Items
             if (!NetworkServer.spawned.TryGetValue(msg.TargetNetId, out var targetIdentity))
             {
                 IssaPluginPlugin.Log.LogWarning(
-                    $"[Grapple] Server: target netId={msg.TargetNetId} not found."
+                    $"[GravityGun] Server: target netId={msg.TargetNetId} not found."
                 );
-                GlobalSessionLock<GrappleNetworkBridge>.Release();
+                GlobalSessionLock<GravityGunNetworkBridge>.Release();
                 return;
             }
 
@@ -255,7 +257,7 @@ namespace IssaPlugin.Items
                     resolvedConn = driver.netIdentity.connectionToClient;
                     broadcastTargetNetId = driver.netIdentity.netId;
                     IssaPluginPlugin.Log.LogInfo(
-                        "[Grapple] Server: cart target has driver — redirecting to driver."
+                        "[GravityGun] Server: cart target has driver — redirecting to driver."
                     );
                 }
                 else
@@ -263,16 +265,16 @@ namespace IssaPlugin.Items
                     // Empty cart — server will apply spring force directly each aim tick.
                     resolvedConn = null;
                     IssaPluginPlugin.Log.LogInfo(
-                        "[Grapple] Server: empty cart target — server will apply force."
+                        "[GravityGun] Server: empty cart target — server will apply force."
                     );
                 }
             }
             else
             {
                 IssaPluginPlugin.Log.LogWarning(
-                    "[Grapple] Server: target is neither a player nor a golf cart."
+                    "[GravityGun] Server: target is neither a player nor a golf cart."
                 );
-                GlobalSessionLock<GrappleNetworkBridge>.Release();
+                GlobalSessionLock<GravityGunNetworkBridge>.Release();
                 return;
             }
 
@@ -289,19 +291,19 @@ namespace IssaPlugin.Items
             var wielderNetId = GetComponent<NetworkIdentity>().netId;
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[Grapple] Server: session started. "
+                $"[GravityGun] Server: session started. "
                     + $"wielder={wielderNetId} target={broadcastTargetNetId}"
                     + (_targetIsEmptyCart ? " (empty cart)" : "")
             );
 
             // ── 6. Broadcast connection to all clients ────────────────────────
             NetworkServer.SendToAll(
-                new GrappleConnectedMessage
+                new GravityGunConnectedMessage
                 {
                     WielderNetId = wielderNetId,
                     TargetNetId = broadcastTargetNetId,
-                    TetherRadius = Configuration.GrappleTetherRadius.Value,
-                    Duration = Configuration.GrappleTetherDuration.Value,
+                    TetherRadius = Configuration.GravityGunTetherRadius.Value,
+                    Duration = Configuration.GravityGunTetherDuration.Value,
                 }
             );
 
@@ -313,7 +315,10 @@ namespace IssaPlugin.Items
         //  Server — aim tick forwarding
         // =====================================================================
 
-        public void ServerHandleAimTick(NetworkConnectionToClient conn, GrappleAimTickMessage msg)
+        public void ServerHandleAimTick(
+            NetworkConnectionToClient conn,
+            GravityGunAimTickMessage msg
+        )
         {
             if (!isServer || !_serverSessionActive)
                 return;
@@ -324,7 +329,7 @@ namespace IssaPlugin.Items
                 var rb = _targetCartGo.GetComponent<Rigidbody>();
                 if (rb != null && msg.AimDir.sqrMagnitude > 0.0001f)
                 {
-                    float tetherRadius = Configuration.GrappleTetherRadius.Value;
+                    float tetherRadius = Configuration.GravityGunTetherRadius.Value;
                     Vector3 desiredPos = msg.WielderPos + msg.AimDir.normalized * tetherRadius;
                     Vector3 toDesired = desiredPos - rb.position;
                     float dist = toDesired.magnitude;
@@ -332,11 +337,11 @@ namespace IssaPlugin.Items
                     if (dist > 0.05f)
                     {
                         Vector3 dir = toDesired / dist;
-                        float targetSpeed = dist * Configuration.GrappleSpringForce.Value;
+                        float targetSpeed = dist * Configuration.GravityGunSpringForce.Value;
                         float currentSpeed = Vector3.Dot(rb.linearVelocity, dir);
                         float deficit = Mathf.Min(
                             targetSpeed - currentSpeed,
-                            Configuration.GrappleMaxPullSpeed.Value
+                            Configuration.GravityGunMaxPullSpeed.Value
                         );
                         if (deficit > 0f)
                             rb.AddForce(dir * deficit, ForceMode.VelocityChange);
@@ -347,7 +352,7 @@ namespace IssaPlugin.Items
             {
                 // Player target (or occupied cart resolved to driver): forward tick.
                 _targetConn?.Send(
-                    new GrappleTetherTickMessage
+                    new GravityGunTetherTickMessage
                     {
                         WielderPos = msg.WielderPos,
                         AimDir = msg.AimDir,
@@ -365,7 +370,7 @@ namespace IssaPlugin.Items
             if (!isServer || !_serverSessionActive)
                 return;
 
-            IssaPluginPlugin.Log.LogInfo("[Grapple] Server: wielder released tether.");
+            IssaPluginPlugin.Log.LogInfo("[GravityGun] Server: wielder released tether.");
             ServerEndSession();
         }
 
@@ -375,12 +380,12 @@ namespace IssaPlugin.Items
 
         private IEnumerator ServerTimeoutCoroutine()
         {
-            yield return new WaitForSeconds(Configuration.GrappleTetherDuration.Value);
+            yield return new WaitForSeconds(Configuration.GravityGunTetherDuration.Value);
 
             if (!_serverSessionActive)
                 yield break; // already ended by manual release
 
-            IssaPluginPlugin.Log.LogInfo("[Grapple] Server: session timed out.");
+            IssaPluginPlugin.Log.LogInfo("[GravityGun] Server: session timed out.");
             ServerEndSession();
         }
 
@@ -392,9 +397,11 @@ namespace IssaPlugin.Items
             _serverSessionActive = false;
 
             var wielderNetId = GetComponent<NetworkIdentity>().netId;
-            NetworkServer.SendToAll(new GrappleDisconnectedMessage { WielderNetId = wielderNetId });
+            NetworkServer.SendToAll(
+                new GravityGunDisconnectedMessage { WielderNetId = wielderNetId }
+            );
 
-            GlobalSessionLock<GrappleNetworkBridge>.Release();
+            GlobalSessionLock<GravityGunNetworkBridge>.Release();
 
             if (_serverTimeout != null)
             {
@@ -413,7 +420,7 @@ namespace IssaPlugin.Items
         // =====================================================================
 
         /// Called on every client when the tether connects.
-        public static void HandleGrappleConnected(GrappleConnectedMessage msg)
+        public static void HandleGravityGunConnected(GravityGunConnectedMessage msg)
         {
             var localInfo = GameManager.LocalPlayerInfo;
             if (localInfo == null)
@@ -427,16 +434,7 @@ namespace IssaPlugin.Items
             }
 
             // ── Create new tether line renderer (local-only, all clients) ──────
-            var lineGo = new GameObject("GrappleTetherLine");
-            s_tetherLine = lineGo.AddComponent<LineRenderer>();
-            s_tetherLine.positionCount = 2;
-            s_tetherLine.startWidth = 0.06f;
-            s_tetherLine.endWidth = 0.02f;
-            s_tetherLine.material = new Material(Shader.Find("Sprites/Default"));
-            s_tetherLine.startColor = new Color(0.3f, 0.8f, 1f, 0.9f); // electric blue
-            s_tetherLine.endColor = new Color(1f, 1f, 0.5f, 0.5f); // yellow-white
-            s_tetherLine.useWorldSpace = true;
-            Object.DontDestroyOnLoad(lineGo);
+            var lineGo = CreateTetherLine();
 
             // ── Store static session identity ─────────────────────────────────
             s_wielderNetId = msg.WielderNetId;
@@ -447,7 +445,7 @@ namespace IssaPlugin.Items
             // ── Wielder client: start instance session ────────────────────────
             if (localNetId == msg.WielderNetId)
             {
-                var bridge = localInfo.GetComponent<GrappleNetworkBridge>();
+                var bridge = localInfo.GetComponent<GravityGunNetworkBridge>();
                 if (bridge != null)
                 {
                     bridge._lockedTargetNetId = msg.TargetNetId;
@@ -485,7 +483,7 @@ namespace IssaPlugin.Items
                 {
                     var useId = new ItemUseId(
                         wielderInfo.PlayerId.Guid,
-                        GrappleItem.NextUseIndex(),
+                        GravityGunItem.NextUseIndex(),
                         ItemType.RocketLauncher
                     );
                     bool _;
@@ -508,20 +506,20 @@ namespace IssaPlugin.Items
                 }
 
                 IssaPluginPlugin.Log.LogInfo(
-                    "[Grapple] Client: tether coroutine started (local player is target)."
+                    "[GravityGun] Client: tether coroutine started (local player is target)."
                 );
             }
         }
 
         /// Called on the target client only when the server forwards an aim tick.
-        public static void HandleGrappleTetherTick(GrappleTetherTickMessage msg)
+        public static void HandleGravityGunTetherTick(GravityGunTetherTickMessage msg)
         {
             s_wielderPos = msg.WielderPos;
             s_aimDir = msg.AimDir;
         }
 
         /// Called on every client when the tether ends (release or timeout).
-        public static void HandleGrappleDisconnected(GrappleDisconnectedMessage msg)
+        public static void HandleGravityGunDisconnected(GravityGunDisconnectedMessage msg)
         {
             // ── Stop the target's spring coroutine (null-guarded) ─────────────
             if (s_tetherCoroutine != null && s_tetherMovement != null)
@@ -543,19 +541,19 @@ namespace IssaPlugin.Items
             {
                 uint localNetId = localInfo.GetComponent<NetworkIdentity>()?.netId ?? 0u;
                 if (localNetId == msg.WielderNetId)
-                    localInfo.GetComponent<GrappleNetworkBridge>()?.OnLocalSessionEnded();
+                    localInfo.GetComponent<GravityGunNetworkBridge>()?.OnLocalSessionEnded();
             }
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[Grapple] Client: session disconnected (wielderNetId={msg.WielderNetId})."
+                $"[GravityGun] Client: session disconnected (wielderNetId={msg.WielderNetId})."
             );
         }
 
         /// Called only on the wielder's client when the session lock is held by another player.
-        public static void HandleGrappleBusy(GrappleBusyMessage msg)
+        public static void HandleGravityGunBusy(GravityGunBusyMessage msg)
         {
             IssaPluginPlugin.Log.LogInfo(
-                "[Grapple] Session busy — another grapple is already active."
+                "[GravityGun] Session busy — another Gravity Gun is already active."
             );
         }
 
@@ -595,8 +593,8 @@ namespace IssaPlugin.Items
                         Vector3 dir = toDesired / dist;
 
                         // Proportional spring: the further from desired, the stronger the pull.
-                        float springForce = Configuration.GrappleSpringForce.Value;
-                        float maxPullSpeed = Configuration.GrappleMaxPullSpeed.Value;
+                        float springForce = Configuration.GravityGunSpringForce.Value;
+                        float maxPullSpeed = Configuration.GravityGunMaxPullSpeed.Value;
 
                         float targetSpeed = dist * springForce;
                         float currentSpeed = Vector3.Dot(rb.linearVelocity, dir);
@@ -612,14 +610,30 @@ namespace IssaPlugin.Items
             }
 
             // Coroutine exits naturally when maxDuration elapses or s_tetherActive is cleared.
-            // GrappleDisconnectedMessage from the server will arrive shortly after expiry
-            // and call HandleGrappleDisconnected for final cleanup.
+            // GravityGunDisconnectedMessage from the server will arrive shortly after expiry
+            // and call HandleGravityGunDisconnected for final cleanup.
             // Do NOT set s_tetherActive = false here — wait for the server message.
         }
 
         // =====================================================================
         //  VFX update — line renderer
         // =====================================================================
+
+        private static GameObject CreateTetherLine()
+        {
+            var lineGo = new GameObject("GravityGunTetherLine");
+            s_tetherLine = lineGo.AddComponent<LineRenderer>();
+            s_tetherLine.positionCount = 2;
+            s_tetherLine.startWidth = 0.10f;
+            s_tetherLine.endWidth = 0.06f;
+            s_tetherLine.material = new Material(Shader.Find("Sprites/Default"));
+            s_tetherLine.startColor = new Color(0.3f, 0.8f, 1f, 0.9f); // electric blue
+            s_tetherLine.endColor = new Color(1f, 1f, 0.5f, 0.5f); // yellow-white
+            s_tetherLine.useWorldSpace = true;
+            Object.DontDestroyOnLoad(lineGo);
+
+            return lineGo;
+        }
 
         private void UpdateTetherLine()
         {

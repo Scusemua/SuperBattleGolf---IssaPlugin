@@ -5,32 +5,32 @@ namespace IssaPlugin.Items
 {
     // ── Client → Server ──────────────────────────────────────────────────────
 
-    /// Sent when the local player uses the Grapple with a valid target in sight.
+    /// Sent when the local player uses the Gravity Gun with a valid target in sight.
     /// Server validates, acquires the global session lock, and broadcasts
-    /// GrappleConnectedMessage if successful.
-    public struct GrappleLockOnMessage : NetworkMessage
+    /// GravityGunConnectedMessage if successful.
+    public struct GravityGunLockOnMessage : NetworkMessage
     {
         public uint TargetNetId;
     }
 
-    public static class GrappleLockOnMessageSerialization
+    public static class GravityGunLockOnMessageSerialization
     {
-        public static void WriteGrappleLockOnMessage(
+        public static void WriteGravityGunLockOnMessage(
             NetworkWriter writer,
-            GrappleLockOnMessage msg
+            GravityGunLockOnMessage msg
         ) => writer.WriteUInt(msg.TargetNetId);
 
-        public static GrappleLockOnMessage ReadGrappleLockOnMessage(NetworkReader reader) =>
-            new GrappleLockOnMessage { TargetNetId = reader.ReadUInt() };
+        public static GravityGunLockOnMessage ReadGravityGunLockOnMessage(NetworkReader reader) =>
+            new GravityGunLockOnMessage { TargetNetId = reader.ReadUInt() };
     }
 
     // ─────────────────────────────────────────────────────────────────────────
 
-    /// Sent every GrappleInputSendInterval (~20 Hz) by the wielder while
+    /// Sent every GravityGunInputSendInterval (~20 Hz) by the wielder while
     /// the session is active.  Server forwards this to the target client as
-    /// GrappleTetherTickMessage so the target's spring coroutine knows where
+    /// GravityGunTetherTickMessage so the target's spring coroutine knows where
     /// to pull toward.
-    public struct GrappleAimTickMessage : NetworkMessage
+    public struct GravityGunAimTickMessage : NetworkMessage
     {
         /// World-space position of the wielder's character (NOT camera position).
         public Vector3 WielderPos;
@@ -39,19 +39,19 @@ namespace IssaPlugin.Items
         public Vector3 AimDir;
     }
 
-    public static class GrappleAimTickMessageSerialization
+    public static class GravityGunAimTickMessageSerialization
     {
-        public static void WriteGrappleAimTickMessage(
+        public static void WriteGravityGunAimTickMessage(
             NetworkWriter writer,
-            GrappleAimTickMessage msg
+            GravityGunAimTickMessage msg
         )
         {
             writer.WriteVector3(msg.WielderPos);
             writer.WriteVector3(msg.AimDir);
         }
 
-        public static GrappleAimTickMessage ReadGrappleAimTickMessage(NetworkReader reader) =>
-            new GrappleAimTickMessage
+        public static GravityGunAimTickMessage ReadGravityGunAimTickMessage(NetworkReader reader) =>
+            new GravityGunAimTickMessage
             {
                 WielderPos = reader.ReadVector3(),
                 AimDir = reader.ReadVector3(),
@@ -61,18 +61,18 @@ namespace IssaPlugin.Items
     // ─────────────────────────────────────────────────────────────────────────
 
     /// Sent by the wielder when they press the release key.
-    /// Server calls ServerEndSession() which broadcasts GrappleDisconnectedMessage.
-    public struct GrappleReleaseMessage : NetworkMessage { }
+    /// Server calls ServerEndSession() which broadcasts GravityGunDisconnectedMessage.
+    public struct GravityGunReleaseMessage : NetworkMessage { }
 
-    public static class GrappleReleaseMessageSerialization
+    public static class GravityGunReleaseMessageSerialization
     {
-        public static void WriteGrappleReleaseMessage(
+        public static void WriteGravityGunReleaseMessage(
             NetworkWriter writer,
-            GrappleReleaseMessage msg
+            GravityGunReleaseMessage msg
         ) { }
 
-        public static GrappleReleaseMessage ReadGrappleReleaseMessage(NetworkReader reader) =>
-            new GrappleReleaseMessage();
+        public static GravityGunReleaseMessage ReadGravityGunReleaseMessage(NetworkReader reader) =>
+            new GravityGunReleaseMessage();
     }
 
     // ── Server → All Clients ─────────────────────────────────────────────────
@@ -80,7 +80,7 @@ namespace IssaPlugin.Items
     /// Broadcast to every client when the tether successfully connects.
     /// All clients create a local LineRenderer; only the target starts the
     /// spring coroutine.
-    public struct GrappleConnectedMessage : NetworkMessage
+    public struct GravityGunConnectedMessage : NetworkMessage
     {
         public uint WielderNetId;
         public uint TargetNetId;
@@ -92,11 +92,11 @@ namespace IssaPlugin.Items
         public float Duration;
     }
 
-    public static class GrappleConnectedMessageSerialization
+    public static class GravityGunConnectedMessageSerialization
     {
-        public static void WriteGrappleConnectedMessage(
+        public static void WriteGravityGunConnectedMessage(
             NetworkWriter writer,
-            GrappleConnectedMessage msg
+            GravityGunConnectedMessage msg
         )
         {
             writer.WriteUInt(msg.WielderNetId);
@@ -105,8 +105,10 @@ namespace IssaPlugin.Items
             writer.WriteFloat(msg.Duration);
         }
 
-        public static GrappleConnectedMessage ReadGrappleConnectedMessage(NetworkReader reader) =>
-            new GrappleConnectedMessage
+        public static GravityGunConnectedMessage ReadGravityGunConnectedMessage(
+            NetworkReader reader
+        ) =>
+            new GravityGunConnectedMessage
             {
                 WielderNetId = reader.ReadUInt(),
                 TargetNetId = reader.ReadUInt(),
@@ -120,25 +122,27 @@ namespace IssaPlugin.Items
     /// Forwarded by the server to the target client only (via _targetConn.Send).
     /// Updates the target client's spring coroutine with the wielder's current
     /// position and aim direction so the desired orbit point tracks correctly.
-    public struct GrappleTetherTickMessage : NetworkMessage
+    public struct GravityGunTetherTickMessage : NetworkMessage
     {
         public Vector3 WielderPos;
         public Vector3 AimDir;
     }
 
-    public static class GrappleTetherTickMessageSerialization
+    public static class GravityGunTetherTickMessageSerialization
     {
-        public static void WriteGrappleTetherTickMessage(
+        public static void WriteGravityGunTetherTickMessage(
             NetworkWriter writer,
-            GrappleTetherTickMessage msg
+            GravityGunTetherTickMessage msg
         )
         {
             writer.WriteVector3(msg.WielderPos);
             writer.WriteVector3(msg.AimDir);
         }
 
-        public static GrappleTetherTickMessage ReadGrappleTetherTickMessage(NetworkReader reader) =>
-            new GrappleTetherTickMessage
+        public static GravityGunTetherTickMessage ReadGravityGunTetherTickMessage(
+            NetworkReader reader
+        ) =>
+            new GravityGunTetherTickMessage
             {
                 WielderPos = reader.ReadVector3(),
                 AimDir = reader.ReadVector3(),
@@ -149,34 +153,37 @@ namespace IssaPlugin.Items
 
     /// Broadcast to every client when the tether ends (manual release or timeout).
     /// All clients stop coroutines and destroy VFX.
-    public struct GrappleDisconnectedMessage : NetworkMessage
+    public struct GravityGunDisconnectedMessage : NetworkMessage
     {
         public uint WielderNetId;
     }
 
-    public static class GrappleDisconnectedMessageSerialization
+    public static class GravityGunDisconnectedMessageSerialization
     {
-        public static void WriteGrappleDisconnectedMessage(
+        public static void WriteGravityGunDisconnectedMessage(
             NetworkWriter writer,
-            GrappleDisconnectedMessage msg
+            GravityGunDisconnectedMessage msg
         ) => writer.WriteUInt(msg.WielderNetId);
 
-        public static GrappleDisconnectedMessage ReadGrappleDisconnectedMessage(
+        public static GravityGunDisconnectedMessage ReadGravityGunDisconnectedMessage(
             NetworkReader reader
-        ) => new GrappleDisconnectedMessage { WielderNetId = reader.ReadUInt() };
+        ) => new GravityGunDisconnectedMessage { WielderNetId = reader.ReadUInt() };
     }
 
     // ── Server → Wielder Only ────────────────────────────────────────────────
 
     /// Sent only to the wielder's connection when GlobalSessionLock is held by
     /// another player.  The item is NOT consumed.
-    public struct GrappleBusyMessage : NetworkMessage { }
+    public struct GravityGunBusyMessage : NetworkMessage { }
 
-    public static class GrappleBusyMessageSerialization
+    public static class GravityGunBusyMessageSerialization
     {
-        public static void WriteGrappleBusyMessage(NetworkWriter writer, GrappleBusyMessage msg) { }
+        public static void WriteGravityGunBusyMessage(
+            NetworkWriter writer,
+            GravityGunBusyMessage msg
+        ) { }
 
-        public static GrappleBusyMessage ReadGrappleBusyMessage(NetworkReader reader) =>
-            new GrappleBusyMessage();
+        public static GravityGunBusyMessage ReadGravityGunBusyMessage(NetworkReader reader) =>
+            new GravityGunBusyMessage();
     }
 }

@@ -370,18 +370,18 @@ namespace IssaPlugin
         public static ConfigEntry<float> SuperDonutUses { get; private set; }
         public static ConfigEntry<float> SuperDonutSpawnWeight { get; private set; }
 
-        // --- Electric Grapple ---
-        public static ConfigEntry<Key> GrappleGiveKey { get; private set; }
-        public static ConfigEntry<float> GrappleUses { get; private set; }
-        public static ConfigEntry<float> GrappleSpawnWeight { get; private set; }
-        public static ConfigEntry<float> GrappleLockOnRange { get; private set; }
-        public static ConfigEntry<float> GrappleLockOnConeAngleDeg { get; private set; }
-        public static ConfigEntry<float> GrappleTetherRadius { get; private set; }
-        public static ConfigEntry<float> GrappleTetherDuration { get; private set; }
-        public static ConfigEntry<float> GrappleSpringForce { get; private set; }
-        public static ConfigEntry<float> GrappleMaxPullSpeed { get; private set; }
-        public static ConfigEntry<float> GrappleInputSendInterval { get; private set; }
-        public static ConfigEntry<Key> GrappleReleaseKey { get; private set; }
+        // --- Gravity Gun ---
+        public static ConfigEntry<Key> GravityGunGiveKey { get; private set; }
+        public static ConfigEntry<float> GravityGunUses { get; private set; }
+        public static ConfigEntry<float> GravityGunSpawnWeight { get; private set; }
+        public static ConfigEntry<float> GravityGunLockOnRange { get; private set; }
+        public static ConfigEntry<float> GravityGunLockOnConeAngleDeg { get; private set; }
+        public static ConfigEntry<float> GravityGunTetherRadius { get; private set; }
+        public static ConfigEntry<float> GravityGunTetherDuration { get; private set; }
+        public static ConfigEntry<float> GravityGunSpringForce { get; private set; }
+        public static ConfigEntry<float> GravityGunMaxPullSpeed { get; private set; }
+        public static ConfigEntry<float> GravityGunInputSendInterval { get; private set; }
+        public static ConfigEntry<Key> GravityGunReleaseKey { get; private set; }
 
         // --- Poison Jar ---
         public static ConfigEntry<Key> PoisonJarGiveKey { get; private set; }
@@ -499,7 +499,7 @@ namespace IssaPlugin
             Reg(cfg, ItemEnabledEntries, 118, "DroneSwarmEnabled", "Drone Swarm");
             Reg(cfg, ItemEnabledEntries, 119, "RedBullEnabled", "Red Bull");
             Reg(cfg, ItemEnabledEntries, 120, "SuperDonutEnabled", "Super Donut");
-            Reg(cfg, ItemEnabledEntries, 121, "GrappleEnabled", "Electric Grapple");
+            Reg(cfg, ItemEnabledEntries, 121, "GravityGunEnabled", "Gravity Gun");
 
             // --- Baseball Bat ---
             BaseballBatPowerMultiplier = cfg.Bind(
@@ -2777,69 +2777,69 @@ namespace IssaPlugin
                 "Relative spawn weight for Super Donut in the item pool. Keep low — fires at every other player at once."
             );
 
-            // --- Electric Grapple ---
-            GrappleGiveKey = cfg.Bind(
-                "Grapple",
-                "GrappleGiveKey",
+            // --- Gravity Gun ---
+            GravityGunGiveKey = cfg.Bind(
+                "GravityGun",
+                "GravityGunGiveKey",
                 Key.NumpadDivide,
-                "Hotkey to give yourself an Electric Grapple (debug/testing)."
+                "Hotkey to give yourself an Gravity Gun (debug/testing)."
             );
-            GrappleUses = cfg.Bind(
-                "Grapple",
+            GravityGunUses = cfg.Bind(
+                "GravityGun",
                 "Uses",
                 1f,
-                "Number of uses per Electric Grapple pickup."
+                "Number of uses per Gravity Gun pickup."
             );
-            GrappleSpawnWeight = cfg.Bind(
+            GravityGunSpawnWeight = cfg.Bind(
                 "ItemBoxSpawns",
-                "GrappleSpawnWeight",
+                "GravityGunSpawnWeight",
                 10f,
-                "Relative spawn weight for the Electric Grapple in the item pool."
+                "Relative spawn weight for the Gravity Gun in the item pool."
             );
-            GrappleLockOnRange = cfg.Bind(
-                "Grapple",
+            GravityGunLockOnRange = cfg.Bind(
+                "GravityGun",
                 "LockOnRange",
                 25f,
-                "Maximum distance (units) at which the grapple can lock onto a target."
+                "Maximum distance (units) at which the Gravity Gun can lock onto a target."
             );
-            GrappleLockOnConeAngleDeg = cfg.Bind(
-                "Grapple",
+            GravityGunLockOnConeAngleDeg = cfg.Bind(
+                "GravityGun",
                 "LockOnConeAngleDeg",
                 40f,
                 "Half-angle (degrees) of the aim cone used to filter lock-on candidates."
             );
-            GrappleTetherRadius = cfg.Bind(
-                "Grapple",
+            GravityGunTetherRadius = cfg.Bind(
+                "GravityGun",
                 "TetherRadius",
                 8f,
                 "Distance (units) at which the target orbits the wielder while tethered."
             );
-            GrappleTetherDuration = cfg.Bind(
-                "Grapple",
+            GravityGunTetherDuration = cfg.Bind(
+                "GravityGun",
                 "TetherDuration",
                 5f,
                 "Maximum tether duration in seconds before automatic release."
             );
-            GrappleSpringForce = cfg.Bind(
-                "Grapple",
+            GravityGunSpringForce = cfg.Bind(
+                "GravityGun",
                 "SpringForce",
                 12f,
                 "Spring stiffness coefficient; higher values pull the target faster."
             );
-            GrappleMaxPullSpeed = cfg.Bind(
-                "Grapple",
+            GravityGunMaxPullSpeed = cfg.Bind(
+                "GravityGun",
                 "MaxPullSpeed",
                 18f,
                 "Maximum velocity change (m/s) applied to the target per physics tick."
             );
-            GrappleInputSendInterval = cfg.Bind(
-                "Grapple",
+            GravityGunInputSendInterval = cfg.Bind(
+                "GravityGun",
                 "InputSendInterval",
                 0.05f,
                 "Interval (seconds) between aim-tick messages sent to the server (~20 Hz)."
             );
-            GrappleReleaseKey = cfg.Bind(
-                "Grapple",
+            GravityGunReleaseKey = cfg.Bind(
+                "GravityGun",
                 "ReleaseKey",
                 Key.Q,
                 "Key the wielder presses to manually release the tether."

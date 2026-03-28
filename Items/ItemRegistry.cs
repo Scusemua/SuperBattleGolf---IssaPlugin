@@ -34,7 +34,7 @@ namespace IssaPlugin.Items
         public static readonly ItemType DroneSwarmItemType = (ItemType)118;
         public static readonly ItemType RedBullItemType = (ItemType)119;
         public static readonly ItemType SuperDonutItemType = (ItemType)120;
-        public static readonly ItemType GrappleItemType = (ItemType)121;
+        public static readonly ItemType GravityGunItemType = (ItemType)121;
 
         // Static initialization order note: AllItems is a static field initializer that only
         // instantiates the definition objects; it does not call any abstract members. Properties like
@@ -64,7 +64,7 @@ namespace IssaPlugin.Items
                 new DroneSwarmItemDefinition(),
                 new RedBullItemDefinition(),
                 new SuperDonutItemDefinition(),
-                new GrappleItemDefinition(),
+                new GravityGunItemDefinition(),
             };
 
         private static IReadOnlyDictionary<int, CustomItemDefinition> _customItemDefinitionMap;

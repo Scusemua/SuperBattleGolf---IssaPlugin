@@ -1,21 +1,22 @@
 using IssaPlugin.Items;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace IssaPlugin.Overlays
 {
     /// <summary>
     /// Client-side HUD component added to the local player's inventory object
-    /// while the Electric Grapple item is equipped (via GrappleItemDefinition.OnEquip).
+    /// while the Gravity Gun item is equipped (via GravityGunItemDefinition.OnEquip).
     ///
     /// Idle (equipped, no session active):
     ///   Highlights the nearest valid lock-on target in the aim cone with a
     ///   targeting reticle in the centre of the screen.
     ///
     /// Active (LocalSessionActive == true):
-    ///   Shows an "ELECTRIC GRAPPLE ACTIVE" banner, a countdown bar, and a
+    ///   Shows an "GRAVITY GUN ACTIVE" banner, a countdown bar, and a
     ///   release-key hint.
     ///
-    /// The component removes itself when the Grapple item is no longer equipped.
+    /// The component removes itself when the GravityGun item is no longer equipped.
     /// </summary>
     public class GravityGunOverlay : MonoBehaviour
     {
@@ -31,10 +32,11 @@ namespace IssaPlugin.Overlays
         private float _time;
         private bool _sessionActive;
         private float _sessionElapsed; // seconds since session started
-        private float _sessionDuration; // from GrappleConnectedMessage
+        private float _sessionDuration; // from GravityGunConnectedMessage
 
         // Nearest lock-on candidate (updated in Update, idle only)
         private bool _hasTarget;
+        private bool _aimingIn;
         private Vector3 _targetScreenPos;
 
         // Session start time (set in Update when session becomes active)
@@ -45,29 +47,21 @@ namespace IssaPlugin.Overlays
 
         private void Update()
         {
-            // Self-remove when item is no longer equipped.
-            var inventory = GetComponent<PlayerInventory>();
-            if (
-                inventory == null
-                || inventory.GetEffectivelyEquippedItem(true) != ItemRegistry.GrappleItemType
-            )
-            {
-                Destroy(this);
-                return;
-            }
-
             _sw = Screen.width;
             _sh = Screen.height;
             _time = Time.time;
 
-            var bridge = GetComponent<GrappleNetworkBridge>();
+            // This component lives on the Plugin's persistent GameObject, so look up
+            // the local player's bridge rather than GetComponent on self.
+            var localInfo = GameManager.LocalPlayerInfo;
+            var bridge = localInfo?.GetComponent<GravityGunNetworkBridge>();
             _sessionActive = bridge != null && bridge.LocalSessionActive;
 
             // Track session start so we can display elapsed time.
             if (_sessionActive && !_wasSessionActive)
             {
                 _sessionStartTime = _time;
-                _sessionDuration = Configuration.GrappleTetherDuration.Value;
+                _sessionDuration = Configuration.GravityGunTetherDuration.Value;
             }
             _wasSessionActive = _sessionActive;
 
@@ -83,21 +77,50 @@ namespace IssaPlugin.Overlays
             }
         }
 
+        private void LateUpdate()
+        {
+            if (_aimingIn)
+                CorrectAimRotation();
+        }
+
         // ── Idle target detection ─────────────────────────────────────────────
 
         private void UpdateLockOnTarget()
         {
             _hasTarget = false;
 
+            // Only show the lock-on reticle while the item is actively equipped.
+            var localInventory = GameManager.LocalPlayerInventory;
+            if (
+                localInventory == null
+                || localInventory.GetEffectivelyEquippedItem(true)
+                    != ItemRegistry.GravityGunItemType
+            )
+                return;
+
+            // Only show while aiming in (right-click held).
+            if (Mouse.current == null || !Mouse.current.rightButton.isPressed)
+            {
+                if (_aimingIn)
+                {
+                    FixLookRotationAfterScope();
+                }
+                _aimingIn = false;
+                return;
+            }
+
+            _aimingIn = true;
+
             var cam = Camera.main;
             if (cam == null)
                 return;
 
             float cosHalf = Mathf.Cos(
-                Configuration.GrappleLockOnConeAngleDeg.Value * 0.5f * Mathf.Deg2Rad
+                Configuration.GravityGunLockOnConeAngleDeg.Value * 0.5f * Mathf.Deg2Rad
             );
             float rangeSq =
-                Configuration.GrappleLockOnRange.Value * Configuration.GrappleLockOnRange.Value;
+                Configuration.GravityGunLockOnRange.Value
+                * Configuration.GravityGunLockOnRange.Value;
 
             Vector3 camPos = cam.transform.position;
             Vector3 camFwd = cam.transform.forward;
@@ -189,7 +212,8 @@ namespace IssaPlugin.Overlays
             _titleStyle.normal.textColor = lowTime
                 ? new Color(1f, 0.25f, 0.25f, 0.7f + 0.3f * Mathf.Sin(_time * 6f))
                 : new Color(0.2f, 0.85f, 1f, 0.9f);
-            GUI.Label(new Rect(0, 10f, _sw, 32f), "ELECTRIC GRAPPLE ACTIVE", _titleStyle);
+
+            GUI.Label(new Rect(0, 10f, _sw, 32f), "GRAVITY GUN ACTIVE", _titleStyle);
 
             // Timer bar (top-centre, below title).
             float barW = 280f;
@@ -215,16 +239,16 @@ namespace IssaPlugin.Overlays
                 ? new Color(1f, 0.3f, 0.3f, 0.9f)
                 : new Color(0.2f, 0.85f, 1f, 0.9f);
             GUI.Label(
-                new Rect(barX + barW + 8f, barY - 8f, 80f, 24f),
+                new Rect(barX + barW + 8f, barY - 8f, 80f, 26f),
                 $"{remaining:F1}s",
                 _timerStyle
             );
 
             // Release key hint (bottom-centre).
-            string releaseKey = Configuration.GrappleReleaseKey.Value.ToString();
+            string releaseKey = Configuration.GravityGunReleaseKey.Value.ToString();
             GUI.Label(
-                new Rect(0, _sh - 38f, _sw, 30f),
-                $"[{releaseKey}] Release",
+                new Rect(0, _sh - 38f, _sw, 36f),
+                $"Press [{releaseKey}] to Release the Tether Line",
                 _instructionStyle
             );
         }
@@ -314,6 +338,17 @@ namespace IssaPlugin.Overlays
                 Quaternion.LookRotation(fwd.normalized) * Quaternion.Euler(0f, 65f, 0f);
         }
 
+        private void FixLookRotationAfterScope()
+        {
+            if (Camera.main != null)
+                GameManager
+                    .LocalPlayerInfo
+                    ?.Movement
+                    ?.transform.rotation = Quaternion.LookRotation(
+                        Camera.main.transform.forward.normalized
+                    );
+        }
+
         private void EnsureStyles()
         {
             if (_titleStyle == null)
@@ -321,7 +356,7 @@ namespace IssaPlugin.Overlays
                 _titleStyle = new GUIStyle(GUI.skin.label)
                 {
                     alignment = TextAnchor.MiddleCenter,
-                    fontSize = 22,
+                    fontSize = 26,
                     fontStyle = FontStyle.Bold,
                 };
                 _titleStyle.normal.textColor = new Color(0.2f, 0.85f, 1f, 0.9f);
@@ -332,7 +367,7 @@ namespace IssaPlugin.Overlays
                 _instructionStyle = new GUIStyle(GUI.skin.label)
                 {
                     alignment = TextAnchor.MiddleCenter,
-                    fontSize = 18,
+                    fontSize = 26,
                     fontStyle = FontStyle.Bold,
                 };
                 _instructionStyle.normal.textColor = Color.white;
@@ -343,7 +378,7 @@ namespace IssaPlugin.Overlays
                 _labelStyle = new GUIStyle(GUI.skin.label)
                 {
                     alignment = TextAnchor.MiddleCenter,
-                    fontSize = 18,
+                    fontSize = 22,
                     fontStyle = FontStyle.Bold,
                 };
                 _labelStyle.normal.textColor = new Color(0.2f, 0.85f, 1f, 0.85f);
@@ -353,7 +388,7 @@ namespace IssaPlugin.Overlays
             {
                 _timerStyle = new GUIStyle(GUI.skin.label)
                 {
-                    fontSize = 18,
+                    fontSize = 22,
                     fontStyle = FontStyle.Bold,
                 };
                 _timerStyle.normal.textColor = new Color(0.2f, 0.85f, 1f, 0.9f);

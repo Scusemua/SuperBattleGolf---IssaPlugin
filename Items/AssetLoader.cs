@@ -102,11 +102,11 @@ namespace IssaPlugin.Items
         /// Bundle asset name: <c>red_bull_trail.prefab</c>
         public static GameObject RedBullTrailPrefab { get; private set; }
 
-        // --- Electric Grapple ---
+        // --- Gravity Gun ---
         /// Falls back to the rocket launcher icon at runtime if the asset is absent.
-        public static Sprite ElectricGrappleIcon { get; private set; }
+        public static Sprite ElectricGravityGunIcon { get; private set; }
 
-        /// The model the player holds while the Electric Grapple item is equipped.
+        /// The model the player holds while the Gravity Gun item is equipped.
         /// Bundle asset name: <c>electric_whip.prefab</c>
         public static GameObject ElectricWhipHandheldPrefab { get; private set; }
 
@@ -269,7 +269,7 @@ namespace IssaPlugin.Items
             LoadDroneSwarmAssets();
             LoadRedBullAssets();
             LoadSuperDonutAssets();
-            LoadGrappleAssets();
+            LoadGravityGunAssets();
 
             IssaPluginPlugin.Log.LogInfo("[Assets] IssaPluginBundle loaded.");
         }
@@ -295,7 +295,7 @@ namespace IssaPlugin.Items
             PositionSwapIcon = LoadSprite("position_swap_icon.png");
             PoisonJarIcon = LoadSprite("poison_bottle_icon.png");
             DroneSwarmIcon = LoadSprite("drone_swarm_icon.png");
-            ElectricGrappleIcon = LoadSprite("gravity_gun_icon.png");
+            ElectricGravityGunIcon = LoadSprite("gravity_gun_icon.png");
             RedBullIcon = LoadSprite("redbull_icon.png");
 
             SniperScopeTexture = LoadTexture2D("sniper_scope.png");
@@ -619,7 +619,7 @@ namespace IssaPlugin.Items
                 StripNetworkComponents(DroneExplosionVfxPrefab);
         }
 
-        private static void LoadGrappleAssets()
+        private static void LoadGravityGunAssets()
         {
             ElectricWhipHandheldPrefab = Load<GameObject>("gravity_gun.prefab");
             DisableRigidbody(ElectricWhipHandheldPrefab);

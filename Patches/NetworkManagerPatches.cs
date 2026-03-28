@@ -1097,67 +1097,67 @@ namespace IssaPlugin.Patches
                     ItemRegistry.ServerHandleGiveItemRequest
                 );
 
-            // ── Electric Grapple ─────────────────────────────────────────────────
-            Writer<GrappleLockOnMessage>.write =
-                GrappleLockOnMessageSerialization.WriteGrappleLockOnMessage;
-            Reader<GrappleLockOnMessage>.read =
-                GrappleLockOnMessageSerialization.ReadGrappleLockOnMessage;
+            // ── Gravity Gun ─────────────────────────────────────────────────
+            Writer<GravityGunLockOnMessage>.write =
+                GravityGunLockOnMessageSerialization.WriteGravityGunLockOnMessage;
+            Reader<GravityGunLockOnMessage>.read =
+                GravityGunLockOnMessageSerialization.ReadGravityGunLockOnMessage;
 
-            Writer<GrappleAimTickMessage>.write =
-                GrappleAimTickMessageSerialization.WriteGrappleAimTickMessage;
-            Reader<GrappleAimTickMessage>.read =
-                GrappleAimTickMessageSerialization.ReadGrappleAimTickMessage;
+            Writer<GravityGunAimTickMessage>.write =
+                GravityGunAimTickMessageSerialization.WriteGravityGunAimTickMessage;
+            Reader<GravityGunAimTickMessage>.read =
+                GravityGunAimTickMessageSerialization.ReadGravityGunAimTickMessage;
 
-            Writer<GrappleReleaseMessage>.write =
-                GrappleReleaseMessageSerialization.WriteGrappleReleaseMessage;
-            Reader<GrappleReleaseMessage>.read =
-                GrappleReleaseMessageSerialization.ReadGrappleReleaseMessage;
+            Writer<GravityGunReleaseMessage>.write =
+                GravityGunReleaseMessageSerialization.WriteGravityGunReleaseMessage;
+            Reader<GravityGunReleaseMessage>.read =
+                GravityGunReleaseMessageSerialization.ReadGravityGunReleaseMessage;
 
-            Writer<GrappleConnectedMessage>.write =
-                GrappleConnectedMessageSerialization.WriteGrappleConnectedMessage;
-            Reader<GrappleConnectedMessage>.read =
-                GrappleConnectedMessageSerialization.ReadGrappleConnectedMessage;
+            Writer<GravityGunConnectedMessage>.write =
+                GravityGunConnectedMessageSerialization.WriteGravityGunConnectedMessage;
+            Reader<GravityGunConnectedMessage>.read =
+                GravityGunConnectedMessageSerialization.ReadGravityGunConnectedMessage;
 
-            Writer<GrappleTetherTickMessage>.write =
-                GrappleTetherTickMessageSerialization.WriteGrappleTetherTickMessage;
-            Reader<GrappleTetherTickMessage>.read =
-                GrappleTetherTickMessageSerialization.ReadGrappleTetherTickMessage;
+            Writer<GravityGunTetherTickMessage>.write =
+                GravityGunTetherTickMessageSerialization.WriteGravityGunTetherTickMessage;
+            Reader<GravityGunTetherTickMessage>.read =
+                GravityGunTetherTickMessageSerialization.ReadGravityGunTetherTickMessage;
 
-            Writer<GrappleDisconnectedMessage>.write =
-                GrappleDisconnectedMessageSerialization.WriteGrappleDisconnectedMessage;
-            Reader<GrappleDisconnectedMessage>.read =
-                GrappleDisconnectedMessageSerialization.ReadGrappleDisconnectedMessage;
+            Writer<GravityGunDisconnectedMessage>.write =
+                GravityGunDisconnectedMessageSerialization.WriteGravityGunDisconnectedMessage;
+            Reader<GravityGunDisconnectedMessage>.read =
+                GravityGunDisconnectedMessageSerialization.ReadGravityGunDisconnectedMessage;
 
-            Writer<GrappleBusyMessage>.write =
-                GrappleBusyMessageSerialization.WriteGrappleBusyMessage;
-            Reader<GrappleBusyMessage>.read =
-                GrappleBusyMessageSerialization.ReadGrappleBusyMessage;
+            Writer<GravityGunBusyMessage>.write =
+                GravityGunBusyMessageSerialization.WriteGravityGunBusyMessage;
+            Reader<GravityGunBusyMessage>.read =
+                GravityGunBusyMessageSerialization.ReadGravityGunBusyMessage;
 
-            NetworkClient.RegisterHandler<GrappleConnectedMessage>(
-                GrappleNetworkBridge.HandleGrappleConnected
+            NetworkClient.RegisterHandler<GravityGunConnectedMessage>(
+                GravityGunNetworkBridge.HandleGravityGunConnected
             );
-            NetworkClient.RegisterHandler<GrappleTetherTickMessage>(
-                GrappleNetworkBridge.HandleGrappleTetherTick
+            NetworkClient.RegisterHandler<GravityGunTetherTickMessage>(
+                GravityGunNetworkBridge.HandleGravityGunTetherTick
             );
-            NetworkClient.RegisterHandler<GrappleDisconnectedMessage>(
-                GrappleNetworkBridge.HandleGrappleDisconnected
+            NetworkClient.RegisterHandler<GravityGunDisconnectedMessage>(
+                GravityGunNetworkBridge.HandleGravityGunDisconnected
             );
-            NetworkClient.RegisterHandler<GrappleBusyMessage>(
-                GrappleNetworkBridge.HandleGrappleBusy
+            NetworkClient.RegisterHandler<GravityGunBusyMessage>(
+                GravityGunNetworkBridge.HandleGravityGunBusy
             );
 
             if (NetworkServer.active)
             {
-                NetworkServer.RegisterHandler<GrappleLockOnMessage>(
+                NetworkServer.RegisterHandler<GravityGunLockOnMessage>(
                     (conn, msg) =>
-                        GetBridge<GrappleNetworkBridge>(conn)?.ServerHandleLockOn(conn, msg)
+                        GetBridge<GravityGunNetworkBridge>(conn)?.ServerHandleLockOn(conn, msg)
                 );
-                NetworkServer.RegisterHandler<GrappleAimTickMessage>(
+                NetworkServer.RegisterHandler<GravityGunAimTickMessage>(
                     (conn, msg) =>
-                        GetBridge<GrappleNetworkBridge>(conn)?.ServerHandleAimTick(conn, msg)
+                        GetBridge<GravityGunNetworkBridge>(conn)?.ServerHandleAimTick(conn, msg)
                 );
-                NetworkServer.RegisterHandler<GrappleReleaseMessage>(
-                    (conn, msg) => GetBridge<GrappleNetworkBridge>(conn)?.ServerHandleRelease(conn)
+                NetworkServer.RegisterHandler<GravityGunReleaseMessage>(
+                    (conn, msg) => GetBridge<GravityGunNetworkBridge>(conn)?.ServerHandleRelease(conn)
                 );
             }
 
