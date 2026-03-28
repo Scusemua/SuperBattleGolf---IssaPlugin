@@ -1,7 +1,39 @@
 using Mirror;
+using UnityEngine;
 
 namespace IssaPlugin.Items
 {
+    // ── Server → All Clients ─────────────────────────────────────────────
+
+    /// Broadcast by the server when a scaled custom-item rocket explodes.
+    /// Clients use it to render a larger explosion VFX visible to everyone.
+    public struct ScaledExplosionVfxMessage : NetworkMessage
+    {
+        public Vector3 Position;
+        public float Scale;
+    }
+
+    public static class ScaledExplosionVfxMessageSerialization
+    {
+        public static void WriteScaledExplosionVfxMessage(
+            NetworkWriter writer,
+            ScaledExplosionVfxMessage msg
+        )
+        {
+            writer.WriteVector3(msg.Position);
+            writer.WriteFloat(msg.Scale);
+        }
+
+        public static ScaledExplosionVfxMessage ReadScaledExplosionVfxMessage(NetworkReader reader)
+        {
+            return new ScaledExplosionVfxMessage
+            {
+                Position = reader.ReadVector3(),
+                Scale = reader.ReadFloat(),
+            };
+        }
+    }
+
     // ── Client → Server ──────────────────────────────────────────────────
 
     /// Sent by a non-host client when a hotkey is pressed to give themselves an item.

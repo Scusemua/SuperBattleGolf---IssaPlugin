@@ -1069,6 +1069,25 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<GiveItemRequestMessage>(
                     ItemRegistry.ServerHandleGiveItemRequest
                 );
+
+            // ── Scaled explosion VFX (Server → All Clients) ──────────────────────
+            Writer<ScaledExplosionVfxMessage>.write =
+                ScaledExplosionVfxMessageSerialization.WriteScaledExplosionVfxMessage;
+            Reader<ScaledExplosionVfxMessage>.read =
+                ScaledExplosionVfxMessageSerialization.ReadScaledExplosionVfxMessage;
+            NetworkClient.RegisterHandler<ScaledExplosionVfxMessage>(static msg =>
+            {
+                VfxManager.PlayPooledVfxLocalOnly(
+                    VfxType.RocketLauncherRocketExplosion,
+                    msg.Position,
+                    Quaternion.identity,
+                    Vector3.one * msg.Scale
+                );
+                CameraModuleController.Shake(
+                    GameManager.CameraGameplaySettings.RocketExplosionScreenshakeSettings,
+                    msg.Position
+                );
+            });
         }
 
         public static void ResetRegistration() => _registered = false;

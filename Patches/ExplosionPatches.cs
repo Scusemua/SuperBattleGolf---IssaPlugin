@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
 using IssaPlugin.Items;
+using Mirror;
 using UnityEngine;
 
 namespace IssaPlugin.Patches
@@ -34,56 +35,47 @@ namespace IssaPlugin.Patches
                     + $"baseRange={baseRange:F1}, scaledRange={scaledRange:F1}"
             );
 
-            // --- Bonus VFX: spawn a second, larger explosion particle ---
-            if (scale > 1f)
+            // Broadcast the bigger VFX + screen-shake to all clients.
+            // PlayPooledVfxLocalOnly must be called on the client — calling it
+            // directly here (server-side) only renders on the host and never
+            // reaches remote clients.
+            NetworkServer.SendToAll(
+                new ScaledExplosionVfxMessage { Position = worldPosition, Scale = scale }
+            );
+
+            // Bonus knockback + extended radius hits (server-authoritative).
+            int layerMask = GameManager.LayerSettings.RocketHittablesMask;
+            int hitCount = Physics.OverlapSphereNonAlloc(
+                worldPosition,
+                scaledRange,
+                overlappingColliderBuffer,
+                layerMask,
+                QueryTriggerInteraction.Ignore
+            );
+
+            float bonusForce = (scale - 1f) * 25f;
+            var processed = new HashSet<Rigidbody>();
+
+            for (int i = 0; i < hitCount; i++)
             {
-                VfxManager.PlayPooledVfxLocalOnly(
-                    VfxType.RocketLauncherRocketExplosion,
-                    worldPosition,
-                    Quaternion.identity,
-                    Vector3.one * scale
-                );
-
-                CameraModuleController.Shake(
-                    GameManager.CameraGameplaySettings.RocketExplosionScreenshakeSettings,
-                    worldPosition
-                );
-
-                // --- Bonus knockback + extended radius hits ---
-
-                int layerMask = GameManager.LayerSettings.RocketHittablesMask;
-                int hitCount = Physics.OverlapSphereNonAlloc(
-                    worldPosition,
-                    scaledRange,
-                    ServerExplodeScalePatch.overlappingColliderBuffer,
-                    layerMask,
-                    QueryTriggerInteraction.Ignore
-                );
-
-                float bonusForce = (scale - 1f) * 25f;
-                var processed = new HashSet<Rigidbody>();
-
-                for (int i = 0; i < hitCount; i++)
+                var col = overlappingColliderBuffer[i];
+                var rb = col.GetComponentInParent<Rigidbody>();
+                if (rb != null && processed.Add(rb))
                 {
-                    var col = overlappingColliderBuffer[i];
-                    var rb = col.GetComponentInParent<Rigidbody>();
-                    if (rb != null && processed.Add(rb))
-                    {
-                        rb.AddExplosionForce(
-                            bonusForce,
-                            worldPosition,
-                            scaledRange,
-                            0.3f,
-                            ForceMode.VelocityChange
-                        );
-                    }
+                    rb.AddExplosionForce(
+                        bonusForce,
+                        worldPosition,
+                        scaledRange,
+                        0.3f,
+                        ForceMode.VelocityChange
+                    );
                 }
-
-                IssaPluginPlugin.Log.LogInfo(
-                    $"[Explosion] Bonus force={bonusForce:F1} applied to "
-                        + $"{processed.Count} rigidbodies within {scaledRange:F1}m"
-                );
             }
+
+            IssaPluginPlugin.Log.LogInfo(
+                $"[Explosion] Bonus force={bonusForce:F1} applied to "
+                    + $"{processed.Count} rigidbodies within {scaledRange:F1}m"
+            );
         }
     }
 }
