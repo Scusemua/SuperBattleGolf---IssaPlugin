@@ -434,138 +434,132 @@ namespace IssaPlugin.Items
             LocalSessionActive = true;
             _forceEnd = false;
             _maydayTriggered = false;
-
             InputManager.Controls.Gameplay.Disable();
 
-            // Always skip at least one frame before reading input, so that
-            // wasPressedThisFrame on any key used to activate the item doesn't
-            // immediately trigger the fly-in cancel / mayday checks below.
+            // Skip one frame so wasPressedThisFrame on the activation key
+            // doesn't immediately trigger fly-in cancel / mayday checks.
             yield return null;
 
-            // Wait for Mirror to finish syncing the spawned gunship to this client.
-            // In host mode this is instant; over a real network it may take a few frames.
+            GameObject gunshipGo = null;
+            yield return StartCoroutine(WaitForGunshipSync(gunshipNetId, go => gunshipGo = go));
+
+            var session = new AC130Session(inventory, gunshipGo, orbitCenter);
+
+            yield return StartCoroutine(PhaseFlyIn(session));
+
+            if (_forceEnd && !_maydayTriggered)
+            {
+                EndSessionEarly(session);
+                yield break;
+            }
+
+            if (_maydayTriggered)
+            {
+                yield return StartCoroutine(HandleSessionMayday(session));
+                yield break;
+            }
+
+            yield return StartCoroutine(PhaseOnStation(session));
+
+            if (_maydayTriggered)
+            {
+                yield return StartCoroutine(HandleSessionMayday(session));
+                yield break;
+            }
+
+            EndSessionNormal(session);
+        }
+
+        // ================================================================
+        //  Session phase coroutines
+        // ================================================================
+
+        /// <summary>
+        /// Waits up to 2 s for Mirror to sync the gunship NetworkIdentity to this
+        /// client, then delivers the resolved GameObject via <paramref name="onReady"/>.
+        /// </summary>
+        private IEnumerator WaitForGunshipSync(uint gunshipNetId, System.Action<GameObject> onReady)
+        {
             float waited = 0f;
-            NetworkIdentity gunshipIdentity = null;
-            while (
-                !NetworkClient.spawned.TryGetValue(gunshipNetId, out gunshipIdentity) && waited < 2f
-            )
+            NetworkIdentity identity = null;
+            while (!NetworkClient.spawned.TryGetValue(gunshipNetId, out identity) && waited < 2f)
             {
                 waited += Time.deltaTime;
                 yield return null;
             }
-            if (gunshipIdentity == null)
+
+            if (identity == null)
                 IssaPluginPlugin.Log.LogError(
                     "[AC130] Gunship still null after waiting — camera will not activate."
                 );
-            GameObject gunshipGo = gunshipIdentity?.gameObject;
 
-            var session = new AC130Session(inventory, gunshipGo, orbitCenter);
+            onReady(identity?.gameObject);
+        }
 
-            // ============================================================
-            //  Phase 1: Fly-in
-            //
-            //  On a listen server, FlyComp exists (same object instance) and
-            //  HasArrived is the authoritative completion signal.
-            //  On a remote client, FlyComp is null (the component is added at
-            //  runtime on the server and not synced to clients). We fall back to
-            //  a time estimate so the player still sees the fly-in cinematic.
-            // ============================================================
+        /// <summary>
+        /// Phase 1: Cinematic fly-in.
+        /// Sets up the OrbitModule follow-cam and loops until the gunship arrives,
+        /// the player cancels (sets <see cref="_forceEnd"/>), or mayday fires.
+        /// </summary>
+        private IEnumerator PhaseFlyIn(AC130Session session)
+        {
+            if (session.FlyComp == null && session.GunshipVisual == null)
+                yield break;
+
+            if (session.OrbitModule != null)
+            {
+                session.OrbitModule.SetSubject(session.PivotGo.transform);
+                session.OrbitModule.SetPitch(Configuration.AC130CameraPitch.Value);
+                session.OrbitModule.SetDistanceAddition(Configuration.AC130CameraDistance.Value);
+                session.OrbitModule.disablePhysics = true;
+            }
+
+            IssaPluginPlugin.Log.LogInfo("[AC130] Fly-in phase started.");
+
             bool hasFlyComp = session.FlyComp != null;
-            bool hasGunshipVisual = session.GunshipVisual != null;
+            float estimatedFlyInTime =
+                Configuration.AC130ApproachDistance.Value / Configuration.AC130ApproachSpeed.Value;
+            float flyInElapsed = 0f;
 
-            if (hasFlyComp || hasGunshipVisual)
+            while (!_forceEnd && !_maydayTriggered)
             {
-                if (session.OrbitModule != null)
+                bool arrived = hasFlyComp
+                    ? session.FlyComp.HasArrived
+                    : flyInElapsed >= estimatedFlyInTime;
+                if (arrived)
+                    break;
+
+                if (Keyboard.current != null && Keyboard.current[Key.Space].wasPressedThisFrame)
                 {
-                    session.OrbitModule.SetSubject(session.PivotGo.transform);
-                    session.OrbitModule.SetPitch(Configuration.AC130CameraPitch.Value);
-                    session.OrbitModule.SetDistanceAddition(
-                        Configuration.AC130CameraDistance.Value
-                    );
-                    session.OrbitModule.disablePhysics = true;
+                    IssaPluginPlugin.Log.LogInfo("[AC130] Fly-in cancelled by player.");
+                    _forceEnd = true;
+                    yield break;
                 }
 
-                IssaPluginPlugin.Log.LogInfo("[AC130] Fly-in phase started.");
+                CheckMaydayHotkey();
 
-                float estimatedFlyInTime =
-                    Configuration.AC130ApproachDistance.Value
-                    / Configuration.AC130ApproachSpeed.Value;
-                float flyInElapsed = 0f;
-
-                while (!_forceEnd && !_maydayTriggered)
-                {
-                    // Completion: authoritative (listen server) or time-based (remote client).
-                    if (
-                        hasFlyComp ? session.FlyComp.HasArrived : flyInElapsed >= estimatedFlyInTime
-                    )
-                        break;
-
-                    if (Keyboard.current != null && Keyboard.current[Key.Space].wasPressedThisFrame)
-                    {
-                        IssaPluginPlugin.Log.LogInfo("[AC130] Fly-in cancelled by player.");
-                        _forceEnd = true;
-                        break;
-                    }
-
-                    CheckMaydayHotkey();
-
-                    if (session.GunshipVisual != null)
-                        session.PivotGo.transform.position = session
-                            .GunshipVisual
-                            .transform
-                            .position;
-                    session.OrbitModule?.ForceUpdateModule();
-                    flyInElapsed += Time.deltaTime;
-                    yield return null;
-                }
-
-                IssaPluginPlugin.Log.LogInfo("[AC130] Fly-in complete.");
+                if (session.GunshipVisual != null)
+                    session.PivotGo.transform.position = session.GunshipVisual.transform.position;
+                session.OrbitModule?.ForceUpdateModule();
+                flyInElapsed += Time.deltaTime;
+                yield return null;
             }
 
-            // Cancelled during fly-in.
-            if (_forceEnd && !_maydayTriggered)
-            {
-                session.Cleanup();
-                LocalGunshipCamera = null;
-                LocalSessionActive = false;
-                NetworkClient.Send(new AC130EndMessage());
-                yield break;
-            }
+            IssaPluginPlugin.Log.LogInfo("[AC130] Fly-in complete.");
+        }
 
-            // Mayday during fly-in.
-            if (_maydayTriggered)
-            {
-                session.CleanupForMayday();
-                LocalGunshipCamera = null;
-                yield return WaitForMaydayEnd();
-                ApplyCoffeeMovementSpeed();
-                yield break;
-            }
-
-            // ============================================================
-            //  Phase 2: On-station
-            // ============================================================
+        /// <summary>
+        /// Phase 2: On-station gunship control. Runs until the session timer
+        /// expires, the player exits early, or mayday is triggered.
+        /// </summary>
+        private IEnumerator PhaseOnStation(AC130Session session)
+        {
             session.BeginGunshipView();
             LocalGunshipCamera = session.GunshipCam?.Camera;
 
             while (session.Elapsed < session.Duration && !_forceEnd && !_maydayTriggered)
             {
-                session.Elapsed += Time.deltaTime;
-                session.Cooldown -= Time.deltaTime;
-                if (session.HeavyCooldown > 0f)
-                    session.HeavyCooldown -= Time.deltaTime;
-
-                // Heavy rocket reload countdown.
-                if (session.HeavyReloading)
-                {
-                    session.HeavyReloadTimer -= Time.deltaTime;
-                    if (session.HeavyReloadTimer <= 0f)
-                    {
-                        session.HeavyShotsLeft = session.HeavyMaxShots;
-                        session.HeavyReloading = false;
-                        IssaPluginPlugin.Log.LogInfo("[AC130] Heavy rocket reloaded.");
-                    }
-                }
+                TickOnStationTimers(session);
 
                 var keyboard = Keyboard.current;
                 var mouse = Mouse.current;
@@ -576,183 +570,261 @@ namespace IssaPlugin.Items
                     break;
                 }
 
-                // Mode switch: 1 = regular, 2 = big shot.
-                if (keyboard != null)
-                {
-                    if (keyboard[Key.Digit1].wasPressedThisFrame)
-                    {
-                        session.HeavyMode = false;
-                        IssaPluginPlugin.Log.LogInfo("[AC130] Switched to regular rockets.");
-                    }
-                    if (keyboard[Key.Digit2].wasPressedThisFrame)
-                    {
-                        session.HeavyMode = true;
-                        IssaPluginPlugin.Log.LogInfo("[AC130] Switched to big shot.");
-                    }
-                }
-
+                HandleModeSwitch(session, keyboard);
                 CheckMaydayHotkey();
-
                 AC130Item.HandleFlight(keyboard, session);
-
-                // On a remote client FlyComp is null, so HandleFlight cannot reach
-                // the server-side AC130FlyBehaviour. Forward altitude and boost state
-                // when they change, capped at 20 Hz, so the server can apply them
-                // authoritatively without generating a packet every frame.
-                if (session.FlyComp == null)
-                {
-                    bool boosting = keyboard != null && keyboard[Key.LeftShift].isPressed;
-                    bool flightChanged =
-                        Mathf.Abs(session.AltitudeOffset - _lastAltitudeOffset) > 0.05f
-                        || boosting != _lastBoosting;
-
-                    _flightInputSendTimer -= Time.deltaTime;
-
-                    if (flightChanged || _flightInputSendTimer <= 0f)
-                    {
-                        NetworkClient.Send(
-                            new AC130FlightInputMessage
-                            {
-                                AltitudeOffset = session.AltitudeOffset,
-                                Boosting = boosting,
-                            }
-                        );
-                        _lastAltitudeOffset = session.AltitudeOffset;
-                        _lastBoosting = boosting;
-                        _flightInputSendTimer = InputSendInterval;
-                    }
-                }
+                SendFlightInputIfNeeded(session, keyboard);
 
                 session.GunshipCam?.UpdateLook();
-
-                float currentAngle =
-                    session.FlyComp != null
-                        ? session.FlyComp.currentAngle
-                        : session.Elapsed * session.BaseOrbitSpeed;
-
-                Vector3 gunshipPos = AC130Helpers.OrbitPosition(
-                    session.OrbitCenter,
-                    currentAngle,
-                    session.OrbitRadius,
-                    session.Altitude + session.AltitudeOffset
-                );
-
                 AC130Item.HandleZoom(mouse, session);
 
-                Vector3 crosshairWorld = gunshipPos;
-                Vector3 aimDirection = Vector3.down;
+                Vector3 gunshipPos = ComputeGunshipPos(session);
+                var (crosshairWorld, aimDirection) = ComputeAim(session, gunshipPos);
 
-                var gunshipCam = session.GunshipCam?.Camera;
-                if (gunshipCam != null)
-                {
-                    Vector3 camPos = gunshipCam.transform.position;
-                    Vector3 camForward = gunshipCam.transform.forward;
-
-                    if (
-                        Physics.Raycast(
-                            camPos,
-                            camForward,
-                            out RaycastHit hit,
-                            5000f,
-                            ItemHelper.GroundLayerMask
-                        )
-                    )
-                        crosshairWorld = hit.point;
-                    else
-                        crosshairWorld = AC130Item.ProjectAimToGround(camPos, camForward);
-
-                    // Use the actual synced gunship position as the aim origin.
-                    // The orbit-math estimate (gunshipPos) can diverge from the real
-                    // gunship — especially on remote clients whose angle estimate is
-                    // session.Elapsed * BaseOrbitSpeed — causing aimDirection to drift
-                    // until it collapses to near-zero and Quaternion.LookRotation(zero)
-                    // returns Quaternion.identity, firing rockets straight ahead.
-                    // The server always spawns from _serverGunship.transform.position,
-                    // so computing the direction from the same reference is correct.
-                    Vector3 aimOrigin =
-                        session.GunshipVisual != null
-                            ? session.GunshipVisual.transform.position
-                            : gunshipPos;
-                    aimDirection = (crosshairWorld - aimOrigin).normalized;
-                }
-
-                AC130Overlay.UpdateAimInfo(crosshairWorld, session.Elapsed, session.Duration);
-
-                float reloadProgress = session.HeavyReloading
-                    ? 1f - (session.HeavyReloadTimer / session.HeavyReloadTime)
-                    : 1f;
-                AC130Overlay.UpdateHeavyRocketInfo(
-                    session.HeavyMode,
-                    session.HeavyShotsLeft,
-                    session.HeavyMaxShots,
-                    session.HeavyReloading,
-                    reloadProgress
-                );
-
-                bool firePressed = mouse != null && mouse.leftButton.wasPressedThisFrame;
-                if (firePressed)
-                {
-                    if (session.HeavyMode)
-                    {
-                        bool canFire =
-                            session.HeavyCooldown <= 0f
-                            && !session.HeavyReloading
-                            && session.HeavyShotsLeft > 0;
-                        if (canFire)
-                        {
-                            NetworkClient.Send(
-                                new AC130FireMessage { AimDirection = aimDirection, IsHeavy = true }
-                            );
-                            session.HeavyCooldown = session.HeavyFireCooldown;
-                            session.HeavyShotsLeft--;
-                            if (session.HeavyShotsLeft <= 0)
-                            {
-                                session.HeavyReloading = true;
-                                session.HeavyReloadTimer = session.HeavyReloadTime;
-                                IssaPluginPlugin.Log.LogInfo(
-                                    "[AC130] Heavy rocket out of ammo — reloading."
-                                );
-                            }
-                            session.GunshipCam?.TriggerFireShake();
-                            IssaPluginPlugin.Log.LogInfo(
-                                $"[AC130] Big shot fired toward {crosshairWorld}. Shots left: {session.HeavyShotsLeft}"
-                            );
-                        }
-                    }
-                    else if (session.Cooldown <= 0f)
-                    {
-                        NetworkClient.Send(
-                            new AC130FireMessage { AimDirection = aimDirection, IsHeavy = false }
-                        );
-                        session.Cooldown = session.FireCooldown;
-                        session.GunshipCam?.TriggerFireShake();
-                        IssaPluginPlugin.Log.LogInfo(
-                            $"[AC130] Rocket fired toward {crosshairWorld}."
-                        );
-                    }
-                }
+                UpdateOverlay(session, crosshairWorld);
+                HandleFire(session, mouse, aimDirection, crosshairWorld);
 
                 yield return null;
             }
+        }
 
-            // Mayday triggered during on-station.
-            if (_maydayTriggered)
+        // ================================================================
+        //  On-station per-frame helpers
+        // ================================================================
+
+        private void TickOnStationTimers(AC130Session session)
+        {
+            session.Elapsed += Time.deltaTime;
+            session.Cooldown -= Time.deltaTime;
+            if (session.HeavyCooldown > 0f)
+                session.HeavyCooldown -= Time.deltaTime;
+
+            if (!session.HeavyReloading)
+                return;
+
+            session.HeavyReloadTimer -= Time.deltaTime;
+            if (session.HeavyReloadTimer <= 0f)
             {
-                session.CleanupForMayday();
-                LocalGunshipCamera = null;
-                yield return WaitForMaydayEnd();
-                ApplyCoffeeMovementSpeed();
-                yield break;
+                session.HeavyShotsLeft = session.HeavyMaxShots;
+                session.HeavyReloading = false;
+                IssaPluginPlugin.Log.LogInfo("[AC130] Heavy rocket reloaded.");
+            }
+        }
+
+        private static void HandleModeSwitch(AC130Session session, Keyboard keyboard)
+        {
+            if (keyboard == null)
+                return;
+
+            if (keyboard[Key.Digit1].wasPressedThisFrame)
+            {
+                session.HeavyMode = false;
+                IssaPluginPlugin.Log.LogInfo("[AC130] Switched to regular rockets.");
             }
 
-            // ============================================================
-            //  Phase 3: Normal fly-out
-            // ============================================================
+            if (keyboard[Key.Digit2].wasPressedThisFrame)
+            {
+                session.HeavyMode = true;
+                IssaPluginPlugin.Log.LogInfo("[AC130] Switched to big shot.");
+            }
+        }
+
+        /// <summary>
+        /// On a remote client FlyComp is null, so HandleFlight cannot reach the
+        /// server-side AC130FlyBehaviour. Forwards altitude and boost state at up
+        /// to 20 Hz so the server applies them authoritatively.
+        /// No-op on a listen server where FlyComp is the same instance.
+        /// </summary>
+        private void SendFlightInputIfNeeded(AC130Session session, Keyboard keyboard)
+        {
+            if (session.FlyComp != null)
+                return;
+
+            bool boosting = keyboard != null && keyboard[Key.LeftShift].isPressed;
+            bool flightChanged =
+                Mathf.Abs(session.AltitudeOffset - _lastAltitudeOffset) > 0.05f
+                || boosting != _lastBoosting;
+
+            _flightInputSendTimer -= Time.deltaTime;
+
+            if (!flightChanged && _flightInputSendTimer > 0f)
+                return;
+
+            NetworkClient.Send(
+                new AC130FlightInputMessage
+                {
+                    AltitudeOffset = session.AltitudeOffset,
+                    Boosting = boosting,
+                }
+            );
+            _lastAltitudeOffset = session.AltitudeOffset;
+            _lastBoosting = boosting;
+            _flightInputSendTimer = InputSendInterval;
+        }
+
+        private static Vector3 ComputeGunshipPos(AC130Session session)
+        {
+            float currentAngle =
+                session.FlyComp != null
+                    ? session.FlyComp.currentAngle
+                    : session.Elapsed * session.BaseOrbitSpeed;
+
+            return AC130Helpers.OrbitPosition(
+                session.OrbitCenter,
+                currentAngle,
+                session.OrbitRadius,
+                session.Altitude + session.AltitudeOffset
+            );
+        }
+
+        /// <summary>
+        /// Raycasts from the gunship camera to find the crosshair world position and
+        /// computes the aim direction from the authoritative gunship position.
+        /// Falls back to straight down if no camera is active.
+        /// </summary>
+        private static (Vector3 crosshairWorld, Vector3 aimDirection) ComputeAim(
+            AC130Session session,
+            Vector3 gunshipPos
+        )
+        {
+            var cam = session.GunshipCam?.Camera;
+            if (cam == null)
+                return (gunshipPos, Vector3.down);
+
+            Vector3 camPos = cam.transform.position;
+            Vector3 camForward = cam.transform.forward;
+
+            Vector3 crosshairWorld = Physics.Raycast(
+                camPos,
+                camForward,
+                out RaycastHit hit,
+                5000f,
+                ItemHelper.GroundLayerMask
+            )
+                ? hit.point
+                : AC130Item.ProjectAimToGround(camPos, camForward);
+
+            // Use the actual synced gunship position as the aim origin so the
+            // direction doesn't drift on remote clients whose orbit angle is only
+            // an estimate — see original inline comment for full explanation.
+            Vector3 aimOrigin =
+                session.GunshipVisual != null
+                    ? session.GunshipVisual.transform.position
+                    : gunshipPos;
+
+            return (crosshairWorld, (crosshairWorld - aimOrigin).normalized);
+        }
+
+        private static void UpdateOverlay(AC130Session session, Vector3 crosshairWorld)
+        {
+            AC130Overlay.UpdateAimInfo(crosshairWorld, session.Elapsed, session.Duration);
+
+            float reloadProgress = session.HeavyReloading
+                ? 1f - (session.HeavyReloadTimer / session.HeavyReloadTime)
+                : 1f;
+            AC130Overlay.UpdateHeavyRocketInfo(
+                session.HeavyMode,
+                session.HeavyShotsLeft,
+                session.HeavyMaxShots,
+                session.HeavyReloading,
+                reloadProgress
+            );
+        }
+
+        private void HandleFire(
+            AC130Session session,
+            Mouse mouse,
+            Vector3 aimDirection,
+            Vector3 crosshairWorld
+        )
+        {
+            if (mouse == null || !mouse.leftButton.wasPressedThisFrame)
+                return;
+
+            if (session.HeavyMode)
+                TryFireHeavy(session, aimDirection, crosshairWorld);
+            else
+                TryFireRegular(session, aimDirection, crosshairWorld);
+        }
+
+        private void TryFireHeavy(
+            AC130Session session,
+            Vector3 aimDirection,
+            Vector3 crosshairWorld
+        )
+        {
+            if (session.HeavyCooldown > 0f || session.HeavyReloading || session.HeavyShotsLeft <= 0)
+                return;
+
+            NetworkClient.Send(
+                new AC130FireMessage { AimDirection = aimDirection, IsHeavy = true }
+            );
+            session.HeavyCooldown = session.HeavyFireCooldown;
+            session.HeavyShotsLeft--;
+
+            if (session.HeavyShotsLeft <= 0)
+            {
+                session.HeavyReloading = true;
+                session.HeavyReloadTimer = session.HeavyReloadTime;
+                IssaPluginPlugin.Log.LogInfo("[AC130] Heavy rocket out of ammo — reloading.");
+            }
+
+            session.GunshipCam?.TriggerFireShake();
+            IssaPluginPlugin.Log.LogInfo(
+                $"[AC130] Big shot fired toward {crosshairWorld}. Shots left: {session.HeavyShotsLeft}"
+            );
+        }
+
+        private void TryFireRegular(
+            AC130Session session,
+            Vector3 aimDirection,
+            Vector3 crosshairWorld
+        )
+        {
+            if (session.Cooldown > 0f)
+                return;
+
+            NetworkClient.Send(
+                new AC130FireMessage { AimDirection = aimDirection, IsHeavy = false }
+            );
+            session.Cooldown = session.FireCooldown;
+            session.GunshipCam?.TriggerFireShake();
+            IssaPluginPlugin.Log.LogInfo($"[AC130] Rocket fired toward {crosshairWorld}.");
+        }
+
+        // ================================================================
+        //  Session end / mayday helpers
+        // ================================================================
+
+        /// <summary>
+        /// Handles mayday from either the fly-in or on-station phase.
+        /// Cleans up the session, waits for the mayday sequence to finish,
+        /// then restores movement speed.
+        /// </summary>
+        private IEnumerator HandleSessionMayday(AC130Session session)
+        {
+            session.CleanupForMayday();
+            LocalGunshipCamera = null;
+            yield return WaitForMaydayEnd();
+            ApplyCoffeeMovementSpeed();
+        }
+
+        /// <summary>Player cancelled during fly-in — end immediately, no coffee boost.</summary>
+        private void EndSessionEarly(AC130Session session)
+        {
             session.Cleanup();
             LocalGunshipCamera = null;
             LocalSessionActive = false;
             NetworkClient.Send(new AC130EndMessage());
+        }
 
+        /// <summary>Normal timeout or early-exit during on-station — fly out, apply boost.</summary>
+        private void EndSessionNormal(AC130Session session)
+        {
+            session.Cleanup();
+            LocalGunshipCamera = null;
+            LocalSessionActive = false;
+            NetworkClient.Send(new AC130EndMessage());
             IssaPluginPlugin.Log.LogInfo("[AC130] Session ended, gunship flying out.");
             ApplyCoffeeMovementSpeed();
         }
