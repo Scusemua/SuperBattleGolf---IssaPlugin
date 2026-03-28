@@ -7,8 +7,8 @@ namespace IssaPlugin.Items
     public class GrappleItemDefinition : CustomItemDefinition
     {
         public override ItemType ItemType => ItemRegistry.GrappleItemType;
-        public override string DisplayName => "Electric Grapple";
-        public override string[] ConsoleAliases => new[] { "grapple", "whip" };
+        public override string DisplayName => "Gravity Gun";
+        public override string[] ConsoleAliases => new[] { "gravity_gun", "gravity-gun" };
 
         public override Sprite Icon => AssetLoader.ElectricGrappleIcon;
         public override GameObject HeldModelPrefab => AssetLoader.ElectricWhipHandheldPrefab;
@@ -34,14 +34,6 @@ namespace IssaPlugin.Items
         public override void OnUse(PlayerInventory inventory)
         {
             inventory.GetComponent<GrappleNetworkBridge>()?.ClientUse();
-        }
-
-        // Called every frame for the local player while this item is equipped.
-        // Adds the overlay component once; it removes itself when unequipped.
-        public override void OnEquip(PlayerInventory inventory)
-        {
-            if (inventory.GetComponent<GrappleOverlay>() == null)
-                inventory.gameObject.AddComponent<GrappleOverlay>();
         }
     }
 }
