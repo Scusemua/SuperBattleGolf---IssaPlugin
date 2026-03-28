@@ -18,6 +18,12 @@ namespace IssaPlugin.Items
         public uint PlayerNetId;
     }
 
+    /// <summary>Server → all clients: replace the coffee can visual with a Red Bull can.</summary>
+    public struct CoffeeDispenserRedBullMessage : NetworkMessage
+    {
+        public uint NetId;
+    }
+
     public static class RedBullMessageSerialization
     {
         public static void WriteActivate(NetworkWriter w, RedBullActivateMessage msg) { }
@@ -39,5 +45,14 @@ namespace IssaPlugin.Items
 
         public static RedBullTrailEndMessage ReadTrailEnd(NetworkReader r) =>
             new RedBullTrailEndMessage { PlayerNetId = r.ReadUInt() };
+
+        public static void WriteCoffeeDispenserRedBull(
+            NetworkWriter w,
+            CoffeeDispenserRedBullMessage msg
+        ) => w.WriteUInt(msg.NetId);
+
+        public static CoffeeDispenserRedBullMessage ReadCoffeeDispenserRedBull(
+            NetworkReader r
+        ) => new() { NetId = r.ReadUInt() };
     }
 }

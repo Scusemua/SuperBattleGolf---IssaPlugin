@@ -50,6 +50,12 @@ namespace IssaPlugin.Patches
             );
         }
 
+        private static T GetBridge<T>(NetworkConnectionToClient conn) where T : Component
+        {
+            var identity = conn.identity;
+            return identity != null ? identity.GetComponent<T>() : null;
+        }
+
         private static void RegisterNetworkMessages()
         {
             // -------------------------------
@@ -163,7 +169,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<FreezeActivateMessage>(
                     (conn, msg) =>
                     {
-                        conn.identity?.GetComponent<FreezeNetworkBridge>()?.ServerActivateFreeze();
+                        GetBridge<FreezeNetworkBridge>(conn)?.ServerActivateFreeze();
                     }
                 );
 
@@ -1054,6 +1060,15 @@ namespace IssaPlugin.Patches
                     (conn, msg) =>
                         conn.identity?.GetComponent<RedBullNetworkBridge>()?.ServerActivate()
                 );
+
+            // ── Coffee Dispenser Red Bull visual swap ─────────────────────────────
+            Writer<CoffeeDispenserRedBullMessage>.write =
+                RedBullMessageSerialization.WriteCoffeeDispenserRedBull;
+            Reader<CoffeeDispenserRedBullMessage>.read =
+                RedBullMessageSerialization.ReadCoffeeDispenserRedBull;
+            NetworkClient.RegisterHandler<CoffeeDispenserRedBullMessage>(
+                CoffeeDispenserClientHandlers.HandleVisualSwap
+            );
 
             // ── Hotkey item-giving (Client → Server) ─────────────────────────────
             Writer<GiveItemRequestMessage>.write =
