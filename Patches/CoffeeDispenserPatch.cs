@@ -105,15 +105,30 @@ namespace IssaPlugin.Patches
             int count = Mathf.Min(srcFilters.Length, dstFilters.Length);
             for (int i = 0; i < count; i++)
             {
+                // Capture original mesh size before swapping so we can scale the
+                // mesh-holding transform to compensate.  The handheld prefab is
+                // modelled at a different world-unit size than the coffee can mesh.
+                float origSize =
+                    dstFilters[i].sharedMesh != null
+                        ? dstFilters[i].sharedMesh.bounds.size.magnitude
+                        : 0f;
+                float newSize =
+                    srcFilters[i].sharedMesh != null
+                        ? srcFilters[i].sharedMesh.bounds.size.magnitude
+                        : 0f;
+
                 dstFilters[i].sharedMesh = srcFilters[i].sharedMesh;
 
                 var srcMr = srcFilters[i].GetComponent<MeshRenderer>();
                 var dstMr = dstFilters[i].GetComponent<MeshRenderer>();
                 if (srcMr != null && dstMr != null)
                     dstMr.sharedMaterials = srcMr.sharedMaterials;
+
+                if (origSize > 0.001f && newSize > 0.001f)
+                    dstFilters[i].transform.localScale *= origSize / newSize;
             }
 
-            // If the coffee can has more meshes than the RedBull model, hide the extras.
+            // If the coffee can has more mesh objects than the RedBull model, hide them.
             for (int i = count; i < dstFilters.Length; i++)
             {
                 var mr = dstFilters[i].GetComponent<MeshRenderer>();
