@@ -112,6 +112,7 @@ namespace IssaPlugin
         public static ConfigEntry<float> AC130MaydayRollTurnRate { get; private set; }
         public static ConfigEntry<float> AC130HitsToMayday { get; private set; }
         public static ConfigEntry<float> AC130RocketProximityFuse { get; private set; }
+        public static ConfigEntry<bool> AC130ApplyCoffeeBoostAfterwards { get; private set; }
 
         // --- Freeze World ---
         public static ConfigEntry<Key> FreezeGiveKey { get; private set; }
@@ -1057,6 +1058,14 @@ namespace IssaPlugin
                 "Distance in metres at which a homing rocket detonates near the gunship. "
                     + "Must be less than 5 m so the explosion's overlap sphere (radius 5 m) "
                     + "still reaches the gunship and registers the hit."
+            );
+
+            AC130ApplyCoffeeBoostAfterwards = cfg.Bind(
+                "AC130",
+                "ApplyCoffeeBoostAfterwards",
+                true,
+                "Give the user of an AC130 a max coffee boost after the AC130 ends to make up "
+                    + "for the time they spent sitting in the AC130, not golfing."
             );
 
             // --- Low Gravity ---

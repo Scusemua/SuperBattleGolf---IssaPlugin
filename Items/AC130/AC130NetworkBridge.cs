@@ -355,6 +355,7 @@ namespace IssaPlugin.Items
         public void ClientEndAC130()
         {
             _forceEnd = true;
+            ApplyCoffeeMovementSpeed();
         }
 
         public void ClientBeginMayday(uint gunshipNetId)
@@ -521,6 +522,7 @@ namespace IssaPlugin.Items
                 session.CleanupForMayday();
                 LocalGunshipCamera = null;
                 yield return WaitForMaydayEnd();
+                ApplyCoffeeMovementSpeed();
                 yield break;
             }
 
@@ -649,6 +651,7 @@ namespace IssaPlugin.Items
                 session.CleanupForMayday();
                 LocalGunshipCamera = null;
                 yield return WaitForMaydayEnd();
+                ApplyCoffeeMovementSpeed();
                 yield break;
             }
 
@@ -661,6 +664,7 @@ namespace IssaPlugin.Items
             NetworkClient.Send(new AC130EndMessage());
 
             IssaPluginPlugin.Log.LogInfo("[AC130] Session ended, gunship flying out.");
+            ApplyCoffeeMovementSpeed();
         }
 
         private void CheckMaydayHotkey()
@@ -683,6 +687,27 @@ namespace IssaPlugin.Items
         {
             while (LocalMaydayActive)
                 yield return null;
+        }
+
+        internal static void ApplyCoffeeMovementSpeed()
+        {
+            if (!Configuration.AC130ApplyCoffeeBoostAfterwards.Value)
+                return;
+
+            // Give players a speed boost.
+            var playerMovement = GameManager.LocalPlayerMovement;
+            if (playerMovement != null)
+            {
+                playerMovement.StartCoroutine(CoApplyCoffeeMovementSpeed(playerMovement));
+            }
+        }
+
+        internal static IEnumerator CoApplyCoffeeMovementSpeed(PlayerMovement playerMovement)
+        {
+            yield return new WaitForSeconds(1);
+            playerMovement.InformDrankCoffee();
+            playerMovement.InformDrankCoffee();
+            playerMovement.InformDrankCoffee();
         }
 
         // ================================================================
