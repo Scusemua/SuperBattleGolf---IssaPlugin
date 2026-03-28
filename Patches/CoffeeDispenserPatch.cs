@@ -97,6 +97,17 @@ namespace IssaPlugin.Patches
                 return;
 
             var visual = Object.Instantiate(AssetLoader.RedBullHandheldPrefab);
+
+            // Strip physics components so the visual doesn't alter the PhysicalItem's
+            // compound collider or add an independent Rigidbody.  On the listen-server
+            // host the server and client share the same scene, so any Collider parented
+            // under the PhysicalItem's Rigidbody would affect the server-side physics
+            // and cause the can to clip through the dispenser machine.
+            foreach (var col in visual.GetComponentsInChildren<Collider>())
+                Object.Destroy(col);
+            foreach (var rb in visual.GetComponentsInChildren<Rigidbody>())
+                Object.Destroy(rb);
+
             visual.transform.SetParent(physicalItem.transform, false);
             visual.transform.localPosition = Vector3.zero;
             visual.transform.localRotation = Quaternion.identity;

@@ -50,7 +50,8 @@ namespace IssaPlugin.Patches
             );
         }
 
-        private static T GetBridge<T>(NetworkConnectionToClient conn) where T : Component
+        private static T GetBridge<T>(NetworkConnectionToClient conn)
+            where T : Component
         {
             var identity = conn.identity;
             return identity != null ? identity.GetComponent<T>() : null;
@@ -213,8 +214,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<BomberPrepareHomingMessage>(
                     (conn, msg) =>
                     {
-                        GetBridge<BomberNetworkBridge>(conn)
-                            ?.ServerPrepareBomberRocket();
+                        GetBridge<BomberNetworkBridge>(conn)?.ServerPrepareBomberRocket();
                     }
                 );
 
@@ -226,8 +226,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<DonutPrepareHomingMessage>(
                     (conn, msg) =>
                     {
-                        GetBridge<DonutNetworkBridge>(conn)
-                            ?.ServerPrepareDonutRocket();
+                        GetBridge<DonutNetworkBridge>(conn)?.ServerPrepareDonutRocket();
                     }
                 );
 
@@ -264,8 +263,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<MissileDetonateMessage>(
                     (conn, msg) =>
                     {
-                        GetBridge<MissileNetworkBridge>(conn)
-                            ?.ServerDetonateMissile();
+                        GetBridge<MissileNetworkBridge>(conn)?.ServerDetonateMissile();
                     }
                 );
 
@@ -295,8 +293,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<AC130FireMessage>(
                     (conn, msg) =>
                     {
-                        GetBridge<AC130NetworkBridge>(conn)
-                            ?.ServerFireAC130(msg.AimDirection);
+                        GetBridge<AC130NetworkBridge>(conn)?.ServerFireAC130(msg.AimDirection);
                     }
                 );
 
@@ -320,8 +317,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<AC130PrepareHomingMessage>(
                     (conn, msg) =>
                     {
-                        GetBridge<AC130NetworkBridge>(conn)
-                            ?.ServerPrepareGunshipRocket();
+                        GetBridge<AC130NetworkBridge>(conn)?.ServerPrepareGunshipRocket();
                     }
                 );
 
@@ -441,8 +437,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<DonutEndMessage>(
                     (conn, msg) =>
                     {
-                        GetBridge<DonutNetworkBridge>(conn)
-                            ?.ServerEndDonut(msg.ShouldCrash);
+                        GetBridge<DonutNetworkBridge>(conn)?.ServerEndDonut(msg.ShouldCrash);
                     }
                 );
 
@@ -452,8 +447,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<DonutMoveMessage>(
                     (conn, msg) =>
                     {
-                        GetBridge<DonutNetworkBridge>(conn)
-                            ?.ServerMoveDonut(msg.WorldMoveDir);
+                        GetBridge<DonutNetworkBridge>(conn)?.ServerMoveDonut(msg.WorldMoveDir);
                     }
                 );
 
@@ -532,8 +526,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<JavelinFireMessage>(
                     (conn, msg) =>
                     {
-                        GetBridge<JavelinNetworkBridge>(conn)
-                            ?.ServerHandleFire(msg.TargetPosition);
+                        GetBridge<JavelinNetworkBridge>(conn)?.ServerHandleFire(msg.TargetPosition);
                     }
                 );
 
@@ -996,8 +989,7 @@ namespace IssaPlugin.Patches
                 DroneSwarmSummonMessageSerialization.ReadDroneSwarmSummonMessage;
             if (NetworkServer.active)
                 NetworkServer.RegisterHandler<DroneSwarmSummonMessage>(
-                    (conn, msg) =>
-                        GetBridge<DroneSwarmNetworkBridge>(conn)?.ServerSummonDrones()
+                    (conn, msg) => GetBridge<DroneSwarmNetworkBridge>(conn)?.ServerSummonDrones()
                 );
 
             Writer<DroneExplodedMessage>.write =
@@ -1055,8 +1047,7 @@ namespace IssaPlugin.Patches
             );
             if (NetworkServer.active)
                 NetworkServer.RegisterHandler<RedBullActivateMessage>(
-                    (conn, msg) =>
-                        GetBridge<RedBullNetworkBridge>(conn)?.ServerActivate()
+                    (conn, msg) => GetBridge<RedBullNetworkBridge>(conn)?.ServerActivate()
                 );
 
             // ── Coffee Dispenser Red Bull visual swap ─────────────────────────────
