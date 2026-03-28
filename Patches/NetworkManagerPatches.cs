@@ -181,7 +181,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<LowGravityActivateMessage>(
                     (conn, msg) =>
                     {
-                        var bridge = conn.identity?.GetComponent<LowGravityNetworkBridge>();
+                        var bridge = GetBridge<LowGravityNetworkBridge>(conn);
                         IssaPluginPlugin.Log.LogInfo(
                             $"[LowGravity] Server received LowGravityActivateMessage. identity={(conn.identity != null ? "OK" : "NULL")}, bridge={(bridge != null ? "OK" : "NULL")}"
                         );
@@ -195,7 +195,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<BomberRunMessage>(
                     (conn, msg) =>
                     {
-                        conn.identity?.GetComponent<BomberNetworkBridge>()
+                        GetBridge<BomberNetworkBridge>(conn)
                             ?.ServerRequestBombingRun(
                                 msg.Center,
                                 msg.Forward,
@@ -213,7 +213,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<BomberPrepareHomingMessage>(
                     (conn, msg) =>
                     {
-                        conn.identity?.GetComponent<BomberNetworkBridge>()
+                        GetBridge<BomberNetworkBridge>(conn)
                             ?.ServerPrepareBomberRocket();
                     }
                 );
@@ -226,7 +226,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<DonutPrepareHomingMessage>(
                     (conn, msg) =>
                     {
-                        conn.identity?.GetComponent<DonutNetworkBridge>()
+                        GetBridge<DonutNetworkBridge>(conn)
                             ?.ServerPrepareDonutRocket();
                     }
                 );
@@ -239,7 +239,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<MissileRequestMessage>(
                     (conn, msg) =>
                     {
-                        conn.identity?.GetComponent<MissileNetworkBridge>()?.ServerRequestMissile();
+                        GetBridge<MissileNetworkBridge>(conn)?.ServerRequestMissile();
                     }
                 );
 
@@ -251,7 +251,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<MissileSetVelocityMessage>(
                     (conn, msg) =>
                     {
-                        conn.identity?.GetComponent<MissileNetworkBridge>()
+                        GetBridge<MissileNetworkBridge>(conn)
                             ?.ServerSetMissileVelocity(msg.Velocity);
                     }
                 );
@@ -264,7 +264,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<MissileDetonateMessage>(
                     (conn, msg) =>
                     {
-                        conn.identity?.GetComponent<MissileNetworkBridge>()
+                        GetBridge<MissileNetworkBridge>(conn)
                             ?.ServerDetonateMissile();
                     }
                 );
@@ -275,7 +275,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<AC130StartMessage>(
                     (conn, msg) =>
                     {
-                        conn.identity?.GetComponent<AC130NetworkBridge>()?.ServerStartAC130();
+                        GetBridge<AC130NetworkBridge>(conn)?.ServerStartAC130();
                     }
                 );
 
@@ -285,7 +285,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<AC130EndMessage>(
                     (conn, msg) =>
                     {
-                        conn.identity?.GetComponent<AC130NetworkBridge>()?.ServerEndAC130();
+                        GetBridge<AC130NetworkBridge>(conn)?.ServerEndAC130();
                     }
                 );
 
@@ -295,7 +295,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<AC130FireMessage>(
                     (conn, msg) =>
                     {
-                        conn.identity?.GetComponent<AC130NetworkBridge>()
+                        GetBridge<AC130NetworkBridge>(conn)
                             ?.ServerFireAC130(msg.AimDirection);
                     }
                 );
@@ -308,7 +308,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<AC130TriggerMaydayMessage>(
                     (conn, msg) =>
                     {
-                        conn.identity?.GetComponent<AC130NetworkBridge>()?.ServerTriggerMayday();
+                        GetBridge<AC130NetworkBridge>(conn)?.ServerTriggerMayday();
                     }
                 );
 
@@ -320,7 +320,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<AC130PrepareHomingMessage>(
                     (conn, msg) =>
                     {
-                        conn.identity?.GetComponent<AC130NetworkBridge>()
+                        GetBridge<AC130NetworkBridge>(conn)
                             ?.ServerPrepareGunshipRocket();
                     }
                 );
@@ -333,7 +333,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<AC130MaydayInputMessage>(
                     (conn, msg) =>
                     {
-                        conn.identity?.GetComponent<AC130NetworkBridge>()
+                        GetBridge<AC130NetworkBridge>(conn)
                             ?.ServerSetMaydayInput(msg.DiveInfluence, msg.RollInfluence);
                     }
                 );
@@ -346,7 +346,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<AC130FlightInputMessage>(
                     (conn, msg) =>
                     {
-                        conn.identity?.GetComponent<AC130NetworkBridge>()
+                        GetBridge<AC130NetworkBridge>(conn)
                             ?.ServerSetFlightInput(msg.AltitudeOffset, msg.Boosting);
                     }
                 );
@@ -431,7 +431,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<DonutStartMessage>(
                     (conn, msg) =>
                     {
-                        conn.identity?.GetComponent<DonutNetworkBridge>()?.ServerStartDonut();
+                        GetBridge<DonutNetworkBridge>(conn)?.ServerStartDonut();
                     }
                 );
 
@@ -441,7 +441,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<DonutEndMessage>(
                     (conn, msg) =>
                     {
-                        conn.identity?.GetComponent<DonutNetworkBridge>()
+                        GetBridge<DonutNetworkBridge>(conn)
                             ?.ServerEndDonut(msg.ShouldCrash);
                     }
                 );
@@ -452,7 +452,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<DonutMoveMessage>(
                     (conn, msg) =>
                     {
-                        conn.identity?.GetComponent<DonutNetworkBridge>()
+                        GetBridge<DonutNetworkBridge>(conn)
                             ?.ServerMoveDonut(msg.WorldMoveDir);
                     }
                 );
@@ -465,7 +465,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<DonutFireLaserMessage>(
                     (conn, msg) =>
                     {
-                        conn.identity?.GetComponent<DonutNetworkBridge>()?.ServerFireLaser();
+                        GetBridge<DonutNetworkBridge>(conn)?.ServerFireLaser();
                     }
                 );
 
@@ -532,7 +532,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<JavelinFireMessage>(
                     (conn, msg) =>
                     {
-                        conn.identity?.GetComponent<JavelinNetworkBridge>()
+                        GetBridge<JavelinNetworkBridge>(conn)
                             ?.ServerHandleFire(msg.TargetPosition);
                     }
                 );
@@ -588,7 +588,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<StickyGrenadeThrowMessage>(
                     (conn, msg) =>
                     {
-                        conn.identity?.GetComponent<StickyGrenadeNetworkBridge>()
+                        GetBridge<StickyGrenadeNetworkBridge>(conn)
                             ?.ServerHandleThrow(msg.ThrowOrigin, msg.ThrowVelocity);
                     }
                 );
@@ -619,7 +619,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<NukeFireMessage>(
                     (conn, msg) =>
                     {
-                        conn.identity?.GetComponent<NukeNetworkBridge>()?.ServerHandleFire();
+                        GetBridge<NukeNetworkBridge>(conn)?.ServerHandleFire();
                     }
                 );
 
@@ -643,7 +643,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<BlackHoleGrenadeThrowMessage>(
                     (conn, msg) =>
                     {
-                        conn.identity?.GetComponent<BlackHoleGrenadeNetworkBridge>()
+                        GetBridge<BlackHoleGrenadeNetworkBridge>(conn)
                             ?.ServerHandleThrow(msg.ThrowOrigin, msg.ThrowVelocity);
                     }
                 );
@@ -674,7 +674,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<PlaceWallMessage>(
                     (conn, msg) =>
                     {
-                        conn.identity?.GetComponent<PlaceableWallNetworkBridge>()
+                        GetBridge<PlaceableWallNetworkBridge>(conn)
                             ?.ServerHandlePlacement(
                                 msg.RayOrigin,
                                 msg.RayDirection,
@@ -733,7 +733,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<BearSummonMessage>(
                     (conn, msg) =>
                     {
-                        conn.identity?.GetComponent<BearNetworkBridge>()?.ServerSummonBears();
+                        GetBridge<BearNetworkBridge>(conn)?.ServerSummonBears();
                     }
                 );
             }
@@ -748,7 +748,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<BearPrepareHomingMessage>(
                     (conn, msg) =>
                     {
-                        conn.identity?.GetComponent<BearNetworkBridge>()?.ServerPrepareBearRocket();
+                        GetBridge<BearNetworkBridge>(conn)?.ServerPrepareBearRocket();
                     }
                 );
             }
@@ -846,7 +846,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<HarrierRequestMessage>(
                     (conn, msg) =>
                     {
-                        conn.identity?.GetComponent<HarrierNetworkBridge>()?.ServerHandleRequest();
+                        GetBridge<HarrierNetworkBridge>(conn)?.ServerHandleRequest();
                     }
                 );
             }
@@ -860,7 +860,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<HarrierPrepareHomingMessage>(
                     (conn, msg) =>
                     {
-                        var bridge = conn.identity?.GetComponent<HarrierNetworkBridge>();
+                        var bridge = GetBridge<HarrierNetworkBridge>(conn);
                         if (bridge != null)
                         {
                             bridge.PendingHarrierHoming = true;
@@ -929,8 +929,7 @@ namespace IssaPlugin.Patches
             if (NetworkServer.active)
                 NetworkServer.RegisterHandler<PositionSwapRequestMessage>(
                     (conn, msg) =>
-                        conn
-                            .identity?.GetComponent<PositionSwapNetworkBridge>()
+                        GetBridge<PositionSwapNetworkBridge>(conn)
                             ?.ServerHandleRequest(msg.TargetNetId)
                 );
 
