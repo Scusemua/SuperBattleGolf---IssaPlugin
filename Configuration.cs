@@ -13,6 +13,7 @@ namespace IssaPlugin
         // Whether non-host clients can use item hotkeys to give themselves items.
         // The host is always exempt and can always give themselves items.
         public static ConfigEntry<bool> AllowHotkeyItemGiving { get; private set; }
+        public static ConfigEntry<float> NumInventorySlots { get; private set; }
 
         // ── Client-side visual settings ────────────────────────────────────────
         public static ConfigEntry<bool> BloodEffectsEnabled { get; private set; }
@@ -457,10 +458,17 @@ namespace IssaPlugin
             );
 
             BloodEffectsEnabled = cfg.Bind(
-                "Visual",
+                "IssaPlugin",
                 "BloodEffectsEnabled",
                 true,
                 "Whether blood splatter effects are shown when players are hit by guns. Each client sets this independently."
+            );
+
+            NumInventorySlots = cfg.Bind(
+                "IssaPlugin",
+                "NumInventorySlots",
+                5f,
+                "Change the number of inventory slots available."
             );
 
             // ── Per-item enabled flags (populated by vote results at runtime) ────
@@ -2396,8 +2404,8 @@ namespace IssaPlugin
                 "Number of uses per Poison Jar pickup."
             );
             PoisonJarSpawnWeight = cfg.Bind(
-                "PoisonJar",
-                "SpawnWeight",
+                "ItemBoxSpawns",
+                "PoisonJarSpawnWeight",
                 1.0f,
                 "Relative spawn weight for the Poison Jar in the item pool."
             );
@@ -2607,7 +2615,7 @@ namespace IssaPlugin
             );
             DroneSwarmSpawnWeight = cfg.Bind(
                 "ItemBoxSpawns",
-                "SpawnWeight",
+                "DroneSwarmSpawnWeight",
                 3.5f,
                 "Relative spawn weight for Drone Swarm in the item pool."
             );
@@ -2728,8 +2736,8 @@ namespace IssaPlugin
             );
             RedBullUses = cfg.Bind("RedBull", "Uses", 1f, "Number of uses per Red Bull item.");
             RedBullSpawnWeight = cfg.Bind(
-                "RedBull",
-                "SpawnWeight",
+                "ItemBoxSpawns",
+                "RedBullSpawnWeight",
                 1f,
                 "Relative spawn weight for Red Bull in the item pool."
             );
@@ -2771,8 +2779,8 @@ namespace IssaPlugin
                 "Number of Super Donut uses per pickup."
             );
             SuperDonutSpawnWeight = cfg.Bind(
-                "SuperDonut",
-                "SpawnWeight",
+                "ItemBoxSpawns",
+                "SuperDonutSpawnWeight",
                 0.1f,
                 "Relative spawn weight for Super Donut in the item pool. Keep low — fires at every other player at once."
             );
@@ -2799,7 +2807,7 @@ namespace IssaPlugin
             GravityGunLockOnRange = cfg.Bind(
                 "GravityGun",
                 "LockOnRange",
-                25f,
+                45f,
                 "Maximum distance (units) at which the Gravity Gun can lock onto a target."
             );
             GravityGunLockOnConeAngleDeg = cfg.Bind(
@@ -2811,7 +2819,7 @@ namespace IssaPlugin
             GravityGunTetherRadius = cfg.Bind(
                 "GravityGun",
                 "TetherRadius",
-                8f,
+                20f,
                 "Distance (units) at which the target orbits the wielder while tethered."
             );
             GravityGunTetherDuration = cfg.Bind(
