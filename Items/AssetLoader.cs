@@ -123,6 +123,11 @@ namespace IssaPlugin.Items
         /// Bundle asset name: <c>player_linker.prefab</c>
         public static GameObject PlayerLinkerPrefab { get; private set; }
 
+        /// Local-only rocket VFX spawned above the target and moved upward each frame.
+        /// Not networked — each client instantiates its own copy.
+        /// Bundle asset name: <c>player_linker_rocket.prefab</c>
+        public static GameObject PlayerLinkerRocketPrefab { get; private set; }
+
         // --- Drone Swarm ---
         public static Sprite DroneSwarmIcon { get; private set; }
 
@@ -311,7 +316,7 @@ namespace IssaPlugin.Items
             DroneSwarmIcon = LoadSprite("drone_swarm_icon.png");
             ElectricGravityGunIcon = LoadSprite("gravity_gun_icon.png");
             RedBullIcon = LoadSprite("redbull_icon.png");
-            PlayerLinkerIcon = LoadSprite("player_linker_icon.png");
+            PlayerLinkerIcon = LoadSprite("rocket_tether_icon.png");
 
             SniperScopeTexture = LoadTexture2D("sniper_scope.png");
             if (SniperScopeTexture == null)
@@ -649,9 +654,13 @@ namespace IssaPlugin.Items
 
         private static void LoadPlayerLinkerAssets()
         {
+            PlayerLinkerIcon = LoadSprite("rocket_tether_icon.png");
             PlayerLinkerPrefab = Load<GameObject>("player_linker.prefab");
             if (PlayerLinkerPrefab != null)
                 DisableRigidbody(PlayerLinkerPrefab);
+            PlayerLinkerRocketPrefab = Load<GameObject>("player_linker_rocket.prefab");
+            if (PlayerLinkerRocketPrefab != null)
+                StripNetworkComponents(PlayerLinkerRocketPrefab);
         }
 
         private static void LoadSuperDonutAssets()

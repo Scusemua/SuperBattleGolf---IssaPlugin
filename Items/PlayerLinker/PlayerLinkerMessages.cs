@@ -25,40 +25,28 @@ namespace IssaPlugin.Items
         ) => new PlayerLinkerLockOnMessage { TargetNetId = reader.ReadUInt() };
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /// Sent every PlayerLinkerInputSendInterval (~20 Hz) by BOTH tethered players
-    /// while the session is active. Server relays each player's position to the other
-    /// so each client's spring coroutine pulls toward the correct point.
-    public struct PlayerLinkerTickMessage : NetworkMessage
-    {
-        /// World-space position of the sending player's character.
-        public Vector3 Position;
-    }
-
-    public static class PlayerLinkerTickMessageSerialization
-    {
-        public static void WritePlayerLinkerTickMessage(
-            NetworkWriter writer,
-            PlayerLinkerTickMessage msg
-        ) => writer.WriteVector3(msg.Position);
-
-        public static PlayerLinkerTickMessage ReadPlayerLinkerTickMessage(
-            NetworkReader reader
-        ) => new PlayerLinkerTickMessage { Position = reader.ReadVector3() };
-    }
-
     // ── Server → All Clients ─────────────────────────────────────────────────
 
-    /// Broadcast to every client when the tether successfully connects.
-    /// Both tethered players start their spring coroutines; all clients create
-    /// a local LineRenderer for the tether visual.
+    /// Broadcast to every client when the rocket successfully attaches.
+    /// All clients instantiate the local rocket VFX and draw the tether line;
+    /// the target client starts the spring-force coroutine.
+    ///
+    /// Because the rocket travels at a constant velocity upward, clients can
+    /// compute its position deterministically as:
+    ///   rocketPos = RocketStartPos + Vector3.up * RocketSpeed * elapsed
+    /// No per-tick relay messages are needed.
     public struct PlayerLinkerConnectedMessage : NetworkMessage
     {
-        public uint WielderNetId;
+        /// The player who is being dragged by the rocket.
         public uint TargetNetId;
 
-        /// Maximum session duration in seconds (used as coroutine timeout guard).
+        /// World-space position where the rocket spawns (just above the target's head).
+        public Vector3 RocketStartPos;
+
+        /// Upward speed of the rocket (m/s).
+        public float RocketSpeed;
+
+        /// Total flight time before the rocket explodes (seconds).
         public float Duration;
     }
 
@@ -69,8 +57,9 @@ namespace IssaPlugin.Items
             PlayerLinkerConnectedMessage msg
         )
         {
-            writer.WriteUInt(msg.WielderNetId);
             writer.WriteUInt(msg.TargetNetId);
+            writer.WriteVector3(msg.RocketStartPos);
+            writer.WriteFloat(msg.RocketSpeed);
             writer.WriteFloat(msg.Duration);
         }
 
@@ -79,50 +68,51 @@ namespace IssaPlugin.Items
         ) =>
             new PlayerLinkerConnectedMessage
             {
-                WielderNetId = reader.ReadUInt(),
-                TargetNetId = reader.ReadUInt(),
-                Duration = reader.ReadFloat(),
+                TargetNetId    = reader.ReadUInt(),
+                RocketStartPos = reader.ReadVector3(),
+                RocketSpeed    = reader.ReadFloat(),
+                Duration       = reader.ReadFloat(),
             };
     }
 
     // ─────────────────────────────────────────────────────────────────────────
 
-    /// Forwarded by the server to one tethered client (via targeted Send).
-    /// Contains the OTHER player's current world-space position so the
-    /// receiving client's spring coroutine can compute the correct pull direction.
-    public struct PlayerLinkerRelayMessage : NetworkMessage
+    /// Broadcast to every client when the rocket explodes.
+    /// All clients destroy VFX and apply explosion force to the local player
+    /// if they are within ExplosionRadius of ExplosionPosition.
+    public struct PlayerLinkerDisconnectedMessage : NetworkMessage
     {
-        public Vector3 OtherPosition;
+        /// World-space position of the explosion.
+        public Vector3 ExplosionPosition;
+
+        /// Peak force (m/s, VelocityChange) applied at the explosion centre.
+        public float ExplosionForce;
+
+        /// Radius (units) within which the explosion affects nearby players.
+        public float ExplosionRadius;
     }
-
-    public static class PlayerLinkerRelayMessageSerialization
-    {
-        public static void WritePlayerLinkerRelayMessage(
-            NetworkWriter writer,
-            PlayerLinkerRelayMessage msg
-        ) => writer.WriteVector3(msg.OtherPosition);
-
-        public static PlayerLinkerRelayMessage ReadPlayerLinkerRelayMessage(
-            NetworkReader reader
-        ) => new PlayerLinkerRelayMessage { OtherPosition = reader.ReadVector3() };
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /// Broadcast to every client when the tether ends (timeout).
-    /// All clients stop coroutines and destroy the tether line.
-    public struct PlayerLinkerDisconnectedMessage : NetworkMessage { }
 
     public static class PlayerLinkerDisconnectedMessageSerialization
     {
         public static void WritePlayerLinkerDisconnectedMessage(
             NetworkWriter writer,
             PlayerLinkerDisconnectedMessage msg
-        ) { }
+        )
+        {
+            writer.WriteVector3(msg.ExplosionPosition);
+            writer.WriteFloat(msg.ExplosionForce);
+            writer.WriteFloat(msg.ExplosionRadius);
+        }
 
         public static PlayerLinkerDisconnectedMessage ReadPlayerLinkerDisconnectedMessage(
             NetworkReader reader
-        ) => new PlayerLinkerDisconnectedMessage();
+        ) =>
+            new PlayerLinkerDisconnectedMessage
+            {
+                ExplosionPosition = reader.ReadVector3(),
+                ExplosionForce    = reader.ReadFloat(),
+                ExplosionRadius   = reader.ReadFloat(),
+            };
     }
 
     // ── Server → Wielder Only ────────────────────────────────────────────────

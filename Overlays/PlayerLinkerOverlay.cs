@@ -68,13 +68,11 @@ namespace IssaPlugin.Overlays
             _sh = Screen.height;
             _time = Time.time;
 
-            // Local player is "in session" if tether is active AND they are one of the two.
+            // Only the tethered TARGET sees the active HUD.
             if (PlayerLinkerNetworkBridge.TetherActive)
             {
                 uint localNetId = localInfo.GetComponent<NetworkIdentity>()?.netId ?? 0u;
-                _sessionActive =
-                    localNetId == PlayerLinkerNetworkBridge.WielderNetId
-                    || localNetId == PlayerLinkerNetworkBridge.TargetNetId;
+                _sessionActive = localNetId == PlayerLinkerNetworkBridge.TargetNetId;
             }
             else
             {
@@ -124,7 +122,7 @@ namespace IssaPlugin.Overlays
             Transform bestTransform = null;
             NetworkIdentity bestIdentity = null;
 
-            // ── Scan remote players only (no golf cart targeting) ─────────────
+            // ── Scan remote players (no golf cart targeting) ──────────────────
             var remotePlayers = GameManager.RemotePlayers;
             if (remotePlayers != null)
             {
@@ -144,6 +142,21 @@ namespace IssaPlugin.Overlays
                     bestDot = dot;
                     bestTransform = player.transform;
                     bestIdentity = nid;
+                }
+            }
+
+            // ── Fallback: allow self-targeting when no remote player is in cone ─
+            if (bestTransform == null)
+            {
+                var localInfo = GameManager.LocalPlayerInfo;
+                if (localInfo != null)
+                {
+                    var localNid = localInfo.GetComponent<NetworkIdentity>();
+                    if (localNid != null)
+                    {
+                        bestTransform = localInfo.transform;
+                        bestIdentity  = localNid;
+                    }
                 }
             }
 
@@ -245,7 +258,7 @@ namespace IssaPlugin.Overlays
             _titleStyle.normal.textColor = lowTime
                 ? new Color(1f, 0.25f, 0.25f, 0.7f + 0.3f * Mathf.Sin(_time * 6f))
                 : new Color(1f, 0.55f, 0.1f, 0.9f);
-            GUI.Label(new Rect(0, titleY, _sw, titleH), "PLAYER LINKED", _titleStyle);
+            GUI.Label(new Rect(0, titleY, _sw, titleH), "TETHERED TO ROCKET", _titleStyle);
 
             float barW = 280f;
             float barX = (_sw - barW) * 0.5f;

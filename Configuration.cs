@@ -393,7 +393,9 @@ namespace IssaPlugin
         public static ConfigEntry<float> PlayerLinkerSpringForce { get; private set; }
         public static ConfigEntry<float> PlayerLinkerMaxPullSpeed { get; private set; }
         public static ConfigEntry<float> PlayerLinkerNaturalLength { get; private set; }
-        public static ConfigEntry<float> PlayerLinkerInputSendInterval { get; private set; }
+        public static ConfigEntry<float> PlayerLinkerRocketSpeed { get; private set; }
+        public static ConfigEntry<float> PlayerLinkerExplosionForce { get; private set; }
+        public static ConfigEntry<float> PlayerLinkerExplosionRadius { get; private set; }
 
         // --- Poison Jar ---
         public static ConfigEntry<Key> PoisonJarGiveKey { get; private set; }
@@ -2913,11 +2915,23 @@ namespace IssaPlugin
                 0f,
                 "Distance (units) below which no force is applied. Set >0 for a rope with slack."
             );
-            PlayerLinkerInputSendInterval = cfg.Bind(
+            PlayerLinkerRocketSpeed = cfg.Bind(
                 "PlayerLinker",
-                "InputSendInterval",
-                0.05f,
-                "Interval (seconds) between position-tick messages sent to the server (~20 Hz)."
+                "RocketSpeed",
+                15f,
+                "Upward speed (m/s) of the rocket during its flight."
+            );
+            PlayerLinkerExplosionForce = cfg.Bind(
+                "PlayerLinker",
+                "ExplosionForce",
+                25f,
+                "Peak velocity change (m/s, VelocityChange) applied at the explosion centre."
+            );
+            PlayerLinkerExplosionRadius = cfg.Bind(
+                "PlayerLinker",
+                "ExplosionRadius",
+                12f,
+                "Radius (units) within which the explosion affects nearby players."
             );
         }
     }

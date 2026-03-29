@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 1939331024
+CRC: 3952286916
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 67dedcb569588388894c6aae277e26fe
+    Hash: e05a1708ce92b8d41aac345322d58d4e
   TypeTreeHash:
     serializedVersion: 2
     Hash: 12d32a6d7b1bccbbbbab418431dfa151
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 58341ae705130cf3a458c428fea992c9
+    Hash: bb064a40c2738ade245293d0dadde035
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -78,7 +78,6 @@ Assets:
 - Assets/Assets/fire_torch_intense.prefab
 - Assets/Assets/ac130_model.prefab
 - Assets/Assets/nuclear_explosion.prefab
-- Assets/Assets/snowball.prefab
 - Assets/Assets/blood_explosion_vfx.prefab
 - Assets/Assets/teddy.prefab
 - Assets/Assets/donut_model.prefab
@@ -95,11 +94,11 @@ Assets:
 - Assets/Assets/redbull_icon.png
 - Assets/Assets/ak47.prefab
 - Assets/Assets/donut_icon.png
-- Assets/Assets/bear.prefab
+- Assets/Assets/ConfettiBlastRainbow.prefab
 - Assets/Assets/position_swap_icon.png
 - Assets/Assets/super_donut_icon.png
+- Assets/Assets/bear.prefab
 - Assets/Assets/poison_bottle_icon.png
-- Assets/Assets/ConfettiBlastRainbow.prefab
 - Assets/Assets/bat_icon.png
 - Assets/Assets/donut_icon_v2.png
 - Assets/Assets/harrier_tablet.prefab
@@ -109,7 +108,6 @@ Assets:
 - Assets/Assets/javelin_icon.png
 - Assets/Assets/drone_swarm_icon.png
 - Assets/Assets/position_swap_smoke.prefab
-- Assets/Assets/gravity_remote_icon.png
 - Assets/Assets/wall_icon.png
 - Assets/Assets/intervention.prefab
 - Assets/Assets/player_linker.prefab
@@ -119,8 +117,10 @@ Assets:
 - Assets/Assets/drone_swarm_tablet.prefab
 - Assets/Assets/freeze_effect_icon.png
 - Assets/Assets/DroppedCustomItem.prefab
+- Assets/Assets/gravity_remote_icon.png
 - Assets/Assets/bomber_model.prefab
 - Assets/Assets/smoke_prefab.prefab
+- Assets/Assets/player_linker_rocket.prefab
 - Assets/Assets/sniper_scope.png
 - Assets/Assets/nuclear_bomb.prefab
 - Assets/Assets/posion_bottle.prefab
@@ -142,14 +142,15 @@ Assets:
 - Assets/Assets/wall_ghost_preview.prefab
 - Assets/Assets/ac130_impact_vfx.prefab
 - Assets/Assets/stealth_bomber_tablet.prefab
-- Assets/Assets/player_linker_icon.png
 - Assets/Assets/ak47_icon.png
+- Assets/Assets/electric_whip_icon.png
 - Assets/Assets/NukeExplosionFire.prefab
 - Assets/Assets/bear_icon.png
 - Assets/Assets/predator_missile_tablet.prefab
-- Assets/Assets/electric_whip_icon.png
+- Assets/Assets/snowball.prefab
 - Assets/Assets/blood_splatter_critical.prefab
 - Assets/Assets/nuclear_detonator.prefab
+- Assets/Assets/rocket_tether_icon.png
 - Assets/Assets/NukeVerticalExplosionFire.prefab
 - Assets/Assets/donut_vehicle.prefab
 - Assets/Assets/black_hole_grenade_icon.png
