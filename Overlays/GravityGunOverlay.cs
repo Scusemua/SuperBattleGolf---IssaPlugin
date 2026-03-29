@@ -1,4 +1,5 @@
 using IssaPlugin.Items;
+using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -39,6 +40,10 @@ namespace IssaPlugin.Overlays
         private bool _aimingIn;
         private Vector3 _targetScreenPos;
 
+        /// The best lock-on target identity found this frame; null when none in cone.
+        /// Read by GravityGunNetworkBridge.ClientUse to avoid a duplicate scan.
+        public NetworkIdentity BestTargetIdentity { get; private set; }
+
         // Golf cart list — refreshed at most once per second to avoid per-frame FindObjectsByType.
         private GolfCartInfo[] _cachedCarts = [];
         private float _cartCacheTime = float.MinValue;
@@ -47,6 +52,9 @@ namespace IssaPlugin.Overlays
         // Session start time (set in Update when session becomes active)
         private float _sessionStartTime;
         private bool _wasSessionActive;
+
+        // Set by ShowBusy() when the server rejects a lock-on due to a live session elsewhere.
+        private float _busyUntil;
 
         // ── Unity lifecycle ───────────────────────────────────────────────────
 
@@ -92,6 +100,7 @@ namespace IssaPlugin.Overlays
         private void UpdateLockOnTarget()
         {
             _hasTarget = false;
+            BestTargetIdentity = null;
 
             // Only show the lock-on reticle while the item is actively equipped.
             var localInventory = GameManager.LocalPlayerInventory;
@@ -118,6 +127,7 @@ namespace IssaPlugin.Overlays
 
             float bestDot = -1f;
             Transform bestTransform = null;
+            NetworkIdentity bestIdentity = null;
 
             // ── Scan remote players ───────────────────────────────────────────
             var remotePlayers = GameManager.RemotePlayers;
@@ -127,6 +137,9 @@ namespace IssaPlugin.Overlays
                 {
                     if (player == null)
                         continue;
+                    var nid = player.GetComponent<NetworkIdentity>();
+                    if (nid == null)
+                        continue;
                     Vector3 toTarget = player.transform.position - camPos;
                     if (toTarget.sqrMagnitude > rangeSq)
                         continue;
@@ -135,6 +148,7 @@ namespace IssaPlugin.Overlays
                         continue;
                     bestDot = dot;
                     bestTransform = player.transform;
+                    bestIdentity = nid;
                 }
             }
 
@@ -149,6 +163,9 @@ namespace IssaPlugin.Overlays
             {
                 if (cart == null || !cart.gameObject.activeInHierarchy)
                     continue;
+                var nid = cart.GetComponent<NetworkIdentity>();
+                if (nid == null)
+                    continue;
                 Vector3 toTarget = cart.transform.position - camPos;
                 if (toTarget.sqrMagnitude > rangeSq)
                     continue;
@@ -157,10 +174,13 @@ namespace IssaPlugin.Overlays
                     continue;
                 bestDot = dot;
                 bestTransform = cart.transform;
+                bestIdentity = nid;
             }
 
             if (bestTransform == null)
                 return;
+
+            BestTargetIdentity = bestIdentity;
 
             // Project target onto screen for reticle placement.
             Vector3 screenPos = cam.WorldToScreenPoint(bestTransform.position);
@@ -205,6 +225,8 @@ namespace IssaPlugin.Overlays
 
             if (_sessionActive)
                 DrawActiveHUD();
+            else if (_time < _busyUntil)
+                DrawBusyMessage();
             else if (_hasTarget)
                 DrawLockOnReticle();
 
@@ -222,6 +244,21 @@ namespace IssaPlugin.Overlays
             _aimingIn = true;
 
             CorrectAimRotation();
+        }
+
+        // ── Busy notification ─────────────────────────────────────────────────
+
+        /// Called by GravityGunNetworkBridge.HandleGravityGunBusy to show a
+        /// brief on-screen message when another player's session blocks the lock-on.
+        public void ShowBusy() => _busyUntil = Time.time + 2.5f;
+
+        private void DrawBusyMessage()
+        {
+            const float h = 42f;
+            float y = _sh - 12f - h;
+            _instructionStyle.normal.textColor = new Color(1f, 0.6f, 0.1f, 0.9f);
+            GUI.Label(new Rect(0, y, _sw, h), "GRAVITY GUN ALREADY IN USE", _instructionStyle);
+            _instructionStyle.normal.textColor = Color.white; // restore default
         }
 
         // ── Active session HUD ────────────────────────────────────────────────
@@ -252,8 +289,8 @@ namespace IssaPlugin.Overlays
             const float barH = 10f;
             const float titleH = 42f;
 
-            float hintY  = _sh - bottomMargin - hintH;
-            float barY   = hintY - rowGap - barH;
+            float hintY = _sh - bottomMargin - hintH;
+            float barY = hintY - rowGap - barH;
             float titleY = barY - rowGap - titleH;
 
             // Title banner.

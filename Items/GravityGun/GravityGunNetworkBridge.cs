@@ -1,7 +1,7 @@
 using System.Collections;
+using IssaPlugin.Overlays;
 using Mirror;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace IssaPlugin.Items
 {
@@ -97,7 +97,6 @@ namespace IssaPlugin.Items
                 }
                 _sendTimer = Configuration.GravityGunInputSendInterval.Value;
             }
-
         }
 
         // =====================================================================
@@ -110,83 +109,21 @@ namespace IssaPlugin.Items
             if (!isOwned)
                 return;
 
-            var cam = Camera.main;
-            if (cam == null)
-                return;
+            // Delegate target selection to GravityGunOverlay, which already performs
+            // the player + cart cone scan every frame for the lock-on reticle.
+            var overlay = FindFirstObjectByType<GravityGunOverlay>();
+            var bestTarget = overlay?.BestTargetIdentity;
 
-            Vector3 camPos = cam.transform.position;
-            Vector3 camFwd = cam.transform.forward;
-            float range = Configuration.GravityGunLockOnRange.Value;
-            float cosHalf = Mathf.Cos(
-                Configuration.GravityGunLockOnConeAngleDeg.Value * 0.5f * Mathf.Deg2Rad
-            );
-
-            // Best candidate across players AND golf carts.
-            NetworkIdentity bestNetId = null;
-            float bestDot = float.MinValue;
-
-            // ── Scan remote players ───────────────────────────────────────────
-            var remotePlayers = GameManager.RemotePlayers;
-            if (remotePlayers != null)
-            {
-                foreach (var player in remotePlayers)
-                {
-                    if (player == null || player.gameObject == null)
-                        continue;
-                    if (!player.gameObject.activeInHierarchy)
-                        continue;
-
-                    Vector3 toTarget = player.transform.position - camPos;
-                    float dist = toTarget.magnitude;
-                    if (dist > range || dist < 0.01f)
-                        continue;
-
-                    float dot = Vector3.Dot(camFwd, toTarget / dist);
-                    if (dot < cosHalf || dot <= bestDot)
-                        continue;
-
-                    var nid = player.GetComponent<NetworkIdentity>();
-                    if (nid == null)
-                        continue;
-
-                    bestDot = dot;
-                    bestNetId = nid;
-                }
-            }
-
-            // ── Scan golf carts ───────────────────────────────────────────────
-            foreach (var cart in FindObjectsByType<GolfCartInfo>(FindObjectsSortMode.None))
-            {
-                if (cart == null || !cart.gameObject.activeInHierarchy)
-                    continue;
-
-                Vector3 toTarget = cart.transform.position - camPos;
-                float dist = toTarget.magnitude;
-                if (dist > range || dist < 0.01f)
-                    continue;
-
-                float dot = Vector3.Dot(camFwd, toTarget / dist);
-                if (dot < cosHalf || dot <= bestDot)
-                    continue;
-
-                var nid = cart.GetComponent<NetworkIdentity>();
-                if (nid == null)
-                    continue;
-
-                bestDot = dot;
-                bestNetId = nid;
-            }
-
-            if (bestNetId == null)
+            if (bestTarget == null)
             {
                 IssaPluginPlugin.Log.LogInfo("[GravityGun] ClientUse: no valid target in cone.");
                 return;
             }
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[GravityGun] ClientUse: locking onto netId={bestNetId.netId}."
+                $"[GravityGun] ClientUse: locking onto netId={bestTarget.netId}."
             );
-            NetworkClient.Send(new GravityGunLockOnMessage { TargetNetId = bestNetId.netId });
+            NetworkClient.Send(new GravityGunLockOnMessage { TargetNetId = bestTarget.netId });
         }
 
         // =====================================================================
@@ -486,7 +423,6 @@ namespace IssaPlugin.Items
                 var bridge = localInfo.GetComponent<GravityGunNetworkBridge>();
                 if (bridge != null)
                 {
-                    bridge._lockedTargetNetId = msg.TargetNetId;
                     bridge.OnLocalSessionStarted();
                 }
             }
@@ -600,6 +536,7 @@ namespace IssaPlugin.Items
             IssaPluginPlugin.Log.LogInfo(
                 "[GravityGun] Session busy — another Gravity Gun is already active."
             );
+            Object.FindFirstObjectByType<GravityGunOverlay>()?.ShowBusy();
         }
 
         // =====================================================================
@@ -744,7 +681,6 @@ namespace IssaPlugin.Items
         private void OnLocalSessionEnded()
         {
             LocalSessionActive = false;
-            _lockedTargetNetId = 0;
             _sendTimer = 0f;
         }
 
