@@ -5,24 +5,24 @@ namespace IssaPlugin.Items
 {
     // ── Client → Server ──────────────────────────────────────────────────────
 
-    /// Sent when the local player uses the Player Linker with a valid target in sight.
+    /// Sent when the local player uses the Rocket Tether with a valid target in sight.
     /// Server validates, acquires the global session lock, and broadcasts
-    /// PlayerLinkerConnectedMessage if successful.
-    public struct PlayerLinkerLockOnMessage : NetworkMessage
+    /// RocketTetherConnectedMessage if successful.
+    public struct RocketTetherLockOnMessage : NetworkMessage
     {
         public uint TargetNetId;
     }
 
-    public static class PlayerLinkerLockOnMessageSerialization
+    public static class RocketTetherLockOnMessageSerialization
     {
-        public static void WritePlayerLinkerLockOnMessage(
+        public static void WriteRocketTetherLockOnMessage(
             NetworkWriter writer,
-            PlayerLinkerLockOnMessage msg
+            RocketTetherLockOnMessage msg
         ) => writer.WriteUInt(msg.TargetNetId);
 
-        public static PlayerLinkerLockOnMessage ReadPlayerLinkerLockOnMessage(
+        public static RocketTetherLockOnMessage ReadRocketTetherLockOnMessage(
             NetworkReader reader
-        ) => new PlayerLinkerLockOnMessage { TargetNetId = reader.ReadUInt() };
+        ) => new RocketTetherLockOnMessage { TargetNetId = reader.ReadUInt() };
     }
 
     // ── Server → All Clients ─────────────────────────────────────────────────
@@ -35,8 +35,11 @@ namespace IssaPlugin.Items
     /// compute its position deterministically as:
     ///   rocketPos = RocketStartPos + Vector3.up * RocketSpeed * elapsed
     /// No per-tick relay messages are needed.
-    public struct PlayerLinkerConnectedMessage : NetworkMessage
+    public struct RocketTetherConnectedMessage : NetworkMessage
     {
+        /// The player who fired the Rocket Tether.
+        public uint WielderNetId;
+
         /// The player who is being dragged by the rocket.
         public uint TargetNetId;
 
@@ -50,28 +53,30 @@ namespace IssaPlugin.Items
         public float Duration;
     }
 
-    public static class PlayerLinkerConnectedMessageSerialization
+    public static class RocketTetherConnectedMessageSerialization
     {
-        public static void WritePlayerLinkerConnectedMessage(
+        public static void WriteRocketTetherConnectedMessage(
             NetworkWriter writer,
-            PlayerLinkerConnectedMessage msg
+            RocketTetherConnectedMessage msg
         )
         {
+            writer.WriteUInt(msg.WielderNetId);
             writer.WriteUInt(msg.TargetNetId);
             writer.WriteVector3(msg.RocketStartPos);
             writer.WriteFloat(msg.RocketSpeed);
             writer.WriteFloat(msg.Duration);
         }
 
-        public static PlayerLinkerConnectedMessage ReadPlayerLinkerConnectedMessage(
+        public static RocketTetherConnectedMessage ReadRocketTetherConnectedMessage(
             NetworkReader reader
         ) =>
-            new PlayerLinkerConnectedMessage
+            new RocketTetherConnectedMessage
             {
-                TargetNetId    = reader.ReadUInt(),
+                WielderNetId = reader.ReadUInt(),
+                TargetNetId = reader.ReadUInt(),
                 RocketStartPos = reader.ReadVector3(),
-                RocketSpeed    = reader.ReadFloat(),
-                Duration       = reader.ReadFloat(),
+                RocketSpeed = reader.ReadFloat(),
+                Duration = reader.ReadFloat(),
             };
     }
 
@@ -80,7 +85,7 @@ namespace IssaPlugin.Items
     /// Broadcast to every client when the rocket explodes.
     /// All clients destroy VFX and apply explosion force to the local player
     /// if they are within ExplosionRadius of ExplosionPosition.
-    public struct PlayerLinkerDisconnectedMessage : NetworkMessage
+    public struct RocketTetherDisconnectedMessage : NetworkMessage
     {
         /// World-space position of the explosion.
         public Vector3 ExplosionPosition;
@@ -92,11 +97,11 @@ namespace IssaPlugin.Items
         public float ExplosionRadius;
     }
 
-    public static class PlayerLinkerDisconnectedMessageSerialization
+    public static class RocketTetherDisconnectedMessageSerialization
     {
-        public static void WritePlayerLinkerDisconnectedMessage(
+        public static void WriteRocketTetherDisconnectedMessage(
             NetworkWriter writer,
-            PlayerLinkerDisconnectedMessage msg
+            RocketTetherDisconnectedMessage msg
         )
         {
             writer.WriteVector3(msg.ExplosionPosition);
@@ -104,14 +109,14 @@ namespace IssaPlugin.Items
             writer.WriteFloat(msg.ExplosionRadius);
         }
 
-        public static PlayerLinkerDisconnectedMessage ReadPlayerLinkerDisconnectedMessage(
+        public static RocketTetherDisconnectedMessage ReadRocketTetherDisconnectedMessage(
             NetworkReader reader
         ) =>
-            new PlayerLinkerDisconnectedMessage
+            new RocketTetherDisconnectedMessage
             {
                 ExplosionPosition = reader.ReadVector3(),
-                ExplosionForce    = reader.ReadFloat(),
-                ExplosionRadius   = reader.ReadFloat(),
+                ExplosionForce = reader.ReadFloat(),
+                ExplosionRadius = reader.ReadFloat(),
             };
     }
 
@@ -119,17 +124,16 @@ namespace IssaPlugin.Items
 
     /// Sent only to the wielder's connection when GlobalSessionLock is held by
     /// another player.  The item is NOT consumed.
-    public struct PlayerLinkerBusyMessage : NetworkMessage { }
+    public struct RocketTetherBusyMessage : NetworkMessage { }
 
-    public static class PlayerLinkerBusyMessageSerialization
+    public static class RocketTetherBusyMessageSerialization
     {
-        public static void WritePlayerLinkerBusyMessage(
+        public static void WriteRocketTetherBusyMessage(
             NetworkWriter writer,
-            PlayerLinkerBusyMessage msg
+            RocketTetherBusyMessage msg
         ) { }
 
-        public static PlayerLinkerBusyMessage ReadPlayerLinkerBusyMessage(
-            NetworkReader reader
-        ) => new PlayerLinkerBusyMessage();
+        public static RocketTetherBusyMessage ReadRocketTetherBusyMessage(NetworkReader reader) =>
+            new RocketTetherBusyMessage();
     }
 }

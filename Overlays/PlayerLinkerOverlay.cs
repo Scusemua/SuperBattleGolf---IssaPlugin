@@ -6,7 +6,7 @@ using UnityEngine.InputSystem;
 namespace IssaPlugin.Overlays
 {
     /// <summary>
-    /// Client-side HUD component for the Player Linker item.
+    /// Client-side HUD component for the Rocket Tether item.
     ///
     /// Idle (equipped, no tether active):
     ///   Highlights the nearest valid player target in the aim cone with a
@@ -16,7 +16,7 @@ namespace IssaPlugin.Overlays
     ///   Shows a "PLAYER LINKED" banner and countdown bar.
     ///   Both the wielder and the target see this HUD.
     /// </summary>
-    public class PlayerLinkerOverlay : MonoBehaviour
+    public class RocketTetherOverlay : MonoBehaviour
     {
         // ── Styles ────────────────────────────────────────────────────────────
         private GUIStyle _titleStyle;
@@ -36,14 +36,14 @@ namespace IssaPlugin.Overlays
         private Vector3 _targetScreenPos;
 
         /// The best lock-on target identity found this frame; null when none in cone.
-        /// Read by PlayerLinkerItemDefinition.OnUse to avoid a duplicate scan.
+        /// Read by RocketTetherItemDefinition.OnUse to avoid a duplicate scan.
         public NetworkIdentity BestTargetIdentity { get; private set; }
 
         // Set by ShowBusy() when the server rejects a lock-on due to a live session elsewhere.
         private float _busyUntil;
 
         // ── Singleton ─────────────────────────────────────────────────────────
-        public static PlayerLinkerOverlay Instance { get; private set; }
+        public static RocketTetherOverlay Instance { get; private set; }
 
         // ── Unity lifecycle ───────────────────────────────────────────────────
 
@@ -69,10 +69,10 @@ namespace IssaPlugin.Overlays
             _time = Time.time;
 
             // Only the tethered TARGET sees the active HUD.
-            if (PlayerLinkerNetworkBridge.TetherActive)
+            if (RocketTetherNetworkBridge.TetherActive)
             {
                 uint localNetId = localInfo.GetComponent<NetworkIdentity>()?.netId ?? 0u;
-                _sessionActive = localNetId == PlayerLinkerNetworkBridge.TargetNetId;
+                _sessionActive = localNetId == RocketTetherNetworkBridge.TargetNetId;
             }
             else
             {
@@ -100,7 +100,7 @@ namespace IssaPlugin.Overlays
             if (
                 localInventory == null
                 || localInventory.GetEffectivelyEquippedItem(true)
-                    != ItemRegistry.PlayerLinkerItemType
+                    != ItemRegistry.RocketTetherItemType
             )
                 return;
 
@@ -109,11 +109,11 @@ namespace IssaPlugin.Overlays
                 return;
 
             float cosHalf = Mathf.Cos(
-                Configuration.PlayerLinkerLockOnConeAngleDeg.Value * 0.5f * Mathf.Deg2Rad
+                Configuration.RocketTetherLockOnConeAngleDeg.Value * 0.5f * Mathf.Deg2Rad
             );
             float rangeSq =
-                Configuration.PlayerLinkerLockOnRange.Value
-                * Configuration.PlayerLinkerLockOnRange.Value;
+                Configuration.RocketTetherLockOnRange.Value
+                * Configuration.RocketTetherLockOnRange.Value;
 
             Vector3 camPos = cam.transform.position;
             Vector3 camFwd = cam.transform.forward;
@@ -155,7 +155,7 @@ namespace IssaPlugin.Overlays
                     if (localNid != null)
                     {
                         bestTransform = localInfo.transform;
-                        bestIdentity  = localNid;
+                        bestIdentity = localNid;
                     }
                 }
             }
@@ -187,7 +187,7 @@ namespace IssaPlugin.Overlays
             // Show the HUD while tethered OR while the item is equipped.
             bool equipped =
                 localInfo.Inventory.GetEffectivelyEquippedItem(true)
-                == ItemRegistry.PlayerLinkerItemType;
+                == ItemRegistry.RocketTetherItemType;
             if (!equipped && !_sessionActive)
                 return;
 
@@ -224,7 +224,11 @@ namespace IssaPlugin.Overlays
             const float h = 42f;
             float y = _sh - 12f - h;
             _instructionStyle.normal.textColor = new Color(1f, 0.5f, 0.1f, 0.9f);
-            GUI.Label(new Rect(0, y, _sw, h), "PLAYER LINKER ALREADY IN USE", _instructionStyle);
+            GUI.Label(
+                new Rect(0, y, _sw, h),
+                "ROCKET TETHER LINKER ALREADY IN USE",
+                _instructionStyle
+            );
             _instructionStyle.normal.textColor = Color.white;
         }
 
@@ -232,8 +236,8 @@ namespace IssaPlugin.Overlays
 
         private void DrawActiveHUD()
         {
-            float duration = PlayerLinkerNetworkBridge.TetherDuration;
-            float elapsed = _time - PlayerLinkerNetworkBridge.TetherStartTime;
+            float duration = RocketTetherNetworkBridge.TetherDuration;
+            float elapsed = _time - RocketTetherNetworkBridge.TetherStartTime;
             float remaining = Mathf.Max(0f, duration - elapsed);
             bool lowTime = remaining <= 3f;
 

@@ -8,7 +8,7 @@ namespace IssaPlugin.Items
     /// <summary>
     /// Attached to every player object via NetworkBridgePatches.
     ///
-    /// The Player Linker fires a rocket that spawns above a target player and
+    /// The Rocket Tether fires a rocket that spawns above a target player and
     /// launches straight up at a configurable speed.  The target is tethered to
     /// the rocket by a spring force for the duration of the flight.  When the
     /// timer expires the server triggers a physics explosion at the rocket's final
@@ -20,10 +20,10 @@ namespace IssaPlugin.Items
     ///   rocketPos = s_rocketStartPos + Vector3.up * s_rocketSpeed * elapsed
     /// This eliminates the Tick/Relay message pair entirely.
     ///
-    /// Global one-at-a-time lock via GlobalSessionLock&lt;PlayerLinkerNetworkBridge&gt;.
+    /// Global one-at-a-time lock via GlobalSessionLock&lt;RocketTetherNetworkBridge&gt;.
     /// All session state lives on the wielder's bridge; the target's bridge has none.
     /// </summary>
-    public class PlayerLinkerNetworkBridge : NetworkBridgeBase
+    public class RocketTetherNetworkBridge : NetworkBridgeBase
     {
         // =====================================================================
         //  Server-side per-instance state (wielder's bridge only)
@@ -44,6 +44,7 @@ namespace IssaPlugin.Items
         // =====================================================================
 
         private static bool s_tetherActive;
+        private static uint s_wielderNetId;
         private static uint s_targetNetId;
 
         // Deterministic rocket state — set once on HandleConnected, never updated.
@@ -61,7 +62,7 @@ namespace IssaPlugin.Items
         private static GameObject s_rocketVfxInstance;
 
         // =====================================================================
-        //  Public static accessors (read by PlayerLinkerOverlay)
+        //  Public static accessors (read by RocketTetherOverlay)
         // =====================================================================
 
         public static bool TetherActive => s_tetherActive;
@@ -99,23 +100,23 @@ namespace IssaPlugin.Items
         //  Client — initiating the lock-on
         // =====================================================================
 
-        /// Called from PlayerLinkerItemDefinition.OnUse → GetComponent<PlayerLinkerNetworkBridge>().
+        /// Called from RocketTetherItemDefinition.OnUse → GetComponent<RocketTetherNetworkBridge>().
         public void ClientUse()
         {
             if (!isOwned)
                 return;
 
-            var bestTarget = PlayerLinkerOverlay.Instance?.BestTargetIdentity;
+            var bestTarget = RocketTetherOverlay.Instance?.BestTargetIdentity;
             if (bestTarget == null)
             {
-                IssaPluginPlugin.Log.LogInfo("[PlayerLinker] ClientUse: no valid target in cone.");
+                IssaPluginPlugin.Log.LogInfo("[RocketTether] ClientUse: no valid target in cone.");
                 return;
             }
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[PlayerLinker] ClientUse: targeting netId={bestTarget.netId}."
+                $"[RocketTether] ClientUse: targeting netId={bestTarget.netId}."
             );
-            NetworkClient.Send(new PlayerLinkerLockOnMessage { TargetNetId = bestTarget.netId });
+            NetworkClient.Send(new RocketTetherLockOnMessage { TargetNetId = bestTarget.netId });
         }
 
         // =====================================================================
@@ -124,33 +125,33 @@ namespace IssaPlugin.Items
 
         public void ServerHandleLockOn(
             NetworkConnectionToClient conn,
-            PlayerLinkerLockOnMessage msg
+            RocketTetherLockOnMessage msg
         )
         {
             if (!isServer)
                 return;
 
             // ── 1. Acquire global session lock ────────────────────────────────
-            if (!GlobalSessionLock<PlayerLinkerNetworkBridge>.TryAcquire(this))
+            if (!GlobalSessionLock<RocketTetherNetworkBridge>.TryAcquire(this))
             {
                 IssaPluginPlugin.Log.LogInfo(
-                    "[PlayerLinker] Server: session busy — rejecting lock-on."
+                    "[RocketTether] Server: session busy — rejecting lock-on."
                 );
-                conn.Send(new PlayerLinkerBusyMessage());
+                conn.Send(new RocketTetherBusyMessage());
                 return;
             }
 
-            // ── 2. Validate wielder has Player Linker equipped ────────────────
+            // ── 2. Validate wielder has Rocket Tether equipped ────────────────
             var inventory = GetComponent<PlayerInventory>();
             if (
                 inventory == null
-                || inventory.GetEffectivelyEquippedItem(true) != ItemRegistry.PlayerLinkerItemType
+                || inventory.GetEffectivelyEquippedItem(true) != ItemRegistry.RocketTetherItemType
             )
             {
                 IssaPluginPlugin.Log.LogWarning(
-                    "[PlayerLinker] Server: wielder does not have Player Linker equipped."
+                    "[RocketTether] Server: wielder does not have Rocket Tether equipped."
                 );
-                GlobalSessionLock<PlayerLinkerNetworkBridge>.Release();
+                GlobalSessionLock<RocketTetherNetworkBridge>.Release();
                 return;
             }
 
@@ -164,9 +165,9 @@ namespace IssaPlugin.Items
             if (!NetworkServer.spawned.TryGetValue(msg.TargetNetId, out var targetIdentity))
             {
                 IssaPluginPlugin.Log.LogWarning(
-                    $"[PlayerLinker] Server: target netId={msg.TargetNetId} not found."
+                    $"[RocketTether] Server: target netId={msg.TargetNetId} not found."
                 );
-                GlobalSessionLock<PlayerLinkerNetworkBridge>.Release();
+                GlobalSessionLock<RocketTetherNetworkBridge>.Release();
                 _wielderLinkerSlot = -1;
                 return;
             }
@@ -174,8 +175,8 @@ namespace IssaPlugin.Items
             var targetInfo = targetIdentity.GetComponentInParent<PlayerInfo>();
             if (targetInfo == null)
             {
-                IssaPluginPlugin.Log.LogWarning("[PlayerLinker] Server: target is not a player.");
-                GlobalSessionLock<PlayerLinkerNetworkBridge>.Release();
+                IssaPluginPlugin.Log.LogWarning("[RocketTether] Server: target is not a player.");
+                GlobalSessionLock<RocketTetherNetworkBridge>.Release();
                 _wielderLinkerSlot = -1;
                 return;
             }
@@ -183,8 +184,8 @@ namespace IssaPlugin.Items
             var wielderNetId = GetComponent<NetworkIdentity>().netId;
 
             // ── 5. Compute rocket spawn position (just above target's head) ───
-            float rocketSpeed = Configuration.PlayerLinkerRocketSpeed.Value;
-            float duration = Configuration.PlayerLinkerTetherDuration.Value;
+            float rocketSpeed = Configuration.RocketTetherRocketSpeed.Value;
+            float duration = Configuration.RocketTetherTetherDuration.Value;
             Vector3 rocketStart = targetInfo.transform.position + Vector3.up * 1.5f;
 
             // ── 6. Store server session state ─────────────────────────────────
@@ -195,14 +196,15 @@ namespace IssaPlugin.Items
             _serverRocketSpeed = rocketSpeed;
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[PlayerLinker] Server: session started. "
+                $"[RocketTether] Server: session started. "
                     + $"wielder={wielderNetId} target={targetIdentity.netId}"
             );
 
             // ── 7. Broadcast connection to all clients ────────────────────────
             NetworkServer.SendToAll(
-                new PlayerLinkerConnectedMessage
+                new RocketTetherConnectedMessage
                 {
+                    WielderNetId = wielderNetId,
                     TargetNetId = targetIdentity.netId,
                     RocketStartPos = rocketStart,
                     RocketSpeed = rocketSpeed,
@@ -225,18 +227,18 @@ namespace IssaPlugin.Items
             if (!_serverSessionActive)
                 yield break;
 
-            IssaPluginPlugin.Log.LogInfo("[PlayerLinker] Server: rocket exploding.");
+            IssaPluginPlugin.Log.LogInfo("[RocketTether] Server: rocket exploding.");
 
             // Final rocket position — same deterministic formula as clients.
             Vector3 explosionPos =
                 _serverRocketStartPos + Vector3.up * _serverRocketSpeed * duration;
 
-            float explosionForce = Configuration.PlayerLinkerExplosionForce.Value;
-            float explosionRadius = Configuration.PlayerLinkerExplosionRadius.Value;
+            float explosionForce = Configuration.RocketTetherExplosionForce.Value;
+            float explosionRadius = Configuration.RocketTetherExplosionRadius.Value;
 
             // Apply explosion to non-player Rigidbodies (golf balls, empty carts, etc.)
             // Player physics are client-authoritative; clients handle their own forces via
-            // the PlayerLinkerDisconnectedMessage.
+            // the RocketTetherDisconnectedMessage.
             var colliders = Physics.OverlapSphere(explosionPos, explosionRadius);
             foreach (var col in colliders)
             {
@@ -289,7 +291,7 @@ namespace IssaPlugin.Items
             _wielderLinkerSlot = -1;
 
             NetworkServer.SendToAll(
-                new PlayerLinkerDisconnectedMessage
+                new RocketTetherDisconnectedMessage
                 {
                     ExplosionPosition = explosionPos,
                     ExplosionForce = explosionForce,
@@ -297,7 +299,7 @@ namespace IssaPlugin.Items
                 }
             );
 
-            GlobalSessionLock<PlayerLinkerNetworkBridge>.Release();
+            GlobalSessionLock<RocketTetherNetworkBridge>.Release();
 
             if (_serverTimeout != null)
             {
@@ -314,7 +316,7 @@ namespace IssaPlugin.Items
         // =====================================================================
 
         /// Called on every client when the rocket attaches to the target.
-        public static void HandlePlayerLinkerConnected(PlayerLinkerConnectedMessage msg)
+        public static void HandleRocketTetherConnected(RocketTetherConnectedMessage msg)
         {
             var localInfo = GameManager.LocalPlayerInfo;
             if (localInfo == null)
@@ -324,6 +326,7 @@ namespace IssaPlugin.Items
             CleanupVfx();
 
             // ── Store deterministic rocket state ──────────────────────────────
+            s_wielderNetId = msg.WielderNetId;
             s_targetNetId = msg.TargetNetId;
             s_rocketStartPos = msg.RocketStartPos;
             s_rocketSpeed = msg.RocketSpeed;
@@ -335,10 +338,10 @@ namespace IssaPlugin.Items
             CreateTetherLine();
 
             // ── Spawn rocket VFX at start position ────────────────────────────
-            if (AssetLoader.PlayerLinkerRocketPrefab != null)
+            if (AssetLoader.RocketTetherRocketPrefab != null)
             {
                 s_rocketVfxInstance = Object.Instantiate(
-                    AssetLoader.PlayerLinkerRocketPrefab,
+                    AssetLoader.RocketTetherRocketPrefab,
                     msg.RocketStartPos,
                     Quaternion.identity
                 );
@@ -364,17 +367,52 @@ namespace IssaPlugin.Items
             s_forceCoroutine = movement.StartCoroutine(ForceCoroutine(msg.Duration));
 
             IssaPluginPlugin.Log.LogInfo(
-                "[PlayerLinker] Client: tether started (local player is target)."
+                "[RocketTether] Client: tether started (local player is target)."
             );
         }
 
         /// Called on every client when the rocket explodes.
-        public static void HandlePlayerLinkerDisconnected(PlayerLinkerDisconnectedMessage msg)
+        public static void HandleRocketTetherDisconnected(RocketTetherDisconnectedMessage msg)
         {
-            // Apply explosion force to the local player if within radius.
+            // Knock out and apply explosion force to the local player if within radius.
             var localInfo = GameManager.LocalPlayerInfo;
             if (localInfo != null)
             {
+                var wielderInfo = GetTransformByNetId(s_wielderNetId)
+                    ?.GetComponentInParent<PlayerInfo>();
+
+                // Only knock out the tethered target.
+                uint localNetId = localInfo.GetComponent<NetworkIdentity>()?.netId ?? 0u;
+                if (wielderInfo != null && localNetId == s_targetNetId)
+                {
+                    // Knock out
+                    var useId = new ItemUseId(
+                        wielderInfo.PlayerId.Guid,
+                        RocketTetherItem.NextUseIndex(),
+                        ItemType.RocketLauncher
+                    );
+                    bool _;
+                    localInfo.Movement.TryKnockOut(
+                        wielderInfo,
+                        KnockoutType.Rocket,
+                        false,
+                        localInfo.Movement.transform.InverseTransformPoint(
+                            wielderInfo.transform.position
+                        ),
+                        Vector3.Distance(
+                            localInfo.transform.position,
+                            wielderInfo.transform.position
+                        ),
+                        Vector3.zero, // no extra velocity on connect
+                        false,
+                        useId,
+                        false,
+                        true,
+                        out _
+                    );
+                } // end knockout guard
+
+                // Explosive force
                 var seat = localInfo.ActiveGolfCartSeat;
                 Rigidbody rb =
                     seat.IsValid() && seat.golfCart != null
@@ -397,19 +435,44 @@ namespace IssaPlugin.Items
                 }
             }
 
+            // Spawn explosion VFX at the rocket's final position.
+            if (AssetLoader.JavelinExplosionVfxPrefab != null)
+            {
+                var vfxGo = Object.Instantiate(
+                    AssetLoader.JavelinExplosionVfxPrefab,
+                    msg.ExplosionPosition,
+                    Quaternion.identity
+                );
+                Object.Destroy(vfxGo, 3f);
+            }
+            else
+            {
+                VfxManager.PlayPooledVfxLocalOnly(
+                    VfxType.RocketLauncherRocketExplosion,
+                    msg.ExplosionPosition,
+                    Quaternion.identity,
+                    Vector3.one
+                );
+            }
+
+            CameraModuleController.Shake(
+                GameManager.CameraGameplaySettings.RocketExplosionScreenshakeSettings,
+                msg.ExplosionPosition
+            );
+
             ClearClientState();
             IssaPluginPlugin.Log.LogInfo(
-                $"[PlayerLinker] Client: rocket exploded at {msg.ExplosionPosition}."
+                $"[RocketTether] Client: rocket exploded at {msg.ExplosionPosition}."
             );
         }
 
         /// Called only on the wielder's client when the session lock is held by another player.
-        public static void HandlePlayerLinkerBusy(PlayerLinkerBusyMessage msg)
+        public static void HandleRocketTetherBusy(RocketTetherBusyMessage msg)
         {
             IssaPluginPlugin.Log.LogInfo(
-                "[PlayerLinker] Session busy — another Player Linker is already active."
+                "[RocketTether] Session busy — another Rocket Tether is already active."
             );
-            PlayerLinkerOverlay.Instance?.ShowBusy();
+            RocketTetherOverlay.Instance?.ShowBusy();
         }
 
         // =====================================================================
@@ -440,17 +503,17 @@ namespace IssaPlugin.Items
 
                     Vector3 toRocket = rocketPos - rb.position;
                     float dist = toRocket.magnitude;
-                    float natural = Configuration.PlayerLinkerNaturalLength.Value;
+                    float natural = Configuration.RocketTetherNaturalLength.Value;
 
                     if (dist > natural && dist > 0.05f)
                     {
                         Vector3 dir = toRocket / dist;
                         float stretch = dist - natural;
-                        float targetSpeed = stretch * Configuration.PlayerLinkerSpringForce.Value;
+                        float targetSpeed = stretch * Configuration.RocketTetherSpringForce.Value;
                         float currentComp = Vector3.Dot(rb.linearVelocity, dir);
                         float deficit = Mathf.Min(
                             targetSpeed - currentComp,
-                            Configuration.PlayerLinkerMaxPullSpeed.Value
+                            Configuration.RocketTetherMaxPullSpeed.Value
                         );
 
                         if (deficit > 0f)
@@ -461,7 +524,7 @@ namespace IssaPlugin.Items
                 elapsed += Time.fixedDeltaTime;
                 yield return new WaitForFixedUpdate();
             }
-            // Do NOT clear s_tetherActive here — wait for PlayerLinkerDisconnectedMessage.
+            // Do NOT clear s_tetherActive here — wait for RocketTetherDisconnectedMessage.
         }
 
         // =====================================================================
@@ -470,7 +533,7 @@ namespace IssaPlugin.Items
 
         private static void CreateTetherLine()
         {
-            var lineGo = new GameObject("PlayerLinkerTetherLine");
+            var lineGo = new GameObject("RocketTetherTetherLine");
             s_tetherLine = lineGo.AddComponent<LineRenderer>();
             s_tetherLine.positionCount = 2;
             s_tetherLine.startWidth = 0.12f;
@@ -545,8 +608,8 @@ namespace IssaPlugin.Items
                     _serverRocketStartPos + Vector3.up * _serverRocketSpeed * elapsed;
                 ServerEndSession(
                     explosionPos,
-                    Configuration.PlayerLinkerExplosionForce.Value,
-                    Configuration.PlayerLinkerExplosionRadius.Value
+                    Configuration.RocketTetherExplosionForce.Value,
+                    Configuration.RocketTetherExplosionRadius.Value
                 );
             }
 
@@ -591,6 +654,7 @@ namespace IssaPlugin.Items
             s_forceCoroutine = null;
             s_forceMovement = null;
             s_tetherActive = false;
+            s_wielderNetId = 0;
             s_targetNetId = 0;
             s_rocketStartPos = Vector3.zero;
             s_rocketSpeed = 0f;

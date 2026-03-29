@@ -1162,42 +1162,42 @@ namespace IssaPlugin.Patches
                 );
             }
 
-            // ── Player Linker Messages ────────────────────────────────────────────
-            Writer<PlayerLinkerLockOnMessage>.write =
-                PlayerLinkerLockOnMessageSerialization.WritePlayerLinkerLockOnMessage;
-            Reader<PlayerLinkerLockOnMessage>.read =
-                PlayerLinkerLockOnMessageSerialization.ReadPlayerLinkerLockOnMessage;
+            // ── Rocket Tether Messages ────────────────────────────────────────────
+            Writer<RocketTetherLockOnMessage>.write =
+                RocketTetherLockOnMessageSerialization.WriteRocketTetherLockOnMessage;
+            Reader<RocketTetherLockOnMessage>.read =
+                RocketTetherLockOnMessageSerialization.ReadRocketTetherLockOnMessage;
 
-            Writer<PlayerLinkerConnectedMessage>.write =
-                PlayerLinkerConnectedMessageSerialization.WritePlayerLinkerConnectedMessage;
-            Reader<PlayerLinkerConnectedMessage>.read =
-                PlayerLinkerConnectedMessageSerialization.ReadPlayerLinkerConnectedMessage;
+            Writer<RocketTetherConnectedMessage>.write =
+                RocketTetherConnectedMessageSerialization.WriteRocketTetherConnectedMessage;
+            Reader<RocketTetherConnectedMessage>.read =
+                RocketTetherConnectedMessageSerialization.ReadRocketTetherConnectedMessage;
 
-            Writer<PlayerLinkerDisconnectedMessage>.write =
-                PlayerLinkerDisconnectedMessageSerialization.WritePlayerLinkerDisconnectedMessage;
-            Reader<PlayerLinkerDisconnectedMessage>.read =
-                PlayerLinkerDisconnectedMessageSerialization.ReadPlayerLinkerDisconnectedMessage;
+            Writer<RocketTetherDisconnectedMessage>.write =
+                RocketTetherDisconnectedMessageSerialization.WriteRocketTetherDisconnectedMessage;
+            Reader<RocketTetherDisconnectedMessage>.read =
+                RocketTetherDisconnectedMessageSerialization.ReadRocketTetherDisconnectedMessage;
 
-            Writer<PlayerLinkerBusyMessage>.write =
-                PlayerLinkerBusyMessageSerialization.WritePlayerLinkerBusyMessage;
-            Reader<PlayerLinkerBusyMessage>.read =
-                PlayerLinkerBusyMessageSerialization.ReadPlayerLinkerBusyMessage;
+            Writer<RocketTetherBusyMessage>.write =
+                RocketTetherBusyMessageSerialization.WriteRocketTetherBusyMessage;
+            Reader<RocketTetherBusyMessage>.read =
+                RocketTetherBusyMessageSerialization.ReadRocketTetherBusyMessage;
 
-            NetworkClient.RegisterHandler<PlayerLinkerConnectedMessage>(
-                PlayerLinkerNetworkBridge.HandlePlayerLinkerConnected
+            NetworkClient.RegisterHandler<RocketTetherConnectedMessage>(
+                RocketTetherNetworkBridge.HandleRocketTetherConnected
             );
-            NetworkClient.RegisterHandler<PlayerLinkerDisconnectedMessage>(
-                PlayerLinkerNetworkBridge.HandlePlayerLinkerDisconnected
+            NetworkClient.RegisterHandler<RocketTetherDisconnectedMessage>(
+                RocketTetherNetworkBridge.HandleRocketTetherDisconnected
             );
-            NetworkClient.RegisterHandler<PlayerLinkerBusyMessage>(
-                PlayerLinkerNetworkBridge.HandlePlayerLinkerBusy
+            NetworkClient.RegisterHandler<RocketTetherBusyMessage>(
+                RocketTetherNetworkBridge.HandleRocketTetherBusy
             );
 
             if (NetworkServer.active)
             {
-                NetworkServer.RegisterHandler<PlayerLinkerLockOnMessage>(
+                NetworkServer.RegisterHandler<RocketTetherLockOnMessage>(
                     (conn, msg) =>
-                        GetBridge<PlayerLinkerNetworkBridge>(conn)?.ServerHandleLockOn(conn, msg)
+                        GetBridge<RocketTetherNetworkBridge>(conn)?.ServerHandleLockOn(conn, msg)
                 );
             }
 

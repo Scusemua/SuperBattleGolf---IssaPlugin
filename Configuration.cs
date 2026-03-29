@@ -383,19 +383,19 @@ namespace IssaPlugin
         public static ConfigEntry<float> GravityGunMaxPullSpeed { get; private set; }
         public static ConfigEntry<float> GravityGunInputSendInterval { get; private set; }
 
-        // --- Player Linker ---
-        public static ConfigEntry<Key> PlayerLinkerGiveKey { get; private set; }
-        public static ConfigEntry<float> PlayerLinkerUses { get; private set; }
-        public static ConfigEntry<float> PlayerLinkerSpawnWeight { get; private set; }
-        public static ConfigEntry<float> PlayerLinkerLockOnRange { get; private set; }
-        public static ConfigEntry<float> PlayerLinkerLockOnConeAngleDeg { get; private set; }
-        public static ConfigEntry<float> PlayerLinkerTetherDuration { get; private set; }
-        public static ConfigEntry<float> PlayerLinkerSpringForce { get; private set; }
-        public static ConfigEntry<float> PlayerLinkerMaxPullSpeed { get; private set; }
-        public static ConfigEntry<float> PlayerLinkerNaturalLength { get; private set; }
-        public static ConfigEntry<float> PlayerLinkerRocketSpeed { get; private set; }
-        public static ConfigEntry<float> PlayerLinkerExplosionForce { get; private set; }
-        public static ConfigEntry<float> PlayerLinkerExplosionRadius { get; private set; }
+        // --- Rocket Tether ---
+        public static ConfigEntry<Key> RocketTetherGiveKey { get; private set; }
+        public static ConfigEntry<float> RocketTetherUses { get; private set; }
+        public static ConfigEntry<float> RocketTetherSpawnWeight { get; private set; }
+        public static ConfigEntry<float> RocketTetherLockOnRange { get; private set; }
+        public static ConfigEntry<float> RocketTetherLockOnConeAngleDeg { get; private set; }
+        public static ConfigEntry<float> RocketTetherTetherDuration { get; private set; }
+        public static ConfigEntry<float> RocketTetherSpringForce { get; private set; }
+        public static ConfigEntry<float> RocketTetherMaxPullSpeed { get; private set; }
+        public static ConfigEntry<float> RocketTetherNaturalLength { get; private set; }
+        public static ConfigEntry<float> RocketTetherRocketSpeed { get; private set; }
+        public static ConfigEntry<float> RocketTetherExplosionForce { get; private set; }
+        public static ConfigEntry<float> RocketTetherExplosionRadius { get; private set; }
 
         // --- Poison Jar ---
         public static ConfigEntry<Key> PoisonJarGiveKey { get; private set; }
@@ -2860,77 +2860,77 @@ namespace IssaPlugin
                 "Interval (seconds) between aim-tick messages sent to the server (~20 Hz)."
             );
 
-            // --- Player Linker ---
-            PlayerLinkerGiveKey = cfg.Bind(
-                "PlayerLinker",
-                "PlayerLinkerGiveKey",
+            // --- Rocket Tether ---
+            RocketTetherGiveKey = cfg.Bind(
+                "RocketTether",
+                "RocketTetherGiveKey",
                 Key.NumpadMultiply,
-                "Hotkey to give yourself a Player Linker (debug/testing)."
+                "Hotkey to give yourself a Rocket Tether (debug/testing)."
             );
-            PlayerLinkerUses = cfg.Bind(
-                "PlayerLinker",
+            RocketTetherUses = cfg.Bind(
+                "RocketTether",
                 "Uses",
                 1f,
-                "Number of uses per Player Linker pickup."
+                "Number of uses per Rocket Tether pickup."
             );
-            PlayerLinkerSpawnWeight = cfg.Bind(
+            RocketTetherSpawnWeight = cfg.Bind(
                 "ItemBoxSpawns",
-                "PlayerLinkerSpawnWeight",
+                "RocketTetherSpawnWeight",
                 10f,
-                "Relative spawn weight for the Player Linker in the item pool."
+                "Relative spawn weight for the Rocket Tether in the item pool."
             );
-            PlayerLinkerLockOnRange = cfg.Bind(
-                "PlayerLinker",
+            RocketTetherLockOnRange = cfg.Bind(
+                "RocketTether",
                 "LockOnRange",
                 40f,
-                "Maximum distance (units) at which the Player Linker can lock onto a target."
+                "Maximum distance (units) at which the Rocket Tether can lock onto a target."
             );
-            PlayerLinkerLockOnConeAngleDeg = cfg.Bind(
-                "PlayerLinker",
+            RocketTetherLockOnConeAngleDeg = cfg.Bind(
+                "RocketTether",
                 "LockOnConeAngleDeg",
                 60f,
                 "Full angle (degrees) of the aim cone used to filter lock-on candidates."
             );
-            PlayerLinkerTetherDuration = cfg.Bind(
-                "PlayerLinker",
+            RocketTetherTetherDuration = cfg.Bind(
+                "RocketTether",
                 "TetherDuration",
                 8f,
                 "Duration in seconds before the tether automatically disconnects."
             );
-            PlayerLinkerSpringForce = cfg.Bind(
-                "PlayerLinker",
+            RocketTetherSpringForce = cfg.Bind(
+                "RocketTether",
                 "SpringForce",
                 5f,
                 "Spring stiffness coefficient; multiplied by stretch distance to compute pull speed."
             );
-            PlayerLinkerMaxPullSpeed = cfg.Bind(
-                "PlayerLinker",
+            RocketTetherMaxPullSpeed = cfg.Bind(
+                "RocketTether",
                 "MaxPullSpeed",
                 20f,
                 "Maximum velocity change (m/s) applied to each player per physics tick."
             );
-            PlayerLinkerNaturalLength = cfg.Bind(
-                "PlayerLinker",
+            RocketTetherNaturalLength = cfg.Bind(
+                "RocketTether",
                 "NaturalLength",
-                0f,
+                5f,
                 "Distance (units) below which no force is applied. Set >0 for a rope with slack."
             );
-            PlayerLinkerRocketSpeed = cfg.Bind(
-                "PlayerLinker",
+            RocketTetherRocketSpeed = cfg.Bind(
+                "RocketTether",
                 "RocketSpeed",
-                15f,
+                35f,
                 "Upward speed (m/s) of the rocket during its flight."
             );
-            PlayerLinkerExplosionForce = cfg.Bind(
-                "PlayerLinker",
+            RocketTetherExplosionForce = cfg.Bind(
+                "RocketTether",
                 "ExplosionForce",
-                25f,
+                100f,
                 "Peak velocity change (m/s, VelocityChange) applied at the explosion centre."
             );
-            PlayerLinkerExplosionRadius = cfg.Bind(
-                "PlayerLinker",
+            RocketTetherExplosionRadius = cfg.Bind(
+                "RocketTether",
                 "ExplosionRadius",
-                12f,
+                50f,
                 "Radius (units) within which the explosion affects nearby players."
             );
         }

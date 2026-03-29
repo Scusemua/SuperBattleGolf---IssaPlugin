@@ -39,7 +39,9 @@ namespace IssaPlugin.Items
         {
             if (_isServerRoutineActive)
             {
-                IssaPluginPlugin.Log.LogWarning("[PositionSwap] Routine already active for this player.");
+                IssaPluginPlugin.Log.LogWarning(
+                    "[PositionSwap] Routine already active for this player."
+                );
                 return;
             }
 
@@ -62,9 +64,13 @@ namespace IssaPlugin.Items
 
             if (!NetworkServer.spawned.TryGetValue(targetNetId, out var targetIdentity))
             {
-                IssaPluginPlugin.Log.LogWarning($"[PositionSwap] Target netId {targetNetId} not found.");
+                IssaPluginPlugin.Log.LogWarning(
+                    $"[PositionSwap] Target netId {targetNetId} not found."
+                );
                 // No warning was broadcast yet so only the initiator needs to know.
-                connectionToClient?.Send(new PositionSwapCancelledMessage { InitiatorNetId = netId });
+                connectionToClient?.Send(
+                    new PositionSwapCancelledMessage { InitiatorNetId = netId }
+                );
                 return;
             }
 
@@ -72,7 +78,9 @@ namespace IssaPlugin.Items
             if (targetInventory == null)
             {
                 IssaPluginPlugin.Log.LogWarning("[PositionSwap] Target has no PlayerInventory.");
-                connectionToClient?.Send(new PositionSwapCancelledMessage { InitiatorNetId = netId });
+                connectionToClient?.Send(
+                    new PositionSwapCancelledMessage { InitiatorNetId = netId }
+                );
                 return;
             }
 
@@ -85,8 +93,12 @@ namespace IssaPlugin.Items
                 || (targetInfoEarly != null && targetInfoEarly.ActiveGolfCartSeat.IsValid())
             )
             {
-                IssaPluginPlugin.Log.LogWarning("[PositionSwap] One or both players are in a golf cart.");
-                connectionToClient?.Send(new PositionSwapCancelledMessage { InitiatorNetId = netId });
+                IssaPluginPlugin.Log.LogWarning(
+                    "[PositionSwap] One or both players are in a golf cart."
+                );
+                connectionToClient?.Send(
+                    new PositionSwapCancelledMessage { InitiatorNetId = netId }
+                );
                 return;
             }
 
@@ -95,12 +107,14 @@ namespace IssaPlugin.Items
 
             float delay = Configuration.PositionSwapDelay.Value;
 
-            NetworkServer.SendToAll(new PositionSwapWarningMessage
-            {
-                InitiatorNetId = netId,
-                TargetNetId = targetNetId,
-                Delay = delay,
-            });
+            NetworkServer.SendToAll(
+                new PositionSwapWarningMessage
+                {
+                    InitiatorNetId = netId,
+                    TargetNetId = targetNetId,
+                    Delay = delay,
+                }
+            );
 
             _isServerRoutineActive = true;
             _serverRoutine = StartCoroutine(ServerSwapRoutine(_inventory, targetInventory, delay));
@@ -126,9 +140,13 @@ namespace IssaPlugin.Items
                 || targetInventory.gameObject == null
             )
             {
-                IssaPluginPlugin.Log.LogWarning("[PositionSwap] Player gone before swap could execute.");
+                IssaPluginPlugin.Log.LogWarning(
+                    "[PositionSwap] Player gone before swap could execute."
+                );
                 // Broadcast so every client can destroy the warning orbs that were spawned.
-                NetworkServer.SendToAll(new PositionSwapCancelledMessage { InitiatorNetId = netId });
+                NetworkServer.SendToAll(
+                    new PositionSwapCancelledMessage { InitiatorNetId = netId }
+                );
                 _isServerRoutineActive = false;
                 _serverRoutine = null;
                 yield break;
@@ -139,22 +157,33 @@ namespace IssaPlugin.Items
 
             if (initiatorInfo == null || targetInfo == null)
             {
-                IssaPluginPlugin.Log.LogWarning("[PositionSwap] PlayerInfo null before swap could execute.");
-                NetworkServer.SendToAll(new PositionSwapCancelledMessage { InitiatorNetId = netId });
+                IssaPluginPlugin.Log.LogWarning(
+                    "[PositionSwap] PlayerInfo null before swap could execute."
+                );
+                NetworkServer.SendToAll(
+                    new PositionSwapCancelledMessage { InitiatorNetId = netId }
+                );
                 _isServerRoutineActive = false;
                 _serverRoutine = null;
                 yield break;
             }
 
             // Either player may have entered a golf cart during the warning delay.
-            if (initiatorInfo.ActiveGolfCartSeat.IsValid() || targetInfo.ActiveGolfCartSeat.IsValid())
+            if (
+                initiatorInfo.ActiveGolfCartSeat.IsValid()
+                || targetInfo.ActiveGolfCartSeat.IsValid()
+            )
             {
-                IssaPluginPlugin.Log.LogWarning("[PositionSwap] A player entered a golf cart during the delay; cancelling.");
-                NetworkServer.SendToAll(new PositionSwapCancelledMessage
-                {
-                    InitiatorNetId = netId,
-                    CancelReason = PositionSwapCancelReason.PlayerEnteredGolfCart,
-                });
+                IssaPluginPlugin.Log.LogWarning(
+                    "[PositionSwap] A player entered a golf cart during the delay; cancelling."
+                );
+                NetworkServer.SendToAll(
+                    new PositionSwapCancelledMessage
+                    {
+                        InitiatorNetId = netId,
+                        CancelReason = PositionSwapCancelReason.PlayerEnteredGolfCart,
+                    }
+                );
                 _isServerRoutineActive = false;
                 _serverRoutine = null;
                 yield break;
@@ -166,8 +195,12 @@ namespace IssaPlugin.Items
             var targetBridge = targetInventory.GetComponent<PositionSwapNetworkBridge>();
             if (targetBridge == null)
             {
-                IssaPluginPlugin.Log.LogWarning("[PositionSwap] Target lost its NetworkBridge before swap could execute.");
-                NetworkServer.SendToAll(new PositionSwapCancelledMessage { InitiatorNetId = netId });
+                IssaPluginPlugin.Log.LogWarning(
+                    "[PositionSwap] Target lost its NetworkBridge before swap could execute."
+                );
+                NetworkServer.SendToAll(
+                    new PositionSwapCancelledMessage { InitiatorNetId = netId }
+                );
                 _isServerRoutineActive = false;
                 _serverRoutine = null;
                 yield break;
@@ -175,8 +208,12 @@ namespace IssaPlugin.Items
 
             if (!isLocalPlayer && connectionToClient == null)
             {
-                IssaPluginPlugin.Log.LogWarning("[PositionSwap] Initiator connection lost before swap could execute.");
-                NetworkServer.SendToAll(new PositionSwapCancelledMessage { InitiatorNetId = netId });
+                IssaPluginPlugin.Log.LogWarning(
+                    "[PositionSwap] Initiator connection lost before swap could execute."
+                );
+                NetworkServer.SendToAll(
+                    new PositionSwapCancelledMessage { InitiatorNetId = netId }
+                );
                 _isServerRoutineActive = false;
                 _serverRoutine = null;
                 yield break;
@@ -184,8 +221,12 @@ namespace IssaPlugin.Items
 
             if (!targetBridge.isLocalPlayer && targetBridge.connectionToClient == null)
             {
-                IssaPluginPlugin.Log.LogWarning("[PositionSwap] Target connection lost before swap could execute.");
-                NetworkServer.SendToAll(new PositionSwapCancelledMessage { InitiatorNetId = netId });
+                IssaPluginPlugin.Log.LogWarning(
+                    "[PositionSwap] Target connection lost before swap could execute."
+                );
+                NetworkServer.SendToAll(
+                    new PositionSwapCancelledMessage { InitiatorNetId = netId }
+                );
                 _isServerRoutineActive = false;
                 _serverRoutine = null;
                 yield break;
@@ -207,21 +248,27 @@ namespace IssaPlugin.Items
             if (isLocalPlayer)
                 HandleTeleport(new PositionSwapTeleportMessage { NewPosition = targetOldPos });
             else
-                connectionToClient.Send(new PositionSwapTeleportMessage { NewPosition = targetOldPos });
+                connectionToClient.Send(
+                    new PositionSwapTeleportMessage { NewPosition = targetOldPos }
+                );
 
             if (targetBridge.isLocalPlayer)
                 HandleTeleport(new PositionSwapTeleportMessage { NewPosition = initiatorOldPos });
             else
-                targetBridge.connectionToClient.Send(new PositionSwapTeleportMessage { NewPosition = initiatorOldPos });
+                targetBridge.connectionToClient.Send(
+                    new PositionSwapTeleportMessage { NewPosition = initiatorOldPos }
+                );
 
             // Broadcast the execute event so all clients can play VFX and close UI.
-            NetworkServer.SendToAll(new PositionSwapExecuteMessage
-            {
-                InitiatorNetId = netId,
-                TargetNetId = targetInventory.netId,
-                InitiatorDestination = targetOldPos,
-                TargetDestination = initiatorOldPos,
-            });
+            NetworkServer.SendToAll(
+                new PositionSwapExecuteMessage
+                {
+                    InitiatorNetId = netId,
+                    TargetNetId = targetInventory.netId,
+                    InitiatorDestination = targetOldPos,
+                    TargetDestination = initiatorOldPos,
+                }
+            );
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[PositionSwap] Swapped positions: initiator→{targetOldPos}, target→{initiatorOldPos}"
@@ -237,7 +284,11 @@ namespace IssaPlugin.Items
 
         public static void HandleWarning(PositionSwapWarningMessage msg)
         {
-            PositionSwapOverlay.Instance?.OnSwapWarning(msg.InitiatorNetId, msg.TargetNetId, msg.Delay);
+            PositionSwapOverlay.Instance?.OnSwapWarning(
+                msg.InitiatorNetId,
+                msg.TargetNetId,
+                msg.Delay
+            );
             SpawnWarningOrbs(msg.InitiatorNetId, msg.TargetNetId);
         }
 
@@ -251,9 +302,15 @@ namespace IssaPlugin.Items
             // Use the game's own Teleport() which sets both transform and rigidbody.position,
             // zeros linear/angular velocity, resets grounded state, and syncs to the server
             // via CmdTeleport — avoiding the launch-into-the-air Rigidbody velocity bug.
-            playerInfo.Movement.Teleport(msg.NewPosition, playerInfo.Movement.transform.rotation, false);
+            playerInfo.Movement.Teleport(
+                msg.NewPosition,
+                playerInfo.Movement.transform.rotation,
+                false
+            );
 
-            IssaPluginPlugin.Log.LogInfo($"[PositionSwap] Local player teleported to {msg.NewPosition}");
+            IssaPluginPlugin.Log.LogInfo(
+                $"[PositionSwap] Local player teleported to {msg.NewPosition}"
+            );
         }
 
         public static void HandleExecute(PositionSwapExecuteMessage msg)
@@ -277,8 +334,10 @@ namespace IssaPlugin.Items
         // ================================================================
 
         // Keyed by initiator netId in case multiple swaps are in flight simultaneously.
-        private static readonly Dictionary<uint, (GameObject initiatorOrb, GameObject targetOrb)> _pendingOrbs =
-            new Dictionary<uint, (GameObject, GameObject)>();
+        private static readonly Dictionary<
+            uint,
+            (GameObject initiatorOrb, GameObject targetOrb)
+        > _pendingOrbs = new Dictionary<uint, (GameObject, GameObject)>();
 
         private static void SpawnWarningOrbs(uint initiatorNetId, uint targetNetId)
         {

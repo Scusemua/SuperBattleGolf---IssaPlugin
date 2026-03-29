@@ -115,18 +115,18 @@ namespace IssaPlugin.Items
         /// Bundle asset name: <c>gravity_tether_vfx.prefab</c>
         public static GameObject GravityGunTetherVfxPrefab { get; private set; }
 
-        // --- Player Linker ---
+        // --- Rocket Tether ---
         /// Falls back to the rocket launcher icon at runtime if the asset is absent.
-        public static Sprite PlayerLinkerIcon { get; private set; }
+        public static Sprite RocketTetherIcon { get; private set; }
 
-        /// The model the player holds while the Player Linker item is equipped.
+        /// The model the player holds while the Rocket Tether item is equipped.
         /// Bundle asset name: <c>player_linker.prefab</c>
-        public static GameObject PlayerLinkerPrefab { get; private set; }
+        public static GameObject RocketTetherPrefab { get; private set; }
 
         /// Local-only rocket VFX spawned above the target and moved upward each frame.
         /// Not networked — each client instantiates its own copy.
         /// Bundle asset name: <c>player_linker_rocket.prefab</c>
-        public static GameObject PlayerLinkerRocketPrefab { get; private set; }
+        public static GameObject RocketTetherRocketPrefab { get; private set; }
 
         // --- Drone Swarm ---
         public static Sprite DroneSwarmIcon { get; private set; }
@@ -288,7 +288,7 @@ namespace IssaPlugin.Items
             LoadRedBullAssets();
             LoadSuperDonutAssets();
             LoadGravityGunAssets();
-            LoadPlayerLinkerAssets();
+            LoadRocketTetherAssets();
 
             IssaPluginPlugin.Log.LogInfo("[Assets] IssaPluginBundle loaded.");
         }
@@ -316,7 +316,7 @@ namespace IssaPlugin.Items
             DroneSwarmIcon = LoadSprite("drone_swarm_icon.png");
             ElectricGravityGunIcon = LoadSprite("gravity_gun_icon.png");
             RedBullIcon = LoadSprite("redbull_icon.png");
-            PlayerLinkerIcon = LoadSprite("rocket_tether_icon.png");
+            RocketTetherIcon = LoadSprite("rocket_tether_icon.png");
 
             SniperScopeTexture = LoadTexture2D("sniper_scope.png");
             if (SniperScopeTexture == null)
@@ -652,15 +652,15 @@ namespace IssaPlugin.Items
                 StripNetworkComponents(GravityGunTetherVfxPrefab);
         }
 
-        private static void LoadPlayerLinkerAssets()
+        private static void LoadRocketTetherAssets()
         {
-            PlayerLinkerIcon = LoadSprite("rocket_tether_icon.png");
-            PlayerLinkerPrefab = Load<GameObject>("player_linker.prefab");
-            if (PlayerLinkerPrefab != null)
-                DisableRigidbody(PlayerLinkerPrefab);
-            PlayerLinkerRocketPrefab = Load<GameObject>("player_linker_rocket.prefab");
-            if (PlayerLinkerRocketPrefab != null)
-                StripNetworkComponents(PlayerLinkerRocketPrefab);
+            RocketTetherIcon = LoadSprite("rocket_tether_icon.png");
+            RocketTetherPrefab = Load<GameObject>("player_linker.prefab");
+            if (RocketTetherPrefab != null)
+                DisableRigidbody(RocketTetherPrefab);
+            RocketTetherRocketPrefab = Load<GameObject>("player_linker_rocket.prefab");
+            if (RocketTetherRocketPrefab != null)
+                StripNetworkComponents(RocketTetherRocketPrefab);
         }
 
         private static void LoadSuperDonutAssets()
