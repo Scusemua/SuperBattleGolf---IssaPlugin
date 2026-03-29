@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 2125155101
+CRC: 2059914380
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 2137ef0614b0f85dfcd66d173b12a020
+    Hash: 76296c197f088c90efb08d1e5ddacc57
   TypeTreeHash:
     serializedVersion: 2
     Hash: 12d32a6d7b1bccbbbbab418431dfa151
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 96f2471a9c72fec51b23526f2e49ae66
+    Hash: 2d463e590788aa3373ea1bddb7ba601d
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -99,7 +99,6 @@ Assets:
 - Assets/Assets/super_donut_icon.png
 - Assets/Assets/bear.prefab
 - Assets/Assets/poison_bottle_icon.png
-- Assets/Assets/bear_icon.png
 - Assets/Assets/bat_icon.png
 - Assets/Assets/donut_icon_v2.png
 - Assets/Assets/harrier_tablet.prefab
@@ -109,10 +108,10 @@ Assets:
 - Assets/Assets/javelin_icon.png
 - Assets/Assets/drone_swarm_icon.png
 - Assets/Assets/position_swap_smoke.prefab
+- Assets/Assets/gravity_remote_icon.png
 - Assets/Assets/wall_icon.png
 - Assets/Assets/intervention.prefab
 - Assets/Assets/position_swap_orb.prefab
-- Assets/Assets/gravity_remote_icon.png
 - Assets/Assets/black_hole.prefab
 - Assets/Assets/sniper_rifle_icon.png
 - Assets/Assets/drone_swarm_tablet.prefab
@@ -144,8 +143,9 @@ Assets:
 - Assets/Assets/ak47_icon.png
 - Assets/Assets/electric_whip_icon.png
 - Assets/Assets/NukeExplosionFire.prefab
-- Assets/Assets/snowball.prefab
+- Assets/Assets/bear_icon.png
 - Assets/Assets/predator_missile_tablet.prefab
+- Assets/Assets/snowball.prefab
 - Assets/Assets/blood_splatter_critical.prefab
 - Assets/Assets/nuclear_detonator.prefab
 - Assets/Assets/NukeVerticalExplosionFire.prefab
