@@ -42,7 +42,6 @@ namespace IssaPlugin.Items
         public bool LocalSessionActive { get; private set; }
 
         private float _sendTimer;
-        private uint _lockedTargetNetId; // confirmed by server via GravityGunConnectedMessage
 
         // =====================================================================
         //  Static shared state (safe: only one session at a time via lock)
@@ -111,8 +110,7 @@ namespace IssaPlugin.Items
 
             // Delegate target selection to GravityGunOverlay, which already performs
             // the player + cart cone scan every frame for the lock-on reticle.
-            var overlay = FindFirstObjectByType<GravityGunOverlay>();
-            var bestTarget = overlay?.BestTargetIdentity;
+            var bestTarget = GravityGunOverlay.Instance?.BestTargetIdentity;
 
             if (bestTarget == null)
             {
@@ -536,7 +534,7 @@ namespace IssaPlugin.Items
             IssaPluginPlugin.Log.LogInfo(
                 "[GravityGun] Session busy — another Gravity Gun is already active."
             );
-            Object.FindFirstObjectByType<GravityGunOverlay>()?.ShowBusy();
+            GravityGunOverlay.Instance?.ShowBusy();
         }
 
         // =====================================================================

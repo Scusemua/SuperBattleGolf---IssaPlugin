@@ -2405,7 +2405,7 @@ namespace IssaPlugin
             PoisonJarSpawnWeight = cfg.Bind(
                 "ItemBoxSpawns",
                 "PoisonJarSpawnWeight",
-                1.0f,
+                10f,
                 "Relative spawn weight for the Poison Jar in the item pool."
             );
             PoisonJarThrowSpeed = cfg.Bind(
@@ -2737,7 +2737,7 @@ namespace IssaPlugin
             RedBullSpawnWeight = cfg.Bind(
                 "ItemBoxSpawns",
                 "RedBullSpawnWeight",
-                1f,
+                10f,
                 "Relative spawn weight for Red Bull in the item pool."
             );
             RedBullDuration = cfg.Bind(
@@ -2780,7 +2780,7 @@ namespace IssaPlugin
             SuperDonutSpawnWeight = cfg.Bind(
                 "ItemBoxSpawns",
                 "SuperDonutSpawnWeight",
-                0.1f,
+                3f,
                 "Relative spawn weight for Super Donut in the item pool. Keep low — fires at every other player at once."
             );
 

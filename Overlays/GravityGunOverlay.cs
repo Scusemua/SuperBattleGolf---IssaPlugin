@@ -56,7 +56,13 @@ namespace IssaPlugin.Overlays
         // Set by ShowBusy() when the server rejects a lock-on due to a live session elsewhere.
         private float _busyUntil;
 
+        // ── Singleton ─────────────────────────────────────────────────────────
+        public static GravityGunOverlay Instance { get; private set; }
+
         // ── Unity lifecycle ───────────────────────────────────────────────────
+
+        private void OnEnable()  { Instance = this; }
+        private void OnDisable() { if (Instance == this) Instance = null; }
 
         private void Update()
         {
