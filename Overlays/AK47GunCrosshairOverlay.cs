@@ -21,7 +21,7 @@ namespace IssaPlugin.Overlays
         private const float LineWidth = 2f; // ring thickness in pixels
         private const float ShadowOffset = 1f; // shadow displacement in pixels
 
-        private bool aimingIn;
+        private bool _aimingIn;
 
         private void Awake()
         {
@@ -57,15 +57,15 @@ namespace IssaPlugin.Overlays
             // Only show while aiming in (right-click held).
             if (Mouse.current == null || !Mouse.current.rightButton.isPressed)
             {
-                if (aimingIn)
+                if (_aimingIn)
                 {
                     FixLookRotationAfterScope();
                 }
-                aimingIn = false;
+                _aimingIn = false;
                 return;
             }
 
-            aimingIn = true;
+            _aimingIn = true;
 
             float inaccuracy = Configuration.AK47Inaccuracy.Value;
             if (inaccuracy <= 0f || _mat == null)
