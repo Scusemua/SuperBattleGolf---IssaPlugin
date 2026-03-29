@@ -278,10 +278,7 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            // ── 4. All validation passed — consume item ───────────────────────
-            ItemHelper.ConsumeEquippedItem(inventory);
-
-            // ── 5. Store server session state ─────────────────────────────────
+            // ── 4. Store server session state ─────────────────────────────────
             _serverSessionActive = true;
             _targetConn = resolvedConn;
             _targetInfo = targetInfo; // null for empty carts
@@ -296,7 +293,7 @@ namespace IssaPlugin.Items
                     + (_targetIsEmptyCart ? " (empty cart)" : "")
             );
 
-            // ── 6. Broadcast connection to all clients ────────────────────────
+            // ── 5. Broadcast connection to all clients ────────────────────────
             NetworkServer.SendToAll(
                 new GravityGunConnectedMessage
                 {
@@ -307,7 +304,7 @@ namespace IssaPlugin.Items
                 }
             );
 
-            // ── 7. Start server timeout coroutine ─────────────────────────────
+            // ── 6. Start server timeout coroutine ─────────────────────────────
             _serverTimeout = StartCoroutine(ServerTimeoutCoroutine());
         }
 
@@ -395,6 +392,11 @@ namespace IssaPlugin.Items
                 return;
 
             _serverSessionActive = false;
+
+            // Consume the item now that the tether has ended.
+            var inventory = GetComponent<PlayerInventory>();
+            if (inventory != null)
+                ItemHelper.ConsumeEquippedItem(inventory);
 
             var wielderNetId = GetComponent<NetworkIdentity>().netId;
             NetworkServer.SendToAll(

@@ -178,7 +178,6 @@ namespace IssaPlugin.Overlays
         {
             if (Event.current.type != EventType.Repaint)
             {
-                IssaPluginPlugin.Log.LogInfo("OnGUI: Event.current.type != EventType.Repaint");
                 return;
             }
 
@@ -194,7 +193,6 @@ namespace IssaPlugin.Overlays
                 != ItemRegistry.GravityGunItemType
             )
             {
-                IssaPluginPlugin.Log.LogInfo("OnGUI: Not equipped.");
                 return;
             }
 
