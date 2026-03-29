@@ -2635,7 +2635,7 @@ namespace IssaPlugin
             BaseDroneCount = cfg.Bind(
                 "DroneSwarm",
                 "BaseDroneCount",
-                25f,
+                15f,
                 "Number of drones spawned per use. Keep at or below 12 to avoid network overhead."
             );
             DronePerPlayerScalingFactor = cfg.Bind(
@@ -2694,13 +2694,13 @@ namespace IssaPlugin
             DroneDiveSpeed = cfg.Bind(
                 "DroneSwarm",
                 "DiveSpeed",
-                25f,
+                20f,
                 "Initial dive speed in metres per second."
             );
             DroneDiveAcceleration = cfg.Bind(
                 "DroneSwarm",
                 "DiveAcceleration",
-                50f,
+                40f,
                 "How many metres per second the dive speed increases each second."
             );
             DroneHomingStopDistance = cfg.Bind(
@@ -2737,7 +2737,7 @@ namespace IssaPlugin
             DroneSwarmMaxSessionDuration = cfg.Bind(
                 "DroneSwarm",
                 "MaxSessionDuration",
-                75f,
+                60f,
                 "Safety cap (seconds) after which any remaining drones are force-destroyed."
             );
 
