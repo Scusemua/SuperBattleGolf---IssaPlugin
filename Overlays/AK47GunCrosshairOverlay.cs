@@ -5,7 +5,7 @@ using UnityEngine.InputSystem;
 namespace IssaPlugin.Overlays
 {
     /// <summary>
-    /// Draws a circular crosshair while the SMG is equipped AND the player is aiming
+    /// Draws a circular crosshair while the AK47 is equipped AND the player is aiming
     /// (right-click held). The circle radius maps the inaccuracy config angle onto
     /// screen space — bullets land anywhere within the ring.
     ///
@@ -50,7 +50,7 @@ namespace IssaPlugin.Overlays
             if (localInfo?.Inventory == null)
                 return;
 
-            // Only show while the SMG is equipped.
+            // Only show while the AK47 is equipped.
             if (localInfo.Inventory.GetEffectivelyEquippedItem(true) != ItemRegistry.AK47ItemType)
                 return;
 
@@ -123,7 +123,7 @@ namespace IssaPlugin.Overlays
             // the lerp is slow enough that the player sees a constant CCW offset for the
             // first several frames. LateUpdate runs after all Update() calls, so this
             // wins the frame for rendering and networking without fighting the physics step.
-            // Only show while the SMG is equipped.
+            // Only show while the AK47 is equipped.
             if (
                 GameManager.LocalPlayerInfo?.Inventory.GetEffectivelyEquippedItem(true)
                 != ItemRegistry.AK47ItemType
