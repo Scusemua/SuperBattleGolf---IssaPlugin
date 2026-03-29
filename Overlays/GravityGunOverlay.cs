@@ -242,18 +242,30 @@ namespace IssaPlugin.Overlays
             DrawCornerBracket(0, _sh - bSize, bSize, bThick, true, false, bracketColor);
             DrawCornerBracket(_sw - bSize, _sh - bSize, bSize, bThick, false, false, bracketColor);
 
-            // Title banner (top-centre).
+            // Layout: stacked bottom-centre, reading top-to-bottom:
+            //   "GRAVITY GUN ACTIVE" title
+            //   timer bar + countdown
+            //   release-key hint  ← anchored to bottom edge
+            const float bottomMargin = 12f;
+            const float hintH = 42f;
+            const float rowGap = 10f;
+            const float barH = 10f;
+            const float titleH = 42f;
+
+            float hintY  = _sh - bottomMargin - hintH;
+            float barY   = hintY - rowGap - barH;
+            float titleY = barY - rowGap - titleH;
+
+            // Title banner.
             _titleStyle.normal.textColor = lowTime
                 ? new Color(1f, 0.25f, 0.25f, 0.7f + 0.3f * Mathf.Sin(_time * 6f))
                 : new Color(0.2f, 0.85f, 1f, 0.9f);
 
-            GUI.Label(new Rect(0, 10f, _sw, 32f), "GRAVITY GUN ACTIVE", _titleStyle);
+            GUI.Label(new Rect(0, titleY, _sw, titleH), "GRAVITY GUN ACTIVE", _titleStyle);
 
-            // Timer bar (top-centre, below title).
+            // Timer bar (centred, below title).
             float barW = 280f;
-            float barH = 8f;
             float barX = (_sw - barW) * 0.5f;
-            float barY = 48f;
             float fill = _sessionDuration > 0f ? Mathf.Clamp01(remaining / _sessionDuration) : 0f;
 
             // Track
@@ -268,21 +280,20 @@ namespace IssaPlugin.Overlays
             GUI.DrawTexture(new Rect(barX, barY, barW * fill, barH), Texture2D.whiteTexture);
             GUI.color = Color.white;
 
-            // Timer label (right of bar).
+            // Timer label (right of bar, vertically centred on bar).
             _timerStyle.normal.textColor = lowTime
                 ? new Color(1f, 0.3f, 0.3f, 0.9f)
                 : new Color(0.2f, 0.85f, 1f, 0.9f);
             GUI.Label(
-                new Rect(barX + barW + 8f, barY - 8f, 80f, 26f),
+                new Rect(barX + barW + 8f, barY - 14f, 80f, 38f),
                 $"{remaining:F1}s",
                 _timerStyle
             );
 
-            // Release key hint (bottom-centre).
-            string releaseKey = Configuration.GravityGunReleaseKey.Value.ToString();
+            // Release hint (anchored to bottom).
             GUI.Label(
-                new Rect(0, _sh - 38f, _sw, 36f),
-                $"Press [{releaseKey}] to Release the Tether Line",
+                new Rect(0, hintY, _sw, hintH),
+                "Left-click to Release the Tether Line",
                 _instructionStyle
             );
         }
@@ -336,7 +347,7 @@ namespace IssaPlugin.Overlays
 
             // "LOCK ON" label just below the reticle.
             _labelStyle.normal.textColor = col;
-            GUI.Label(new Rect(cx - 60f, cy + outer + 4f, 120f, 20f), "LOCK ON", _labelStyle);
+            GUI.Label(new Rect(cx - 70f, cy + outer + 4f, 140f, 38f), "LOCK ON", _labelStyle);
         }
 
         // ── Helpers ───────────────────────────────────────────────────────────
@@ -393,7 +404,7 @@ namespace IssaPlugin.Overlays
                 _titleStyle = new GUIStyle(GUI.skin.label)
                 {
                     alignment = TextAnchor.MiddleCenter,
-                    fontSize = 26,
+                    fontSize = 32,
                     fontStyle = FontStyle.Bold,
                 };
                 _titleStyle.normal.textColor = new Color(0.2f, 0.85f, 1f, 0.9f);
@@ -404,7 +415,7 @@ namespace IssaPlugin.Overlays
                 _instructionStyle = new GUIStyle(GUI.skin.label)
                 {
                     alignment = TextAnchor.MiddleCenter,
-                    fontSize = 26,
+                    fontSize = 32,
                     fontStyle = FontStyle.Bold,
                 };
                 _instructionStyle.normal.textColor = Color.white;
@@ -415,7 +426,7 @@ namespace IssaPlugin.Overlays
                 _labelStyle = new GUIStyle(GUI.skin.label)
                 {
                     alignment = TextAnchor.MiddleCenter,
-                    fontSize = 22,
+                    fontSize = 28,
                     fontStyle = FontStyle.Bold,
                 };
                 _labelStyle.normal.textColor = new Color(0.2f, 0.85f, 1f, 0.85f);
@@ -425,7 +436,7 @@ namespace IssaPlugin.Overlays
             {
                 _timerStyle = new GUIStyle(GUI.skin.label)
                 {
-                    fontSize = 22,
+                    fontSize = 28,
                     fontStyle = FontStyle.Bold,
                 };
                 _timerStyle.normal.textColor = new Color(0.2f, 0.85f, 1f, 0.9f);

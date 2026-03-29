@@ -1,4 +1,5 @@
 using IssaPlugin.Overlays;
+using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -33,7 +34,14 @@ namespace IssaPlugin.Items
 
         public override void OnUse(PlayerInventory inventory)
         {
-            inventory.GetComponent<GravityGunNetworkBridge>()?.ClientUse();
+            var bridge = inventory.GetComponent<GravityGunNetworkBridge>();
+            if (bridge == null)
+                return;
+
+            if (bridge.LocalSessionActive)
+                NetworkClient.Send(new GravityGunReleaseMessage());
+            else
+                bridge.ClientUse();
         }
     }
 }

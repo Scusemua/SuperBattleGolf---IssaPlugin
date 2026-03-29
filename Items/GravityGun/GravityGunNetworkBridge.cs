@@ -55,6 +55,9 @@ namespace IssaPlugin.Items
         private static uint s_wielderNetId;
         private static uint s_targetNetId;
 
+        // Local-only VFX parented to the target for the duration of the session.
+        private static GameObject s_tetherVfxInstance;
+
         // Target-client spring coroutine state
         private static bool s_tetherActive;
         private static Vector3 s_wielderPos;
@@ -95,14 +98,6 @@ namespace IssaPlugin.Items
                 _sendTimer = Configuration.GravityGunInputSendInterval.Value;
             }
 
-            // ── Release input ─────────────────────────────────────────────────
-            var keyboard = Keyboard.current;
-            if (keyboard != null)
-            {
-                var releaseKey = Configuration.GravityGunReleaseKey.Value;
-                if (keyboard[releaseKey].wasPressedThisFrame)
-                    NetworkClient.Send(new GravityGunReleaseMessage());
-            }
         }
 
         // =====================================================================
@@ -454,12 +449,34 @@ namespace IssaPlugin.Items
                 s_tetherLine = null;
             }
 
+            // ── Destroy any stale VFX instance from a previous session ────────
+            if (s_tetherVfxInstance != null)
+            {
+                Object.Destroy(s_tetherVfxInstance);
+                s_tetherVfxInstance = null;
+            }
+
             // ── Create new tether line renderer (local-only, all clients) ──────
             var lineGo = CreateTetherLine();
 
             // ── Store static session identity ─────────────────────────────────
             s_wielderNetId = msg.WielderNetId;
             s_targetNetId = msg.TargetNetId;
+
+            // ── Spawn tether VFX parented to the target (all clients) ─────────
+            if (AssetLoader.GravityGunTetherVfxPrefab != null)
+            {
+                var targetTransform = GetTransformByNetId(msg.TargetNetId);
+                if (targetTransform != null)
+                {
+                    s_tetherVfxInstance = Object.Instantiate(
+                        AssetLoader.GravityGunTetherVfxPrefab,
+                        targetTransform.position,
+                        Quaternion.identity,
+                        targetTransform
+                    );
+                }
+            }
 
             uint localNetId = localInfo.GetComponent<NetworkIdentity>()?.netId ?? 0u;
 
@@ -554,6 +571,13 @@ namespace IssaPlugin.Items
             {
                 Object.Destroy(s_tetherLine.gameObject);
                 s_tetherLine = null;
+            }
+
+            // ── Destroy the tether VFX ────────────────────────────────────────
+            if (s_tetherVfxInstance != null)
+            {
+                Object.Destroy(s_tetherVfxInstance);
+                s_tetherVfxInstance = null;
             }
 
             // ── Reset wielder's instance session state ────────────────────────
@@ -750,6 +774,12 @@ namespace IssaPlugin.Items
             {
                 Object.Destroy(s_tetherLine.gameObject);
                 s_tetherLine = null;
+            }
+
+            if (s_tetherVfxInstance != null)
+            {
+                Object.Destroy(s_tetherVfxInstance);
+                s_tetherVfxInstance = null;
             }
 
             // Reset ALL static state to prevent stale data across holes.

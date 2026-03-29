@@ -110,6 +110,11 @@ namespace IssaPlugin.Items
         /// Bundle asset name: <c>electric_whip.prefab</c>
         public static GameObject ElectricWhipHandheldPrefab { get; private set; }
 
+        /// Local-only VFX parented to the tether target while the session is active.
+        /// Not networked — each client instantiates its own copy.
+        /// Bundle asset name: <c>gravity_tether_vfx.prefab</c>
+        public static GameObject GravityGunTetherVfxPrefab { get; private set; }
+
         // --- Drone Swarm ---
         public static Sprite DroneSwarmIcon { get; private set; }
 
@@ -623,6 +628,13 @@ namespace IssaPlugin.Items
         {
             ElectricWhipHandheldPrefab = Load<GameObject>("gravity_gun.prefab");
             DisableRigidbody(ElectricWhipHandheldPrefab);
+
+            /// Local-only VFX parented to the tether target while the session is active.
+            /// Not networked — each client instantiates its own copy.
+            /// Bundle asset name: <c>gravity_tether_vfx.prefab</c>
+            GravityGunTetherVfxPrefab = Load<GameObject>("gravity_gun_vfx.prefab");
+            if (GravityGunTetherVfxPrefab != null)
+                StripNetworkComponents(GravityGunTetherVfxPrefab);
         }
 
         private static void LoadSuperDonutAssets()

@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 4229804758
+CRC: 2125155101
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: f39471519c2c091ac390a0fc2bf5e232
+    Hash: 2137ef0614b0f85dfcd66d173b12a020
   TypeTreeHash:
     serializedVersion: 2
     Hash: 12d32a6d7b1bccbbbbab418431dfa151
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 6d8b98fa6ee316ec7230dc763d6bf01b
+    Hash: 96f2471a9c72fec51b23526f2e49ae66
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -103,6 +103,7 @@ Assets:
 - Assets/Assets/bat_icon.png
 - Assets/Assets/donut_icon_v2.png
 - Assets/Assets/harrier_tablet.prefab
+- Assets/Assets/gravity_gun_vfx.prefab
 - Assets/Assets/javelin_target_indicator.prefab
 - Assets/Assets/bat_model.prefab
 - Assets/Assets/javelin_icon.png

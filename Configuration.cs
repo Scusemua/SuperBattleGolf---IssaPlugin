@@ -382,7 +382,6 @@ namespace IssaPlugin
         public static ConfigEntry<float> GravityGunSpringForce { get; private set; }
         public static ConfigEntry<float> GravityGunMaxPullSpeed { get; private set; }
         public static ConfigEntry<float> GravityGunInputSendInterval { get; private set; }
-        public static ConfigEntry<Key> GravityGunReleaseKey { get; private set; }
 
         // --- Poison Jar ---
         public static ConfigEntry<Key> PoisonJarGiveKey { get; private set; }
@@ -2845,12 +2844,6 @@ namespace IssaPlugin
                 "InputSendInterval",
                 0.05f,
                 "Interval (seconds) between aim-tick messages sent to the server (~20 Hz)."
-            );
-            GravityGunReleaseKey = cfg.Bind(
-                "GravityGun",
-                "ReleaseKey",
-                Key.Q,
-                "Key the wielder presses to manually release the tether."
             );
         }
     }
