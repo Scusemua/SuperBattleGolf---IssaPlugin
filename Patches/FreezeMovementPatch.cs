@@ -28,7 +28,7 @@ namespace IssaPlugin.Patches
         // Cached once; null means the type or member was not found.
         private static readonly MethodBase TargetMb;
         private static readonly PropertyInfo VelocityProp;
-        private static readonly FieldInfo    VelocityField;
+        private static readonly FieldInfo VelocityField;
 
         static FreezeMovementPatch()
         {
@@ -51,14 +51,12 @@ namespace IssaPlugin.Patches
             }
 
             // Velocity may be a public property or a private field depending on the build.
-            VelocityProp  = AccessTools.Property(pmt, "Velocity");
-            VelocityField = VelocityProp == null
-                ? AccessTools.Field(pmt, "velocity")
-                : null;
+            VelocityProp = AccessTools.Property(pmt, "Velocity");
+            VelocityField = VelocityProp == null ? AccessTools.Field(pmt, "velocity") : null;
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[Freeze] Movement patch ready. Velocity via "
-                + $"{(VelocityProp != null ? "property" : "field")}."
+                    + $"{(VelocityProp != null ? "property" : "field")}."
             );
         }
 
@@ -74,17 +72,26 @@ namespace IssaPlugin.Patches
         // replace the post-drag velocity with an ice-drag version.
         static void Postfix(object __instance, Vector3 __state)
         {
-            if (!FreezeItem.IsFrozen) return;
+            if (!FreezeItem.IsFrozen)
+                return;
 
             // Only apply ice slide when no movement input is held.
             var kb = Keyboard.current;
-            bool hasInput = kb != null
-                && (kb[Key.W].isPressed || kb[Key.A].isPressed
-                    || kb[Key.S].isPressed || kb[Key.D].isPressed
-                    || kb[Key.UpArrow].isPressed   || kb[Key.DownArrow].isPressed
-                    || kb[Key.LeftArrow].isPressed || kb[Key.RightArrow].isPressed);
+            bool hasInput =
+                kb != null
+                && (
+                    kb[Key.W].isPressed
+                    || kb[Key.A].isPressed
+                    || kb[Key.S].isPressed
+                    || kb[Key.D].isPressed
+                    || kb[Key.UpArrow].isPressed
+                    || kb[Key.DownArrow].isPressed
+                    || kb[Key.LeftArrow].isPressed
+                    || kb[Key.RightArrow].isPressed
+                );
 
-            if (hasInput) return; // Moving normally — let normal drag cap speed.
+            if (hasInput)
+                return; // Moving normally — let normal drag cap speed.
 
             // Restore normal traction when the local player is close to their own ball,
             // so they can stop and align for a shot instead of sliding past it.
@@ -104,29 +111,37 @@ namespace IssaPlugin.Patches
 
             Vector3 prevVel = __state;
             float horizSqr = prevVel.x * prevVel.x + prevVel.z * prevVel.z;
-            if (horizSqr < 0.01f) return; // Already essentially stopped.
+            if (horizSqr < 0.01f)
+                return; // Already essentially stopped.
 
             // Replace the game's drag result with a gentle ice deceleration.
             const float iceDrag = 0.02f; // ~2% velocity lost per fixed frame
             Vector3 afterDrag = GetVelocity(__instance);
-            SetVelocity(__instance, new Vector3(
-                prevVel.x * (1f - iceDrag),
-                afterDrag.y,   // preserve vertical component (gravity etc.)
-                prevVel.z * (1f - iceDrag)
-            ));
+            SetVelocity(
+                __instance,
+                new Vector3(
+                    prevVel.x * (1f - iceDrag),
+                    afterDrag.y, // preserve vertical component (gravity etc.)
+                    prevVel.z * (1f - iceDrag)
+                )
+            );
         }
 
         private static Vector3 GetVelocity(object instance)
         {
-            if (VelocityProp  != null) return (Vector3)VelocityProp.GetValue(instance);
-            if (VelocityField != null) return (Vector3)VelocityField.GetValue(instance);
+            if (VelocityProp != null)
+                return (Vector3)VelocityProp.GetValue(instance);
+            if (VelocityField != null)
+                return (Vector3)VelocityField.GetValue(instance);
             return Vector3.zero;
         }
 
         private static void SetVelocity(object instance, Vector3 value)
         {
-            if (VelocityProp  != null) VelocityProp.SetValue(instance, value);
-            else VelocityField?.SetValue(instance, value);
+            if (VelocityProp != null)
+                VelocityProp.SetValue(instance, value);
+            else
+                VelocityField?.SetValue(instance, value);
         }
     }
 }
