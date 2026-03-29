@@ -480,7 +480,7 @@ namespace IssaPlugin
             NumInventorySlots = cfg.Bind(
                 "IssaPlugin",
                 "NumInventorySlots",
-                3f,
+                6f,
                 "Change the number of inventory slots available."
             );
 
