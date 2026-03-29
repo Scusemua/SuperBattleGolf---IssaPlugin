@@ -54,6 +54,8 @@ namespace IssaPlugin.Patches
                 __instance.gameObject.AddComponent<SuperDonutNetworkBridge>();
             if (!__instance.GetComponent<GravityGunNetworkBridge>())
                 __instance.gameObject.AddComponent<GravityGunNetworkBridge>();
+            if (!__instance.GetComponent<PlayerLinkerNetworkBridge>())
+                __instance.gameObject.AddComponent<PlayerLinkerNetworkBridge>();
 
             IssaPluginPlugin.Log.LogDebug(
                 "[Network] Bridge components injected onto player object."

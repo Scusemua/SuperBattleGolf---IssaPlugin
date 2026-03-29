@@ -1157,7 +1157,70 @@ namespace IssaPlugin.Patches
                         GetBridge<GravityGunNetworkBridge>(conn)?.ServerHandleAimTick(conn, msg)
                 );
                 NetworkServer.RegisterHandler<GravityGunReleaseMessage>(
-                    (conn, msg) => GetBridge<GravityGunNetworkBridge>(conn)?.ServerHandleRelease(conn)
+                    (conn, msg) =>
+                        GetBridge<GravityGunNetworkBridge>(conn)?.ServerHandleRelease(conn)
+                );
+            }
+
+            // ── Player Linker Messages ────────────────────────────────────────────
+            Writer<PlayerLinkerLockOnMessage>.write =
+                PlayerLinkerLockOnMessageSerialization.WritePlayerLinkerLockOnMessage;
+            Reader<PlayerLinkerLockOnMessage>.read =
+                PlayerLinkerLockOnMessageSerialization.ReadPlayerLinkerLockOnMessage;
+
+            Writer<PlayerLinkerTickMessage>.write =
+                PlayerLinkerTickMessageSerialization.WritePlayerLinkerTickMessage;
+            Reader<PlayerLinkerTickMessage>.read =
+                PlayerLinkerTickMessageSerialization.ReadPlayerLinkerTickMessage;
+
+            Writer<PlayerLinkerConnectedMessage>.write =
+                PlayerLinkerConnectedMessageSerialization.WritePlayerLinkerConnectedMessage;
+            Reader<PlayerLinkerConnectedMessage>.read =
+                PlayerLinkerConnectedMessageSerialization.ReadPlayerLinkerConnectedMessage;
+
+            Writer<PlayerLinkerRelayMessage>.write =
+                PlayerLinkerRelayMessageSerialization.WritePlayerLinkerRelayMessage;
+            Reader<PlayerLinkerRelayMessage>.read =
+                PlayerLinkerRelayMessageSerialization.ReadPlayerLinkerRelayMessage;
+
+            Writer<PlayerLinkerDisconnectedMessage>.write =
+                PlayerLinkerDisconnectedMessageSerialization.WritePlayerLinkerDisconnectedMessage;
+            Reader<PlayerLinkerDisconnectedMessage>.read =
+                PlayerLinkerDisconnectedMessageSerialization.ReadPlayerLinkerDisconnectedMessage;
+
+            Writer<PlayerLinkerBusyMessage>.write =
+                PlayerLinkerBusyMessageSerialization.WritePlayerLinkerBusyMessage;
+            Reader<PlayerLinkerBusyMessage>.read =
+                PlayerLinkerBusyMessageSerialization.ReadPlayerLinkerBusyMessage;
+
+            NetworkClient.RegisterHandler<PlayerLinkerConnectedMessage>(
+                PlayerLinkerNetworkBridge.HandlePlayerLinkerConnected
+            );
+            NetworkClient.RegisterHandler<PlayerLinkerRelayMessage>(
+                PlayerLinkerNetworkBridge.HandlePlayerLinkerRelay
+            );
+            NetworkClient.RegisterHandler<PlayerLinkerDisconnectedMessage>(
+                PlayerLinkerNetworkBridge.HandlePlayerLinkerDisconnected
+            );
+            NetworkClient.RegisterHandler<PlayerLinkerBusyMessage>(
+                PlayerLinkerNetworkBridge.HandlePlayerLinkerBusy
+            );
+
+            if (NetworkServer.active)
+            {
+                NetworkServer.RegisterHandler<PlayerLinkerLockOnMessage>(
+                    (conn, msg) =>
+                        GetBridge<PlayerLinkerNetworkBridge>(conn)?.ServerHandleLockOn(conn, msg)
+                );
+                // IMPORTANT: Tick routing uses GlobalSessionLock.Holder, NOT GetBridge(conn).
+                // Both the wielder and the target send ticks; the target's bridge has no session
+                // state, so GetBridge(conn) would silently no-op for target ticks.
+                NetworkServer.RegisterHandler<PlayerLinkerTickMessage>(
+                    (conn, msg) =>
+                        GlobalSessionLock<PlayerLinkerNetworkBridge>.Holder?.ServerHandleTick(
+                            conn,
+                            msg
+                        )
                 );
             }
 

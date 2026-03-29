@@ -383,6 +383,18 @@ namespace IssaPlugin
         public static ConfigEntry<float> GravityGunMaxPullSpeed { get; private set; }
         public static ConfigEntry<float> GravityGunInputSendInterval { get; private set; }
 
+        // --- Player Linker ---
+        public static ConfigEntry<Key> PlayerLinkerGiveKey { get; private set; }
+        public static ConfigEntry<float> PlayerLinkerUses { get; private set; }
+        public static ConfigEntry<float> PlayerLinkerSpawnWeight { get; private set; }
+        public static ConfigEntry<float> PlayerLinkerLockOnRange { get; private set; }
+        public static ConfigEntry<float> PlayerLinkerLockOnConeAngleDeg { get; private set; }
+        public static ConfigEntry<float> PlayerLinkerTetherDuration { get; private set; }
+        public static ConfigEntry<float> PlayerLinkerSpringForce { get; private set; }
+        public static ConfigEntry<float> PlayerLinkerMaxPullSpeed { get; private set; }
+        public static ConfigEntry<float> PlayerLinkerNaturalLength { get; private set; }
+        public static ConfigEntry<float> PlayerLinkerInputSendInterval { get; private set; }
+
         // --- Poison Jar ---
         public static ConfigEntry<Key> PoisonJarGiveKey { get; private set; }
         public static ConfigEntry<float> PoisonJarUses { get; private set; }
@@ -2844,6 +2856,68 @@ namespace IssaPlugin
                 "InputSendInterval",
                 0.05f,
                 "Interval (seconds) between aim-tick messages sent to the server (~20 Hz)."
+            );
+
+            // --- Player Linker ---
+            PlayerLinkerGiveKey = cfg.Bind(
+                "PlayerLinker",
+                "PlayerLinkerGiveKey",
+                Key.NumpadMultiply,
+                "Hotkey to give yourself a Player Linker (debug/testing)."
+            );
+            PlayerLinkerUses = cfg.Bind(
+                "PlayerLinker",
+                "Uses",
+                1f,
+                "Number of uses per Player Linker pickup."
+            );
+            PlayerLinkerSpawnWeight = cfg.Bind(
+                "ItemBoxSpawns",
+                "PlayerLinkerSpawnWeight",
+                10f,
+                "Relative spawn weight for the Player Linker in the item pool."
+            );
+            PlayerLinkerLockOnRange = cfg.Bind(
+                "PlayerLinker",
+                "LockOnRange",
+                40f,
+                "Maximum distance (units) at which the Player Linker can lock onto a target."
+            );
+            PlayerLinkerLockOnConeAngleDeg = cfg.Bind(
+                "PlayerLinker",
+                "LockOnConeAngleDeg",
+                60f,
+                "Full angle (degrees) of the aim cone used to filter lock-on candidates."
+            );
+            PlayerLinkerTetherDuration = cfg.Bind(
+                "PlayerLinker",
+                "TetherDuration",
+                8f,
+                "Duration in seconds before the tether automatically disconnects."
+            );
+            PlayerLinkerSpringForce = cfg.Bind(
+                "PlayerLinker",
+                "SpringForce",
+                5f,
+                "Spring stiffness coefficient; multiplied by stretch distance to compute pull speed."
+            );
+            PlayerLinkerMaxPullSpeed = cfg.Bind(
+                "PlayerLinker",
+                "MaxPullSpeed",
+                20f,
+                "Maximum velocity change (m/s) applied to each player per physics tick."
+            );
+            PlayerLinkerNaturalLength = cfg.Bind(
+                "PlayerLinker",
+                "NaturalLength",
+                0f,
+                "Distance (units) below which no force is applied. Set >0 for a rope with slack."
+            );
+            PlayerLinkerInputSendInterval = cfg.Bind(
+                "PlayerLinker",
+                "InputSendInterval",
+                0.05f,
+                "Interval (seconds) between position-tick messages sent to the server (~20 Hz)."
             );
         }
     }
