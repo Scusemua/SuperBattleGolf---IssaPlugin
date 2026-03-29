@@ -39,6 +39,11 @@ namespace IssaPlugin.Overlays
         private bool _aimingIn;
         private Vector3 _targetScreenPos;
 
+        // Golf cart list — refreshed at most once per second to avoid per-frame FindObjectsByType.
+        private GolfCartInfo[] _cachedCarts = [];
+        private float _cartCacheTime = float.MinValue;
+        private const float CartCacheInterval = 1f;
+
         // Session start time (set in Update when session becomes active)
         private float _sessionStartTime;
         private bool _wasSessionActive;
@@ -47,13 +52,18 @@ namespace IssaPlugin.Overlays
 
         private void Update()
         {
+            var localInfo = GameManager.LocalPlayerInfo;
+            if (localInfo == null || localInfo.Inventory == null)
+            {
+                return;
+            }
+
             _sw = Screen.width;
             _sh = Screen.height;
             _time = Time.time;
 
             // This component lives on the Plugin's persistent GameObject, so look up
             // the local player's bridge rather than GetComponent on self.
-            var localInfo = GameManager.LocalPlayerInfo;
             var bridge = localInfo?.GetComponent<GravityGunNetworkBridge>();
             _sessionActive = bridge != null && bridge.LocalSessionActive;
 
@@ -77,12 +87,6 @@ namespace IssaPlugin.Overlays
             }
         }
 
-        private void LateUpdate()
-        {
-            if (_aimingIn)
-                CorrectAimRotation();
-        }
-
         // ── Idle target detection ─────────────────────────────────────────────
 
         private void UpdateLockOnTarget()
@@ -97,19 +101,6 @@ namespace IssaPlugin.Overlays
                     != ItemRegistry.GravityGunItemType
             )
                 return;
-
-            // Only show while aiming in (right-click held).
-            if (Mouse.current == null || !Mouse.current.rightButton.isPressed)
-            {
-                if (_aimingIn)
-                {
-                    FixLookRotationAfterScope();
-                }
-                _aimingIn = false;
-                return;
-            }
-
-            _aimingIn = true;
 
             var cam = Camera.main;
             if (cam == null)
@@ -148,7 +139,13 @@ namespace IssaPlugin.Overlays
             }
 
             // ── Scan golf carts ───────────────────────────────────────────────
-            foreach (var cart in FindObjectsByType<GolfCartInfo>(FindObjectsSortMode.None))
+            if (_time - _cartCacheTime >= CartCacheInterval)
+            {
+                _cachedCarts = FindObjectsByType<GolfCartInfo>(FindObjectsSortMode.None);
+                _cartCacheTime = _time;
+            }
+
+            foreach (var cart in _cachedCarts)
             {
                 if (cart == null || !cart.gameObject.activeInHierarchy)
                     continue;
@@ -179,8 +176,32 @@ namespace IssaPlugin.Overlays
 
         private void OnGUI()
         {
-            if (_sw <= 0f || _sh <= 0f)
+            if (Event.current.type != EventType.Repaint)
+            {
+                IssaPluginPlugin.Log.LogInfo("OnGUI: Event.current.type != EventType.Repaint");
                 return;
+            }
+
+            var localInfo = GameManager.LocalPlayerInfo;
+            if (localInfo == null || localInfo.Inventory == null)
+            {
+                return;
+            }
+
+            // Only show while the Gravity Gun is equipped.
+            if (
+                localInfo.Inventory.GetEffectivelyEquippedItem(true)
+                != ItemRegistry.GravityGunItemType
+            )
+            {
+                IssaPluginPlugin.Log.LogInfo("OnGUI: Not equipped.");
+                return;
+            }
+
+            if (_sw <= 0f || _sh <= 0f)
+            {
+                return;
+            }
 
             EnsureStyles();
 
@@ -188,6 +209,21 @@ namespace IssaPlugin.Overlays
                 DrawActiveHUD();
             else if (_hasTarget)
                 DrawLockOnReticle();
+
+            // Only show while aiming in (right-click held).
+            if (Mouse.current == null || !Mouse.current.rightButton.isPressed)
+            {
+                if (_aimingIn)
+                {
+                    FixLookRotationAfterScope();
+                }
+                _aimingIn = false;
+                return;
+            }
+
+            _aimingIn = true;
+
+            CorrectAimRotation();
         }
 
         // ── Active session HUD ────────────────────────────────────────────────

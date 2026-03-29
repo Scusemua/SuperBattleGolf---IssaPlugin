@@ -27,7 +27,10 @@ namespace IssaPlugin.Patches
             if (def == null)
                 return true; // not a custom item — run base game logic
 
-            if (!SingletonBehaviour<DrivingRangeManager>.HasInstance && CourseManager.MatchState <= MatchState.TeeOff)
+            if (
+                !SingletonBehaviour<DrivingRangeManager>.HasInstance
+                && CourseManager.MatchState <= MatchState.TeeOff
+            )
             {
                 __result = false;
                 return false; // block custom items during tee-off, matching base game behaviour
