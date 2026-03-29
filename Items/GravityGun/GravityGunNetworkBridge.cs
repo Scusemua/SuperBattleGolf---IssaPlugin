@@ -28,6 +28,7 @@ namespace IssaPlugin.Items
         private NetworkConnectionToClient _targetConn;
         private PlayerInfo _targetInfo;
         private Coroutine _serverTimeout;
+        private int _wielderGravityGunSlot = -1; // cached at session start; used by ServerEndSession
 
         // Set when the target is an unoccupied golf cart — server applies force directly.
         private bool _targetIsEmptyCart;
@@ -226,13 +227,20 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            // ── 3. Validate target — player or golf cart ──────────────────────
+            // ── 3. Cache wielder's slot index before any state can change it ─────
+            _wielderGravityGunSlot =
+                (!inventory.isLocalPlayer && NetworkServer.active)
+                    ? inventory.PlayerInfo.NetworkedEquippedItemIndex
+                    : inventory.EquippedItemIndex;
+
+            // ── 4. Validate target — player or golf cart ──────────────────────
             if (!NetworkServer.spawned.TryGetValue(msg.TargetNetId, out var targetIdentity))
             {
                 IssaPluginPlugin.Log.LogWarning(
                     $"[GravityGun] Server: target netId={msg.TargetNetId} not found."
                 );
                 GlobalSessionLock<GravityGunNetworkBridge>.Release();
+                _wielderGravityGunSlot = -1;
                 return;
             }
 
@@ -275,10 +283,11 @@ namespace IssaPlugin.Items
                     "[GravityGun] Server: target is neither a player nor a golf cart."
                 );
                 GlobalSessionLock<GravityGunNetworkBridge>.Release();
+                _wielderGravityGunSlot = -1;
                 return;
             }
 
-            // ── 4. Store server session state ─────────────────────────────────
+            // ── 5. Store server session state ─────────────────────────────────
             _serverSessionActive = true;
             _targetConn = resolvedConn;
             _targetInfo = targetInfo; // null for empty carts
@@ -293,7 +302,7 @@ namespace IssaPlugin.Items
                     + (_targetIsEmptyCart ? " (empty cart)" : "")
             );
 
-            // ── 5. Broadcast connection to all clients ────────────────────────
+            // ── 6. Broadcast connection to all clients ────────────────────────
             NetworkServer.SendToAll(
                 new GravityGunConnectedMessage
                 {
@@ -304,7 +313,7 @@ namespace IssaPlugin.Items
                 }
             );
 
-            // ── 6. Start server timeout coroutine ─────────────────────────────
+            // ── 7. Start server timeout coroutine ─────────────────────────────
             _serverTimeout = StartCoroutine(ServerTimeoutCoroutine());
         }
 
@@ -393,10 +402,20 @@ namespace IssaPlugin.Items
 
             _serverSessionActive = false;
 
-            // Consume the item now that the tether has ended.
-            var inventory = GetComponent<PlayerInventory>();
-            if (inventory != null)
-                ItemHelper.ConsumeEquippedItem(inventory);
+            // Consume using the slot cached at session start — EquippedItemIndex
+            // may have shifted by the time the tether ends (e.g. player pressed the
+            // release key, which the base game may also process as an item-use input).
+            if (_wielderGravityGunSlot >= 0)
+            {
+                var inventory = GetComponent<PlayerInventory>();
+                if (inventory != null)
+                {
+                    ItemHelper.SetCurrentItemUse(inventory, ItemUseType.Regular);
+                    ItemHelper.DecrementAndRemove(inventory, _wielderGravityGunSlot);
+                    ItemHelper.SetCurrentItemUse(inventory, ItemUseType.None);
+                }
+            }
+            _wielderGravityGunSlot = -1;
 
             var wielderNetId = GetComponent<NetworkIdentity>().netId;
             NetworkServer.SendToAll(

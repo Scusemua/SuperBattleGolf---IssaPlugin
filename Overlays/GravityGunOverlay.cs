@@ -291,6 +291,9 @@ namespace IssaPlugin.Overlays
 
         private void DrawLockOnReticle()
         {
+            if (!_aimingIn)
+                return;
+
             float cx = _targetScreenPos.x;
             float cy = _targetScreenPos.y;
 
