@@ -407,10 +407,15 @@ namespace IssaPlugin.Items
                 ForceServerCleanup();
         }
 
-        public override void ClientHoleCleanup() // Runs on client 
+        public override void ClientHoleCleanup() // Runs on client
         {
             if (LocalSessionActive)
+            {
                 _forceEnd = true;
+                DonutOverlay.SetActive(false, 0);
+                LocalSessionActive = false;
+                InputManager.Controls.Gameplay.Enable();
+            }
         }
 
         private void ForceServerCleanup()
