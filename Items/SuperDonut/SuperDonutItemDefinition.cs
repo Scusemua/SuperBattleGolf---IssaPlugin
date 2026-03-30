@@ -13,11 +13,7 @@ namespace IssaPlugin.Items
         public override GameObject HeldModelPrefab =>
             AssetLoader.SuperDonutHandheldPrefab ?? AssetLoader.DonutHandheldPrefab;
         public override int MaxUses => (int)Configuration.SuperDonutUses.Value;
-        public override float SpawnWeight
-        {
-            get { return Configuration.SuperDonutSpawnWeight.Value; }
-            set { Configuration.SuperDonutSpawnWeight.Value = value; }
-        }
+        public override int Tier => 3;
         public override Key GiveKey => Configuration.SuperDonutGiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)

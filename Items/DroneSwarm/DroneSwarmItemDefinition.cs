@@ -12,11 +12,7 @@ namespace IssaPlugin.Items
         public override GameObject HeldModelPrefab => AssetLoader.DroneControllerPrefab;
         public override int      MaxUses       => (int)Configuration.DroneSwarmUses.Value;
 
-        public override float SpawnWeight
-        {
-            get => Configuration.DroneSwarmSpawnWeight.Value;
-            set => Configuration.DroneSwarmSpawnWeight.Value = value;
-        }
+        public override int Tier => 3;
 
         public override Key GiveKey => Configuration.DroneSwarmGiveKey.Value;
 

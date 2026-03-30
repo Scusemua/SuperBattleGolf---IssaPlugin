@@ -16,11 +16,7 @@ namespace IssaPlugin.Items
         public override GameObject HeldModelPrefab => AssetLoader.RedBullHandheldPrefab;
 
         public override int MaxUses => (int)Configuration.RedBullUses.Value;
-        public override float SpawnWeight
-        {
-            get => Configuration.RedBullSpawnWeight.Value;
-            set => Configuration.RedBullSpawnWeight.Value = value;
-        }
+        public override int Tier => 1;
         public override Key GiveKey => Configuration.RedBullGiveKey.Value;
 
         // PlayerMovement.AddSpeedBoost(float duration) — private, so we need reflection.

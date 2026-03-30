@@ -12,11 +12,7 @@ namespace IssaPlugin.Items
         public override GameObject HeldModelPrefab => AssetLoader.BatModelPrefab;
         public override bool UseRocketIconFallback => false; // uses pistol fallback
         public override int MaxUses => (int)Configuration.BaseballBatUses.Value;
-        public override float SpawnWeight
-        {
-            get { return Configuration.BaseballBatSpawnWeight.Value; }
-            set { Configuration.BaseballBatSpawnWeight.Value = value; }
-        }
+        public override int Tier => 1;
         public override Key GiveKey => Configuration.BaseballBatGiveKey.Value;
         public override EquipmentType EquipmentType => EquipmentType.GolfClub;
 

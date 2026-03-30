@@ -25,8 +25,28 @@ namespace IssaPlugin.Items
         // MaxUses reads Configuration.XxxUses.Value at call time (lazy — no static init risk).
         // The cast to int is intentional: BepInEx config values for use-counts are ConfigEntry<float>.
         public abstract int MaxUses { get; }
-        public abstract float SpawnWeight { get; set; }
+        public abstract int Tier { get; }
         public abstract Key GiveKey { get; }
+
+        // Set only on non-host clients by SpawnWeightsSyncer.HandleSpawnWeights.
+        // Cleared by SpawnWeightsSyncer.BroadcastWeightsIfChanged before each host resolution.
+        // Host always resolves fresh from config (never touches this field).
+        private float? _serverWeight = null;
+
+        internal void ResetServerWeight() => _serverWeight = null;
+
+        public float SpawnWeight
+        {
+            get
+            {
+                if (_serverWeight.HasValue)
+                    return _serverWeight.Value;
+                if (Configuration.GetItemSpawnWeightOverrideEnabled(ItemType))
+                    return Configuration.GetItemSpawnWeightOverrideValue(ItemType);
+                return Configuration.GetTierSpawnWeight(Tier);
+            }
+            set { _serverWeight = value; }
+        }
 
         // When false the item is excluded from the spawn pool entirely (weight is ignored).
         // Delegates to Configuration so the value persists across sessions and is vote-writeable.

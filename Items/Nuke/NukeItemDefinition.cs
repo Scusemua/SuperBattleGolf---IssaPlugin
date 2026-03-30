@@ -12,11 +12,7 @@ namespace IssaPlugin.Items
         public override Sprite Icon => AssetLoader.NukeIcon;
         public override GameObject HeldModelPrefab => AssetLoader.NuclearDetonatorPrefab;
         public override int MaxUses => (int)Configuration.NukeUses.Value;
-        public override float SpawnWeight
-        {
-            get { return Configuration.NukeSpawnWeight.Value; }
-            set { Configuration.NukeSpawnWeight.Value = value; }
-        }
+        public override int Tier => 3;
         public override Key GiveKey => Configuration.NukeGiveKey.Value;
         public override ItemType AnimatorItemType => ItemType.RocketLauncher;
         public override ItemType AnimatorChangedItemType => ItemType.RocketLauncher;

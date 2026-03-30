@@ -24,11 +24,7 @@ namespace IssaPlugin.Items
 
         public override int MaxUses => (int)Configuration.GravityGunUses.Value;
 
-        public override float SpawnWeight
-        {
-            get => Configuration.GravityGunSpawnWeight.Value;
-            set => Configuration.GravityGunSpawnWeight.Value = value;
-        }
+        public override int Tier => 3;
 
         public override Key GiveKey => Configuration.GravityGunGiveKey.Value;
 

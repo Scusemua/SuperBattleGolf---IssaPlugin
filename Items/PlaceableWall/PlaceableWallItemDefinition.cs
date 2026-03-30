@@ -13,11 +13,7 @@ namespace IssaPlugin.Items
         public override GameObject HeldModelPrefab => AssetLoader.WallHandheldPrefab;
 
         public override int MaxUses => (int)Configuration.PlaceableWallUses.Value;
-        public override float SpawnWeight
-        {
-            get { return Configuration.PlaceableWallSpawnWeight.Value; }
-            set { Configuration.PlaceableWallSpawnWeight.Value = value; }
-        }
+        public override int Tier => 2;
         public override Key GiveKey => Configuration.PlaceableWallGiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)

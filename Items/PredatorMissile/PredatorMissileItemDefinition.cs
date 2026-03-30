@@ -12,11 +12,7 @@ namespace IssaPlugin.Items
         public override Sprite Icon => AssetLoader.MissileIcon;
         public override GameObject HeldModelPrefab => AssetLoader.MissileTabletPrefab;
         public override int MaxUses => (int)Configuration.MissileUses.Value;
-        public override float SpawnWeight
-        {
-            get { return Configuration.MissileSpawnWeight.Value; }
-            set { Configuration.MissileSpawnWeight.Value = value; }
-        }
+        public override int Tier => 2;
         public override Key GiveKey => Configuration.MissileGiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)

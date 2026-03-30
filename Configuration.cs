@@ -41,6 +41,32 @@ namespace IssaPlugin
                 e.Value = enabled;
         }
 
+        // ── Per-item spawn weight overrides ────────────────────────────────────
+        // Both keyed by ItemType integer. Populated by BindSpawnWeight() in Initialize().
+        // The value dict maps to the existing named ConfigEntry<float> properties,
+        // kept solely for BepInEx config file key stability (keys must not change between versions).
+        private static readonly Dictionary<int, ConfigEntry<float>> ItemSpawnWeightOverrideValueEntries = [];
+        private static readonly Dictionary<int, ConfigEntry<bool>> ItemSpawnWeightOverrideEnabledEntries = [];
+
+        // ── Per-tier spawn weights ─────────────────────────────────────────────
+        // Keyed by tier number (1, 2, 3, …). Populated by BindTierWeight() in Initialize().
+        private static readonly Dictionary<int, ConfigEntry<float>> TierSpawnWeightEntries = [];
+
+        public static float GetTierSpawnWeight(int tier)
+        {
+            if (TierSpawnWeightEntries.TryGetValue(tier, out var entry))
+                return entry.Value;
+            IssaPluginPlugin.Log.LogWarning(
+                $"[Config] Item tier {tier} has no registered spawn weight; falling back to Tier 2.");
+            return TierSpawnWeightEntries.TryGetValue(2, out var fallback) ? fallback.Value : 8f;
+        }
+
+        public static bool GetItemSpawnWeightOverrideEnabled(ItemType t) =>
+            ItemSpawnWeightOverrideEnabledEntries.TryGetValue((int)t, out var e) && e.Value;
+
+        public static float GetItemSpawnWeightOverrideValue(ItemType t) =>
+            ItemSpawnWeightOverrideValueEntries.TryGetValue((int)t, out var e) ? e.Value : 0f;
+
         // --- Baseball Bat ---
         public static ConfigEntry<float> BaseballBatPowerMultiplier { get; private set; }
         public static ConfigEntry<float> BaseballBatUses { get; private set; }
@@ -745,33 +771,38 @@ namespace IssaPlugin
             );
 
             // --- Item Box Spawn Weights ---
-            BaseballBatSpawnWeight = cfg.Bind(
-                "ItemBoxSpawns",
-                "BaseballBatWeight",
-                15f,
-                "Spawn weight for the baseball bat in item boxes. Set to 0 to disable."
-            );
+            // Local helpers: each call creates both a float override-value entry and a bool
+            // override-enabled entry, registers them in their respective dicts, and returns
+            // the float entry for assignment to the named property (kept for config key stability).
+            ConfigEntry<float> BindSpawnWeight(int itemTypeId, string key, float defaultValue, string valueDesc)
+            {
+                var valueEntry = cfg.Bind("ItemBoxSpawns", key, defaultValue,
+                    $"{valueDesc} Only active when {key}Override is true.");
+                var overrideEntry = cfg.Bind("ItemBoxSpawns", key + "Override", false,
+                    $"When true, use {key} directly instead of the tier's spawn weight.");
+                ItemSpawnWeightOverrideValueEntries[itemTypeId]   = valueEntry;
+                ItemSpawnWeightOverrideEnabledEntries[itemTypeId] = overrideEntry;
+                return valueEntry;
+            }
 
-            BomberSpawnWeight = cfg.Bind(
-                "ItemBoxSpawns",
-                "StealthBomberWeight",
-                10f,
-                "Spawn weight for the stealth bomber in item boxes. Set to 0 to disable."
-            );
+            void BindTierWeight(int tier, float defaultValue, string description)
+            {
+                TierSpawnWeightEntries[tier] = cfg.Bind("ItemBoxSpawns", $"Tier{tier}Weight", defaultValue, description);
+            }
 
-            MissileSpawnWeight = cfg.Bind(
-                "ItemBoxSpawns",
-                "PredatorMissileWeight",
-                10f,
-                "Spawn weight for the predator missile in item boxes. Set to 0 to disable."
-            );
+            BindTierWeight(1, 15f, "Spawn weight for Tier 1 (common) items.");
+            BindTierWeight(2,  8f, "Spawn weight for Tier 2 (standard) items.");
+            BindTierWeight(3,  3f, "Spawn weight for Tier 3 (rare/powerful) items.");
 
-            AC130SpawnWeight = cfg.Bind(
-                "ItemBoxSpawns",
-                "AC130Weight",
-                5f,
-                "Spawn weight for the AC130 in item boxes. Set to 0 to disable."
-            );
+            // NOTE: Named SpawnWeight properties below are kept solely for BepInEx config file key
+            // stability. They are no longer referenced directly in item definitions; access at
+            // runtime is via ItemSpawnWeightOverrideValueEntries / GetItemSpawnWeightOverrideValue.
+            BaseballBatSpawnWeight = BindSpawnWeight(100, "BaseballBatWeight", 15f,
+                "Override spawn weight for the Baseball Bat.");
+
+            BomberSpawnWeight  = BindSpawnWeight(101, "StealthBomberWeight",  10f, "Override spawn weight for the Stealth Bomber.");
+            MissileSpawnWeight = BindSpawnWeight(102, "PredatorMissileWeight", 10f, "Override spawn weight for the Predator Missile.");
+            AC130SpawnWeight   = BindSpawnWeight(103, "AC130Weight",            5f, "Override spawn weight for the AC-130 Gunship.");
 
             AC130Uses = cfg.Bind("AC130", "Uses", 1f, "Number of AC130 uses per pickup.");
 
@@ -961,12 +992,7 @@ namespace IssaPlugin
                 "Distance (metres) from the local player's own ball within which normal traction is restored, allowing them to stop and take a shot."
             );
 
-            FreezeSpawnWeight = cfg.Bind(
-                "ItemBoxSpawns",
-                "FreezeWorldWeight",
-                8f,
-                "Spawn weight for the Freeze World item in item boxes. Set to 0 to disable."
-            );
+            FreezeSpawnWeight = BindSpawnWeight(104, "FreezeWorldWeight", 8f, "Override spawn weight for the Freeze World item.");
 
             // --- Explosion Scaling ---
             AC130ExplosionScale = cfg.Bind(
@@ -1203,12 +1229,7 @@ namespace IssaPlugin
                     + "since PlayerMovement reads Physics.gravity directly."
             );
 
-            LowGravitySpawnWeight = cfg.Bind(
-                "ItemBoxSpawns",
-                "LowGravityWeight",
-                8f,
-                "Spawn weight for the Low Gravity item in item boxes. Set to 0 to disable."
-            );
+            LowGravitySpawnWeight = BindSpawnWeight(105, "LowGravityWeight", 8f, "Override spawn weight for the Low Gravity item.");
 
             // --- Sniper Rifle ---
             SniperRifleGiveKey = cfg.Bind(
@@ -1225,12 +1246,7 @@ namespace IssaPlugin
                 "Number of shots per Sniper Rifle pickup."
             );
 
-            SniperRifleSpawnWeight = cfg.Bind(
-                "ItemBoxSpawns",
-                "SniperRifleWeight",
-                10f,
-                "Spawn weight for the Sniper Rifle in item boxes. Set to 0 to disable."
-            );
+            SniperRifleSpawnWeight = BindSpawnWeight(106, "SniperRifleWeight", 10f, "Override spawn weight for the Sniper Rifle.");
 
             SniperRifleMaxAimingDistance = cfg.Bind(
                 "SniperRifle",
@@ -1326,12 +1342,7 @@ namespace IssaPlugin
 
             DonutUses = cfg.Bind("Donut", "Uses", 1f, "Number of Donut uses per pickup.");
 
-            DonutSpawnWeight = cfg.Bind(
-                "ItemBoxSpawns",
-                "DonutWeight",
-                5f,
-                "Spawn weight for the Donut in item boxes. Set to 0 to disable."
-            );
+            DonutSpawnWeight = BindSpawnWeight(107, "DonutWeight", 5f, "Override spawn weight for the Donut.");
 
             DonutSpeed = cfg.Bind(
                 "Donut",
@@ -1454,12 +1465,7 @@ namespace IssaPlugin
 
             JavelinUses = cfg.Bind("Javelin", "Uses", 1f, "Number of Javelin uses per pickup.");
 
-            JavelinSpawnWeight = cfg.Bind(
-                "ItemBoxSpawns",
-                "JavelinWeight",
-                12f,
-                "Spawn weight for the Javelin in item boxes. Set to 0 to disable."
-            );
+            JavelinSpawnWeight = BindSpawnWeight(108, "JavelinWeight", 12f, "Override spawn weight for the Javelin.");
 
             JavelinApexHeight = cfg.Bind(
                 "Javelin",
@@ -1532,12 +1538,7 @@ namespace IssaPlugin
                 "Number of StickyGrenade grenades per pickup."
             );
 
-            StickyGrenadeSpawnWeight = cfg.Bind(
-                "ItemBoxSpawns",
-                "StickyGrenadeWeight",
-                12f,
-                "Spawn weight for the StickyGrenade in item boxes. Set to 0 to disable."
-            );
+            StickyGrenadeSpawnWeight = BindSpawnWeight(109, "StickyGrenadeWeight", 12f, "Override spawn weight for the Sticky Grenade.");
 
             StickyGrenadeThrowSpeed = cfg.Bind(
                 "StickyGrenade",
@@ -1600,12 +1601,7 @@ namespace IssaPlugin
 
             NukeUses = cfg.Bind("Nuke", "Uses", 1f, "Number of uses per Nuke pickup.");
 
-            NukeSpawnWeight = cfg.Bind(
-                "ItemBoxSpawns",
-                "NukeWeight",
-                5f,
-                "Spawn weight for the Nuke in item boxes. Set to 0 to disable."
-            );
+            NukeSpawnWeight = BindSpawnWeight(111, "NukeWeight", 5f, "Override spawn weight for the Nuke.");
 
             NukeDropHeight = cfg.Bind(
                 "Nuke",
@@ -1690,12 +1686,7 @@ namespace IssaPlugin
                 "Number of uses per Black Hole Grenade pickup."
             );
 
-            BlackHoleGrenadeSpawnWeight = cfg.Bind(
-                "ItemBoxSpawns",
-                "BlackHoleGrenadeWeight",
-                8f,
-                "Spawn weight for the Black Hole Grenade in item boxes. Set to 0 to disable."
-            );
+            BlackHoleGrenadeSpawnWeight = BindSpawnWeight(112, "BlackHoleGrenadeWeight", 8f, "Override spawn weight for the Black Hole Grenade.");
 
             BlackHoleGrenadeThrowSpeed = cfg.Bind(
                 "BlackHoleGrenade",
@@ -1812,12 +1803,7 @@ namespace IssaPlugin
                 "Number of wall placements per pickup."
             );
 
-            PlaceableWallSpawnWeight = cfg.Bind(
-                "ItemBoxSpawns",
-                "PlaceableWallWeight",
-                15f,
-                "Spawn weight for the Placeable Wall in item boxes. Set to 0 to disable."
-            );
+            PlaceableWallSpawnWeight = BindSpawnWeight(113, "PlaceableWallWeight", 15f, "Override spawn weight for the Placeable Wall.");
 
             PlaceableWallMaxPlacementDistance = cfg.Bind(
                 "PlaceableWall",
@@ -1905,12 +1891,7 @@ namespace IssaPlugin
                 30f,
                 "Total bullets per Sub-Machine Gun pickup. Each shot consumes one use."
             );
-            AK47SpawnWeight = cfg.Bind(
-                "ItemBoxSpawns",
-                "AK47Weight",
-                12f,
-                "Spawn weight for the Sub-Machine Gun in item boxes. Set to 0 to disable."
-            );
+            AK47SpawnWeight = BindSpawnWeight(114, "AK47Weight", 12f, "Override spawn weight for the AK-47.");
             AK47FireRate = cfg.Bind(
                 "AK47",
                 "FireRate",
@@ -1962,12 +1943,7 @@ namespace IssaPlugin
                 1f,
                 "Number of Harrier Jet uses per pickup."
             );
-            HarrierSpawnWeight = cfg.Bind(
-                "ItemBoxSpawns",
-                "HarrierJetWeight",
-                8f,
-                "Spawn weight for the Harrier Jet in item boxes. Set to 0 to disable."
-            );
+            HarrierSpawnWeight = BindSpawnWeight(115, "HarrierJetWeight", 8f, "Override spawn weight for the Harrier Jet.");
             HarrierAltitude = cfg.Bind(
                 "HarrierJet",
                 "Altitude",
@@ -2054,12 +2030,7 @@ namespace IssaPlugin
                 1f,
                 "Number of uses per Position Swap pickup."
             );
-            PositionSwapSpawnWeight = cfg.Bind(
-                "ItemBoxSpawns",
-                "PositionSwapWeight",
-                6f,
-                "Spawn weight for the Position Swap item in item boxes. Set to 0 to disable."
-            );
+            PositionSwapSpawnWeight = BindSpawnWeight(116, "PositionSwapWeight", 6f, "Override spawn weight for the Position Swap item.");
             PositionSwapDelay = cfg.Bind(
                 "PositionSwap",
                 "Delay",
@@ -2075,12 +2046,7 @@ namespace IssaPlugin
                 "Debug key to add the Bear item to your inventory."
             );
             BearUses = cfg.Bind("Bear", "Uses", 1f, "Number of uses per Bear item pickup.");
-            BearSpawnWeight = cfg.Bind(
-                "ItemBoxSpawns",
-                "BearWeight",
-                6f,
-                "Spawn weight for the Bear item in item boxes. Set to 0 to disable."
-            );
+            BearSpawnWeight = BindSpawnWeight(110, "BearWeight", 6f, "Override spawn weight for the Bear item.");
             BearCount = cfg.Bind("Bear", "BearCount", 2f, "Number of bears spawned per item use.");
             BearSpawnRadius = cfg.Bind(
                 "Bear",
@@ -2443,12 +2409,7 @@ namespace IssaPlugin
                 1f,
                 "Number of uses per Poison Jar pickup."
             );
-            PoisonJarSpawnWeight = cfg.Bind(
-                "ItemBoxSpawns",
-                "PoisonJarSpawnWeight",
-                10f,
-                "Relative spawn weight for the Poison Jar in the item pool."
-            );
+            PoisonJarSpawnWeight = BindSpawnWeight(117, "PoisonJarSpawnWeight", 10f, "Override spawn weight for the Poison Jar.");
             PoisonJarThrowSpeed = cfg.Bind(
                 "PoisonJar",
                 "ThrowSpeed",
@@ -2653,11 +2614,8 @@ namespace IssaPlugin
                 1f,
                 "Number of uses per Drone Swarm pickup."
             );
-            DroneSwarmSpawnWeight = cfg.Bind(
-                "ItemBoxSpawns",
-                "DroneSwarmSpawnWeight",
-                3.5f,
-                "Relative spawn weight for Drone Swarm in the item pool."
+            DroneSwarmSpawnWeight = BindSpawnWeight(118, "DroneSwarmSpawnWeight", 3.5f,
+                "Override spawn weight for the Drone Swarm."
             );
             BaseDroneCount = cfg.Bind(
                 "DroneSwarm",
@@ -2775,11 +2733,8 @@ namespace IssaPlugin
                 "Hotkey to give yourself a Red Bull (debug/testing)."
             );
             RedBullUses = cfg.Bind("RedBull", "Uses", 1f, "Number of uses per Red Bull item.");
-            RedBullSpawnWeight = cfg.Bind(
-                "ItemBoxSpawns",
-                "RedBullSpawnWeight",
-                10f,
-                "Relative spawn weight for Red Bull in the item pool."
+            RedBullSpawnWeight = BindSpawnWeight(119, "RedBullSpawnWeight", 10f,
+                "Override spawn weight for Red Bull."
             );
             RedBullDuration = cfg.Bind(
                 "RedBull",
@@ -2818,11 +2773,8 @@ namespace IssaPlugin
                 1f,
                 "Number of Super Donut uses per pickup."
             );
-            SuperDonutSpawnWeight = cfg.Bind(
-                "ItemBoxSpawns",
-                "SuperDonutSpawnWeight",
-                3f,
-                "Relative spawn weight for Super Donut in the item pool. Keep low — fires at every other player at once."
+            SuperDonutSpawnWeight = BindSpawnWeight(120, "SuperDonutSpawnWeight", 3f,
+                "Override spawn weight for the Super Donut. Keep low — fires at every other player at once."
             );
 
             // --- Gravity Gun ---
@@ -2838,11 +2790,8 @@ namespace IssaPlugin
                 1f,
                 "Number of uses per Gravity Gun pickup."
             );
-            GravityGunSpawnWeight = cfg.Bind(
-                "ItemBoxSpawns",
-                "GravityGunSpawnWeight",
-                10f,
-                "Relative spawn weight for the Gravity Gun in the item pool."
+            GravityGunSpawnWeight = BindSpawnWeight(121, "GravityGunSpawnWeight", 10f,
+                "Override spawn weight for the Gravity Gun."
             );
             GravityGunLockOnRange = cfg.Bind(
                 "GravityGun",
@@ -2900,11 +2849,8 @@ namespace IssaPlugin
                 1f,
                 "Number of uses per Rocket Tether pickup."
             );
-            RocketTetherSpawnWeight = cfg.Bind(
-                "ItemBoxSpawns",
-                "RocketTetherSpawnWeight",
-                10f,
-                "Relative spawn weight for the Rocket Tether in the item pool."
+            RocketTetherSpawnWeight = BindSpawnWeight(122, "RocketTetherSpawnWeight", 10f,
+                "Override spawn weight for the Rocket Tether."
             );
             RocketTetherLockOnRange = cfg.Bind(
                 "RocketTether",

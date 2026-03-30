@@ -12,11 +12,7 @@ namespace IssaPlugin.Items
         public override Sprite Icon => AssetLoader.BlackHoleGrenadeIcon;
         public override GameObject HeldModelPrefab => AssetLoader.BlackHoleGrenadePrefab;
         public override int MaxUses => (int)Configuration.BlackHoleGrenadeUses.Value;
-        public override float SpawnWeight
-        {
-            get { return Configuration.BlackHoleGrenadeSpawnWeight.Value; }
-            set { Configuration.BlackHoleGrenadeSpawnWeight.Value = value; }
-        }
+        public override int Tier => 3;
         public override Key GiveKey => Configuration.BlackHoleGrenadeGiveKey.Value;
 
         public override void OnEquip(PlayerInventory inventory)

@@ -12,11 +12,7 @@ namespace IssaPlugin.Items
         public override Sprite Icon => AssetLoader.PositionSwapIcon;
         public override GameObject HeldModelPrefab => AssetLoader.PositionSwapHandheldPrefab;
         public override int MaxUses => (int)Configuration.PositionSwapUses.Value;
-        public override float SpawnWeight
-        {
-            get => Configuration.PositionSwapSpawnWeight.Value;
-            set => Configuration.PositionSwapSpawnWeight.Value = value;
-        }
+        public override int Tier => 1;
         public override Key GiveKey => Configuration.PositionSwapGiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)

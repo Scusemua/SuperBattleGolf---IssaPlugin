@@ -22,11 +22,7 @@ namespace IssaPlugin.Items
 
         public override int MaxUses => (int)Configuration.RocketTetherUses.Value;
 
-        public override float SpawnWeight
-        {
-            get => Configuration.RocketTetherSpawnWeight.Value;
-            set => Configuration.RocketTetherSpawnWeight.Value = value;
-        }
+        public override int Tier => 2;
 
         public override Key GiveKey => Configuration.RocketTetherGiveKey.Value;
 

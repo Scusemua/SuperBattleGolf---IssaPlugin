@@ -13,11 +13,7 @@ namespace IssaPlugin.Items
         public override GameObject HeldModelPrefab => AssetLoader.HarrierTabletPrefab;
         public override int MaxUses => (int)Configuration.HarrierUses.Value;
 
-        public override float SpawnWeight
-        {
-            get => Configuration.HarrierSpawnWeight.Value;
-            set => Configuration.HarrierSpawnWeight.Value = value;
-        }
+        public override int Tier => 3;
 
         public override Key GiveKey => Configuration.HarrierGiveKey.Value;
 

@@ -52,6 +52,11 @@ namespace IssaPlugin
             if (!NetworkClient.active)
                 return;
 
+            // Clear any cached server weights so the host always resolves fresh from config,
+            // even if this process previously ran as a client in the same Unity session.
+            foreach (var item in ItemRegistry.AllItems)
+                item.ResetServerWeight();
+
             if (_cachedItemSpawnWeights == null)
             {
                 _cachedItemSpawnWeights = new Dictionary<int, float>();

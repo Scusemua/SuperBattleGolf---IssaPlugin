@@ -13,11 +13,7 @@ namespace IssaPlugin.Items
         public override GameObject HeldModelPrefab => AssetLoader.AK47Prefab;
         public override bool UseRocketIconFallback => false;
         public override int MaxUses => (int)Configuration.AK47Uses.Value;
-        public override float SpawnWeight
-        {
-            get { return Configuration.AK47SpawnWeight.Value; }
-            set { Configuration.AK47SpawnWeight.Value = value; }
-        }
+        public override int Tier => 2;
         public override Key GiveKey => Configuration.AK47GiveKey.Value;
         public override EquipmentType EquipmentType => EquipmentType.ElephantGun;
         public override ItemType AnimatorItemType => ItemType.ElephantGun;

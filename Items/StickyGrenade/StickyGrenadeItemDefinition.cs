@@ -12,11 +12,7 @@ namespace IssaPlugin.Items
         public override Sprite Icon => AssetLoader.StickyGrenadeIcon;
         public override GameObject HeldModelPrefab => AssetLoader.StickyGrenadePrefab;
         public override int MaxUses => (int)Configuration.StickyGrenadeUses.Value;
-        public override float SpawnWeight
-        {
-            get { return Configuration.StickyGrenadeSpawnWeight.Value; }
-            set { Configuration.StickyGrenadeSpawnWeight.Value = value; }
-        }
+        public override int Tier => 2;
         public override Key GiveKey => Configuration.StickyGrenadeGiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)

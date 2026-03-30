@@ -20,11 +20,7 @@ namespace IssaPlugin.Items
         public override GameObject HeldModelPrefab => AssetLoader.PoisonJarHandheldPrefab;
 
         public override int MaxUses => (int)Configuration.PoisonJarUses.Value;
-        public override float SpawnWeight
-        {
-            get => Configuration.PoisonJarSpawnWeight.Value;
-            set => Configuration.PoisonJarSpawnWeight.Value = value;
-        }
+        public override int Tier => 2;
         public override Key GiveKey => Configuration.PoisonJarGiveKey.Value;
 
         public override void OnEquip(PlayerInventory inventory)
