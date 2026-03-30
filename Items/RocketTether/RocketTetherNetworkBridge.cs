@@ -181,6 +181,14 @@ namespace IssaPlugin.Items
                 return;
             }
 
+            if (targetIdentity == GetComponent<NetworkIdentity>())
+            {
+                IssaPluginPlugin.Log.LogWarning("[RocketTether] Server: self-targeting rejected.");
+                GlobalSessionLock<RocketTetherNetworkBridge>.Release();
+                _wielderLinkerSlot = -1;
+                return;
+            }
+
             var wielderNetId = GetComponent<NetworkIdentity>().netId;
 
             // ── 5. Compute rocket spawn position (just above target's head) ───

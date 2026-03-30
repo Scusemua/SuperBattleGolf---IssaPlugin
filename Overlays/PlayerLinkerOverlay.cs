@@ -145,21 +145,6 @@ namespace IssaPlugin.Overlays
                 }
             }
 
-            // ── Fallback: allow self-targeting when no remote player is in cone ─
-            if (bestTransform == null)
-            {
-                var localInfo = GameManager.LocalPlayerInfo;
-                if (localInfo != null)
-                {
-                    var localNid = localInfo.GetComponent<NetworkIdentity>();
-                    if (localNid != null)
-                    {
-                        bestTransform = localInfo.transform;
-                        bestIdentity = localNid;
-                    }
-                }
-            }
-
             if (bestTransform == null)
                 return;
 
