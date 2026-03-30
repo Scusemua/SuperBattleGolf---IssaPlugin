@@ -217,6 +217,20 @@ namespace IssaPlugin.Items
                 return;
             }
 
+            // ── 4d. Electromagnetic shield check — reject grab if target is shielded ──
+            if (targetInfo != null && targetInfo.IsElectromagnetShieldActive)
+            {
+                IssaPluginPlugin.Log.LogInfo(
+                    "[GravityGun] Server: target has electromagnetic shield — rejecting lock-on."
+                );
+                GlobalSessionLock<GravityGunNetworkBridge>.Release();
+                _wielderGravityGunSlot = -1;
+                targetInfo.PlayElectromagnetShieldHitForAllClients(
+                    (targetInfo.transform.position - transform.position).normalized
+                );
+                return;
+            }
+
             // ── 5. Store server session state ─────────────────────────────────
             _serverSessionActive = true;
             _targetConn = resolvedConn;
@@ -469,7 +483,7 @@ namespace IssaPlugin.Items
                             wielderInfo.transform.position
                         ),
                         Vector3.zero, // no extra velocity on connect
-                        false,
+                        true,
                         useId,
                         false,
                         true,
