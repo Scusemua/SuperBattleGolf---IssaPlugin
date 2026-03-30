@@ -476,7 +476,7 @@ namespace IssaPlugin
             CustomItemSpawnRate = cfg.Bind(
                 "IssaPlugin",
                 "CustomItemSpawnRate",
-                1.0f,
+                0.5f,
                 "Global multiplier applied to every custom item's spawn weight. 1.0 = default, 0.5 = half as frequent, 0.0 = never spawn."
             );
 
@@ -504,7 +504,7 @@ namespace IssaPlugin
             CatchupBoostFactor = cfg.Bind(
                 "ItemBoxSpawns",
                 "CatchupBoostFactor",
-                1f,
+                2f,
                 "Multiplies custom item spawn weights for players further behind the leader. "
                     + "At 0, every item box pool has equal custom item chances. "
                     + "At 1 (default), the pool for the furthest-behind player gets 2× the weight of the closest pool. "
