@@ -274,7 +274,7 @@ namespace IssaPlugin.Items
                     movement.transform.InverseTransformPoint(msg.BlackHolePosition),
                     dist,
                     velocityChange,
-                    false,
+                    true,
                     msg.ItemUseId,
                     false,
                     true,
@@ -403,7 +403,7 @@ namespace IssaPlugin.Items
                         movement.transform.InverseTransformPoint(blackHolePos),
                         dist,
                         knockVelocity,
-                        false,
+                        true,
                         new ItemUseId(
                             throwerInfo.PlayerId.Guid,
                             BlackHoleGrenadeItem.NextUseIndex(),
