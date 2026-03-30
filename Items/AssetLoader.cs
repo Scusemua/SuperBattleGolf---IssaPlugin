@@ -128,6 +128,24 @@ namespace IssaPlugin.Items
         /// Bundle asset name: <c>player_linker_rocket.prefab</c>
         public static GameObject RocketTetherRocketPrefab { get; private set; }
 
+        // --- Jetpack ---
+        /// Bundle asset name: <c>jetpack_icon.png</c>
+        public static Sprite JetpackIcon { get; private set; }
+
+        /// The model the player holds while the Jetpack item is equipped.
+        /// Bundle asset name: <c>jetpack_handheld.prefab</c>
+        public static GameObject JetpackHandheldPrefab { get; private set; }
+
+        /// Local-only body-worn prefab (backpack), shown on the local player while the
+        /// Jetpack is their active item. Not networked — managed by JetpackNetworkBridge.Update().
+        /// Bundle asset name: <c>jetpack_equipped.prefab</c>
+        public static GameObject JetpackEquippedPrefab { get; private set; }
+
+        /// Local-only particle VFX (thrust flames/smoke). Not networked — each client
+        /// instantiates its own copy via JetpackNetworkBridge.
+        /// Bundle asset name: <c>jetpack_particles.prefab</c>
+        public static GameObject JetpackParticlePrefab { get; private set; }
+
         // --- Drone Swarm ---
         public static Sprite DroneSwarmIcon { get; private set; }
 
@@ -289,6 +307,7 @@ namespace IssaPlugin.Items
             LoadSuperDonutAssets();
             LoadGravityGunAssets();
             LoadRocketTetherAssets();
+            LoadJetpackAssets();
 
             IssaPluginPlugin.Log.LogInfo("[Assets] IssaPluginBundle loaded.");
         }
@@ -685,6 +704,26 @@ namespace IssaPlugin.Items
             RedBullTrailPrefab = Load<GameObject>("red_bull_trail.prefab");
             if (RedBullTrailPrefab != null)
                 StripNetworkComponents(RedBullTrailPrefab);
+        }
+
+        private static void LoadJetpackAssets()
+        {
+            JetpackIcon = LoadSprite("jetpack_icon.png");
+
+            JetpackHandheldPrefab = Load<GameObject>("jetpack_handheld.prefab");
+            if (JetpackHandheldPrefab != null)
+                DisableRigidbody(JetpackHandheldPrefab);
+
+            // Both prefabs below are local-only (instantiated without a network context),
+            // so Mirror components must be stripped to prevent NullReferenceExceptions —
+            // same pattern as RedBullTrailPrefab and BlackHoleVfxPrefab.
+            JetpackEquippedPrefab = Load<GameObject>("jetpack_equipped.prefab");
+            if (JetpackEquippedPrefab != null)
+                StripNetworkComponents(JetpackEquippedPrefab);
+
+            JetpackParticlePrefab = Load<GameObject>("jetpack_particles.prefab");
+            if (JetpackParticlePrefab != null)
+                StripNetworkComponents(JetpackParticlePrefab);
         }
 
         /// Ensures a prefab has a NetworkIdentity with a stable assetId so Mirror

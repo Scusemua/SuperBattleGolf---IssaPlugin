@@ -407,6 +407,13 @@ namespace IssaPlugin
         public static ConfigEntry<float> RocketTetherExplosionForce { get; private set; }
         public static ConfigEntry<float> RocketTetherExplosionRadius { get; private set; }
 
+        // --- Jetpack ---
+        public static ConfigEntry<Key>   JetpackGiveKey     { get; private set; }
+        public static ConfigEntry<float> JetpackUses        { get; private set; }
+        public static ConfigEntry<float> JetpackSpawnWeight { get; private set; }
+        public static ConfigEntry<float> JetpackFuelPerUse  { get; private set; }
+        public static ConfigEntry<float> JetpackThrustForce { get; private set; }
+
         // --- Poison Jar ---
         public static ConfigEntry<Key> PoisonJarGiveKey { get; private set; }
         public static ConfigEntry<float> PoisonJarUses { get; private set; }
@@ -548,6 +555,7 @@ namespace IssaPlugin
             Reg(cfg, ItemEnabledEntries, 119, "RedBullEnabled", "Red Bull");
             Reg(cfg, ItemEnabledEntries, 120, "SuperDonutEnabled", "Super Donut");
             Reg(cfg, ItemEnabledEntries, 121, "GravityGunEnabled", "Gravity Gun");
+            Reg(cfg, ItemEnabledEntries, 123, "JetpackEnabled", "Jetpack");
 
             // --- Baseball Bat ---
             BaseballBatPowerMultiplier = cfg.Bind(
@@ -1902,7 +1910,7 @@ namespace IssaPlugin
             AK47Uses = cfg.Bind(
                 "AK47",
                 "Uses",
-                30f,
+                10f,
                 "Total bullets per Sub-Machine Gun pickup. Each shot consumes one use."
             );
             AK47SpawnWeight = cfg.Bind(
@@ -2959,6 +2967,38 @@ namespace IssaPlugin
                 "ExplosionRadius",
                 50f,
                 "Radius (units) within which the explosion affects nearby players."
+            );
+
+            // --- Jetpack ---
+            JetpackGiveKey = cfg.Bind(
+                "Jetpack",
+                "JetpackGiveKey",
+                Key.Numpad9,
+                "Hotkey to give yourself a Jetpack (debug/testing)."
+            );
+            JetpackUses = cfg.Bind(
+                "Jetpack",
+                "Uses",
+                3f,
+                "Number of fuel canisters per Jetpack pickup. Each canister provides JetpackFuelPerUse seconds of thrust."
+            );
+            JetpackSpawnWeight = cfg.Bind(
+                "ItemBoxSpawns",
+                "JetpackSpawnWeight",
+                10f,
+                "Relative spawn weight for the Jetpack in the item pool."
+            );
+            JetpackFuelPerUse = cfg.Bind(
+                "Jetpack",
+                "FuelPerUse",
+                5f,
+                "Seconds of thrust provided by each fuel canister. When exhausted, one use is consumed."
+            );
+            JetpackThrustForce = cfg.Bind(
+                "Jetpack",
+                "ThrustForce",
+                25f,
+                "Upward acceleration (m/s²) applied each physics step while thrusting. Uses ForceMode.Acceleration."
             );
         }
     }

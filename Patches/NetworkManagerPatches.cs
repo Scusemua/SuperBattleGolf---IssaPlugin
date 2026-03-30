@@ -1078,6 +1078,31 @@ namespace IssaPlugin.Patches
                     (conn, msg) => GetBridge<RedBullNetworkBridge>(conn)?.ServerActivate()
                 );
 
+            // ── Jetpack ───────────────────────────────────────────────────────────
+            Writer<JetpackThrustStartMessage>.write  = JetpackMessageSerialization.WriteThrustStart;
+            Reader<JetpackThrustStartMessage>.read   = JetpackMessageSerialization.ReadThrustStart;
+            Writer<JetpackThrustStopMessage>.write   = JetpackMessageSerialization.WriteThrustStop;
+            Reader<JetpackThrustStopMessage>.read    = JetpackMessageSerialization.ReadThrustStop;
+            Writer<JetpackThrustBeginMessage>.write  = JetpackMessageSerialization.WriteThrustBegin;
+            Reader<JetpackThrustBeginMessage>.read   = JetpackMessageSerialization.ReadThrustBegin;
+            Writer<JetpackThrustEndMessage>.write    = JetpackMessageSerialization.WriteThrustEnd;
+            Reader<JetpackThrustEndMessage>.read     = JetpackMessageSerialization.ReadThrustEnd;
+            NetworkClient.RegisterHandler<JetpackThrustBeginMessage>(
+                JetpackNetworkBridge.HandleThrustBegin
+            );
+            NetworkClient.RegisterHandler<JetpackThrustEndMessage>(
+                JetpackNetworkBridge.HandleThrustEnd
+            );
+            if (NetworkServer.active)
+            {
+                NetworkServer.RegisterHandler<JetpackThrustStartMessage>(
+                    (conn, msg) => GetBridge<JetpackNetworkBridge>(conn)?.ServerHandleThrustStart()
+                );
+                NetworkServer.RegisterHandler<JetpackThrustStopMessage>(
+                    (conn, msg) => GetBridge<JetpackNetworkBridge>(conn)?.ServerHandleThrustStop()
+                );
+            }
+
             // ── Coffee Dispenser Red Bull visual swap ─────────────────────────────
             Writer<CoffeeDispenserRedBullMessage>.write =
                 RedBullMessageSerialization.WriteCoffeeDispenserRedBull;
