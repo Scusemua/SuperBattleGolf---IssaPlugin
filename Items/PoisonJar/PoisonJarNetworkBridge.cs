@@ -139,6 +139,14 @@ namespace IssaPlugin.Items
             float sqrDist = (localIdentity.transform.position - msg.Position).sqrMagnitude;
             if (sqrDist <= msg.Radius * msg.Radius)
             {
+                var localInfo = GameManager.LocalPlayerInfo;
+                if (localInfo != null && localInfo.IsElectromagnetShieldActive)
+                {
+                    Vector3 hitDir = (localIdentity.transform.position - msg.Position).normalized;
+                    localInfo.PlayElectromagnetShieldHitForAllClients(hitDir);
+                    return;
+                }
+
                 IssaPluginPlugin.Log.LogInfo(
                     $"[PoisonJar] Local player poisoned for {msg.Duration:F1}s"
                 );
