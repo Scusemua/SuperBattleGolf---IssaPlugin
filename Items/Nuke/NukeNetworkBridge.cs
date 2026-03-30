@@ -235,7 +235,7 @@ namespace IssaPlugin.Items
                 movement.transform.InverseTransformPoint(msg.Position), // localOrigin
                 toPlayer.magnitude, // distance
                 velocityChange, // used for unground check
-                false, // ignores electromagnetic shield
+                true, // does not ignore electromagnetic shield
                 msg.ItemUseId,
                 false, // fromSpecialState
                 true, // canFallbackToUnground
