@@ -209,14 +209,14 @@ namespace IssaPlugin
             // Top-left telemetry.
             float timeRemaining = Mathf.Max(0f, _duration - _elapsed);
             GUI.Label(
-                new Rect(16, 12, 300, 24),
+                new Rect(16, 12, 320, 28),
                 $"{System.DateTime.UtcNow:HH:mm:ss}Z",
                 _cornerStyle
             );
-            GUI.Label(new Rect(16, 34, 300, 24), "SYS: ARMED", _cornerStyle);
-            GUI.Label(new Rect(16, 56, 300, 24), "MODE: GUNSHIP", _cornerStyle);
+            GUI.Label(new Rect(16, 40, 320, 28), "SYS: ARMED", _cornerStyle);
+            GUI.Label(new Rect(16, 68, 320, 28), "MODE: GUNSHIP", _cornerStyle);
             GUI.Label(
-                new Rect(16, 78, 400, 24),
+                new Rect(16, 96, 420, 28),
                 $"TGT: ({_crosshairWorld.x:F0}, {_crosshairWorld.z:F0})",
                 _cornerStyle
             );
@@ -226,14 +226,14 @@ namespace IssaPlugin
             _timerStyle.normal.textColor = lowTime
                 ? new Color(1f, 0.2f, 0.2f)
                 : new Color(0f, 1f, 0.2f, 0.9f);
-            GUI.Label(new Rect(w - 220f, 12, 200, 30), $"TIME: {timeRemaining:F1}s", _timerStyle);
+            GUI.Label(new Rect(w - 240f, 12, 220, 34), $"TIME: {timeRemaining:F1}s", _timerStyle);
 
             // Mode indicator — top right, below timer.
             string modeLabel = _heavyMode ? "MODE: BIG SHOT" : "MODE: REGULAR";
             _modeStyle.normal.textColor = _heavyMode
                 ? new Color(1f, 0.45f, 0f, 1f)
                 : new Color(0f, 1f, 0.2f, 0.9f);
-            GUI.Label(new Rect(w - 220f, 44, 200, 26), modeLabel, _modeStyle);
+            GUI.Label(new Rect(w - 240f, 48, 220, 30), modeLabel, _modeStyle);
 
             // Big shot ammo panel — top right, below mode label.
             if (_heavyMode)
@@ -241,11 +241,11 @@ namespace IssaPlugin
                 if (_heavyReloading)
                 {
                     // Reload progress bar.
-                    GUI.Label(new Rect(w - 220f, 72, 200, 22), "RELOADING", _heavyAmmoStyle);
-                    float barW = 180f;
+                    GUI.Label(new Rect(w - 240f, 80, 220, 26), "RELOADING", _heavyAmmoStyle);
+                    float barW = 200f;
                     float barH = 8f;
-                    float barX = w - 210f;
-                    float barY = 96f;
+                    float barX = w - 230f;
+                    float barY = 108f;
                     // Track background.
                     GUI.color = new Color(1f, 1f, 1f, 0.2f);
                     GUI.DrawTexture(new Rect(barX, barY, barW, barH), Texture2D.whiteTexture);
@@ -263,8 +263,8 @@ namespace IssaPlugin
                     float pipSize = 14f;
                     float pipGap = 5f;
                     float totalW = _heavyMaxShots * (pipSize + pipGap) - pipGap;
-                    float startX = w - 210f + (180f - totalW) / 2f;
-                    float pipY = 76f;
+                    float startX = w - 230f + (200f - totalW) / 2f;
+                    float pipY = 84f;
                     for (int i = 0; i < _heavyMaxShots; i++)
                     {
                         float px = startX + i * (pipSize + pipGap);
@@ -283,10 +283,10 @@ namespace IssaPlugin
 
             // Bottom bar.
             if (_bgTex != null)
-                GUI.DrawTexture(new Rect(0, h - 80, w, 80), _bgTex);
-            GUI.Label(new Rect(0, h - 75, w, 35), "AC-130 GUNSHIP", _titleStyle);
+                GUI.DrawTexture(new Rect(0, h - 92, w, 92), _bgTex);
+            GUI.Label(new Rect(0, h - 90, w, 42), "AC-130 GUNSHIP", _titleStyle);
             GUI.Label(
-                new Rect(0, h - 42, w, 30),
+                new Rect(0, h - 48, w, 38),
                 "1: Regular   2: Big Shot   |   Aim: Mouse   |   Click: Shoot   |   Q/E: Raise/Lower   |   Shift: Speed Up   |   Space: Exit",
                 _instructionStyle
             );
@@ -314,18 +314,18 @@ namespace IssaPlugin
 
             // Top-left warning text.
             GUI.Label(
-                new Rect(16, 12, 400, 24),
+                new Rect(16, 12, 420, 28),
                 $"{System.DateTime.UtcNow:HH:mm:ss}Z",
                 _cornerStyle
             );
-            GUI.Label(new Rect(16, 34, 400, 24), "SYS: CRITICAL FAILURE", _cornerStyle);
-            GUI.Label(new Rect(16, 56, 400, 24), "MODE: MAYDAY", _cornerStyle);
+            GUI.Label(new Rect(16, 40, 420, 28), "SYS: CRITICAL FAILURE", _cornerStyle);
+            GUI.Label(new Rect(16, 68, 420, 28), "MODE: MAYDAY", _cornerStyle);
 
             // Flashing MAYDAY banner.
             if ((int)(Time.unscaledTime * 4f) % 2 == 0)
             {
                 GUI.Label(
-                    new Rect(0, h * 0.3f, w, 60),
+                    new Rect(0, h * 0.3f, w, 70),
                     "⚠  MAYDAY  MAYDAY  MAYDAY  ⚠",
                     _maydayStyle
                 );
@@ -333,10 +333,10 @@ namespace IssaPlugin
 
             // Bottom instructions.
             if (_bgTex != null)
-                GUI.DrawTexture(new Rect(0, h - 80, w, 80), _bgTex);
-            GUI.Label(new Rect(0, h - 75, w, 35), "GOING DOWN", _titleStyle);
+                GUI.DrawTexture(new Rect(0, h - 92, w, 92), _bgTex);
+            GUI.Label(new Rect(0, h - 90, w, 42), "GOING DOWN", _titleStyle);
             GUI.Label(
-                new Rect(0, h - 42, w, 30),
+                new Rect(0, h - 48, w, 38),
                 "W/S: Pull Up/Down   |   A/D: Roll",
                 _instructionStyle
             );
@@ -395,7 +395,7 @@ namespace IssaPlugin
                 _titleStyle = new GUIStyle(GUI.skin.label)
                 {
                     alignment = TextAnchor.MiddleCenter,
-                    fontSize = 28,
+                    fontSize = 32,
                     fontStyle = FontStyle.Bold,
                 };
                 _titleStyle.normal.textColor = new Color(1f, 0.5f, 0f);
@@ -406,7 +406,7 @@ namespace IssaPlugin
                 _instructionStyle = new GUIStyle(GUI.skin.label)
                 {
                     alignment = TextAnchor.MiddleCenter,
-                    fontSize = 18,
+                    fontSize = 22,
                     fontStyle = FontStyle.Bold,
                 };
                 _instructionStyle.normal.textColor = Color.white;
@@ -416,7 +416,7 @@ namespace IssaPlugin
             {
                 _cornerStyle = new GUIStyle(GUI.skin.label)
                 {
-                    fontSize = 20,
+                    fontSize = 24,
                     fontStyle = FontStyle.Bold,
                 };
                 _cornerStyle.normal.textColor = new Color(0f, 1f, 0.2f, 0.9f);
@@ -426,7 +426,7 @@ namespace IssaPlugin
             {
                 _timerStyle = new GUIStyle(GUI.skin.label)
                 {
-                    fontSize = 24,
+                    fontSize = 28,
                     fontStyle = FontStyle.Bold,
                     alignment = TextAnchor.MiddleRight,
                 };
@@ -437,7 +437,7 @@ namespace IssaPlugin
             {
                 _maydayStyle = new GUIStyle(GUI.skin.label)
                 {
-                    fontSize = 36,
+                    fontSize = 42,
                     fontStyle = FontStyle.Bold,
                     alignment = TextAnchor.MiddleCenter,
                 };
@@ -448,7 +448,7 @@ namespace IssaPlugin
             {
                 _modeStyle = new GUIStyle(GUI.skin.label)
                 {
-                    fontSize = 18,
+                    fontSize = 22,
                     fontStyle = FontStyle.Bold,
                     alignment = TextAnchor.MiddleRight,
                 };
@@ -459,7 +459,7 @@ namespace IssaPlugin
             {
                 _heavyAmmoStyle = new GUIStyle(GUI.skin.label)
                 {
-                    fontSize = 16,
+                    fontSize = 20,
                     fontStyle = FontStyle.Bold,
                     alignment = TextAnchor.MiddleRight,
                 };
