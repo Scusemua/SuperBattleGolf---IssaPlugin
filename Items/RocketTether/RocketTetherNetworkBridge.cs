@@ -189,6 +189,20 @@ namespace IssaPlugin.Items
                 return;
             }
 
+            // ── 4b. Electromagnetic shield check — reject lock-on if target is shielded ──
+            if (targetInfo.IsElectromagnetShieldActive)
+            {
+                IssaPluginPlugin.Log.LogInfo(
+                    "[RocketTether] Server: target has electromagnetic shield — rejecting lock-on."
+                );
+                GlobalSessionLock<RocketTetherNetworkBridge>.Release();
+                _wielderLinkerSlot = -1;
+                targetInfo.PlayElectromagnetShieldHitForAllClients(
+                    (targetInfo.transform.position - transform.position).normalized
+                );
+                return;
+            }
+
             var wielderNetId = GetComponent<NetworkIdentity>().netId;
 
             // ── 5. Compute rocket spawn position (just above target's head) ───
@@ -412,7 +426,7 @@ namespace IssaPlugin.Items
                             wielderInfo.transform.position
                         ),
                         Vector3.zero, // no extra velocity on connect
-                        false,
+                        true,
                         useId,
                         false,
                         true,
