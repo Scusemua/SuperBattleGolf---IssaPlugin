@@ -74,11 +74,20 @@ namespace IssaPlugin.Patches
             if (customEntries.Length == 0)
                 return;
 
-            foreach (var poolData in __instance.ItemPools)
-                InjectIntoPool(poolData.pool, customEntries);
+            var pools = __instance.ItemPools;
+            int n = pools.Count;
+            float boostFactor = Configuration.CatchupBoostFactor.Value;
+
+            for (int i = 0; i < n; i++)
+            {
+                // Pool 0 = closest to leader (no boost), last pool = furthest behind (max boost).
+                float t = n > 1 ? (float)i / (n - 1) : 0f;
+                float multiplier = 1f + boostFactor * t;
+                InjectIntoPool(pools[i].pool, customEntries, multiplier);
+            }
 
             if (__instance.AheadOfBallItemPool != null)
-                InjectIntoPool(__instance.AheadOfBallItemPool, customEntries);
+                InjectIntoPool(__instance.AheadOfBallItemPool, customEntries, 1f);
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[ItemPool] Injected {customEntries.Length} custom items into item box pools."
@@ -88,10 +97,11 @@ namespace IssaPlugin.Patches
         private static ItemPool.ItemSpawnChance[] BuildCustomEntries()
         {
             if (!Configuration.CustomItemSpawnsEnabled.Value)
-            {
-                // If they're disabled altogether, then we'll just return an empty list.
                 return [];
-            }
+
+            float rate = Configuration.CustomItemSpawnRate.Value;
+            if (rate <= 0f)
+                return [];
 
             var list = new List<ItemPool.ItemSpawnChance>();
             foreach (var itemDefinition in ItemRegistry.AllItems)
@@ -101,14 +111,18 @@ namespace IssaPlugin.Patches
                         new ItemPool.ItemSpawnChance
                         {
                             item = itemDefinition.ItemType,
-                            spawnChanceWeight = itemDefinition.SpawnWeight,
+                            spawnChanceWeight = itemDefinition.SpawnWeight * rate,
                         }
                     );
             }
             return list.ToArray();
         }
 
-        private static void InjectIntoPool(ItemPool pool, ItemPool.ItemSpawnChance[] customEntries)
+        private static void InjectIntoPool(
+            ItemPool pool,
+            ItemPool.ItemSpawnChance[] customEntries,
+            float multiplier
+        )
         {
             if (pool == null)
                 return;
@@ -119,7 +133,12 @@ namespace IssaPlugin.Patches
 
             var merged = new ItemPool.ItemSpawnChance[existing.Length + customEntries.Length];
             Array.Copy(existing, 0, merged, 0, existing.Length);
-            Array.Copy(customEntries, 0, merged, existing.Length, customEntries.Length);
+            for (int i = 0; i < customEntries.Length; i++)
+                merged[existing.Length + i] = new ItemPool.ItemSpawnChance
+                {
+                    item = customEntries[i].item,
+                    spawnChanceWeight = customEntries[i].spawnChanceWeight * multiplier,
+                };
 
             SpawnChancesField.SetValue(pool, merged);
 

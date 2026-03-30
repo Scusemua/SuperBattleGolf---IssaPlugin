@@ -10,6 +10,16 @@ namespace IssaPlugin
         // having to set all spawn weights to 0.
         public static ConfigEntry<bool> CustomItemSpawnsEnabled { get; private set; }
 
+        // Global multiplier applied to every custom item's spawn weight before injection.
+        // 1.0 = default behaviour. 0.5 = half as likely overall. 0.0 = same as disabling.
+        public static ConfigEntry<float> CustomItemSpawnRate { get; private set; }
+
+        // Scales custom item spawn weights upward for players further behind the leader.
+        // At 0, all pools get the same weight (no catchup). At 1, the furthest-behind pool
+        // gets 2× the base custom item weight; the closest pool stays at 1×. Scales linearly
+        // across pools in between.
+        public static ConfigEntry<float> CatchupBoostFactor { get; private set; }
+
         // Whether non-host clients can use item hotkeys to give themselves items.
         // The host is always exempt and can always give themselves items.
         public static ConfigEntry<bool> AllowHotkeyItemGiving { get; private set; }
@@ -463,6 +473,13 @@ namespace IssaPlugin
                 "Master kill-switch for allowing custom items to be spawned without having to set all spawn weights to 0."
             );
 
+            CustomItemSpawnRate = cfg.Bind(
+                "IssaPlugin",
+                "CustomItemSpawnRate",
+                1.0f,
+                "Global multiplier applied to every custom item's spawn weight. 1.0 = default, 0.5 = half as frequent, 0.0 = never spawn."
+            );
+
             AllowHotkeyItemGiving = cfg.Bind(
                 "IssaPlugin",
                 "AllowHotkeyItemGiving",
@@ -482,6 +499,16 @@ namespace IssaPlugin
                 "NumInventorySlots",
                 6f,
                 "Change the number of inventory slots available."
+            );
+
+            CatchupBoostFactor = cfg.Bind(
+                "ItemBoxSpawns",
+                "CatchupBoostFactor",
+                1f,
+                "Multiplies custom item spawn weights for players further behind the leader. "
+                    + "At 0, every item box pool has equal custom item chances. "
+                    + "At 1 (default), the pool for the furthest-behind player gets 2× the weight of the closest pool. "
+                    + "At 2 it gets 3×, etc. Set to 0 to disable catchup scaling."
             );
 
             // ── Per-item enabled flags (populated by vote results at runtime) ────
