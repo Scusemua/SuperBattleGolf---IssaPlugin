@@ -124,7 +124,7 @@ namespace IssaPlugin.Overlays
             _labelStyle.normal.textColor = Color.white;
             GUI.Label(
                 new Rect(barX, barY, barW, barH),
-                $"LOW GRAVITY  {remaining:F1}s",
+                $"Low Gravity Time Remaining:  {remaining:F1}s",
                 _labelStyle
             );
         }
