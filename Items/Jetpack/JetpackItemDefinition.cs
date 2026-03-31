@@ -5,12 +5,12 @@ namespace IssaPlugin.Items
 {
     public class JetpackItemDefinition : CustomItemDefinition
     {
-        public override ItemType ItemType      => ItemRegistry.JetpackItemType;
-        public override string DisplayName     => "Jetpack";
+        public override ItemType ItemType => ItemRegistry.JetpackItemType;
+        public override string DisplayName => "Jetpack";
         public override string[] ConsoleAliases => new[] { "jetpack", "jet", "jetpak" };
 
-        public override Sprite Icon              => AssetLoader.JetpackIcon;
-        public override GameObject HeldModelPrefab => AssetLoader.JetpackHandheldPrefab;
+        public override Sprite Icon => AssetLoader.JetpackIcon;
+        public override GameObject HeldModelPrefab => AssetLoader.JetpackEquippedPrefab;
 
         // UseRocketIconFallback not overridden — base class default (true) uses the
         // rocket-launcher icon as placeholder, which is more appropriate than pistol.
