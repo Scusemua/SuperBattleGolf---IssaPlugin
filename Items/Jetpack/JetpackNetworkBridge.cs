@@ -139,8 +139,11 @@ namespace IssaPlugin.Items
             )
             {
                 _equippedPrefabInstance = Object.Instantiate(AssetLoader.JetpackEquippedPrefab);
+                var rb = _equippedPrefabInstance.gameObject.GetComponent<Rigidbody>();
+                rb.isKinematic = true;
+                rb.useGravity = false;
                 _equippedPrefabInstance.transform.SetParent(transform, false);
-                _equippedPrefabInstance.transform.localPosition = Vector3.zero;
+                _equippedPrefabInstance.transform.localPosition = new Vector3(0f, 0.5f, -0.2f);
                 _equippedPrefabInstance.transform.localRotation = Quaternion.identity;
             }
             else if (!jetpackActive && _equippedPrefabInstance != null)

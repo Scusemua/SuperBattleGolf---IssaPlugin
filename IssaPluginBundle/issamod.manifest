@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 4135616610
+CRC: 2756881837
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: f3281d06db4f3333af69e89c633132d3
+    Hash: dad0cb9febceaf8b4f267654506923e6
   TypeTreeHash:
     serializedVersion: 2
     Hash: 12d32a6d7b1bccbbbbab418431dfa151
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: cfd3a8eccf991010e66e6420cb3a63e4
+    Hash: 6a8a10819a44da1df45932fa05aa2132
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -148,6 +148,7 @@ Assets:
 - Assets/Assets/ak47_icon.png
 - Assets/Assets/electric_whip_icon.png
 - Assets/Assets/NukeExplosionFire.prefab
+- Assets/Assets/jetpack_handheld.prefab
 - Assets/Assets/bear_icon.png
 - Assets/Assets/predator_missile_tablet.prefab
 - Assets/Assets/snowball.prefab

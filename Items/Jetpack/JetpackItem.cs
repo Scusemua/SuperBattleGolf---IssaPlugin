@@ -27,6 +27,15 @@ namespace IssaPlugin.Items
             if (_isFlying)
                 yield break;
 
+            // Guard: TryUseItem can be retried by the game's input buffer system at moments
+            // other than the actual button-press (e.g. when the item is selected while the
+            // Swing action buffer is still active). Without this check the do-while executes
+            // one iteration — applying a single frame of upward force — before the condition
+            // is evaluated, which the player perceives as thrust firing without pressing the
+            // mouse button.
+            if (Mouse.current == null || !Mouse.current.leftButton.isPressed)
+                yield break;
+
             _isFlying = true;
 
             var bridge = inventory.GetComponent<JetpackNetworkBridge>();

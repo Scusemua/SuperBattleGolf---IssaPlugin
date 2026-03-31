@@ -10,7 +10,7 @@ namespace IssaPlugin.Items
         public override string[] ConsoleAliases => new[] { "jetpack", "jet", "jetpak" };
 
         public override Sprite Icon => AssetLoader.JetpackIcon;
-        public override GameObject HeldModelPrefab => AssetLoader.JetpackEquippedPrefab;
+        public override GameObject HeldModelPrefab => AssetLoader.JetpackHandheldPrefab;
 
         // UseRocketIconFallback not overridden — base class default (true) uses the
         // rocket-launcher icon as placeholder, which is more appropriate than pistol.
@@ -23,7 +23,12 @@ namespace IssaPlugin.Items
         }
         public override Key GiveKey => Configuration.JetpackGiveKey.Value;
 
-        public override void OnUse(PlayerInventory inventory) =>
+        public override void OnUse(PlayerInventory inventory)
+        {
+            IssaPluginPlugin.Log.LogInfo(
+                $"[Jetpack] Player {inventory.PlayerInfo.PlayerId.PlayerName} is using Jetpack."
+            );
             inventory.StartCoroutine(JetpackItem.FireLoop(inventory));
+        }
     }
 }
