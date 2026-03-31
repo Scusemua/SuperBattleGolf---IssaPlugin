@@ -12,8 +12,8 @@ namespace IssaPlugin.Overlays
     /// </summary>
     internal static class EffectBarLayout
     {
-        public const float BarHeight = 24f;
-        public const float BarWidthFraction = 0.5f; // fraction of screen width
+        public const float BarHeight = 28f;
+        public const float BarWidthFraction = 0.375f; // fraction of screen width
         private const float BarGap = 6f;
         private const float BottomMargin = 52f;
 
