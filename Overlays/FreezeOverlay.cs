@@ -116,7 +116,7 @@ namespace IssaPlugin.Overlays
             _labelStyle.normal.textColor = Color.white;
             GUI.Label(
                 new Rect(barX, barY, barW, barH),
-                $"FREEZE WORLD  {remaining:F1}s",
+                $"Freeze Time Remaining:  {remaining:F1}s",
                 _labelStyle
             );
         }
