@@ -266,9 +266,13 @@ Assets used in the project:
     (https://skfb.ly/ozuFr) by KillCaptureDestroy 
     Licensed under Creative Commons Attribution-NonCommercial 
 
--   "Gravity Gun (Retry School)"
+-   "Gravity Gun (Retry School)"\
     (https://skfb.ly/pxyOF) by Pixman 
     Licensed under Creative Commons Attribution
+
+-   Jetpack by Poly\
+    (https://poly.pizza/m/a19dX3Vgo3S) by Google via Poly Pizza 
+    Licensed under Creative Commons Attribution 3.0 Unported
 
 ---
 
