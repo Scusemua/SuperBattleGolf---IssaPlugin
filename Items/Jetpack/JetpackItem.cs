@@ -72,7 +72,10 @@ namespace IssaPlugin.Items
                         ItemHelper.DecrementAndRemove(inventory, slot);
 
                         // Stop if all canisters are now exhausted.
-                        if (inventory.GetEffectivelyEquippedItem(true) != ItemRegistry.JetpackItemType)
+                        if (
+                            inventory.GetEffectivelyEquippedItem(true)
+                            != ItemRegistry.JetpackItemType
+                        )
                             break;
 
                         // Reload the next canister — re-read config so in-session changes
@@ -81,7 +84,6 @@ namespace IssaPlugin.Items
                     }
 
                     yield return new WaitForFixedUpdate();
-
                 } while (Mouse.current != null && Mouse.current.leftButton.isPressed);
             }
             finally

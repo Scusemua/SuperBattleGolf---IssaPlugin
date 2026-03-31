@@ -39,8 +39,7 @@ namespace IssaPlugin.Items
         public void ClientNotifyThrustStart() =>
             NetworkClient.Send(new JetpackThrustStartMessage());
 
-        public void ClientNotifyThrustStop() =>
-            NetworkClient.Send(new JetpackThrustStopMessage());
+        public void ClientNotifyThrustStop() => NetworkClient.Send(new JetpackThrustStopMessage());
 
         // ================================================================
         //  Server handlers — registered in NetworkManagerPatches
@@ -129,11 +128,15 @@ namespace IssaPlugin.Items
                 return;
 
             var inventory = GetComponent<PlayerInventory>();
-            bool jetpackActive = inventory != null
+            bool jetpackActive =
+                inventory != null
                 && inventory.GetEffectivelyEquippedItem(true) == ItemRegistry.JetpackItemType;
 
-            if (jetpackActive && _equippedPrefabInstance == null
-                && AssetLoader.JetpackEquippedPrefab != null)
+            if (
+                jetpackActive
+                && _equippedPrefabInstance == null
+                && AssetLoader.JetpackEquippedPrefab != null
+            )
             {
                 _equippedPrefabInstance = Object.Instantiate(AssetLoader.JetpackEquippedPrefab);
                 _equippedPrefabInstance.transform.SetParent(transform, false);

@@ -132,10 +132,6 @@ namespace IssaPlugin.Items
         /// Bundle asset name: <c>jetpack_icon.png</c>
         public static Sprite JetpackIcon { get; private set; }
 
-        /// The model the player holds while the Jetpack item is equipped.
-        /// Bundle asset name: <c>jetpack_handheld.prefab</c>
-        public static GameObject JetpackHandheldPrefab { get; private set; }
-
         /// Local-only body-worn prefab (backpack), shown on the local player while the
         /// Jetpack is their active item. Not networked — managed by JetpackNetworkBridge.Update().
         /// Bundle asset name: <c>jetpack_equipped.prefab</c>
@@ -710,14 +706,10 @@ namespace IssaPlugin.Items
         {
             JetpackIcon = LoadSprite("jetpack_icon.png");
 
-            JetpackHandheldPrefab = Load<GameObject>("jetpack_handheld.prefab");
-            if (JetpackHandheldPrefab != null)
-                DisableRigidbody(JetpackHandheldPrefab);
-
             // Both prefabs below are local-only (instantiated without a network context),
             // so Mirror components must be stripped to prevent NullReferenceExceptions —
             // same pattern as RedBullTrailPrefab and BlackHoleVfxPrefab.
-            JetpackEquippedPrefab = Load<GameObject>("jetpack_equipped.prefab");
+            JetpackEquippedPrefab = Load<GameObject>("jetpack.prefab");
             if (JetpackEquippedPrefab != null)
                 StripNetworkComponents(JetpackEquippedPrefab);
 

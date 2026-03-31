@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 4283483992
+CRC: 4135616610
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 528733d10c1d405bd6ed02ae6b424d1c
+    Hash: f3281d06db4f3333af69e89c633132d3
   TypeTreeHash:
     serializedVersion: 2
     Hash: 12d32a6d7b1bccbbbbab418431dfa151
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 4f766d38df457d9b1d57909167c77b3b
+    Hash: cfd3a8eccf991010e66e6420cb3a63e4
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -80,6 +80,7 @@ Assets:
 - Assets/Assets/nuclear_explosion.prefab
 - Assets/Assets/blood_explosion_vfx.prefab
 - Assets/Assets/teddy.prefab
+- Assets/Assets/jetpack.prefab
 - Assets/Assets/donut_model.prefab
 - Assets/Assets/missile_icon.png
 - Assets/Assets/harrier.prefab
@@ -94,11 +95,11 @@ Assets:
 - Assets/Assets/redbull_icon.png
 - Assets/Assets/ak47.prefab
 - Assets/Assets/donut_icon.png
-- Assets/Assets/ConfettiBlastRainbow.prefab
+- Assets/Assets/bear.prefab
 - Assets/Assets/position_swap_icon.png
 - Assets/Assets/super_donut_icon.png
-- Assets/Assets/bear.prefab
 - Assets/Assets/poison_bottle_icon.png
+- Assets/Assets/ConfettiBlastRainbow.prefab
 - Assets/Assets/bat_icon.png
 - Assets/Assets/donut_icon_v2.png
 - Assets/Assets/harrier_tablet.prefab
@@ -107,11 +108,12 @@ Assets:
 - Assets/Assets/bat_model.prefab
 - Assets/Assets/javelin_icon.png
 - Assets/Assets/drone_swarm_icon.png
+- Assets/Assets/jetpack_particles.prefab
 - Assets/Assets/position_swap_smoke.prefab
 - Assets/Assets/wall_icon.png
 - Assets/Assets/intervention.prefab
+- Assets/Assets/jetpack_icon.png
 - Assets/Assets/player_linker.prefab
-- Assets/Assets/black_hole.prefab
 - Assets/Assets/position_swap_orb.prefab
 - Assets/Assets/sniper_rifle_icon.png
 - Assets/Assets/drone_swarm_tablet.prefab
@@ -121,6 +123,7 @@ Assets:
 - Assets/Assets/bomber_model.prefab
 - Assets/Assets/smoke_prefab.prefab
 - Assets/Assets/player_linker_rocket.prefab
+- Assets/Assets/black_hole.prefab
 - Assets/Assets/sniper_scope.png
 - Assets/Assets/nuclear_bomb.prefab
 - Assets/Assets/posion_bottle.prefab
