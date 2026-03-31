@@ -84,10 +84,6 @@ namespace IssaPlugin.Items
 
             FuelFraction = Mathf.Clamp01(_fuelRemaining / Configuration.JetpackFuelPerUse.Value);
 
-            IssaPluginPlugin.Log.LogInfo(
-                $"[Jetpack] Thrust started for player '{inventory.PlayerInfo.PlayerId.PlayerName}': fuel={_fuelRemaining:F2} (frac={FuelFraction:F2})"
-            );
-
             try
             {
                 do
@@ -132,7 +128,9 @@ namespace IssaPlugin.Items
 
                     yield return new WaitForFixedUpdate();
                 } while (
-                    Mouse.current != null && Mouse.current.leftButton.isPressed && _fuelRemaining > 0
+                    Mouse.current != null
+                    && Mouse.current.leftButton.isPressed
+                    && _fuelRemaining > 0
                 );
             }
             finally
