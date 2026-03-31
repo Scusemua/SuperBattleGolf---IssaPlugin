@@ -408,10 +408,10 @@ namespace IssaPlugin
         public static ConfigEntry<float> RocketTetherExplosionRadius { get; private set; }
 
         // --- Jetpack ---
-        public static ConfigEntry<Key>   JetpackGiveKey     { get; private set; }
-        public static ConfigEntry<float> JetpackUses        { get; private set; }
+        public static ConfigEntry<Key> JetpackGiveKey { get; private set; }
+        public static ConfigEntry<float> JetpackUses { get; private set; }
         public static ConfigEntry<float> JetpackSpawnWeight { get; private set; }
-        public static ConfigEntry<float> JetpackFuelPerUse  { get; private set; }
+        public static ConfigEntry<float> JetpackFuelPerUse { get; private set; }
         public static ConfigEntry<float> JetpackThrustForce { get; private set; }
 
         // --- Poison Jar ---
@@ -2973,13 +2973,13 @@ namespace IssaPlugin
             JetpackGiveKey = cfg.Bind(
                 "Jetpack",
                 "JetpackGiveKey",
-                Key.Numpad9,
+                Key.End,
                 "Hotkey to give yourself a Jetpack (debug/testing)."
             );
             JetpackUses = cfg.Bind(
                 "Jetpack",
                 "Uses",
-                3f,
+                1f,
                 "Number of fuel canisters per Jetpack pickup. Each canister provides JetpackFuelPerUse seconds of thrust."
             );
             JetpackSpawnWeight = cfg.Bind(
@@ -2991,13 +2991,13 @@ namespace IssaPlugin
             JetpackFuelPerUse = cfg.Bind(
                 "Jetpack",
                 "FuelPerUse",
-                5f,
+                1f,
                 "Seconds of thrust provided by each fuel canister. When exhausted, one use is consumed."
             );
             JetpackThrustForce = cfg.Bind(
                 "Jetpack",
                 "ThrustForce",
-                25f,
+                35f,
                 "Upward acceleration (m/s²) applied each physics step while thrusting. Uses ForceMode.Acceleration."
             );
         }
