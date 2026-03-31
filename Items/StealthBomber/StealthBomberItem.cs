@@ -30,10 +30,15 @@ namespace IssaPlugin.Items
         /// locate the visual and switch it to crash behaviour.
         public static GameObject ActiveBomberVisual { get; set; }
 
+        private static Material _sharedStripMat;
+
         /// Instance IDs of rockets that were dropped by the bombing run itself.
         /// Used by Patch_Rocket_ServerExplode to prevent a bomber's own bombs
         /// from counting as a hit on the bomber's own proxy.
         internal static readonly HashSet<int> ActiveBomberDropRocketIds = new();
+
+        private static float _terrainSampleTimer = 0f;
+        private const float _terrainSampleInterval = 0.05f; // 20Hz
 
         private class TargetingResult
         {
@@ -118,6 +123,8 @@ namespace IssaPlugin.Items
             GameObject pivotGo
         )
         {
+            _terrainSampleTimer += Time.deltaTime;
+
             float inputX = 0f,
                 inputZ = 0f;
 
@@ -146,11 +153,31 @@ namespace IssaPlugin.Items
             Vector3 worldMove =
                 (camRight * inputX + camForward * inputZ) * moveSpeed * Time.deltaTime;
             stripGo.transform.position += worldMove;
-            pivotGo.transform.position = new Vector3(
+            var newPivotPos = new Vector3(
                 stripGo.transform.position.x,
                 pivotGo.transform.position.y,
                 stripGo.transform.position.z
             );
+
+            if (newPivotPos != pivotGo.transform.position)
+            {
+                if (_terrainSampleTimer >= _terrainSampleInterval)
+                {
+                    _terrainSampleTimer = 0f;
+
+                    var stripPosition = stripGo.transform.position;
+                    stripPosition.y =
+                        ItemHelper.SampleTerrainY(stripPosition.x, stripPosition.z, stripPosition.y)
+                        + 10f;
+                    stripGo.transform.position = stripPosition;
+
+                    newPivotPos.y =
+                        ItemHelper.SampleTerrainY(newPivotPos.x, newPivotPos.z, newPivotPos.y)
+                        + 10f;
+                }
+
+                pivotGo.transform.position = newPivotPos;
+            }
         }
 
         private static void HandleTargetingRotation(
@@ -225,7 +252,9 @@ namespace IssaPlugin.Items
                 }
 
                 HandleTargetingMovement(keyboard, orbitModule, moveSpeed, stripGo, pivotGo);
-                HandleTargetingRotation(keyboard, rotateSpeed, ref stripAngle, stripGo);
+
+                if (keyboard[Key.Q].isPressed || keyboard[Key.E].isPressed)
+                    HandleTargetingRotation(keyboard, rotateSpeed, ref stripAngle, stripGo);
 
                 if (orbitModule != null && mouse != null)
                 {
@@ -410,7 +439,13 @@ namespace IssaPlugin.Items
                         UnityEngine.Random.Range(-angularJitter, angularJitter),
                         0f
                     );
-                    SpawnRocket(inventory, bomberPos + offset + Vector3.down * Configuration.BomberRocketSpawnDepth.Value, jitter);
+                    SpawnRocket(
+                        inventory,
+                        bomberPos
+                            + offset
+                            + Vector3.down * Configuration.BomberRocketSpawnDepth.Value,
+                        jitter
+                    );
                     rocketsDropped++;
 
                     yield return new WaitForSeconds(rocketInterval);
@@ -589,17 +624,22 @@ namespace IssaPlugin.Items
             var renderer = go.GetComponent<Renderer>();
             if (renderer != null)
             {
-                var shader =
-                    Shader.Find("Sprites/Default")
-                    ?? Shader.Find("UI/Default")
-                    ?? Shader.Find("Unlit/Color");
+                if (_sharedStripMat == null)
+                {
+                    var shader =
+                        Shader.Find("Sprites/Default")
+                        ?? Shader.Find("UI/Default")
+                        ?? Shader.Find("Unlit/Color");
 
-                var mat = new Material(shader);
-                mat.color = color;
-                mat.SetInt("_ZTest", (int)UnityEngine.Rendering.CompareFunction.Always);
-                mat.SetInt("_ZWrite", 0);
-                mat.renderQueue = 3100;
-                renderer.material = mat;
+                    _sharedStripMat = new Material(shader) { color = color };
+                    _sharedStripMat.SetInt(
+                        "_ZTest",
+                        (int)UnityEngine.Rendering.CompareFunction.Always
+                    );
+                    _sharedStripMat.SetInt("_ZWrite", 0);
+                    _sharedStripMat.renderQueue = 3100;
+                }
+                renderer.material = _sharedStripMat;
             }
 
             return go;

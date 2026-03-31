@@ -24,8 +24,6 @@ namespace IssaPlugin.Items
     {
         private static bool _isTargeting;
         private static bool _targetingCancelled;
-        private static readonly int TerrainLayer = LayerMask.NameToLayer("Terrain");
-        private static readonly RaycastHit[] raycastHitBuffer = new RaycastHit[30];
 
         public static bool IsTargeting => _isTargeting;
 
@@ -86,7 +84,7 @@ namespace IssaPlugin.Items
 
             // Place the marker above the player's current position, snapped to terrain.
             var playerPos = inventory.PlayerInfo.transform.position;
-            float snappedY = SampleTerrainY(playerPos.x, playerPos.z, playerPos.y);
+            float snappedY = ItemHelper.SampleTerrainY(playerPos.x, playerPos.z, playerPos.y);
             var markerStartPos = new Vector3(playerPos.x, snappedY, playerPos.z);
 
             var pivotGo = new GameObject("TeleporterTargetPivot");
@@ -210,51 +208,12 @@ namespace IssaPlugin.Items
 
             // Apply XZ movement then snap Y to the terrain surface.
             Vector3 pos = markerGo.transform.position + worldMove;
-            pos.y = SampleTerrainY(pos.x, pos.z, markerGo.transform.position.y);
+            pos.y = ItemHelper.SampleTerrainY(pos.x, pos.z, markerGo.transform.position.y);
             markerGo.transform.position = pos;
 
             // Keep pivot aligned horizontally with the marker so the camera
             // follows without drifting vertically.
             pivotGo.transform.position = new Vector3(pos.x, pivotGo.transform.position.y, pos.z);
-        }
-
-        /// <summary>
-        /// Casts a ray straight down from well above the given XZ coordinate and
-        /// returns the Y of the first ground hit, offset slightly upward so the
-        /// marker disc sits on top of the surface rather than clipping into it.
-        ///
-        /// Falls back to <paramref name="fallbackY"/> when nothing is hit (e.g. the
-        /// marker is dragged over a void or out-of-bounds area).
-        ///
-        /// Performance note: a single Physics.Raycast per frame is negligible.
-        /// The layer mask excludes players and triggers so we only hit solid world
-        /// geometry. Tighten the mask further if your project has a dedicated
-        /// "Terrain" or "Ground" layer.
-        /// </summary>
-        private static float SampleTerrainY(float x, float z, float fallbackY)
-        {
-            // Cast from 2000 units above so even tall geometry is captured.
-            const float castOriginHeight = 2000f;
-            const float markerSurfaceOffset = 0.5f; // sits this far above the hit point
-
-            var origin = new Vector3(x, castOriginHeight, z);
-            int numHits = Physics.RaycastNonAlloc(
-                origin,
-                Vector3.down,
-                raycastHitBuffer,
-                castOriginHeight * 2f,
-                GameManager.LayerSettings.PlayerGroundableMask,
-                QueryTriggerInteraction.Ignore
-            );
-            if (numHits > 0)
-            {
-                var hit = raycastHitBuffer[0];
-                return hit.point.y + markerSurfaceOffset;
-            }
-
-            // Nothing hit — keep the marker at its current height so it doesn't
-            // snap to zero over a void.
-            return fallbackY;
         }
 
         // ────────────────────────────────────────────────────────────────
