@@ -177,6 +177,8 @@ namespace IssaPlugin.Items
         {
             ClientHideParticles();
             ClientDestroyEquippedPrefab();
+            if (isLocalPlayer)
+                JetpackItem.ResetFuel();
         }
 
         public override void OnStopServer()

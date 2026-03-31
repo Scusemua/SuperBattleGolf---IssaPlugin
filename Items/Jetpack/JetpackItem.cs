@@ -8,8 +8,9 @@ namespace IssaPlugin.Items
     /// Jetpack thrust logic — local-only physics, networked VFX via JetpackNetworkBridge.
     ///
     /// Fuel model: each "use" (canister) provides JetpackFuelPerUse seconds of thrust.
-    /// The loop drains fuel by Time.fixedDeltaTime each physics step. On canister
-    /// exhaustion DecrementAndRemove is called. When all canisters are gone the loop exits.
+    /// Fuel persists across press/release cycles — releasing LMB pauses consumption;
+    /// the next press resumes from the same level. Only exhausting a full canister
+    /// (fuel reaching zero) calls DecrementAndRemove and loads the next canister.
     /// Releasing LMB or switching items also exits the loop cleanly.
     ///
     /// Force is applied via AddForce inside a WaitForFixedUpdate coroutine so each call
@@ -22,8 +23,32 @@ namespace IssaPlugin.Items
         // local player can fly at a time.
         private static bool _isFlying;
 
+        // Persists across press/release cycles so releasing LMB does not refill the canister.
+        // Sentinel value -1 means "not yet initialised for this canister".
+        private static float _fuelRemaining = -1f;
+
+        /// <summary>
+        /// True while the local player is actively thrusting. Read by JetpackOverlay.
+        /// </summary>
+        public static bool IsFlying => _isFlying;
+
+        /// <summary>
+        /// Fraction of the current canister's fuel remaining [0, 1].
+        /// 1.0 when not flying (full canister ready). Updated each physics step during flight.
+        /// Read by JetpackOverlay to render the fuel gauge.
+        /// </summary>
+        public static float FuelFraction { get; private set; } = 1f;
+
+        /// <summary>
+        /// Resets the current canister to full. Call from hole cleanup so that the next
+        /// hole always starts with a fresh canister.
+        /// </summary>
+        public static void ResetFuel() => _fuelRemaining = -1f;
+
         public static IEnumerator FireLoop(PlayerInventory inventory)
         {
+            inventory.PlayerInfo.Movement.TryTriggerJump();
+
             if (_isFlying)
                 yield break;
 
@@ -52,7 +77,16 @@ namespace IssaPlugin.Items
             bridge?.ClientNotifyThrustStart();
             ItemHelper.SetCurrentItemUse(inventory, ItemUseType.Regular);
 
-            float fuelRemaining = Configuration.JetpackFuelPerUse.Value;
+            // Initialise fuel on first use of this canister; subsequent presses resume
+            // from the level at which the player last released LMB.
+            if (_fuelRemaining < 0f)
+                _fuelRemaining = Configuration.JetpackFuelPerUse.Value;
+
+            FuelFraction = Mathf.Clamp01(_fuelRemaining / Configuration.JetpackFuelPerUse.Value);
+
+            IssaPluginPlugin.Log.LogInfo(
+                $"[Jetpack] Thrust started for player '{inventory.PlayerInfo.PlayerId.PlayerName}': fuel={_fuelRemaining:F2} (frac={FuelFraction:F2})"
+            );
 
             try
             {
@@ -73,9 +107,12 @@ namespace IssaPlugin.Items
 
                     // Drain fuel by the fixed timestep so consumption is physics-accurate
                     // and does not vary with render framerate.
-                    fuelRemaining -= Time.fixedDeltaTime;
+                    _fuelRemaining -= Time.fixedDeltaTime;
+                    FuelFraction = Mathf.Clamp01(
+                        _fuelRemaining / Configuration.JetpackFuelPerUse.Value
+                    );
 
-                    if (fuelRemaining <= 0f)
+                    if (_fuelRemaining <= 0f)
                     {
                         int slot = inventory.EquippedItemIndex;
                         ItemHelper.DecrementAndRemove(inventory, slot);
@@ -89,11 +126,14 @@ namespace IssaPlugin.Items
 
                         // Reload the next canister — re-read config so in-session changes
                         // take effect between canisters.
-                        fuelRemaining = Configuration.JetpackFuelPerUse.Value;
+                        _fuelRemaining = Configuration.JetpackFuelPerUse.Value;
+                        FuelFraction = 1f;
                     }
 
                     yield return new WaitForFixedUpdate();
-                } while (Mouse.current != null && Mouse.current.leftButton.isPressed);
+                } while (
+                    Mouse.current != null && Mouse.current.leftButton.isPressed && _fuelRemaining > 0
+                );
             }
             finally
             {
@@ -103,6 +143,8 @@ namespace IssaPlugin.Items
                 ItemHelper.SetCurrentItemUse(inventory, ItemUseType.None);
                 bridge?.ClientNotifyThrustStop();
                 _isFlying = false;
+                // Do NOT reset _fuelRemaining here — the canister level persists until
+                // it is fully exhausted or the hole ends (see ResetFuel / ClientHoleCleanup).
             }
         }
     }
