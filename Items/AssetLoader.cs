@@ -146,6 +146,21 @@ namespace IssaPlugin.Items
         /// Bundle asset name: <c>jetpack_particles.prefab</c>
         public static GameObject JetpackParticlePrefab { get; private set; }
 
+        // --- Teleporter ---
+        /// Inventory icon for the Teleporter.
+        /// Bundle asset name: <c>teleporter_icon.png</c>
+        public static Sprite TeleporterIcon { get; private set; }
+
+        /// The model the player holds while the Teleporter item is equipped.
+        /// Bundle asset name: <c>teleporter_handheld.prefab</c>
+        public static GameObject TeleporterHandheldPrefab { get; private set; }
+
+        /// Local-only particle system spawned on all clients at both the origin and
+        /// destination when a teleport fires.
+        /// Not networked — each client instantiates and auto-destroys its own copy.
+        /// Bundle asset name: <c>teleporter_vfx.prefab</c>
+        public static GameObject TeleporterVfxPrefab { get; private set; }
+
         // --- Drone Swarm ---
         public static Sprite DroneSwarmIcon { get; private set; }
 
@@ -309,6 +324,9 @@ namespace IssaPlugin.Items
             LoadRocketTetherAssets();
             LoadJetpackAssets();
 
+            // Load after position swap, as we reuse PositionSwapSmokePrefab for teleporter.
+            LoadTeleporterAssets();
+
             IssaPluginPlugin.Log.LogInfo("[Assets] IssaPluginBundle loaded.");
         }
 
@@ -336,6 +354,7 @@ namespace IssaPlugin.Items
             ElectricGravityGunIcon = LoadSprite("gravity_gun_icon.png");
             RedBullIcon = LoadSprite("redbull_icon.png");
             RocketTetherIcon = LoadSprite("rocket_tether_icon.png");
+            TeleporterIcon = LoadSprite("teleporter_icon.png");
 
             SniperScopeTexture = LoadTexture2D("sniper_scope.png");
             if (SniperScopeTexture == null)
@@ -680,6 +699,27 @@ namespace IssaPlugin.Items
             RocketTetherRocketPrefab = Load<GameObject>("player_linker_rocket.prefab");
             if (RocketTetherRocketPrefab != null)
                 StripNetworkComponents(RocketTetherRocketPrefab);
+        }
+
+        private static void LoadTeleporterAssets()
+        {
+            // Icon — falls back to the rocket launcher icon if absent (handled by ItemRegistry).
+            // Bundle asset name: teleporter_icon.png
+            // (TeleporterIcon is already loaded in LoadSpritesAndTextures; this method only
+            //  loads the prefabs that are not needed until the item is actually used.)
+
+            // Handheld model shown while the item is equipped.
+            // Bundle asset name: teleporter_handheld.prefab
+            TeleporterHandheldPrefab = Load<GameObject>("teleporter_handheld.prefab");
+            if (TeleporterHandheldPrefab != null)
+                DisableRigidbody(TeleporterHandheldPrefab);
+
+            // Local-only particle VFX spawned at origin and destination on all clients.
+            // Not networked — no NetworkIdentity needed.
+            // Bundle asset name: teleporter_vfx.prefab
+            TeleporterVfxPrefab = PositionSwapSmokePrefab; // Load<GameObject>("teleporter_vfx.prefab");
+            if (TeleporterVfxPrefab != null)
+                StripNetworkComponents(TeleporterVfxPrefab);
         }
 
         private static void LoadSuperDonutAssets()

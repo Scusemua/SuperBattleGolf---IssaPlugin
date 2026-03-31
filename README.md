@@ -274,6 +274,10 @@ Assets used in the project:
     (https://poly.pizza/m/a19dX3Vgo3S) by Google via Poly Pizza 
     Licensed under Creative Commons Attribution 3.0 Unported
 
+-   Teleporter - Henry Stickmin\
+    (https://skfb.ly/ptOUZ) by BioPlant 
+    Licensed under CC Attribution-NonCommercial-ShareAlike
+
 ---
 
 *IssaPlugin is a fan-made mod and is not affiliated with Brimstone or Oro Interactive.*

@@ -121,4 +121,54 @@ Source code available on GitHub. Bug reports and pull requests welcome.
 
 ---
 
+## Credits
+
+Assets used in the project:
+
+-   "Snowball - Low resources"\
+    https://skfb.ly/oyCyZ\
+    Licensed under Creative Commons Attribution 4.0
+
+-   "REMOTE"\
+    https://skfb.ly/pAwPL\
+    Licensed under Creative Commons Attribution 4.0
+
+-   "M200 Intervention (Low-poly)"\
+    https://skfb.ly/prrWy\
+    Licensed under Creative Commons Attribution 4.0
+
+-   "Militar explosive detonator"\
+    (https://skfb.ly/o9YWC) by Oscar Royo 
+    Licensed under Creative Commons Attribution 4.0
+
+-   "Jinx Bomb - Arcane"\
+    (https://skfb.ly/oytAV) by KangaroOz 3D 
+    Licensed under CC Attribution-NonCommercial-ShareAlike
+
+-   "Crystal Ball"\
+    (https://skfb.ly/6DUUx) by Yanez Designs 
+    Licensed under Creative Commons Attribution 
+
+-   "Wednesday Addams Signature Poison Bottle"\
+    (https://skfb.ly/oBRyn) by misscanning
+    Licensed under Creative Commons Attribution
+
+-   "Shahed-136"\
+    (https://skfb.ly/ozuFr) by KillCaptureDestroy 
+    Licensed under Creative Commons Attribution-NonCommercial 
+
+-   "Gravity Gun (Retry School)"\
+    (https://skfb.ly/pxyOF) by Pixman 
+    Licensed under Creative Commons Attribution
+
+-   Jetpack by Poly\
+    (https://poly.pizza/m/a19dX3Vgo3S) by Google via Poly Pizza 
+    Licensed under Creative Commons Attribution 3.0 Unported
+
+-   Teleporter - Henry Stickmin\
+    (https://skfb.ly/ptOUZ) by BioPlant 
+    Licensed under CC Attribution-NonCommercial-ShareAlike
+
+---
+
 *IssaPlugin is a fan-made mod and is not affiliated with Brimstone or Oro Interactive.*

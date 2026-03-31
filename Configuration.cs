@@ -414,6 +414,17 @@ namespace IssaPlugin
         public static ConfigEntry<float> JetpackFuelPerUse { get; private set; }
         public static ConfigEntry<float> JetpackThrustForce { get; private set; }
 
+        // --- Teleporter ---
+        public static ConfigEntry<Key> TeleporterGiveKey { get; private set; }
+        public static ConfigEntry<float> TeleporterUses { get; private set; }
+        public static ConfigEntry<float> TeleporterSpawnWeight { get; private set; }
+
+        /// Movement speed of the target marker while in the targeting UI (units/second).
+        public static ConfigEntry<float> TeleporterTargetMoveSpeed { get; private set; }
+
+        /// Radius (units) of the circular marker disc shown in the targeting UI.
+        public static ConfigEntry<float> TeleporterMarkerRadius { get; private set; }
+
         // --- Poison Jar ---
         public static ConfigEntry<Key> PoisonJarGiveKey { get; private set; }
         public static ConfigEntry<float> PoisonJarUses { get; private set; }
@@ -649,7 +660,7 @@ namespace IssaPlugin
             BomberTargetingZoomSpeed = cfg.Bind(
                 "StealthBomber",
                 "TargetingZoomSpeed",
-                0.05f,
+                5f,
                 "Speed at which the camera zooms in/out during bomber targeting."
             );
 
@@ -2999,6 +3010,38 @@ namespace IssaPlugin
                 "ThrustForce",
                 35f,
                 "Upward acceleration (m/s²) applied each physics step while thrusting. Uses ForceMode.Acceleration."
+            );
+
+            // --- Teleporter ---
+            TeleporterGiveKey = cfg.Bind(
+                "Teleporter",
+                "TeleporterGiveKey",
+                Key.Home,
+                "Hotkey to give yourself a Teleporter (debug/testing). Key.None = disabled."
+            );
+            TeleporterUses = cfg.Bind(
+                "Teleporter",
+                "Uses",
+                1f,
+                "Number of uses per Teleporter pickup."
+            );
+            TeleporterSpawnWeight = cfg.Bind(
+                "ItemBoxSpawns",
+                "TeleporterSpawnWeight",
+                10f,
+                "Relative spawn weight for the Teleporter in the item pool."
+            );
+            TeleporterTargetMoveSpeed = cfg.Bind(
+                "Teleporter",
+                "TargetMoveSpeed",
+                30f,
+                "Speed (units/second) at which the target marker moves during the targeting phase."
+            );
+            TeleporterMarkerRadius = cfg.Bind(
+                "Teleporter",
+                "MarkerRadius",
+                3f,
+                "Radius (units) of the circular target marker disc shown in the targeting UI."
             );
         }
     }

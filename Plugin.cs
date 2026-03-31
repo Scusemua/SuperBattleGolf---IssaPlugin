@@ -63,6 +63,7 @@ namespace IssaPlugin
             gameObject.AddComponent<GravityGunOverlay>();
             gameObject.AddComponent<RocketTetherOverlay>();
             gameObject.AddComponent<JetpackOverlay>();
+            gameObject.AddComponent<TeleporterOverlay>();
 
             Log.LogInfo("IssaPlugin by Scusemua has loaded.");
         }
@@ -133,6 +134,9 @@ namespace IssaPlugin
 
             // Cancel any in-progress Stealth Bomber targeting UI.
             StealthBomberItem.CancelTargeting();
+
+            // Cancel any in-progress Teleporter targeting UI.
+            TeleporterItem.CancelTargeting();
 
             // ── Shared lock-on detection state ───────────────────────────────
             GunshipLockOnDetectionPatch.ResetTargetingState();
