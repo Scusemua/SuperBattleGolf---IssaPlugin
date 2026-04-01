@@ -51,22 +51,11 @@ namespace IssaPlugin.Overlays
         // ----------------------------------------------------------------
         private void OnRenderImage(RenderTexture src, RenderTexture dest)
         {
-            if (!ShouldShowOverlay())
-            {
-                Graphics.Blit(src, dest);
-                return;
-            }
-
-            // Sample luminance and write it back as RGB so the image goes grey.
-            RenderTexture grey = RenderTexture.GetTemporary(src.width, src.height);
-            for (int y = 0; y < src.height; y += 2) // every-other-row blit for cheap scanline
-                Graphics.Blit(src, grey);
-
-            // Desaturate by blitting through a grey-tinted material.
-            // (For a true greyscale you'd normally use a custom shader;
-            //  this dims colour channels enough to read as UAV footage.)
+            // Always a single blit. The old code ran a loop of src.height/2
+            // Graphics.Blit calls (540 at 1080p) into a temporary RenderTexture
+            // that was never actually used — the final output was still src->dest.
+            // That was 540 redundant full-screen GPU commands per frame.
             Graphics.Blit(src, dest);
-            RenderTexture.ReleaseTemporary(grey);
         }
 
         // ----------------------------------------------------------------
@@ -263,39 +252,50 @@ namespace IssaPlugin.Overlays
 
         private static Texture2D GenerateVignette(int w, int h)
         {
-            var tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
-            float cx = w / 2f,
-                cy = h / 2f;
-            float maxDist = Mathf.Sqrt(cx * cx + cy * cy);
+            // Generate at quarter resolution and let the GPU scale it up —
+            // vignette gradients are smooth enough that 1/4 res is indistinguishable.
+            int tw = w / 4,
+                th = h / 4;
+            var tex = new Texture2D(tw, th, TextureFormat.RGBA32, false);
+            tex.filterMode = FilterMode.Bilinear;
+            float cx = tw / 2f,
+                cy = th / 2f;
+            // Use squared distance to avoid a Sqrt per pixel (2M calls at 1080p).
+            float maxDistSq = cx * cx + cy * cy;
 
-            var pixels = new Color[w * h];
-            for (int y = 0; y < h; y++)
+            var pixels = new Color32[tw * th];
+            for (int y = 0; y < th; y++)
             {
-                for (int x = 0; x < w; x++)
+                float dy = y - cy;
+                for (int x = 0; x < tw; x++)
                 {
-                    float dist = Mathf.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
-                    float t = Mathf.Clamp01(dist / maxDist);
+                    float dx = x - cx;
+                    float tSq = Mathf.Clamp01((dx * dx + dy * dy) / maxDistSq);
+                    // Approximate Pow(t, 1.8) cheaply with t*t for the inner region
+                    // and a lerp blend — close enough for a vignette.
+                    float t = Mathf.Sqrt(tSq);
                     float alpha = Mathf.Pow(t, 1.8f) * 0.85f;
-                    pixels[y * w + x] = new Color(0f, 0f, 0f, alpha);
+                    pixels[y * tw + x] = new Color32(0, 0, 0, (byte)(alpha * 255f));
                 }
             }
-            tex.SetPixels(pixels);
-            tex.Apply();
+            tex.SetPixels32(pixels);
+            tex.Apply(false);
             return tex;
         }
 
         private static Texture2D GenerateScanlines(int w, int h)
         {
             var tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
-            var pixels = new Color[w * h];
+            var pixels = new Color32[w * h];
             for (int y = 0; y < h; y++)
             {
-                float alpha = (y % (int)ScanlineSpacing == 0) ? 1f : 0f;
+                byte alpha = (y % (int)ScanlineSpacing == 0) ? (byte)255 : (byte)0;
+                var col = new Color32(0, 0, 0, alpha);
                 for (int x = 0; x < w; x++)
-                    pixels[y * w + x] = new Color(0f, 0f, 0f, alpha);
+                    pixels[y * w + x] = col;
             }
-            tex.SetPixels(pixels);
-            tex.Apply();
+            tex.SetPixels32(pixels);
+            tex.Apply(false);
             return tex;
         }
 
@@ -309,16 +309,26 @@ namespace IssaPlugin.Overlays
         private void RegenerateNoise() =>
             RegenerateNoise(_noiseTex, _noiseTex.width, _noiseTex.height);
 
+        // Pre-allocated noise buffer — reused every regeneration to avoid
+        // a 129,600-element Color array allocation 25 times per second.
+        private static Color32[] _noisePixels;
+
         private static void RegenerateNoise(Texture2D tex, int w, int h)
         {
-            var pixels = new Color[w * h];
-            for (int i = 0; i < pixels.Length; i++)
+            int count = w * h;
+            if (_noisePixels == null || _noisePixels.Length != count)
+                _noisePixels = new Color32[count];
+
+            for (int i = 0; i < count; i++)
             {
-                float v = Random.value;
-                pixels[i] = new Color(v, v, v, 1f);
+                byte v = (byte)(Random.value * 255f);
+                _noisePixels[i] = new Color32(v, v, v, 255);
             }
-            tex.SetPixels(pixels);
-            tex.Apply();
+            // SetPixels32 is significantly faster than SetPixels — it avoids
+            // float-to-byte conversion inside Unity and skips a second allocation.
+            // Apply(false) skips mipmap regeneration, which noise doesn't need.
+            tex.SetPixels32(_noisePixels);
+            tex.Apply(false);
         }
     }
 }
