@@ -293,6 +293,12 @@ namespace IssaPlugin.Items
 
             Object.Destroy(stripGo);
             Object.Destroy(pivotGo);
+            // Null out the static material reference so Unity's fake-null check
+            // works correctly on the next use. Without this, _sharedStripMat
+            // holds a destroyed native object and the null-guard in CreateStripPart
+            // fails silently, causing a shader/material reconciliation stall every
+            // frame the next time the strip is rendered while Q/E is held.
+            _sharedStripMat = null;
             _isTargeting = false;
 
             RestoreCamera(orbitModule, savedPitch, savedYaw, savedDisablePhysics);
@@ -639,7 +645,10 @@ namespace IssaPlugin.Items
                     _sharedStripMat.SetInt("_ZWrite", 0);
                     _sharedStripMat.renderQueue = 3100;
                 }
-                renderer.material = _sharedStripMat;
+                // Use sharedMaterial, NOT .material. Assigning .material creates a new
+                // material instance on the GPU each call, adding draw-call overhead that
+                // accumulates while Q/E is held and the strip is being rotated.
+                renderer.sharedMaterial = _sharedStripMat;
             }
 
             return go;
