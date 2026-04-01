@@ -42,6 +42,7 @@ namespace IssaPlugin
             CourseManager.MatchStateChanged += OnMatchStateChanged;
 
             gameObject.AddComponent<SpawnWeightsSyncer>();
+            gameObject.AddComponent<TierConfigSyncer>();
             gameObject.AddComponent<VoteManager>();
             gameObject.AddComponent<PlayerBoxOverlay>();
             gameObject.AddComponent<VoteOverlay>();
@@ -64,6 +65,7 @@ namespace IssaPlugin
             gameObject.AddComponent<RocketTetherOverlay>();
             gameObject.AddComponent<JetpackOverlay>();
             gameObject.AddComponent<TeleporterOverlay>();
+            gameObject.AddComponent<SpawnConfigUI>();
 
             Log.LogInfo("IssaPlugin by Scusemua has loaded.");
         }

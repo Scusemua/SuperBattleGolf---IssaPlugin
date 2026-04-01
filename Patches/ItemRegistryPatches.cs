@@ -55,9 +55,13 @@ namespace IssaPlugin.Patches
         }
     }
 
-    [HarmonyPatch(typeof(ItemSpawnerSettings), "ResetRuntimeData")]
+    [HarmonyPatch]
     static class ItemSpawnerResetRuntimeDataPatch
     {
+        // Use the same target as before.
+        static MethodBase TargetMethod() =>
+            AccessTools.Method(typeof(ItemSpawnerSettings), "ResetRuntimeData");
+
         private static readonly FieldInfo SpawnChancesField = AccessTools.Field(
             typeof(ItemPool),
             "spawnChances"
@@ -70,51 +74,78 @@ namespace IssaPlugin.Patches
 
         static void Postfix(ItemSpawnerSettings __instance)
         {
-            var customEntries = BuildCustomEntries();
-            if (customEntries.Length == 0)
-                return;
-
             var pools = __instance.ItemPools;
-            int n = pools.Count;
+            int poolCount = pools.Count;
             float boostFactor = Configuration.CatchupBoostFactor.Value;
 
-            for (int i = 0; i < n; i++)
+            for (int poolIndex = 0; poolIndex < poolCount; poolIndex++)
             {
-                // Pool 0 = closest to leader (no boost), last pool = furthest behind (max boost).
-                float t = n > 1 ? (float)i / (n - 1) : 0f;
+                // Approximate "place" as pool index + 1 (pool 0 = 1st place proxy).
+                int approxPlace = poolIndex + 1;
+                // Approximate distance-behind-leader using the same linear scale as
+                // the catchup multiplier; gives a rough-but-consistent proxy.
+                float approxDist = poolCount > 1 ? (float)poolIndex / (poolCount - 1) * 500f : 0f;
+
+                float t = poolCount > 1 ? (float)poolIndex / (poolCount - 1) : 0f;
                 float multiplier = 1f + boostFactor * t;
-                InjectIntoPool(pools[i].pool, customEntries, multiplier);
+
+                var entries = BuildCustomEntries(approxDist, approxPlace);
+                if (entries.Length > 0)
+                    InjectIntoPool(pools[poolIndex].pool, entries, multiplier);
             }
 
             if (__instance.AheadOfBallItemPool != null)
-                InjectIntoPool(__instance.AheadOfBallItemPool, customEntries, 1f);
+            {
+                var entries = BuildCustomEntries(0f, 1);
+                if (entries.Length > 0)
+                    InjectIntoPool(__instance.AheadOfBallItemPool, entries, 1f);
+            }
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[ItemPool] Injected {customEntries.Length} custom items into item box pools."
+                $"[ItemPool] Injected custom items into {poolCount} pools (gating applied)."
             );
         }
 
-        private static ItemPool.ItemSpawnChance[] BuildCustomEntries()
+        // ── Entry builder with tier gating ────────────────────────────────────
+
+        private static ItemPool.ItemSpawnChance[] BuildCustomEntries(
+            float approxDist,
+            int approxPlace
+        )
         {
             if (!Configuration.CustomItemSpawnsEnabled.Value)
-                return [];
+                return Array.Empty<ItemPool.ItemSpawnChance>();
 
             float rate = Configuration.CustomItemSpawnRate.Value;
             if (rate <= 0f)
-                return [];
+                return Array.Empty<ItemPool.ItemSpawnChance>();
+
+            var syncer = TierConfigSyncer.Instance;
 
             var list = new List<ItemPool.ItemSpawnChance>();
-            foreach (var itemDefinition in ItemRegistry.AllItems)
+
+            foreach (var def in ItemRegistry.AllItems)
             {
-                if (itemDefinition.Enabled && itemDefinition.SpawnWeight > 0f)
-                    list.Add(
-                        new ItemPool.ItemSpawnChance
-                        {
-                            item = itemDefinition.ItemType,
-                            spawnChanceWeight = itemDefinition.SpawnWeight * rate,
-                        }
-                    );
+                if (!def.Enabled || def.SpawnWeight <= 0f)
+                    continue;
+
+                // ── Tier-level gating ─────────────────────────────────────────
+                bool tierAllowed =
+                    syncer == null
+                    || syncer.IsTierAllowedForPlayer(def.Tier, approxDist, approxPlace);
+
+                if (!tierAllowed)
+                    continue;
+
+                list.Add(
+                    new ItemPool.ItemSpawnChance
+                    {
+                        item = def.ItemType,
+                        spawnChanceWeight = def.SpawnWeight * rate,
+                    }
+                );
             }
+
             return list.ToArray();
         }
 
@@ -127,9 +158,9 @@ namespace IssaPlugin.Patches
             if (pool == null)
                 return;
 
-            var existing = (ItemPool.ItemSpawnChance[])SpawnChancesField.GetValue(pool);
-            if (existing == null)
-                existing = Array.Empty<ItemPool.ItemSpawnChance>();
+            var existing =
+                (ItemPool.ItemSpawnChance[])SpawnChancesField.GetValue(pool)
+                ?? Array.Empty<ItemPool.ItemSpawnChance>();
 
             var merged = new ItemPool.ItemSpawnChance[existing.Length + customEntries.Length];
             Array.Copy(existing, 0, merged, 0, existing.Length);
@@ -143,8 +174,8 @@ namespace IssaPlugin.Patches
             SpawnChancesField.SetValue(pool, merged);
 
             float totalWeight = 0f;
-            foreach (var entry in merged)
-                totalWeight += entry.spawnChanceWeight;
+            foreach (var e in merged)
+                totalWeight += e.spawnChanceWeight;
             TotalWeightField.SetValue(pool, totalWeight);
         }
     }

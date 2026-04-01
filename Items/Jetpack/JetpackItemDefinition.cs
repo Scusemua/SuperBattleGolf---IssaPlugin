@@ -16,11 +16,7 @@ namespace IssaPlugin.Items
         // rocket-launcher icon as placeholder, which is more appropriate than pistol.
 
         public override int MaxUses => (int)Configuration.JetpackUses.Value;
-        public override float SpawnWeight
-        {
-            get => Configuration.JetpackSpawnWeight.Value;
-            set => Configuration.JetpackSpawnWeight.Value = value;
-        }
+        public override int Tier => 2;
         public override Key GiveKey => Configuration.JetpackGiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)

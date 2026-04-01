@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using IssaPlugin.Items;
 using IssaPlugin.Network;
+using IssaPlugin.Overlays;
 
 namespace IssaPlugin.Patches
 {
@@ -68,7 +69,9 @@ namespace IssaPlugin.Patches
         {
             if (!float.TryParse(timeoutStr, out float timeout) || timeout <= 0f)
             {
-                UnityEngine.Debug.LogWarning($"[vote] Invalid timeout \"{timeoutStr}\". Must be a positive number.");
+                UnityEngine.Debug.LogWarning(
+                    $"[vote] Invalid timeout \"{timeoutStr}\". Must be a positive number."
+                );
                 return;
             }
 
@@ -79,6 +82,23 @@ namespace IssaPlugin.Patches
             }
 
             VoteManager.Instance.StartVote(timeout);
+        }
+
+        /// <summary>
+        /// Console command: spawnConfigUI
+        /// Toggles the spawn configuration GUI panel open/closed.
+        /// </summary>
+        [CCommand("spawnConfigUI", "Open or close the Spawn Config GUI panel.")]
+        private static void ToggleSpawnConfigUI()
+        {
+            if (SpawnConfigUI.Instance == null)
+            {
+                UnityEngine.Debug.LogWarning(
+                    "[spawnConfigUI] SpawnConfigUI is not initialised yet."
+                );
+                return;
+            }
+            SpawnConfigUI.Instance.Toggle();
         }
     }
 }

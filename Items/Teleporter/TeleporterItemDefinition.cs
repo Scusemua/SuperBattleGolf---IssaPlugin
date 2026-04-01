@@ -11,11 +11,7 @@ namespace IssaPlugin.Items
         public override Sprite Icon => AssetLoader.TeleporterIcon;
         public override GameObject HeldModelPrefab => AssetLoader.TeleporterHandheldPrefab;
         public override int MaxUses => (int)Configuration.TeleporterUses.Value;
-        public override float SpawnWeight
-        {
-            get => Configuration.TeleporterSpawnWeight.Value;
-            set => Configuration.TeleporterSpawnWeight.Value = value;
-        }
+        public override int Tier => 2;
         public override Key GiveKey => Configuration.TeleporterGiveKey.Value;
 
         // OnUse kicks off the client-side targeting coroutine.
