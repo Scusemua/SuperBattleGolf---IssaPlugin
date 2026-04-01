@@ -20,7 +20,8 @@ namespace IssaPlugin.Items
         /// The rocket explosion patch skips these so they cannot accidentally
         /// register as hits on the HarrierHitReceiver.
         /// </summary>
-        public static readonly Dictionary<int, NetworkConnectionToClient> ActiveHarrierRocketIds = [];
+        public static readonly Dictionary<int, NetworkConnectionToClient> ActiveHarrierRocketIds =
+        [];
 
         // ----------------------------------------------------------------
         //  Rocket spawning
@@ -55,14 +56,15 @@ namespace IssaPlugin.Items
 
                 float angle = Random.value * 360f * Mathf.Deg2Rad;
                 float spread = Mathf.Tan(jitterDeg * Mathf.Deg2Rad) * Random.value;
-                direction = (direction
-                    + (Mathf.Cos(angle) * perp1 + Mathf.Sin(angle) * perp2) * spread
+                direction = (
+                    direction + (Mathf.Cos(angle) * perp1 + Mathf.Sin(angle) * perp2) * spread
                 ).normalized;
             }
 
-            Quaternion rotation = direction != Vector3.zero
-                ? Quaternion.LookRotation(direction)
-                : Quaternion.identity;
+            Quaternion rotation =
+                direction != Vector3.zero
+                    ? Quaternion.LookRotation(direction)
+                    : Quaternion.identity;
 
             _useIndex++;
             var itemUseId = new ItemUseId(
@@ -167,8 +169,10 @@ namespace IssaPlugin.Items
 
             foreach (var inv in Object.FindObjectsByType<PlayerInventory>(FindObjectsSortMode.None))
             {
-                if (!friendlyFireEnabled
-                    && inv.PlayerInfo.PlayerId.Guid == throwerInfo.PlayerId.Guid)
+                if (
+                    !friendlyFireEnabled
+                    && inv.PlayerInfo.PlayerId.Guid == throwerInfo.PlayerId.Guid
+                )
                     continue;
 
                 result.Add(inv);
