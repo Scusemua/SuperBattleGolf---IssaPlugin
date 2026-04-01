@@ -278,6 +278,10 @@ Assets used in the project:
     (https://skfb.ly/ptOUZ) by BioPlant 
     Licensed under CC Attribution-NonCommercial-ShareAlike
 
+-   "Spinach" by eyes360vr\
+    (https://skfb.ly/ossnR)
+    Licensed under Creative Commons Attribution
+
 ---
 
 *IssaPlugin is a fan-made mod and is not affiliated with Brimstone or Oro Interactive.*

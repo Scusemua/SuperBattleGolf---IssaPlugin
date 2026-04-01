@@ -67,12 +67,16 @@ namespace IssaPlugin.Items
         /// Falls back to a small runtime box if 'wall_handheld.prefab' is absent.
         public static GameObject WallHandheldPrefab { get; private set; }
 
+        public static GameObject SpinachPrefab { get; private set; }
+
         public static Sprite WallIcon { get; private set; }
 
         public static Sprite AK47Icon { get; private set; }
         public static GameObject AK47Prefab { get; private set; }
 
         public static Sprite HarrierIcon { get; private set; }
+
+        public static Sprite SpinachIcon { get; private set; }
 
         // --- Position Swap ---
         public static Sprite PositionSwapIcon { get; private set; }
@@ -323,6 +327,7 @@ namespace IssaPlugin.Items
             LoadGravityGunAssets();
             LoadRocketTetherAssets();
             LoadJetpackAssets();
+            LoadSpinachAssets();
 
             // Load after position swap, as we reuse PositionSwapSmokePrefab for teleporter.
             LoadTeleporterAssets();
@@ -355,6 +360,7 @@ namespace IssaPlugin.Items
             RedBullIcon = LoadSprite("redbull_icon.png");
             RocketTetherIcon = LoadSprite("rocket_tether_icon.png");
             TeleporterIcon = LoadSprite("teleporter_icon.png");
+            SpinachIcon = LoadSprite("spinach_icon.png");
 
             SniperScopeTexture = LoadTexture2D("sniper_scope.png");
             if (SniperScopeTexture == null)
@@ -764,6 +770,15 @@ namespace IssaPlugin.Items
             JetpackParticlePrefab = Load<GameObject>("jetpack_particles.prefab");
             if (JetpackParticlePrefab != null)
                 StripNetworkComponents(JetpackParticlePrefab);
+        }
+
+        private static void LoadSpinachAssets()
+        {
+            SpinachPrefab = Load<GameObject>("spinach.prefab");
+            if (WallHandheldPrefab != null)
+            {
+                DisableRigidbody(SpinachPrefab);
+            }
         }
 
         /// Ensures a prefab has a NetworkIdentity with a stable assetId so Mirror

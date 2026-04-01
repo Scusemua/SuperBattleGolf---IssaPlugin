@@ -528,6 +528,13 @@ namespace IssaPlugin
         public static ConfigEntry<float> TeleporterUses { get; private set; }
         public static ConfigEntry<float> TeleporterSpawnWeight { get; private set; }
 
+        // --- Spinach ---
+        public static ConfigEntry<Key> SpinachGiveKey { get; private set; }
+        public static ConfigEntry<float> SpinachUses { get; private set; }
+        public static ConfigEntry<float> SpinachSpawnWeight { get; private set; }
+        public static ConfigEntry<float> SpinachPowerMultiplier { get; private set; }
+        public static ConfigEntry<float> SpinachDuration { get; private set; }
+
         /// Movement speed of the target marker while in the targeting UI (units/second).
         public static ConfigEntry<float> TeleporterTargetMoveSpeed { get; private set; }
 
@@ -3198,6 +3205,39 @@ namespace IssaPlugin
                 1f,
                 "Radius (units) of the circular target marker disc shown in the targeting UI."
             );
+
+            // --- Spinach ---
+
+            SpinachDuration = cfg.Bind(
+                "Spinach",
+                "Duration",
+                30f,
+                "Duration in seconds of the spinach."
+            );
+
+            SpinachPowerMultiplier = cfg.Bind(
+                "Spinach",
+                "PowerMultiplier",
+                2.5f,
+                "Swing power multiplier."
+            );
+
+            SpinachSpawnWeight = cfg.Bind(
+                "Spinach",
+                "SpawnWeight",
+                10f,
+                "Weight for getting the spinach from a random item box"
+            );
+
+            SpinachUses = cfg.Bind("Spinach", "Uses", 1f, "Number of uses");
+
+            SpinachGiveKey = cfg.Bind(
+                "Spinach",
+                "GiveKey",
+                Key.F6,
+                "Key to press to get the spinach item."
+            );
+
             // ── Spawn Config UI ────────────────────────────────────────────────────
             SpawnConfigUIKey = cfg.Bind(
                 "UI",
