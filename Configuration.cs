@@ -122,7 +122,7 @@ namespace IssaPlugin
                 int id = (int)def.ItemType;
                 ItemTierEntries[id] = cfg.Bind(
                     "ItemTierAssignments",
-                    $"Item{id}Tier",
+                    def.DisplayName,
                     def.Tier,
                     $"Tier assignment for {def.DisplayName} (item ID {id}). "
                         + $"Must be between 1 and NumTiers ({NumTiers?.Value ?? 3})."
@@ -3189,13 +3189,13 @@ namespace IssaPlugin
             TeleporterTargetMoveSpeed = cfg.Bind(
                 "Teleporter",
                 "TargetMoveSpeed",
-                30f,
+                60f,
                 "Speed (units/second) at which the target marker moves during the targeting phase."
             );
             TeleporterMarkerRadius = cfg.Bind(
                 "Teleporter",
                 "MarkerRadius",
-                3f,
+                1f,
                 "Radius (units) of the circular target marker disc shown in the targeting UI."
             );
             // ── Spawn Config UI ────────────────────────────────────────────────────
