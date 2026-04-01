@@ -347,6 +347,9 @@ namespace IssaPlugin.Patches
                 if (modelRb != null)
                     Object.Destroy(modelRb);
 
+                foreach (var col in model.GetComponentsInChildren<Collider>())
+                    col.enabled = true;
+
                 model.SetActive(true);
             }
 

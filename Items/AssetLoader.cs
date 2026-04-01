@@ -128,6 +128,39 @@ namespace IssaPlugin.Items
         /// Bundle asset name: <c>player_linker_rocket.prefab</c>
         public static GameObject RocketTetherRocketPrefab { get; private set; }
 
+        // --- Jetpack ---
+        /// Bundle asset name: <c>jetpack_icon.png</c>
+        public static Sprite JetpackIcon { get; private set; }
+
+        /// The model the player holds while the Jetpack item is equipped.
+        /// Bundle asset name: <c>jetpack_handheld.prefab</c>
+        public static GameObject JetpackHandheldPrefab { get; private set; }
+
+        /// Local-only body-worn prefab (backpack), shown on the local player while the
+        /// Jetpack is their active item. Not networked — managed by JetpackNetworkBridge.Update().
+        /// Bundle asset name: <c>jetpack_equipped.prefab</c>
+        public static GameObject JetpackEquippedPrefab { get; private set; }
+
+        /// Local-only particle VFX (thrust flames/smoke). Not networked — each client
+        /// instantiates its own copy via JetpackNetworkBridge.
+        /// Bundle asset name: <c>jetpack_particles.prefab</c>
+        public static GameObject JetpackParticlePrefab { get; private set; }
+
+        // --- Teleporter ---
+        /// Inventory icon for the Teleporter.
+        /// Bundle asset name: <c>teleporter_icon.png</c>
+        public static Sprite TeleporterIcon { get; private set; }
+
+        /// The model the player holds while the Teleporter item is equipped.
+        /// Bundle asset name: <c>teleporter_handheld.prefab</c>
+        public static GameObject TeleporterHandheldPrefab { get; private set; }
+
+        /// Local-only particle system spawned on all clients at both the origin and
+        /// destination when a teleport fires.
+        /// Not networked — each client instantiates and auto-destroys its own copy.
+        /// Bundle asset name: <c>teleporter_vfx.prefab</c>
+        public static GameObject TeleporterVfxPrefab { get; private set; }
+
         // --- Drone Swarm ---
         public static Sprite DroneSwarmIcon { get; private set; }
 
@@ -289,6 +322,10 @@ namespace IssaPlugin.Items
             LoadSuperDonutAssets();
             LoadGravityGunAssets();
             LoadRocketTetherAssets();
+            LoadJetpackAssets();
+
+            // Load after position swap, as we reuse PositionSwapSmokePrefab for teleporter.
+            LoadTeleporterAssets();
 
             IssaPluginPlugin.Log.LogInfo("[Assets] IssaPluginBundle loaded.");
         }
@@ -317,6 +354,7 @@ namespace IssaPlugin.Items
             ElectricGravityGunIcon = LoadSprite("gravity_gun_icon.png");
             RedBullIcon = LoadSprite("redbull_icon.png");
             RocketTetherIcon = LoadSprite("rocket_tether_icon.png");
+            TeleporterIcon = LoadSprite("teleporter_icon.png");
 
             SniperScopeTexture = LoadTexture2D("sniper_scope.png");
             if (SniperScopeTexture == null)
@@ -663,6 +701,27 @@ namespace IssaPlugin.Items
                 StripNetworkComponents(RocketTetherRocketPrefab);
         }
 
+        private static void LoadTeleporterAssets()
+        {
+            // Icon — falls back to the rocket launcher icon if absent (handled by ItemRegistry).
+            // Bundle asset name: teleporter_icon.png
+            // (TeleporterIcon is already loaded in LoadSpritesAndTextures; this method only
+            //  loads the prefabs that are not needed until the item is actually used.)
+
+            // Handheld model shown while the item is equipped.
+            // Bundle asset name: teleporter_handheld.prefab
+            TeleporterHandheldPrefab = Load<GameObject>("teleporter_handheld.prefab");
+            if (TeleporterHandheldPrefab != null)
+                DisableRigidbody(TeleporterHandheldPrefab);
+
+            // Local-only particle VFX spawned at origin and destination on all clients.
+            // Not networked — no NetworkIdentity needed.
+            // Bundle asset name: teleporter_vfx.prefab
+            TeleporterVfxPrefab = PositionSwapSmokePrefab; // Load<GameObject>("teleporter_vfx.prefab");
+            if (TeleporterVfxPrefab != null)
+                StripNetworkComponents(TeleporterVfxPrefab);
+        }
+
         private static void LoadSuperDonutAssets()
         {
             // Optional dedicated assets — falls back to Donut assets at runtime if absent.
@@ -685,6 +744,26 @@ namespace IssaPlugin.Items
             RedBullTrailPrefab = Load<GameObject>("red_bull_trail.prefab");
             if (RedBullTrailPrefab != null)
                 StripNetworkComponents(RedBullTrailPrefab);
+        }
+
+        private static void LoadJetpackAssets()
+        {
+            JetpackIcon = LoadSprite("jetpack_icon.png");
+
+            JetpackHandheldPrefab = Load<GameObject>("jetpack_handheld.prefab");
+            if (JetpackHandheldPrefab != null)
+                DisableRigidbody(JetpackHandheldPrefab);
+
+            // Both prefabs below are local-only (instantiated without a network context),
+            // so Mirror components must be stripped to prevent NullReferenceExceptions —
+            // same pattern as RedBullTrailPrefab and BlackHoleVfxPrefab.
+            JetpackEquippedPrefab = Load<GameObject>("jetpack.prefab");
+            if (JetpackEquippedPrefab != null)
+                StripNetworkComponents(JetpackEquippedPrefab);
+
+            JetpackParticlePrefab = Load<GameObject>("jetpack_particles.prefab");
+            if (JetpackParticlePrefab != null)
+                StripNetworkComponents(JetpackParticlePrefab);
         }
 
         /// Ensures a prefab has a NetworkIdentity with a stable assetId so Mirror

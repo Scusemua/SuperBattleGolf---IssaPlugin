@@ -144,7 +144,12 @@ namespace IssaPlugin.Items
             NetworkServer.Destroy(gameObject);
         }
 
-        public static GameObject GetModelPrefabForType(ItemType type) =>
-            ItemRegistry.GetDefinition(type)?.HeldModelPrefab;
+        public static GameObject GetModelPrefabForType(ItemType type)
+        {
+            if (type == ItemRegistry.JetpackItemType)
+                return AssetLoader.JetpackEquippedPrefab;
+
+            return ItemRegistry.GetDefinition(type)?.HeldModelPrefab;
+        }
     }
 }

@@ -1078,6 +1078,31 @@ namespace IssaPlugin.Patches
                     (conn, msg) => GetBridge<RedBullNetworkBridge>(conn)?.ServerActivate()
                 );
 
+            // ── Jetpack ───────────────────────────────────────────────────────────
+            Writer<JetpackThrustStartMessage>.write = JetpackMessageSerialization.WriteThrustStart;
+            Reader<JetpackThrustStartMessage>.read = JetpackMessageSerialization.ReadThrustStart;
+            Writer<JetpackThrustStopMessage>.write = JetpackMessageSerialization.WriteThrustStop;
+            Reader<JetpackThrustStopMessage>.read = JetpackMessageSerialization.ReadThrustStop;
+            Writer<JetpackThrustBeginMessage>.write = JetpackMessageSerialization.WriteThrustBegin;
+            Reader<JetpackThrustBeginMessage>.read = JetpackMessageSerialization.ReadThrustBegin;
+            Writer<JetpackThrustEndMessage>.write = JetpackMessageSerialization.WriteThrustEnd;
+            Reader<JetpackThrustEndMessage>.read = JetpackMessageSerialization.ReadThrustEnd;
+            NetworkClient.RegisterHandler<JetpackThrustBeginMessage>(
+                JetpackNetworkBridge.HandleThrustBegin
+            );
+            NetworkClient.RegisterHandler<JetpackThrustEndMessage>(
+                JetpackNetworkBridge.HandleThrustEnd
+            );
+            if (NetworkServer.active)
+            {
+                NetworkServer.RegisterHandler<JetpackThrustStartMessage>(
+                    (conn, msg) => GetBridge<JetpackNetworkBridge>(conn)?.ServerHandleThrustStart()
+                );
+                NetworkServer.RegisterHandler<JetpackThrustStopMessage>(
+                    (conn, msg) => GetBridge<JetpackNetworkBridge>(conn)?.ServerHandleThrustStop()
+                );
+            }
+
             // ── Coffee Dispenser Red Bull visual swap ─────────────────────────────
             Writer<CoffeeDispenserRedBullMessage>.write =
                 RedBullMessageSerialization.WriteCoffeeDispenserRedBull;
@@ -1200,6 +1225,36 @@ namespace IssaPlugin.Patches
                         GetBridge<RocketTetherNetworkBridge>(conn)?.ServerHandleLockOn(conn, msg)
                 );
             }
+
+            // ── Teleporter Messages ───────────────────────────────────────────────
+
+            // Client → Server: player confirmed a teleport destination.
+            Writer<TeleporterUseMessage>.write =
+                TeleporterUseMessageSerialization.WriteTeleporterUseMessage;
+            Reader<TeleporterUseMessage>.read =
+                TeleporterUseMessageSerialization.ReadTeleporterUseMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<TeleporterUseMessage>(
+                    (conn, msg) =>
+                        GetBridge<TeleporterNetworkBridge>(conn)
+                            ?.ServerHandleUse(msg.Destination, msg.EquippedIndex)
+                );
+
+            // Server → Using Client only: warp the local CharacterController.
+            Writer<TeleporterWarpMessage>.write =
+                TeleporterWarpMessageSerialization.WriteTeleporterWarpMessage;
+            Reader<TeleporterWarpMessage>.read =
+                TeleporterWarpMessageSerialization.ReadTeleporterWarpMessage;
+            NetworkClient.RegisterHandler<TeleporterWarpMessage>(
+                TeleporterNetworkBridge.HandleWarp
+            );
+
+            // Server → All Clients: play the particle VFX at origin and destination.
+            Writer<TeleporterVfxMessage>.write =
+                TeleporterVfxMessageSerialization.WriteTeleporterVfxMessage;
+            Reader<TeleporterVfxMessage>.read =
+                TeleporterVfxMessageSerialization.ReadTeleporterVfxMessage;
+            NetworkClient.RegisterHandler<TeleporterVfxMessage>(TeleporterNetworkBridge.HandleVfx);
 
             // ── Scaled explosion VFX (Server → All Clients) ──────────────────────
             Writer<ScaledExplosionVfxMessage>.write =

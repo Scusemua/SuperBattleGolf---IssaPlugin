@@ -56,6 +56,10 @@ namespace IssaPlugin.Patches
                 __instance.gameObject.AddComponent<GravityGunNetworkBridge>();
             if (!__instance.GetComponent<RocketTetherNetworkBridge>())
                 __instance.gameObject.AddComponent<RocketTetherNetworkBridge>();
+            if (!__instance.GetComponent<JetpackNetworkBridge>())
+                __instance.gameObject.AddComponent<JetpackNetworkBridge>();
+            if (!__instance.GetComponent<TeleporterNetworkBridge>())
+                __instance.gameObject.AddComponent<TeleporterNetworkBridge>();
 
             IssaPluginPlugin.Log.LogDebug(
                 "[Network] Bridge components injected onto player object."

@@ -190,6 +190,13 @@ namespace IssaPlugin.Items
                 Vector3 desiredVelocity = new Vector3(steer.x, -fallSpeed, steer.z);
 
                 sendTimer -= Time.deltaTime;
+                // Clamp to zero so the timer never accumulates a large negative value.
+                // Without this, after holding a direction for several seconds, sendTimer
+                // can reach e.g. -12 s; when the velocity next changes, the send fires
+                // every frame for hundreds of frames until the timer climbs back to zero,
+                // flooding the Kcp send queue and causing a transport flush stall (FPS lag).
+                if (sendTimer < 0f)
+                    sendTimer = 0f;
                 bool velocityChanged = (desiredVelocity - lastSentVelocity).sqrMagnitude > 0.25f;
 
                 if (velocityChanged || sendTimer <= 0f)

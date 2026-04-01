@@ -9,6 +9,7 @@ namespace IssaPlugin.Items
         /// Layer mask used for ground raycasts. Public so AC130NetworkBridge
         /// can use it without duplicating the GetMask call.
         public static readonly int GroundLayerMask = LayerMask.GetMask("Default", "Terrain");
+        private static readonly RaycastHit[] raycastHitBuffer = new RaycastHit[30];
 
         private static readonly MethodInfo DecrementMethod = typeof(PlayerInventory).GetMethod(
             "DecrementUseFromSlotAt",
@@ -91,6 +92,45 @@ namespace IssaPlugin.Items
             SetCurrentItemUse(inventory, ItemUseType.Regular);
             DecrementAndRemove(inventory, slot);
             SetCurrentItemUse(inventory, ItemUseType.None);
+        }
+
+        /// <summary>
+        /// Casts a ray straight down from well above the given XZ coordinate and
+        /// returns the Y of the first ground hit, offset slightly upward so the
+        /// marker disc sits on top of the surface rather than clipping into it.
+        ///
+        /// Falls back to <paramref name="fallbackY"/> when nothing is hit (e.g. the
+        /// marker is dragged over a void or out-of-bounds area).
+        ///
+        /// Performance note: a single Physics.Raycast per frame is negligible.
+        /// The layer mask excludes players and triggers so we only hit solid world
+        /// geometry. Tighten the mask further if your project has a dedicated
+        /// "Terrain" or "Ground" layer.
+        /// </summary>
+        public static float SampleTerrainY(float x, float z, float fallbackY)
+        {
+            // Cast from 2000 units above so even tall geometry is captured.
+            const float castOriginHeight = 2000f;
+            const float markerSurfaceOffset = 0.5f; // sits this far above the hit point
+
+            var origin = new Vector3(x, castOriginHeight, z);
+            int numHits = Physics.RaycastNonAlloc(
+                origin,
+                Vector3.down,
+                raycastHitBuffer,
+                castOriginHeight * 2f,
+                GameManager.LayerSettings.PlayerGroundableMask,
+                QueryTriggerInteraction.Ignore
+            );
+            if (numHits > 0)
+            {
+                var hit = raycastHitBuffer[0];
+                return hit.point.y + markerSurfaceOffset;
+            }
+
+            // Nothing hit — keep the marker at its current height so it doesn't
+            // snap to zero over a void.
+            return fallbackY;
         }
     }
 }
