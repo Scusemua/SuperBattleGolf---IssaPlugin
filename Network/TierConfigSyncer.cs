@@ -62,8 +62,14 @@ namespace IssaPlugin
             // before any connection is established.  Start() is early enough.
             NetworkClient.RegisterHandler<TierConfigMessage>(OnClientReceivedTierConfig, false);
 
-            // Build the initial snapshot from the current config.
-            CurrentSnapshot = SpawnConfigSnapshot.FromConfiguration();
+            // Configuration.Initialize() is called in Plugin.Awake() before AddComponent,
+            // but guard anyway in case of ordering surprises.
+            if (Configuration.NumTiers != null)
+                CurrentSnapshot = SpawnConfigSnapshot.FromConfiguration();
+            else
+                IssaPluginPlugin.Log.LogWarning(
+                    "[TierConfigSyncer] Configuration not ready at Start — snapshot deferred."
+                );
 
             IssaPluginPlugin.Log.LogInfo("[TierConfigSyncer] Initialised.");
         }
@@ -89,7 +95,8 @@ namespace IssaPlugin
             if (!NetworkServer.active)
             {
                 IssaPluginPlugin.Log.LogWarning(
-                    "[TierConfigSyncer] ApplyAndBroadcast called on a non-host client — ignoring.");
+                    "[TierConfigSyncer] ApplyAndBroadcast called on a non-host client — ignoring."
+                );
                 return;
             }
 
@@ -104,7 +111,9 @@ namespace IssaPlugin
             var wireMsg = TierConfigMessageSerialization.FromSnapshot(editedSnapshot);
             NetworkServer.SendToAll(wireMsg);
 
-            IssaPluginPlugin.Log.LogInfo("[TierConfigSyncer] Broadcast TierConfigMessage to all clients.");
+            IssaPluginPlugin.Log.LogInfo(
+                "[TierConfigSyncer] Broadcast TierConfigMessage to all clients."
+            );
         }
 
         /// <summary>
@@ -114,7 +123,8 @@ namespace IssaPlugin
         /// </summary>
         public void ForceBroadcast()
         {
-            if (!NetworkServer.active) return;
+            if (!NetworkServer.active)
+                return;
             CurrentSnapshot = SpawnConfigSnapshot.FromConfiguration();
             var wireMsg = TierConfigMessageSerialization.FromSnapshot(CurrentSnapshot);
             NetworkServer.SendToAll(wireMsg);
@@ -180,7 +190,10 @@ namespace IssaPlugin
                 return false;
 
             // Distance gate: player must be at least MinDistanceBehindLeader behind.
-            if (ts.MinDistanceBehindLeader > 0f && distanceBehindLeader < ts.MinDistanceBehindLeader)
+            if (
+                ts.MinDistanceBehindLeader > 0f
+                && distanceBehindLeader < ts.MinDistanceBehindLeader
+            )
                 return false;
 
             // Place gate: player must be in MinPlaceTrigger-th place or worse.

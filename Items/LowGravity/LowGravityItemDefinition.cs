@@ -12,7 +12,7 @@ namespace IssaPlugin.Items
         public override Sprite Icon => AssetLoader.LowGravityIcon;
         public override GameObject HeldModelPrefab => AssetLoader.LowGravityModelPrefab;
         public override int MaxUses => (int)Configuration.LowGravityUses.Value;
-        public override int Tier => 1;
+        public override int Tier => 3;
         public override Key GiveKey => Configuration.LowGravityGiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)

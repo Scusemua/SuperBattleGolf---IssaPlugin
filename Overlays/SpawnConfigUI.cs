@@ -118,12 +118,21 @@ namespace IssaPlugin.Overlays
 
         public void Open()
         {
+            if (Configuration.NumTiers == null)
+            {
+                IssaPluginPlugin.Log.LogWarning(
+                    "[SpawnConfigUI] Cannot open — Configuration not initialised."
+                );
+                return;
+            }
+
             _visible = true;
             // Always re-build the working copy from the current authoritative snapshot
             // so edits always start from the latest state.
             var authoritativeSnap =
                 TierConfigSyncer.Instance?.CurrentSnapshot
                 ?? SpawnConfigSnapshot.FromConfiguration();
+
             _working = authoritativeSnap.DeepCopy();
 
             // Ensure all tiers in the working copy are known.
@@ -208,6 +217,48 @@ namespace IssaPlugin.Overlays
                 5f,
                 60
             );
+
+            GUILayout.Space(20);
+            GUILayout.Label("Tiers:", GUILayout.Width(42));
+            int currentNumTiers = _working.TierSettings.Count;
+
+            // "−" button: remove the highest tier (only if it has no items assigned to it)
+            GUI.enabled = isHost && currentNumTiers > 1;
+            if (GUILayout.Button("−", GUILayout.Width(24), GUILayout.Height(22)))
+            {
+                int topTier = _working.TierSettings.Keys.Max();
+                bool hasItems = _working.ItemOverrides.Values.Any(o => o.AssignedTier == topTier);
+                if (hasItems)
+                {
+                    // Reassign items from the removed tier down to the one below.
+                    foreach (var o in _working.ItemOverrides.Values)
+                        if (o.AssignedTier == topTier)
+                            o.AssignedTier = topTier - 1;
+                }
+                _working.TierSettings.Remove(topTier);
+                if (_selectedTier == topTier)
+                    _selectedTier = topTier - 1;
+                _textBuffers.Clear(); // reset field buffers after structural change
+            }
+            GUI.enabled = true;
+
+            GUILayout.Label(currentNumTiers.ToString(), GUILayout.Width(20), GUILayout.Height(22));
+
+            // "+" button: add a new tier above the current highest
+            GUI.enabled = isHost && currentNumTiers < Configuration.MaxTiers;
+            if (GUILayout.Button("+", GUILayout.Width(24), GUILayout.Height(22)))
+            {
+                int newTier = _working.TierSettings.Keys.Max() + 1;
+                // Default weight: half the current highest tier's weight, minimum 1.
+                float prevWeight = _working.TierSettings[newTier - 1].SpawnWeight;
+                _working.TierSettings[newTier] = new TierSettings(
+                    newTier,
+                    Mathf.Max(1f, prevWeight * 0.5f)
+                );
+                _selectedTier = newTier;
+                _textBuffers.Clear();
+            }
+            GUI.enabled = true;
 
             GUILayout.EndHorizontal();
 
@@ -491,28 +542,21 @@ namespace IssaPlugin.Overlays
         /// (checks if _working has a runtime re-assignment, then falls back to def.Tier).
         private int GetEffectiveTier(CustomItemDefinition def, SpawnConfigSnapshot snap)
         {
-            // We track runtime tier re-assignments in a side dictionary inside the snapshot.
-            // (See _itemTierOverrides below.)
-            if (_itemTierOverrides.TryGetValue((int)def.ItemType, out int overrideTier))
-                return overrideTier;
+            int id = (int)def.ItemType;
+            if (snap.ItemOverrides.TryGetValue(id, out var ov))
+                return ov.AssignedTier;
             return def.Tier;
         }
-
-        // Side-dictionary: tracks per-item tier re-assignments made in this session
-        // (not persisted via Configuration — they feed into SpawnWeightOverride logic).
-        // Key = (int)ItemType, Value = new tier.
-        private Dictionary<int, int> _itemTierOverrides = new Dictionary<int, int>();
 
         private void MoveItemToTier(CustomItemDefinition def, int newTier)
         {
             int id = (int)def.ItemType;
-            _itemTierOverrides[id] = newTier;
-
-            // When moving an item to a tier, disable any per-item override so it
-            // inherits the new tier's weight.
             if (_working.ItemOverrides.TryGetValue(id, out var ov))
+            {
+                ov.AssignedTier = newTier;
+                // Clear any per-item weight override so the item inherits its new tier's weight.
                 ov.SpawnWeightOverrideEnabled = false;
-
+            }
             IssaPluginPlugin.Log.LogInfo(
                 $"[SpawnConfigUI] Moved {def.DisplayName} to Tier {newTier} (pending apply)."
             );
@@ -520,28 +564,7 @@ namespace IssaPlugin.Overlays
 
         private void ApplyAndClose()
         {
-            // Encode tier re-assignments as spawn-weight overrides + note the new tier
-            // via a custom approach: we store the tier in a new per-item config section.
-            // For now, tier re-assignments are approximated by overriding the item's
-            // spawn weight to match the destination tier's weight and clearing the source.
-            // A future version can add a dedicated ItemTier config section.
-            foreach (var kv in _itemTierOverrides)
-            {
-                int id = kv.Key;
-                int newTier = kv.Value;
-                if (
-                    _working.ItemOverrides.TryGetValue(id, out var ov)
-                    && _working.TierSettings.TryGetValue(newTier, out var ts)
-                )
-                {
-                    // Write the target tier's weight as an item-level override.
-                    ov.SpawnWeightOverrideEnabled = true;
-                    ov.SpawnWeightOverride = ts.SpawnWeight;
-                }
-            }
-
             TierConfigSyncer.Instance?.ApplyAndBroadcast(_working);
-            _itemTierOverrides.Clear();
             Close();
         }
 

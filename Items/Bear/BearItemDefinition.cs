@@ -12,7 +12,7 @@ namespace IssaPlugin.Items
         public override Sprite Icon => AssetLoader.BearIcon;
         public override GameObject HeldModelPrefab => AssetLoader.TeddyBearPrefab;
         public override int MaxUses => (int)Configuration.BearUses.Value;
-        public override int Tier => 2;
+        public override int Tier => 4;
         public override Key GiveKey => Configuration.BearGiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)

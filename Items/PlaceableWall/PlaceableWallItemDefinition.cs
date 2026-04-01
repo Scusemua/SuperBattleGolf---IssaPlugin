@@ -13,7 +13,7 @@ namespace IssaPlugin.Items
         public override GameObject HeldModelPrefab => AssetLoader.WallHandheldPrefab;
 
         public override int MaxUses => (int)Configuration.PlaceableWallUses.Value;
-        public override int Tier => 2;
+        public override int Tier => 1;
         public override Key GiveKey => Configuration.PlaceableWallGiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)

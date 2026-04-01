@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using BepInEx.Configuration;
+using IssaPlugin.Items;
+using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin
@@ -45,6 +47,34 @@ namespace IssaPlugin
         /// <summary>Keyboard key that opens/closes the Spawn Config UI panel.</summary>
         public static ConfigEntry<Key> SpawnConfigUIKey { get; private set; }
 
+        public const int MaxTiers = 5;
+
+        /// <summary>How many tiers are active. Changing this adds/removes tier weight entries.</summary>
+        public static ConfigEntry<int> NumTiers { get; private set; }
+
+        /// <summary>Per-item tier assignments. Keyed by (int)ItemType.</summary>
+        private static readonly Dictionary<int, ConfigEntry<int>> ItemTierEntries = new();
+
+        /// <summary>
+        /// Returns the configured tier for an item.
+        /// Falls back to the item definition's hard-coded default if no entry exists.
+        /// </summary>
+        public static int GetItemTier(ItemType itemType)
+        {
+            if (ItemTierEntries.TryGetValue((int)itemType, out var entry))
+                return Mathf.Clamp(entry.Value, 1, Mathf.Max(1, NumTiers?.Value ?? 3));
+            // Fallback: look up the default from the registry.
+            var def = ItemRegistry.GetDefinition(itemType);
+            return def?.Tier ?? 1;
+        }
+
+        /// <summary>Writes a new tier assignment for an item to the BepInEx config.</summary>
+        public static void SetItemTier(ItemType itemType, int tier)
+        {
+            if (ItemTierEntries.TryGetValue((int)itemType, out var entry))
+                entry.Value = Mathf.Clamp(tier, 1, Mathf.Max(1, NumTiers?.Value ?? MaxTiers));
+        }
+
         /// <summary>
         /// Writes per-item spawn-weight override settings to the BepInEx config entries.
         /// No-op if the item has no registered entries.
@@ -80,6 +110,25 @@ namespace IssaPlugin
             int,
             ConfigEntry<bool>
         > ItemSpawnWeightOverrideEnabledEntries = [];
+
+        /// <summary>
+        /// Registers one ConfigEntry&lt;int&gt; per known custom item for its tier assignment.
+        /// Default is taken from CustomItemDefinition.Tier so existing behaviour is preserved.
+        /// </summary>
+        private static void BindAllItemTierAssignments(ConfigFile cfg)
+        {
+            foreach (var def in ItemRegistry.AllItems)
+            {
+                int id = (int)def.ItemType;
+                ItemTierEntries[id] = cfg.Bind(
+                    "ItemTierAssignments",
+                    $"Item{id}Tier",
+                    def.Tier,
+                    $"Tier assignment for {def.DisplayName} (item ID {id}). "
+                        + $"Must be between 1 and NumTiers ({NumTiers?.Value ?? 3})."
+                );
+            }
+        }
 
         // ── Per-tier spawn weights ─────────────────────────────────────────────
         // Keyed by tier number (1, 2, 3, …). Populated by BindTierWeight() in Initialize().
@@ -544,6 +593,8 @@ namespace IssaPlugin
 
         public static void Initialize(ConfigFile cfg)
         {
+            NumTiers = cfg.Bind("ItemBoxSpawns", "NumTiers", 5, "Number of item tiers (1–10). ...");
+
             CustomItemSpawnsEnabled = cfg.Bind(
                 "IssaPlugin",
                 "Enabled",
@@ -862,8 +913,10 @@ namespace IssaPlugin
             }
 
             BindTierWeight(1, 15f, "Spawn weight for Tier 1 (common) items.");
-            BindTierWeight(2, 8f, "Spawn weight for Tier 2 (standard) items.");
-            BindTierWeight(3, 3f, "Spawn weight for Tier 3 (rare/powerful) items.");
+            BindTierWeight(2, 10f, "Spawn weight for Tier 2 (standard) items.");
+            BindTierWeight(3, 5f, "Spawn weight for Tier 3 (rare/powerful) items.");
+            BindTierWeight(4, 3f, "Spawn weight for Tier 4 (very rare/very powerful) items.");
+            BindTierWeight(5, 1f, "Spawn weight for Tier 5 (super rare/super powerful) items.");
 
             // NOTE: Named SpawnWeight properties below are kept solely for BepInEx config file key
             // stability. They are no longer referenced directly in item definitions; access at
@@ -3154,6 +3207,8 @@ namespace IssaPlugin
                     + "The panel lets the host adjust tier weights, per-item overrides, "
                     + "and distance/place gating at runtime."
             );
+
+            BindAllItemTierAssignments(cfg);
         }
     }
 }

@@ -27,22 +27,23 @@ namespace IssaPlugin.Network
 {
     public struct TierConfigMessage : NetworkMessage
     {
-        public bool  CustomItemSpawnsEnabled;
+        public bool CustomItemSpawnsEnabled;
         public float GlobalSpawnRateMultiplier;
         public float CatchupBoostFactor;
 
         // Tier settings (variable length)
-        public int[]   TierNumbers;
+        public int[] TierNumbers;
         public float[] TierSpawnWeights;
-        public bool[]  TierEnabled;
+        public bool[] TierEnabled;
         public float[] TierMinDistanceBehindLeader;
-        public int[]   TierMinPlaceTrigger;
+        public int[] TierMinPlaceTrigger;
 
         // Per-item overrides (variable length)
-        public int[]   ItemTypeIds;
-        public bool[]  ItemEnabled;
-        public bool[]  ItemSpawnWeightOverrideEnabled;
+        public int[] ItemTypeIds;
+        public bool[] ItemEnabled;
+        public bool[] ItemSpawnWeightOverrideEnabled;
         public float[] ItemSpawnWeightOverride;
+        public int[] ItemAssignedTier;
     }
 
     public static class TierConfigMessageSerialization
@@ -74,6 +75,7 @@ namespace IssaPlugin.Network
                 writer.WriteBool(msg.ItemEnabled[i]);
                 writer.WriteBool(msg.ItemSpawnWeightOverrideEnabled[i]);
                 writer.WriteFloat(msg.ItemSpawnWeightOverride[i]);
+                writer.WriteInt(msg.ItemAssignedTier[i]);
             }
         }
 
@@ -81,39 +83,40 @@ namespace IssaPlugin.Network
         {
             var msg = new TierConfigMessage
             {
-                CustomItemSpawnsEnabled   = reader.ReadBool(),
+                CustomItemSpawnsEnabled = reader.ReadBool(),
                 GlobalSpawnRateMultiplier = reader.ReadFloat(),
-                CatchupBoostFactor        = reader.ReadFloat(),
+                CatchupBoostFactor = reader.ReadFloat(),
             };
 
             int tierCount = reader.ReadInt();
-            msg.TierNumbers                  = new int[tierCount];
-            msg.TierSpawnWeights             = new float[tierCount];
-            msg.TierEnabled                  = new bool[tierCount];
-            msg.TierMinDistanceBehindLeader  = new float[tierCount];
-            msg.TierMinPlaceTrigger          = new int[tierCount];
+            msg.TierNumbers = new int[tierCount];
+            msg.TierSpawnWeights = new float[tierCount];
+            msg.TierEnabled = new bool[tierCount];
+            msg.TierMinDistanceBehindLeader = new float[tierCount];
+            msg.TierMinPlaceTrigger = new int[tierCount];
 
             for (int i = 0; i < tierCount; i++)
             {
-                msg.TierNumbers[i]                 = reader.ReadInt();
-                msg.TierSpawnWeights[i]            = reader.ReadFloat();
-                msg.TierEnabled[i]                 = reader.ReadBool();
+                msg.TierNumbers[i] = reader.ReadInt();
+                msg.TierSpawnWeights[i] = reader.ReadFloat();
+                msg.TierEnabled[i] = reader.ReadBool();
                 msg.TierMinDistanceBehindLeader[i] = reader.ReadFloat();
-                msg.TierMinPlaceTrigger[i]         = reader.ReadInt();
+                msg.TierMinPlaceTrigger[i] = reader.ReadInt();
             }
 
             int itemCount = reader.ReadInt();
-            msg.ItemTypeIds                    = new int[itemCount];
-            msg.ItemEnabled                    = new bool[itemCount];
+            msg.ItemTypeIds = new int[itemCount];
+            msg.ItemEnabled = new bool[itemCount];
             msg.ItemSpawnWeightOverrideEnabled = new bool[itemCount];
-            msg.ItemSpawnWeightOverride        = new float[itemCount];
-
+            msg.ItemSpawnWeightOverride = new float[itemCount];
+            msg.ItemAssignedTier = new int[itemCount];
             for (int i = 0; i < itemCount; i++)
             {
-                msg.ItemTypeIds[i]                    = reader.ReadInt();
-                msg.ItemEnabled[i]                    = reader.ReadBool();
+                msg.ItemTypeIds[i] = reader.ReadInt();
+                msg.ItemEnabled[i] = reader.ReadBool();
                 msg.ItemSpawnWeightOverrideEnabled[i] = reader.ReadBool();
-                msg.ItemSpawnWeightOverride[i]        = reader.ReadFloat();
+                msg.ItemSpawnWeightOverride[i] = reader.ReadFloat();
+                msg.ItemAssignedTier[i] = reader.ReadInt();
             }
 
             return msg;
@@ -128,39 +131,41 @@ namespace IssaPlugin.Network
         {
             var msg = new TierConfigMessage
             {
-                CustomItemSpawnsEnabled   = snap.CustomItemSpawnsEnabled,
+                CustomItemSpawnsEnabled = snap.CustomItemSpawnsEnabled,
                 GlobalSpawnRateMultiplier = snap.GlobalSpawnRateMultiplier,
-                CatchupBoostFactor        = snap.CatchupBoostFactor,
+                CatchupBoostFactor = snap.CatchupBoostFactor,
             };
 
             // Tiers
             var tiers = new List<IssaPlugin.TierSettings>(snap.TierSettings.Values);
-            msg.TierNumbers                  = new int[tiers.Count];
-            msg.TierSpawnWeights             = new float[tiers.Count];
-            msg.TierEnabled                  = new bool[tiers.Count];
-            msg.TierMinDistanceBehindLeader  = new float[tiers.Count];
-            msg.TierMinPlaceTrigger          = new int[tiers.Count];
+            msg.TierNumbers = new int[tiers.Count];
+            msg.TierSpawnWeights = new float[tiers.Count];
+            msg.TierEnabled = new bool[tiers.Count];
+            msg.TierMinDistanceBehindLeader = new float[tiers.Count];
+            msg.TierMinPlaceTrigger = new int[tiers.Count];
             for (int i = 0; i < tiers.Count; i++)
             {
-                msg.TierNumbers[i]                 = tiers[i].Tier;
-                msg.TierSpawnWeights[i]            = tiers[i].SpawnWeight;
-                msg.TierEnabled[i]                 = tiers[i].TierEnabled;
+                msg.TierNumbers[i] = tiers[i].Tier;
+                msg.TierSpawnWeights[i] = tiers[i].SpawnWeight;
+                msg.TierEnabled[i] = tiers[i].TierEnabled;
                 msg.TierMinDistanceBehindLeader[i] = tiers[i].MinDistanceBehindLeader;
-                msg.TierMinPlaceTrigger[i]         = tiers[i].MinPlaceTrigger;
+                msg.TierMinPlaceTrigger[i] = tiers[i].MinPlaceTrigger;
             }
 
             // Items
             var items = new List<IssaPlugin.ItemOverrideSettings>(snap.ItemOverrides.Values);
-            msg.ItemTypeIds                    = new int[items.Count];
-            msg.ItemEnabled                    = new bool[items.Count];
+            msg.ItemTypeIds = new int[items.Count];
+            msg.ItemEnabled = new bool[items.Count];
             msg.ItemSpawnWeightOverrideEnabled = new bool[items.Count];
-            msg.ItemSpawnWeightOverride        = new float[items.Count];
+            msg.ItemSpawnWeightOverride = new float[items.Count];
+            msg.ItemAssignedTier = new int[items.Count];
             for (int i = 0; i < items.Count; i++)
             {
-                msg.ItemTypeIds[i]                    = items[i].ItemTypeId;
-                msg.ItemEnabled[i]                    = items[i].Enabled;
+                msg.ItemTypeIds[i] = items[i].ItemTypeId;
+                msg.ItemEnabled[i] = items[i].Enabled;
                 msg.ItemSpawnWeightOverrideEnabled[i] = items[i].SpawnWeightOverrideEnabled;
-                msg.ItemSpawnWeightOverride[i]        = items[i].SpawnWeightOverride;
+                msg.ItemSpawnWeightOverride[i] = items[i].SpawnWeightOverride;
+                msg.ItemAssignedTier[i] = items[i].AssignedTier;
             }
 
             return msg;
@@ -174,9 +179,9 @@ namespace IssaPlugin.Network
         {
             var snap = new SpawnConfigSnapshot
             {
-                CustomItemSpawnsEnabled   = msg.CustomItemSpawnsEnabled,
+                CustomItemSpawnsEnabled = msg.CustomItemSpawnsEnabled,
                 GlobalSpawnRateMultiplier = msg.GlobalSpawnRateMultiplier,
-                CatchupBoostFactor        = msg.CatchupBoostFactor,
+                CatchupBoostFactor = msg.CatchupBoostFactor,
             };
 
             int tierCount = msg.TierNumbers?.Length ?? 0;
@@ -185,9 +190,9 @@ namespace IssaPlugin.Network
                 int tier = msg.TierNumbers[i];
                 snap.TierSettings[tier] = new IssaPlugin.TierSettings(tier, msg.TierSpawnWeights[i])
                 {
-                    TierEnabled             = msg.TierEnabled[i],
+                    TierEnabled = msg.TierEnabled[i],
                     MinDistanceBehindLeader = msg.TierMinDistanceBehindLeader[i],
-                    MinPlaceTrigger         = msg.TierMinPlaceTrigger[i],
+                    MinPlaceTrigger = msg.TierMinPlaceTrigger[i],
                 };
             }
 
@@ -197,9 +202,10 @@ namespace IssaPlugin.Network
                 int id = msg.ItemTypeIds[i];
                 snap.ItemOverrides[id] = new IssaPlugin.ItemOverrideSettings(id)
                 {
-                    Enabled                    = msg.ItemEnabled[i],
+                    Enabled = msg.ItemEnabled[i],
                     SpawnWeightOverrideEnabled = msg.ItemSpawnWeightOverrideEnabled[i],
-                    SpawnWeightOverride        = msg.ItemSpawnWeightOverride[i],
+                    SpawnWeightOverride = msg.ItemSpawnWeightOverride[i],
+                    AssignedTier = msg.ItemAssignedTier[i],
                 };
             }
 
