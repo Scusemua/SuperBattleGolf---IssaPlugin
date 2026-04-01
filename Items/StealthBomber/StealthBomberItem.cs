@@ -202,6 +202,11 @@ namespace IssaPlugin.Items
         {
             _isTargeting = true;
             _targetingCancelled = false;
+            // Reset the static terrain-sample timer at session start. It's static so it
+            // survives between uses; a stale mid-count value from a prior use would cause
+            // SampleTerrainY to be skipped on the first few frames of the next session,
+            // or (if left at a large positive value somehow) fire on every frame.
+            _terrainSampleTimer = 0f;
             InputManager.Controls.Gameplay.Disable();
 
             OrbitCameraModule orbitModule = null;
@@ -222,6 +227,14 @@ namespace IssaPlugin.Items
 
             float currentDistanceAddition = 0;
             float zoomSpeed = Configuration.BomberTargetingZoomSpeed.Value;
+            // Rate-limit zoom updates to 20 Hz. mouse.scroll.ReadValue() returns a
+            // continuous delta that is non-zero for many consecutive frames during a
+            // single scroll gesture. Without this guard, SetDistanceAddition fires
+            // every frame while Q/E is also held, causing OrbitCameraModule to flush
+            // the transform hierarchy twice per frame (once for the strip rotation,
+            // once for the distance change) — that double-flush is the zoom+rotate lag.
+            const float ZoomUpdateInterval = 0.05f;
+            float zoomTimer = 0f;
 
             if (orbitModule != null)
             {
@@ -256,6 +269,11 @@ namespace IssaPlugin.Items
                 if (keyboard[Key.Q].isPressed || keyboard[Key.E].isPressed)
                     HandleTargetingRotation(keyboard, rotateSpeed, ref stripAngle, stripGo);
 
+                // Always tick the zoom timer regardless of whether scroll input or
+                // orbitModule is available this frame, so it never stops counting and
+                // goes deeply negative during periods when the guard is false.
+                zoomTimer -= Time.deltaTime;
+
                 if (orbitModule != null && mouse != null)
                 {
                     float scroll = mouse.scroll.ReadValue().y;
@@ -264,9 +282,16 @@ namespace IssaPlugin.Items
                         float zoomStep = Mathf.Sign(scroll) * zoomSpeed;
                         currentDistanceAddition -= zoomStep;
                         currentDistanceAddition = Mathf.Clamp(currentDistanceAddition, 1f, 2000f);
+                    }
+
+                    if (zoomTimer <= 0f)
+                    {
                         orbitModule.SetDistanceAddition(currentDistanceAddition);
                     }
                 }
+
+                if (zoomTimer <= 0f)
+                    zoomTimer = ZoomUpdateInterval;
 
                 if (
                     keyboard[Key.Enter].wasPressedThisFrame

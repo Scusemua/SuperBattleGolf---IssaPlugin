@@ -190,21 +190,27 @@ namespace IssaPlugin.Items
                 Vector3 desiredVelocity = new Vector3(steer.x, -fallSpeed, steer.z);
 
                 sendTimer -= Time.deltaTime;
-                // Clamp to zero so the timer never accumulates a large negative value.
-                // Without this, after holding a direction for several seconds, sendTimer
-                // can reach e.g. -12 s; when the velocity next changes, the send fires
-                // every frame for hundreds of frames until the timer climbs back to zero,
-                // flooding the Kcp send queue and causing a transport flush stall (FPS lag).
-                if (sendTimer < 0f)
-                    sendTimer = 0f;
-                bool velocityChanged = (desiredVelocity - lastSentVelocity).sqrMagnitude > 0.25f;
 
-                if (velocityChanged || sendTimer <= 0f)
+                // The timer is the sole gate for network sends (hard 20 Hz cap).
+                // Previously the code used `velocityChanged || sendTimer <= 0f`, which
+                // meant the timer was bypassed entirely whenever velocity was changing —
+                // which is exactly always during flight, because the camera yaw updates
+                // each frame as the rocket moves, making desiredVelocity shift slightly
+                // each frame and keeping velocityChanged perpetually true. That caused
+                // a send every single frame (~60-120/s), flooding the Kcp queue.
+                if (sendTimer <= 0f)
                 {
-                    NetworkClient.Send(
-                        new MissileSetVelocityMessage { Velocity = desiredVelocity }
-                    );
-                    lastSentVelocity = desiredVelocity;
+                    bool velocityChanged =
+                        (desiredVelocity - lastSentVelocity).sqrMagnitude > 0.01f;
+                    if (velocityChanged)
+                    {
+                        NetworkClient.Send(
+                            new MissileSetVelocityMessage { Velocity = desiredVelocity }
+                        );
+                        lastSentVelocity = desiredVelocity;
+                    }
+                    // Always reset the timer whether or not we sent, so it never goes
+                    // negative and the 20 Hz cadence is maintained precisely.
                     sendTimer = SendInterval;
                 }
 
