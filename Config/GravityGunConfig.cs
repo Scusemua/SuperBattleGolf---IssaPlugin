@@ -20,7 +20,7 @@ namespace IssaPlugin
 
         public GravityGunConfig(ConfigFile cfg, GlobalConfig global)
         {
-            GiveKey = cfg.Bind(Section, "GravityGunGiveKey", Key.NumpadDivide, "Hotkey to give yourself an Gravity Gun (debug/testing).");
+            GiveKey = cfg.Bind(Section, "GiveKey", Key.NumpadDivide, "Hotkey to give yourself a Gravity Gun (debug/testing).");
             Uses = cfg.Bind(Section, "Uses", 1f, "Number of uses per Gravity Gun pickup.");
             LockOnRange = cfg.Bind(Section, "LockOnRange", 45f, "Maximum distance (units) at which the Gravity Gun can lock onto a target.");
             LockOnConeAngleDeg = cfg.Bind(Section, "LockOnConeAngleDeg", 40f, "Half-angle (degrees) of the aim cone used to filter lock-on candidates.");

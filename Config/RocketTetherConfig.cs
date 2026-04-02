@@ -22,7 +22,7 @@ namespace IssaPlugin
 
         public RocketTetherConfig(ConfigFile cfg, GlobalConfig global)
         {
-            GiveKey = cfg.Bind(Section, "RocketTetherGiveKey", Key.NumpadMultiply, "Hotkey to give yourself a Rocket Tether (debug/testing).");
+            GiveKey = cfg.Bind(Section, "GiveKey", Key.NumpadMultiply, "Hotkey to give yourself a Rocket Tether (debug/testing).");
             Uses = cfg.Bind(Section, "Uses", 1f, "Number of uses per Rocket Tether pickup.");
             LockOnRange = cfg.Bind(Section, "LockOnRange", 40f, "Maximum distance (units) at which the Rocket Tether can lock onto a target.");
             LockOnConeAngleDeg = cfg.Bind(Section, "LockOnConeAngleDeg", 60f, "Full angle (degrees) of the aim cone used to filter lock-on candidates.");

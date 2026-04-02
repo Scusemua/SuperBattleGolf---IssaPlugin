@@ -67,9 +67,9 @@ namespace IssaPlugin
             SuperDonut = new SuperDonutConfig(cfg, Global);
             GravityGun = new GravityGunConfig(cfg, Global);
             RocketTether = new RocketTetherConfig(cfg, Global);
-            Jetpack = new JetpackConfig(cfg);
-            Teleporter = new TeleporterConfig(cfg);
-            Spinach = new SpinachConfig(cfg);
+            Jetpack = new JetpackConfig(cfg, Global);
+            Teleporter = new TeleporterConfig(cfg, Global);
+            Spinach = new SpinachConfig(cfg, Global);
         }
 
         // ── Pass-through helper methods (from GlobalConfig) ───────────────────
