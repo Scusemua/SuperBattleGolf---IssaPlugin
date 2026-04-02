@@ -52,6 +52,10 @@ namespace IssaPlugin.Patches
                 extraPower = ModConfig.BaseballBat.PowerMultiplier.Value - 1f;
                 if (extraPower <= 0f)
                     extraPower = 1.0f;
+
+                IssaPluginPlugin.Log.LogInfo(
+                    $"[BatSpinachPatch] Extra power from bat: ${extraPower}"
+                );
             }
 
             if (SpinachBehaviour.IsActive)
@@ -60,8 +64,16 @@ namespace IssaPlugin.Patches
                 if (extraPowerFromSpinach <= 0f)
                     extraPowerFromSpinach = 1.0f;
 
+                IssaPluginPlugin.Log.LogInfo(
+                    $"[BatSpinachPatch] Extra power from spinach: {extraPowerFromSpinach}"
+                );
+
                 extraPower *= extraPowerFromSpinach;
             }
+
+            IssaPluginPlugin.Log.LogInfo(
+                $"[BatSpinachPatch] Total extra power from bat+spinach: {extraPower}"
+            );
 
             var rb = __instance.AsEntity.Rigidbody;
             rb.linearVelocity += (rb.linearVelocity - _velocityBefore) * extraPower;
