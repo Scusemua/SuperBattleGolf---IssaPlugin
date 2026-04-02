@@ -43,7 +43,8 @@ namespace IssaPlugin.Items
                     return _serverWeight.Value;
                 if (Configuration.GetItemSpawnWeightOverrideEnabled(ItemType))
                     return Configuration.GetItemSpawnWeightOverrideValue(ItemType);
-                return Configuration.GetTierSpawnWeight(Tier);
+                return Configuration.GetTierSpawnWeight(Configuration.GetItemTier(ItemType));
+                // return Configuration.GetTierSpawnWeight(Tier);
             }
             set { _serverWeight = value; }
         }

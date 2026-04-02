@@ -19,6 +19,7 @@
 //       bool   enabled
 //       bool   spawnWeightOverrideEnabled
 //       float  spawnWeightOverride
+//       int    assignedTier
 
 using System.Collections.Generic;
 using Mirror;
@@ -200,7 +201,7 @@ namespace IssaPlugin.Network
             for (int i = 0; i < itemCount; i++)
             {
                 int id = msg.ItemTypeIds[i];
-                snap.ItemOverrides[id] = new IssaPlugin.ItemOverrideSettings(id)
+                snap.ItemOverrides[id] = new IssaPlugin.ItemOverrideSettings(id, fromWire: true)
                 {
                     Enabled = msg.ItemEnabled[i],
                     SpawnWeightOverrideEnabled = msg.ItemSpawnWeightOverrideEnabled[i],

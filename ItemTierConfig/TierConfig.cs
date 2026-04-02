@@ -72,6 +72,13 @@ namespace IssaPlugin
             );
         }
 
+        // Wire-construction: caller sets all fields via object initializer.
+        // Does not read from Configuration — use when unpacking a received network message.
+        internal ItemOverrideSettings(int itemTypeId, bool _)
+        {
+            ItemTypeId = itemTypeId;
+        }
+
         public ItemOverrideSettings(ItemOverrideSettings src)
         {
             ItemTypeId = src.ItemTypeId;
@@ -112,7 +119,11 @@ namespace IssaPlugin
                     ? Mathf.Clamp(Configuration.NumTiers.Value, 1, Configuration.MaxTiers)
                     : 3;
             for (int t = 1; t <= numTiers; t++)
-                snap.TierSettings[t] = new TierSettings(t, Configuration.GetTierSpawnWeight(t));
+                snap.TierSettings[t] = new TierSettings(t, Configuration.GetTierSpawnWeight(t))
+                {
+                    MinDistanceBehindLeader = Configuration.GetTierMinDistance(t),
+                    MinPlaceTrigger = Configuration.GetTierMinPlace(t),
+                };
 
             foreach (var def in ItemRegistry.AllItems)
             {
@@ -159,9 +170,13 @@ namespace IssaPlugin
                     highestUsedTier = kv.Key;
             Configuration.NumTiers.Value = highestUsedTier;
 
-            // Tier weights
+            // Tier weights and gating
             foreach (var kv in TierSettings)
+            {
                 Configuration.SetTierSpawnWeight(kv.Key, kv.Value.SpawnWeight);
+                Configuration.SetTierMinDistance(kv.Key, kv.Value.MinDistanceBehindLeader);
+                Configuration.SetTierMinPlace(kv.Key, kv.Value.MinPlaceTrigger);
+            }
 
             // Per-item overrides + tier assignments
             foreach (var kv in ItemOverrides)

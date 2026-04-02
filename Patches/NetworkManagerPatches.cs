@@ -1190,6 +1190,10 @@ namespace IssaPlugin.Patches
             // Register custom reader/writer for TierConfigMessage.
             Writer<TierConfigMessage>.write = TierConfigMessageSerialization.WriteTierConfigMessage;
             Reader<TierConfigMessage>.read = TierConfigMessageSerialization.ReadTierConfigMessage;
+            NetworkClient.RegisterHandler<TierConfigMessage>(
+                msg => TierConfigSyncer.Instance?.OnClientReceivedTierConfig(msg),
+                false
+            );
 
             // ── Rocket Tether Messages ────────────────────────────────────────────
             Writer<RocketTetherLockOnMessage>.write =

@@ -133,7 +133,7 @@ namespace IssaPlugin
 
         // ── Client handler ────────────────────────────────────────────────────
 
-        private void OnClientReceivedTierConfig(TierConfigMessage msg)
+        internal void OnClientReceivedTierConfig(TierConfigMessage msg)
         {
             // The listen-server host is also a client, but we don't want to
             // overwrite the host's authoritative snapshot with its own broadcast.

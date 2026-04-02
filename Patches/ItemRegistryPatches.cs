@@ -132,7 +132,12 @@ namespace IssaPlugin.Patches
                 // ── Tier-level gating ─────────────────────────────────────────
                 bool tierAllowed =
                     syncer == null
-                    || syncer.IsTierAllowedForPlayer(def.Tier, approxDist, approxPlace);
+                    || syncer.IsTierAllowedForPlayer(
+                        Configuration.GetItemTier(def.ItemType),
+                        approxDist,
+                        approxPlace
+                    );
+                // || syncer.IsTierAllowedForPlayer(def.Tier, approxDist, approxPlace);
 
                 if (!tierAllowed)
                     continue;

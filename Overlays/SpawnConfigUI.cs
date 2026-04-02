@@ -28,7 +28,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using BepInEx.Configuration;
 using IssaPlugin.Items;
 using Mirror;
 using UnityEngine;
@@ -75,6 +74,8 @@ namespace IssaPlugin.Overlays
             { 1, "Tier 1 — Common" },
             { 2, "Tier 2 — Standard" },
             { 3, "Tier 3 — Rare / Powerful" },
+            { 4, "Tier 4 — Very Rare" },
+            { 5, "Tier 5 — Ultra Rare" },
         };
 
         // ── Unity lifecycle ───────────────────────────────────────────────────
@@ -223,21 +224,16 @@ namespace IssaPlugin.Overlays
             int currentNumTiers = _working.TierSettings.Count;
 
             // "−" button: remove the highest tier (only if it has no items assigned to it)
-            GUI.enabled = isHost && currentNumTiers > 1;
+            int _topTier = currentNumTiers > 1 ? _working.TierSettings.Keys.Max() : 0;
+            bool _topTierHasItems =
+                _topTier > 0
+                && _working.ItemOverrides.Values.Any(o => o.AssignedTier == _topTier);
+            GUI.enabled = isHost && currentNumTiers > 1 && !_topTierHasItems;
             if (GUILayout.Button("−", GUILayout.Width(24), GUILayout.Height(22)))
             {
-                int topTier = _working.TierSettings.Keys.Max();
-                bool hasItems = _working.ItemOverrides.Values.Any(o => o.AssignedTier == topTier);
-                if (hasItems)
-                {
-                    // Reassign items from the removed tier down to the one below.
-                    foreach (var o in _working.ItemOverrides.Values)
-                        if (o.AssignedTier == topTier)
-                            o.AssignedTier = topTier - 1;
-                }
-                _working.TierSettings.Remove(topTier);
-                if (_selectedTier == topTier)
-                    _selectedTier = topTier - 1;
+                _working.TierSettings.Remove(_topTier);
+                if (_selectedTier == _topTier)
+                    _selectedTier = _topTier - 1;
                 _textBuffers.Clear(); // reset field buffers after structural change
             }
             GUI.enabled = true;
@@ -591,11 +587,6 @@ namespace IssaPlugin.Overlays
                     if (float.TryParse(newText, out float parsed))
                         value = Mathf.Clamp(parsed, min, max);
                 }
-                else
-                {
-                    // Keep buffer in sync when value is changed externally (e.g., opening panel).
-                    _textBuffers[key] = value.ToString("0.##");
-                }
             }
             else
             {
@@ -618,10 +609,6 @@ namespace IssaPlugin.Overlays
                     _textBuffers[key] = newText;
                     if (int.TryParse(newText, out int parsed))
                         value = Mathf.Clamp(parsed, min, max);
-                }
-                else
-                {
-                    _textBuffers[key] = value.ToString();
                 }
             }
             else

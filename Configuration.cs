@@ -133,6 +133,8 @@ namespace IssaPlugin
         // ── Per-tier spawn weights ─────────────────────────────────────────────
         // Keyed by tier number (1, 2, 3, …). Populated by BindTierWeight() in Initialize().
         private static readonly Dictionary<int, ConfigEntry<float>> TierSpawnWeightEntries = [];
+        private static readonly Dictionary<int, ConfigEntry<float>> TierMinDistanceEntries = [];
+        private static readonly Dictionary<int, ConfigEntry<int>> TierMinPlaceEntries = [];
 
         public static float GetTierSpawnWeight(int tier)
         {
@@ -142,6 +144,24 @@ namespace IssaPlugin
                 $"[Config] Item tier {tier} has no registered spawn weight; falling back to Tier 2."
             );
             return TierSpawnWeightEntries.TryGetValue(2, out var fallback) ? fallback.Value : 8f;
+        }
+
+        public static float GetTierMinDistance(int tier) =>
+            TierMinDistanceEntries.TryGetValue(tier, out var e) ? e.Value : 0f;
+
+        public static void SetTierMinDistance(int tier, float value)
+        {
+            if (TierMinDistanceEntries.TryGetValue(tier, out var entry))
+                entry.Value = value;
+        }
+
+        public static int GetTierMinPlace(int tier) =>
+            TierMinPlaceEntries.TryGetValue(tier, out var e) ? e.Value : 0;
+
+        public static void SetTierMinPlace(int tier, int value)
+        {
+            if (TierMinPlaceEntries.TryGetValue(tier, out var entry))
+                entry.Value = value;
         }
 
         public static bool GetItemSpawnWeightOverrideEnabled(ItemType t) =>
@@ -600,8 +620,6 @@ namespace IssaPlugin
 
         public static void Initialize(ConfigFile cfg)
         {
-            NumTiers = cfg.Bind("ItemBoxSpawns", "NumTiers", 5, "Number of item tiers (1–10). ...");
-
             CustomItemSpawnsEnabled = cfg.Bind(
                 "IssaPlugin",
                 "Enabled",
@@ -917,13 +935,35 @@ namespace IssaPlugin
                     defaultValue,
                     description
                 );
+                TierMinDistanceEntries[tier] = cfg.Bind(
+                    "ItemBoxSpawns",
+                    $"Tier{tier}MinDistanceBehindLeader",
+                    0f,
+                    $"Min distance behind leader required to unlock Tier {tier} items (0 = no gate)."
+                );
+                TierMinPlaceEntries[tier] = cfg.Bind(
+                    "ItemBoxSpawns",
+                    $"Tier{tier}MinPlaceTrigger",
+                    0,
+                    $"Min place (e.g. 3 = 3rd or worse) required to unlock Tier {tier} items (0 = no gate)."
+                );
             }
 
-            BindTierWeight(1, 15f, "Spawn weight for Tier 1 (common) items.");
-            BindTierWeight(2, 10f, "Spawn weight for Tier 2 (standard) items.");
-            BindTierWeight(3, 5f, "Spawn weight for Tier 3 (rare/powerful) items.");
-            BindTierWeight(4, 3f, "Spawn weight for Tier 4 (very rare/very powerful) items.");
-            BindTierWeight(5, 1f, "Spawn weight for Tier 5 (super rare/super powerful) items.");
+            // BindTierWeight(1, 15f, "Spawn weight for Tier 1 (common) items.");
+            // BindTierWeight(2, 10f, "Spawn weight for Tier 2 (standard) items.");
+            // BindTierWeight(3, 5f, "Spawn weight for Tier 3 (rare/powerful) items.");
+            // BindTierWeight(4, 3f, "Spawn weight for Tier 4 (very rare/very powerful) items.");
+            // BindTierWeight(5, 1f, "Spawn weight for Tier 5 (super rare/super powerful) items.");
+
+            NumTiers = cfg.Bind("ItemBoxSpawns", "NumTiers", 5, "Number of item tiers (1–10). ...");
+
+            float[] defaultWeights = { 15f, 10f, 5f, 3f, 1f, 1f, 1f, 1f, 1f, 1f };
+            int numTiers = Mathf.Clamp(NumTiers.Value, 1, MaxTiers);
+            for (int t = 1; t <= numTiers; t++)
+            {
+                float def = t <= defaultWeights.Length ? defaultWeights[t - 1] : 1f;
+                BindTierWeight(t, def, $"Spawn weight for Tier {t} items.");
+            }
 
             // NOTE: Named SpawnWeight properties below are kept solely for BepInEx config file key
             // stability. They are no longer referenced directly in item definitions; access at
