@@ -322,6 +322,13 @@ namespace IssaPlugin
             RegWarn(cfg, _itemWarningEnabledEntries, 116, "PositionSwapWarning", "Position Swap", false);
             RegWarn(cfg, _itemWarningEnabledEntries, 117, "PoisonJarWarning", "Poison Jar", false);
             RegWarn(cfg, _itemWarningEnabledEntries, 118, "DroneSwarmWarning", "Drone Swarm", true);
+            RegWarn(cfg, _itemWarningEnabledEntries, 119, "RedBullWarning", "Red Bull", false);
+            RegWarn(cfg, _itemWarningEnabledEntries, 120, "SuperDonutWarning", "Super Donut", true);
+            RegWarn(cfg, _itemWarningEnabledEntries, 121, "GravityGunWarning", "Gravity Gun", false);
+            RegWarn(cfg, _itemWarningEnabledEntries, 122, "RocketTetherWarning", "Rocket Tether", false);
+            RegWarn(cfg, _itemWarningEnabledEntries, 123, "JetpackWarning", "Jetpack", false);
+            RegWarn(cfg, _itemWarningEnabledEntries, 124, "TeleporterWarning", "Teleporter", false);
+            RegWarn(cfg, _itemWarningEnabledEntries, 125, "SpinachWarning", "Spinach", false);
 
             // ── ItemTierAssignments ────────────────────────────────────────────
             BindAllItemTierAssignments(cfg);
