@@ -68,7 +68,7 @@ namespace IssaPlugin.Items
 
             _globalSessionActive = true;
             _activeInstance = this;
-            float duration = Configuration.LowGravityDuration.Value;
+            float duration = ModConfig.LowGravity.Duration.Value;
 
             // [ClientRpc] is not IL-weaved in plugin DLLs — use NetworkMessage instead.
             NetworkServer.SendToAll(new LowGravityBeginMessage { Duration = duration });

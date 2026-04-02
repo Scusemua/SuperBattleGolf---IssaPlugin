@@ -16,9 +16,9 @@ namespace IssaPlugin.Items {
         private void Awake() {
             Rigidbody = GetComponent<Rigidbody>();
 
-            HealthPoints = Configuration.PlaceableWallHealthPoints.Value;
-            VelocityImpactFactor = Configuration.PlaceableWallVelocityImpactFactor.Value;
-            TorsionMultiplier = Configuration.PlaceableWallTorsionMultiplier.Value;
+            HealthPoints = ModConfig.PlaceableWall.HealthPoints.Value;
+            VelocityImpactFactor = ModConfig.PlaceableWall.VelocityImpactFactor.Value;
+            TorsionMultiplier = ModConfig.PlaceableWall.TorsionMultiplier.Value;
         }
 
         public void ApplyDamage(float amount)
@@ -40,8 +40,8 @@ namespace IssaPlugin.Items {
 
             _deformed = true;
 
-            float debrisLifetime = Configuration.PlaceableWallDebrisLifetime.Value;
-            float explosionForce = Configuration.PlaceableWallRocketExplosionForce.Value;
+            float debrisLifetime = ModConfig.PlaceableWall.DebrisLifetime.Value;
+            float explosionForce = ModConfig.PlaceableWall.RocketExplosionForce.Value;
 
             foreach(Transform childTransform in transform) {
                 childTransform.parent = null;

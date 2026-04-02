@@ -93,7 +93,7 @@ namespace IssaPlugin.Items
             var markerGo = CreateMarkerVisual(markerStartPos);
 
             float currentDistanceAddition = 25f;
-            float zoomSpeed = Configuration.BomberTargetingZoomSpeed.Value; // reuse bomber zoom speed
+            float zoomSpeed = ModConfig.StealthBomber.TargetingZoomSpeed.Value; // reuse bomber zoom speed
 
             if (orbitModule != null)
             {
@@ -107,7 +107,7 @@ namespace IssaPlugin.Items
 
             yield return null; // let camera settle for one frame
 
-            float moveSpeed = Configuration.TeleporterTargetMoveSpeed.Value;
+            float moveSpeed = ModConfig.Teleporter.TargetMoveSpeed.Value;
             bool confirmed = false;
             bool cancelled = false;
 
@@ -226,7 +226,7 @@ namespace IssaPlugin.Items
             // Y is already terrain-snapped by the caller; place the root exactly there.
             root.transform.position = center;
 
-            float radius = Configuration.TeleporterMarkerRadius.Value;
+            float radius = ModConfig.Teleporter.MarkerRadius.Value;
 
             // Main filled disc (a flat cylinder in Unity).
             CreateMarkerPart(

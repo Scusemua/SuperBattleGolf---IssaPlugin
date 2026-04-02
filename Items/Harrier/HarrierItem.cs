@@ -44,7 +44,7 @@ namespace IssaPlugin.Items
             Vector3 direction = (targetPosition - fromPosition).normalized;
 
             // Apply random angular jitter so rockets aren't perfectly accurate.
-            float jitterDeg = Configuration.HarrierRocketJitter.Value;
+            float jitterDeg = ModConfig.Harrier.RocketJitter.Value;
             if (jitterDeg > 0f)
             {
                 // Build two vectors perpendicular to the fire direction.
@@ -95,7 +95,7 @@ namespace IssaPlugin.Items
             rocket.ServerInitialize(inventory.PlayerInfo, null, itemUseId);
             NetworkServer.Spawn(rocket.gameObject, (NetworkConnectionToClient)null);
 
-            ExplosionScaler.Register(rocket, Configuration.HarrierExplosionScale.Value);
+            ExplosionScaler.Register(rocket, ModConfig.Harrier.ExplosionScale.Value);
 
             // Track so the explosion patch can exclude Harrier-fired rockets from
             // registering as hits on the HarrierHitReceiver, and to route hit

@@ -15,9 +15,9 @@ namespace IssaPlugin.Items
         // UseRocketIconFallback not overridden — base class default (true) uses the
         // rocket-launcher icon as placeholder, which is more appropriate than pistol.
 
-        public override int MaxUses => (int)Configuration.JetpackUses.Value;
+        public override int MaxUses => (int)ModConfig.Jetpack.Uses.Value;
         public override int Tier => 2;
-        public override Key GiveKey => Configuration.JetpackGiveKey.Value;
+        public override Key GiveKey => ModConfig.Jetpack.GiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)
         {

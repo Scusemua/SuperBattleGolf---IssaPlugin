@@ -232,7 +232,7 @@ namespace IssaPlugin.Items
 
                 // Skip golf balls if the config says not to affect them.
                 if (
-                    !Configuration.BlackHoleGrenadeAffectsGolfBalls.Value
+                    !ModConfig.BlackHoleGrenade.AffectsGolfBalls.Value
                     && col.GetComponentInParent<GolfBall>() != null
                 )
                     continue;
@@ -257,8 +257,7 @@ namespace IssaPlugin.Items
                 float bonusForceMult = 1.0f;
                 if (col.GetComponentInParent<GolfCartInfo>() != null)
                 {
-                    bonusForceMult = Configuration
-                        .BlackHoleGrenadeBonusGolfCartForceMultiplier
+                    bonusForceMult = ModConfig.BlackHoleGrenade.BonusGolfCartForceMultiplier
                         .Value;
                 }
 
@@ -309,7 +308,7 @@ namespace IssaPlugin.Items
                 if (col.GetComponentInParent<PlayerInfo>() != null)
                     continue;
                 if (
-                    !Configuration.BlackHoleGrenadeAffectsGolfBalls.Value
+                    !ModConfig.BlackHoleGrenade.AffectsGolfBalls.Value
                     && col.GetComponentInParent<GolfBall>() != null
                 )
                     continue;
@@ -342,7 +341,7 @@ namespace IssaPlugin.Items
                     SpitForce = SpitForce,
                     ThrowerInfo = ThrowerInfo,
                     ItemUseId = ItemUseId,
-                    BlackHoleGrenadeSpitVfxScale = Configuration.BlackHoleGrenadeSpitVfxScale.Value,
+                    BlackHoleGrenadeSpitVfxScale = ModConfig.BlackHoleGrenade.SpitVfxScale.Value,
                 }
             );
 

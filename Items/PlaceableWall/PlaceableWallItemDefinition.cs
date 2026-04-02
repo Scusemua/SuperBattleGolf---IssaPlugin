@@ -12,9 +12,9 @@ namespace IssaPlugin.Items
         public override Sprite Icon => AssetLoader.WallIcon;
         public override GameObject HeldModelPrefab => AssetLoader.WallHandheldPrefab;
 
-        public override int MaxUses => (int)Configuration.PlaceableWallUses.Value;
+        public override int MaxUses => (int)ModConfig.PlaceableWall.Uses.Value;
         public override int Tier => 1;
-        public override Key GiveKey => Configuration.PlaceableWallGiveKey.Value;
+        public override Key GiveKey => ModConfig.PlaceableWall.GiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)
         {

@@ -13,7 +13,7 @@ namespace IssaPlugin.Items
         public void Awake()
         {
             HitCount = 0;
-            HitsRequired = (int)Configuration.AC130HitsToMayday.Value;
+            HitsRequired = (int)ModConfig.AC130.HitsToMayday.Value;
             OnHit += OnAC130Hit;
         }
 

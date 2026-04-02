@@ -22,11 +22,11 @@ namespace IssaPlugin.Items
     {
         // ── Tuning — read from Configuration so values are hot-configurable ──
 
-        private static float LockDuration => Configuration.BearTargetLockDuration.Value;
-        private static float StealDistanceThreshold => Configuration.BearTargetStealThreshold.Value;
-        private static float AbandonDistance => Configuration.BearTargetAbandonDistance.Value;
-        private static float AggroStealThreshold => Configuration.BearAggroStealThreshold.Value;
-        private static float AggroDuration => Configuration.BearAggroDuration.Value;
+        private static float LockDuration => ModConfig.Bear.TargetLockDuration.Value;
+        private static float StealDistanceThreshold => ModConfig.Bear.TargetStealThreshold.Value;
+        private static float AbandonDistance => ModConfig.Bear.TargetAbandonDistance.Value;
+        private static float AggroStealThreshold => ModConfig.Bear.AggroStealThreshold.Value;
+        private static float AggroDuration => ModConfig.Bear.AggroDuration.Value;
 
         // ── State ─────────────────────────────────────────────────────────────
 
@@ -177,7 +177,7 @@ namespace IssaPlugin.Items
 
             // Optionally ignore players who have already holed out
             if (
-                !Configuration.BearAttackFinishedPlayers.Value
+                !ModConfig.Bear.AttackFinishedPlayers.Value
                 && p.AsGolfer != null
                 && p.AsGolfer.MatchResolution == PlayerMatchResolution.Scored
             )

@@ -62,9 +62,9 @@ namespace IssaPlugin
             // before any connection is established.  Start() is early enough.
             NetworkClient.RegisterHandler<TierConfigMessage>(OnClientReceivedTierConfig, false);
 
-            // Configuration.Initialize() is called in Plugin.Awake() before AddComponent,
+            // ModConfig.Initialize() is called in Plugin.Awake() before AddComponent,
             // but guard anyway in case of ordering surprises.
-            if (Configuration.NumTiers != null)
+            if (ModConfig.Global.NumTiers != null)
                 CurrentSnapshot = SpawnConfigSnapshot.FromConfiguration();
             else
                 IssaPluginPlugin.Log.LogWarning(
@@ -149,7 +149,7 @@ namespace IssaPlugin
             {
                 if (ItemRegistry.CustomItemDefinitionMap.TryGetValue(kv.Key, out var def))
                 {
-                    // Enabled state — calls Configuration.SetItemEnabled, which is fine
+                    // Enabled state — calls ModConfig.SetItemEnabled, which is fine
                     // on clients too (they just won't propagate it further).
                     def.Enabled = kv.Value.Enabled;
 

@@ -79,9 +79,9 @@ namespace IssaPlugin.Patches
             _freezeApplied = true;
             _originalMaterials.Clear();
 
-            _iceMat.staticFriction = Configuration.FreezeFriction.Value;
-            _iceMat.dynamicFriction = Configuration.FreezeFriction.Value;
-            _iceMat.bounciness = Configuration.FreezeBounciness.Value;
+            _iceMat.staticFriction = ModConfig.Freeze.Friction.Value;
+            _iceMat.dynamicFriction = ModConfig.Freeze.Friction.Value;
+            _iceMat.bounciness = ModConfig.Freeze.Bounciness.Value;
 
             foreach (var col in FindObjectsByType<Collider>(FindObjectsSortMode.None))
             {
@@ -141,7 +141,7 @@ namespace IssaPlugin.Patches
         private void ApplyCartIce()
         {
             _savedWheelFriction.Clear();
-            float sideStiffness = Configuration.FreezeCartSidewaysStiffness.Value;
+            float sideStiffness = ModConfig.Freeze.CartSidewaysStiffness.Value;
 
             foreach (var wc in FindObjectsByType<WheelCollider>(FindObjectsSortMode.None))
             {
@@ -170,8 +170,8 @@ namespace IssaPlugin.Patches
             if (!FreezeItem.IsFrozen)
                 return;
 
-            float friction = Configuration.FreezeFriction.Value;
-            float bounce = Configuration.FreezeBounciness.Value;
+            float friction = ModConfig.Freeze.Friction.Value;
+            float bounce = ModConfig.Freeze.Bounciness.Value;
 
             for (int i = 0; i < pairs.Length; i++)
             {

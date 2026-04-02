@@ -41,10 +41,10 @@ namespace IssaPlugin.Items
             {
                 if (_serverWeight.HasValue)
                     return _serverWeight.Value;
-                if (Configuration.GetItemSpawnWeightOverrideEnabled(ItemType))
-                    return Configuration.GetItemSpawnWeightOverrideValue(ItemType);
-                return Configuration.GetTierSpawnWeight(Configuration.GetItemTier(ItemType));
-                // return Configuration.GetTierSpawnWeight(Tier);
+                if (ModConfig.GetItemSpawnWeightOverrideEnabled(ItemType))
+                    return ModConfig.GetItemSpawnWeightOverrideValue(ItemType);
+                return ModConfig.GetTierSpawnWeight(ModConfig.GetItemTier(ItemType));
+                // return ModConfig.GetTierSpawnWeight(Tier);
             }
             set { _serverWeight = value; }
         }
@@ -53,8 +53,8 @@ namespace IssaPlugin.Items
         // Delegates to Configuration so the value persists across sessions and is vote-writeable.
         public virtual bool Enabled
         {
-            get => Configuration.GetItemEnabled(ItemType);
-            set => Configuration.SetItemEnabled(ItemType, value);
+            get => ModConfig.GetItemEnabled(ItemType);
+            set => ModConfig.SetItemEnabled(ItemType, value);
         }
 
         // Game integration

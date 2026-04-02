@@ -150,7 +150,7 @@ namespace IssaPlugin.Overlays
             if (wantsScope && !_fovSaved)
             {
                 _savedBaseFov = _orbitModule.FieldOfView;
-                _targetZoomFov = Configuration.SniperRifleZoomFov.Value;
+                _targetZoomFov = ModConfig.SniperRifle.ZoomFov.Value;
                 _fovSaved = true;
             }
 
@@ -162,11 +162,11 @@ namespace IssaPlugin.Overlays
                 {
                     // One Windows scroll notch = 120 units; divide to get notch count.
                     _targetZoomFov -=
-                        (scroll / 120f) * Configuration.SniperRifleScrollSensitivity.Value;
+                        (scroll / 120f) * ModConfig.SniperRifle.ScrollSensitivity.Value;
                     _targetZoomFov = Mathf.Clamp(
                         _targetZoomFov,
-                        Configuration.SniperRifleMinZoomFov.Value,
-                        Configuration.SniperRifleMaxZoomFov.Value
+                        ModConfig.SniperRifle.MinZoomFov.Value,
+                        ModConfig.SniperRifle.MaxZoomFov.Value
                     );
                 }
             }
@@ -177,7 +177,7 @@ namespace IssaPlugin.Overlays
             _currentFovOffset = Mathf.Lerp(
                 _currentFovOffset,
                 targetOffset,
-                Time.deltaTime * Configuration.SniperRifleZoomSpeed.Value
+                Time.deltaTime * ModConfig.SniperRifle.ZoomSpeed.Value
             );
             _orbitModule.SetFovOffset(_currentFovOffset);
 

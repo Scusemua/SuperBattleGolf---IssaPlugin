@@ -85,7 +85,7 @@ namespace IssaPlugin.Overlays
             if (_sessionActive && !_wasSessionActive)
             {
                 _sessionStartTime = _time;
-                _sessionDuration = Configuration.GravityGunTetherDuration.Value;
+                _sessionDuration = ModConfig.GravityGun.TetherDuration.Value;
             }
             _wasSessionActive = _sessionActive;
 
@@ -122,11 +122,11 @@ namespace IssaPlugin.Overlays
                 return;
 
             float cosHalf = Mathf.Cos(
-                Configuration.GravityGunLockOnConeAngleDeg.Value * 0.5f * Mathf.Deg2Rad
+                ModConfig.GravityGun.LockOnConeAngleDeg.Value * 0.5f * Mathf.Deg2Rad
             );
             float rangeSq =
-                Configuration.GravityGunLockOnRange.Value
-                * Configuration.GravityGunLockOnRange.Value;
+                ModConfig.GravityGun.LockOnRange.Value
+                * ModConfig.GravityGun.LockOnRange.Value;
 
             Vector3 camPos = cam.transform.position;
             Vector3 camFwd = cam.transform.forward;

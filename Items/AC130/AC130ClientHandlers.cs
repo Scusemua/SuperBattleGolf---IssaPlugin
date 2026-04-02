@@ -70,7 +70,7 @@ namespace IssaPlugin.Items
 
         internal static void HandleAC130MaydayImpact(AC130MaydayImpactMessage msg)
         {
-            float duration = Configuration.AC130MaydayExplosionDuration.Value;
+            float duration = ModConfig.AC130.MaydayExplosionDuration.Value;
 
             if (AssetLoader.MaydayExplosionVfxPrefab != null)
             {
@@ -87,7 +87,7 @@ namespace IssaPlugin.Items
                     VfxType.RocketLauncherRocketExplosion,
                     msg.ImpactPos,
                     Quaternion.identity,
-                    Vector3.one * Configuration.AC130MaydayExplosionScale.Value
+                    Vector3.one * ModConfig.AC130.MaydayExplosionScale.Value
                 );
             }
 

@@ -105,7 +105,7 @@ namespace IssaPlugin.Items
             // Consume the item before starting the coroutine.
             ItemHelper.ConsumeEquippedItem(_inventory);
 
-            float delay = Configuration.PositionSwapDelay.Value;
+            float delay = ModConfig.PositionSwap.Delay.Value;
 
             NetworkServer.SendToAll(
                 new PositionSwapWarningMessage

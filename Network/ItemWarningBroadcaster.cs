@@ -9,7 +9,7 @@ namespace IssaPlugin.Network
     /// To add a warning for a new item:
     ///   1. Call <c>ItemWarningBroadcaster.Broadcast()</c> in the item's server
     ///      activation method (right after item consumption).
-    ///   2. Register a per-item entry in <c>Configuration.Initialize()</c> using
+    ///   2. Register a per-item entry in <c>ModConfig.Initialize()</c> using
     ///      the <c>RegWarn</c> helper alongside the existing entries.
     /// </summary>
     public static class ItemWarningBroadcaster
@@ -32,7 +32,7 @@ namespace IssaPlugin.Network
             uint senderNetId = 0
         )
         {
-            if (!Configuration.GetItemWarningEnabled(itemType))
+            if (!ModConfig.GetItemWarningEnabled(itemType))
                 return;
 
             NetworkServer.SendToAll(

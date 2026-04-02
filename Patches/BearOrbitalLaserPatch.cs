@@ -73,7 +73,7 @@ namespace IssaPlugin.Patches
                 if (!tracker.HitBears.Add(receiver.gameObject))
                     continue;
 
-                float damage = Configuration.BearDamageOrbitalLaser.Value;
+                float damage = ModConfig.Bear.DamageOrbitalLaser.Value;
 
                 IssaPluginPlugin.Log.LogInfo(
                     $"[Bear] Orbital laser hit bear at {receiver.transform.position} "

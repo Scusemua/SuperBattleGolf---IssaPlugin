@@ -11,9 +11,9 @@ namespace IssaPlugin.Items
         public override string[] ConsoleAliases => new[] { "bear", "bears" };
         public override Sprite Icon => AssetLoader.BearIcon;
         public override GameObject HeldModelPrefab => AssetLoader.TeddyBearPrefab;
-        public override int MaxUses => (int)Configuration.BearUses.Value;
+        public override int MaxUses => (int)ModConfig.Bear.Uses.Value;
         public override int Tier => 4;
-        public override Key GiveKey => Configuration.BearGiveKey.Value;
+        public override Key GiveKey => ModConfig.Bear.GiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)
         {

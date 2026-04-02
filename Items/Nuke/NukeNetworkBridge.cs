@@ -65,7 +65,7 @@ namespace IssaPlugin.Items
                 yield break;
             }
 
-            float dropHeight = Configuration.NukeDropHeight.Value;
+            float dropHeight = ModConfig.Nuke.DropHeight.Value;
             Vector3 mapCenter = inventory.transform.position;
             Vector3 spawnPos = new Vector3(mapCenter.x, mapCenter.y + dropHeight, mapCenter.z);
 
@@ -103,17 +103,17 @@ namespace IssaPlugin.Items
             behaviour.ThrowerInfo = playerInfo;
             behaviour.ThrowerRigidbody = GetComponentInParent<Rigidbody>();
             behaviour.ItemUseId = itemUseId;
-            behaviour.DropSpeed = Configuration.NukeDropSpeed.Value;
-            behaviour.ExplosionScale = Configuration.NukeExplosionScale.Value;
-            behaviour.SkyBlastForce = Configuration.NukeSkyBlastForce.Value;
-            behaviour.SkyBlastRadius = Configuration.NukeSkyBlastRadius.Value;
-            behaviour.SkyBlastVerticalBias = Configuration.NukeSkyBlastVerticalBias.Value;
+            behaviour.DropSpeed = ModConfig.Nuke.DropSpeed.Value;
+            behaviour.ExplosionScale = ModConfig.Nuke.ExplosionScale.Value;
+            behaviour.SkyBlastForce = ModConfig.Nuke.SkyBlastForce.Value;
+            behaviour.SkyBlastRadius = ModConfig.Nuke.SkyBlastRadius.Value;
+            behaviour.SkyBlastVerticalBias = ModConfig.Nuke.SkyBlastVerticalBias.Value;
 
             IssaPluginPlugin.Log.LogInfo($"[Nuke] Bomb spawned at {spawnPos:F1}.");
 
             // Wait for the bomb to be destroyed by NukeBombBehaviour.Detonate(),
             // with a generous timeout in case something goes wrong.
-            float dropTime = dropHeight / Mathf.Max(Configuration.NukeDropSpeed.Value, 1f);
+            float dropTime = dropHeight / Mathf.Max(ModConfig.Nuke.DropSpeed.Value, 1f);
             float timeout = dropTime + 10f;
             float elapsed = 0f;
 
@@ -172,7 +172,7 @@ namespace IssaPlugin.Items
                     Quaternion.identity
                 );
                 vfx.transform.localScale = Vector3.one * msg.NukeExplosionVfxScale;
-                Destroy(vfx, Configuration.NukeExplosionVfxDuration.Value);
+                Destroy(vfx, ModConfig.Nuke.ExplosionVfxDuration.Value);
             }
             else
             {
@@ -210,7 +210,7 @@ namespace IssaPlugin.Items
             if (localInfo == null)
                 return;
 
-            if (Configuration.NukeExcludeThrower.Value && localInfo == msg.ThrowerInfo)
+            if (ModConfig.Nuke.ExcludeThrower.Value && localInfo == msg.ThrowerInfo)
                 return;
 
             var movement = localInfo.Movement;

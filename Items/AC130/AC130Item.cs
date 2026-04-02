@@ -26,10 +26,10 @@ namespace IssaPlugin.Items
                 return;
 
             float targetFov = mouse.rightButton.isPressed
-                ? Configuration.AC130ZoomFov.Value
+                ? ModConfig.AC130.ZoomFov.Value
                 : session.GunshipCam.baseFov;
 
-            session.GunshipCam.SetFov(targetFov, Configuration.AC130ZoomSpeed.Value);
+            session.GunshipCam.SetFov(targetFov, ModConfig.AC130.ZoomSpeed.Value);
         }
 
         public static void HandleFlight(Keyboard keyboard, AC130Session s)
@@ -71,7 +71,7 @@ namespace IssaPlugin.Items
                 return;
 
             if (explosionScale < 0f)
-                explosionScale = Configuration.AC130ExplosionScale.Value;
+                explosionScale = ModConfig.AC130.ExplosionScale.Value;
 
             _useIndex++;
             var itemUseId = new ItemUseId(

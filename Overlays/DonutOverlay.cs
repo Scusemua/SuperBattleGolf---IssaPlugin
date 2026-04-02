@@ -23,7 +23,7 @@ namespace IssaPlugin.Overlays
 
                 _renderer.TotalLaserUses = totalLaserUses;
                 _renderer.RemainingLaserUses = totalLaserUses;
-                _renderer.TimeRemaining = Configuration.DonutDuration.Value;
+                _renderer.TimeRemaining = ModConfig.Donut.Duration.Value;
                 _go.SetActive(true);
             }
             else
@@ -90,7 +90,7 @@ namespace IssaPlugin.Overlays
         // ── Recharge state ────────────────────────────────────────────────
         private int _prevRemainingUses = -1;
         private float _rechargeFlashTimer;
-        private readonly float RechargeFlashDuration = Configuration.DonutLaserCooldown.Value;
+        private readonly float RechargeFlashDuration = ModConfig.Donut.LaserCooldown.Value;
 
         // ── Values cached in Update, consumed in OnGUI ────────────────────
         // OnGUI is called multiple times per frame (Layout pass + Repaint pass).

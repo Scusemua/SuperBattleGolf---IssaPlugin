@@ -103,7 +103,7 @@ namespace IssaPlugin.Patches
                 {
                     Vector3 playerPos = ((UnityEngine.Component)__instance).transform.position;
                     float sqrDist = (playerPos - ball.transform.position).sqrMagnitude;
-                    float radius = Configuration.FreezeGripRadius.Value;
+                    float radius = ModConfig.Freeze.GripRadius.Value;
                     if (sqrDist <= radius * radius)
                         return; // Within grip zone — leave game's normal drag in place.
                 }

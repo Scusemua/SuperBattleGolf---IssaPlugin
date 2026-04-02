@@ -22,11 +22,11 @@ namespace IssaPlugin.Items
         public override ItemType AnimatorItemType => ItemType.ElephantGun;
         public override ItemType AnimatorChangedItemType => ItemType.ElephantGun;
 
-        public override int MaxUses => (int)Configuration.GravityGunUses.Value;
+        public override int MaxUses => (int)ModConfig.GravityGun.Uses.Value;
 
         public override int Tier => 3;
 
-        public override Key GiveKey => Configuration.GravityGunGiveKey.Value;
+        public override Key GiveKey => ModConfig.GravityGun.GiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)
         {

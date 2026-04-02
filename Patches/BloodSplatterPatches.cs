@@ -58,7 +58,7 @@ namespace IssaPlugin.Patches
 
         internal static void SpawnBloodSplatter(Vector3 hitPoint, Vector3 barrelEnd)
         {
-            if (!Configuration.BloodEffectsEnabled.Value)
+            if (!ModConfig.Global.BloodEffectsEnabled.Value)
                 return;
 
             var prefab = AssetLoader.BloodSplatterPrefab;

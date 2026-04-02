@@ -55,7 +55,7 @@ namespace IssaPlugin.Items
             inventory.PlayerInfo.PlayerAudio.PlayElephantGunShotForAllClients();
 
             float elapsed = 0f;
-            float duration = Configuration.SniperRifleShotDuration.Value;
+            float duration = ModConfig.SniperRifle.ShotDuration.Value;
             while (elapsed < duration)
             {
                 elapsed += Time.deltaTime;
@@ -73,7 +73,7 @@ namespace IssaPlugin.Items
             Vector3 barrelEnd = inventory.GetElephantGunBarrelEndPosition();
 
             float localYaw;
-            float maxAimDist = Configuration.SniperRifleMaxAimingDistance.Value;
+            float maxAimDist = ModConfig.SniperRifle.MaxAimingDistance.Value;
             Vector3 aimPoint = inventory.GetFirearmAimPoint(
                 maxAimDist,
                 GameManager.LayerSettings.GunHittablesMask,
@@ -85,7 +85,7 @@ namespace IssaPlugin.Items
             {
                 inventory.PlayerInfo.Movement.AlignWithCameraImmediately();
                 aimPoint = inventory.GetFirearmAimPoint(
-                    Configuration.SniperRifleMaxAimingDistance.Value,
+                    ModConfig.SniperRifle.MaxAimingDistance.Value,
                     GameManager.LayerSettings.GunHittablesMask,
                     out _
                 );
@@ -93,16 +93,16 @@ namespace IssaPlugin.Items
 
             // Apply inaccuracy (much tighter than the ElephantGun when scoped).
             float inaccuracy = SniperRifleItem.IsScoped
-                ? Configuration.SniperRifleScopedInaccuracy.Value
-                : Configuration.SniperRifleHipFireInaccuracy.Value;
+                ? ModConfig.SniperRifle.ScopedInaccuracy.Value
+                : ModConfig.SniperRifle.HipFireInaccuracy.Value;
 
             Vector3 dir = (aimPoint - barrelEnd).RandomlyRotatedDeg(inaccuracy);
             Ray ray = new Ray(barrelEnd, dir);
 
             // ItemHelper.ApplyRecoil(inventory, dir, Configuration.SniperRifleRecoil.Value);
-            ScreenShakeHelper.ApplyScreenShake(Configuration.SniperRifleScreenShakeIntensity.Value);
+            ScreenShakeHelper.ApplyScreenShake(ModConfig.SniperRifle.ScreenShakeIntensity.Value);
 
-            float maxShot = Configuration.SniperRifleMaxShotDistance.Value;
+            float maxShot = ModConfig.SniperRifle.MaxShotDistance.Value;
             int layerMask = GameManager.LayerSettings.GunHittablesMask;
             int hitCount = Physics.RaycastNonAlloc(
                 ray,

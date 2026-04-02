@@ -53,7 +53,7 @@ namespace IssaPlugin.Items
             ItemHelper.ConsumeEquippedItem(inventory);
 
             // Clamp throw speed server-side to prevent exploits.
-            float maxSpeed = Configuration.BlackHoleGrenadeMaxThrowSpeed.Value;
+            float maxSpeed = ModConfig.BlackHoleGrenade.MaxThrowSpeed.Value;
             Vector3 velocity = Vector3.ClampMagnitude(throwVelocity, maxSpeed);
 
             var grenadeGo = Object.Instantiate(
@@ -99,12 +99,12 @@ namespace IssaPlugin.Items
             var behaviour = grenadeGo.AddComponent<BlackHoleGrenadeBehaviour>();
             behaviour.ThrowerInfo = playerInfo;
             behaviour.ItemUseId = itemUseId;
-            behaviour.GraceTime = Configuration.BlackHoleGrenadeGraceTime.Value;
-            behaviour.SuckDuration = Configuration.BlackHoleGrenadeSuckDuration.Value;
-            behaviour.SuckRadius = Configuration.BlackHoleGrenadeSuckRadius.Value;
-            behaviour.SuckForce = Configuration.BlackHoleGrenadeSuckForce.Value;
-            behaviour.MaxSuckForce = Configuration.BlackHoleGrenadeMaxSuckForce.Value;
-            behaviour.SpitForce = Configuration.BlackHoleGrenadeSpitForce.Value;
+            behaviour.GraceTime = ModConfig.BlackHoleGrenade.GraceTime.Value;
+            behaviour.SuckDuration = ModConfig.BlackHoleGrenade.SuckDuration.Value;
+            behaviour.SuckRadius = ModConfig.BlackHoleGrenade.SuckRadius.Value;
+            behaviour.SuckForce = ModConfig.BlackHoleGrenade.SuckForce.Value;
+            behaviour.MaxSuckForce = ModConfig.BlackHoleGrenade.MaxSuckForce.Value;
+            behaviour.SpitForce = ModConfig.BlackHoleGrenade.SpitForce.Value;
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[BlackHoleGrenade] Grenade thrown from {throwOrigin} "
@@ -132,9 +132,9 @@ namespace IssaPlugin.Items
                 cam.transform.position + forward * 1.2f + Vector3.up * 0.3f;
 
             Vector3 throwDir = (
-                forward + Vector3.up * Configuration.BlackHoleGrenadeLobAngle.Value
+                forward + Vector3.up * ModConfig.BlackHoleGrenade.LobAngle.Value
             ).normalized;
-            Vector3 velocity = throwDir * Configuration.BlackHoleGrenadeThrowSpeed.Value;
+            Vector3 velocity = throwDir * ModConfig.BlackHoleGrenade.ThrowSpeed.Value;
 
             NetworkClient.Send(
                 new BlackHoleGrenadeThrowMessage
@@ -186,7 +186,7 @@ namespace IssaPlugin.Items
             }
 
             // If configured to exclude the thrower, skip suction for them.
-            if (Configuration.BlackHoleGrenadeExcludeThrower.Value
+            if (ModConfig.BlackHoleGrenade.ExcludeThrower.Value
                 && localInfo == msg.ThrowerInfo)
                 return;
 
@@ -224,7 +224,7 @@ namespace IssaPlugin.Items
                 return;
 
             // Don't spit the thrower if the config says to exclude them.
-            if (Configuration.BlackHoleGrenadeExcludeThrower.Value
+            if (ModConfig.BlackHoleGrenade.ExcludeThrower.Value
                 && localInfo == msg.ThrowerInfo)
             {
                 PlaySpitVfx(msg.BlackHolePosition);
@@ -377,7 +377,7 @@ namespace IssaPlugin.Items
                 // Knock the player down once they enter the knockdown radius,
                 // then respect a cooldown so we don't hammer the server every frame.
                 float knockdownRadius =
-                    Configuration.BlackHoleGrenadeKnockdownRadius.Value;
+                    ModConfig.BlackHoleGrenade.KnockdownRadius.Value;
                 knockdownCooldown -= Time.fixedDeltaTime;
                 if (
                     knockdownRadius > 0f
@@ -454,7 +454,7 @@ namespace IssaPlugin.Items
                 VfxType.RocketLauncherRocketExplosion,
                 position,
                 Quaternion.identity,
-                Vector3.one * Configuration.BlackHoleGrenadeSpitVfxScale.Value
+                Vector3.one * ModConfig.BlackHoleGrenade.SpitVfxScale.Value
             );
 
             CameraModuleController.Shake(

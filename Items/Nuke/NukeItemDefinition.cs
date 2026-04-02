@@ -11,9 +11,9 @@ namespace IssaPlugin.Items
         public override string[] ConsoleAliases => new[] { "nuke" };
         public override Sprite Icon => AssetLoader.NukeIcon;
         public override GameObject HeldModelPrefab => AssetLoader.NuclearDetonatorPrefab;
-        public override int MaxUses => (int)Configuration.NukeUses.Value;
+        public override int MaxUses => (int)ModConfig.Nuke.Uses.Value;
         public override int Tier => 3;
-        public override Key GiveKey => Configuration.NukeGiveKey.Value;
+        public override Key GiveKey => ModConfig.Nuke.GiveKey.Value;
         public override ItemType AnimatorItemType => ItemType.RocketLauncher;
         public override ItemType AnimatorChangedItemType => ItemType.RocketLauncher;
 

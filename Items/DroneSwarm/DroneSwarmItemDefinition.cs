@@ -10,11 +10,11 @@ namespace IssaPlugin.Items
         public override string[] ConsoleAliases => new[] { "drone", "droneswarm", "drones" };
         public override Sprite Icon => AssetLoader.DroneSwarmIcon;
         public override GameObject HeldModelPrefab => AssetLoader.DroneControllerPrefab;
-        public override int MaxUses => (int)Configuration.DroneSwarmUses.Value;
+        public override int MaxUses => (int)ModConfig.DroneSwarm.Uses.Value;
 
         public override int Tier => 5;
 
-        public override Key GiveKey => Configuration.DroneSwarmGiveKey.Value;
+        public override Key GiveKey => ModConfig.DroneSwarm.GiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)
         {

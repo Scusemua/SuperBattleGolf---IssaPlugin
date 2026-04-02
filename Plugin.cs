@@ -32,7 +32,7 @@ namespace IssaPlugin
             Log = base.Logger;
             Log.LogInfo($"IssaPlugin {PluginInfo.PLUGIN_VERSION} is now loading...");
 
-            Configuration.Initialize(Config);
+            ModConfig.Initialize(Config);
             AssetLoader.Load();
 
             _harmony = new Harmony(PluginInfo.PLUGIN_GUID);

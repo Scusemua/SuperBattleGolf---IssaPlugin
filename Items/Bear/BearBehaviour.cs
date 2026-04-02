@@ -332,7 +332,7 @@ namespace IssaPlugin.Items
             float dist = Vector3.Distance(transform.position, _currentTarget.transform.position);
 
             // Close enough to commit to a charge
-            if (dist <= Configuration.BearChargeRange.Value)
+            if (dist <= ModConfig.Bear.ChargeRange.Value)
             {
                 TransitionTo(BearAIState.Charging);
                 return;
@@ -348,7 +348,7 @@ namespace IssaPlugin.Items
             // Normal pursuit with obstacle avoidance
             Vector3 desiredDir = GetDesiredDirection(_currentTarget.transform.position);
             Vector3 steeredDir = ComputeContextSteering(desiredDir);
-            MoveInDirection(steeredDir, Configuration.BearRunSpeed.Value);
+            MoveInDirection(steeredDir, ModConfig.Bear.RunSpeed.Value);
         }
 
         private void UpdateCharging()
@@ -362,7 +362,7 @@ namespace IssaPlugin.Items
             float dist = Vector3.Distance(transform.position, _currentTarget.transform.position);
 
             // Within attack range — start swing
-            if (dist <= Configuration.BearAttackRange.Value)
+            if (dist <= ModConfig.Bear.AttackRange.Value)
             {
                 TransitionTo(BearAIState.Attacking);
                 return;
@@ -371,7 +371,7 @@ namespace IssaPlugin.Items
             // Charge: committed straight-line sprint, no obstacle steering
             // (gives the bear that scary committed feel — it will go over things)
             Vector3 dir = GetDesiredDirection(_currentTarget.transform.position);
-            MoveInDirection(dir, Configuration.BearChargeSpeed.Value);
+            MoveInDirection(dir, ModConfig.Bear.ChargeSpeed.Value);
         }
 
         private void UpdateAttacking()
@@ -390,7 +390,7 @@ namespace IssaPlugin.Items
                     );
 
                     // Slightly generous hit range to compensate for server tick lag
-                    if (dist <= Configuration.BearAttackRange.Value * 1.4f)
+                    if (dist <= ModConfig.Bear.AttackRange.Value * 1.4f)
                         ApplyAttackHit(_currentTarget);
                 }
             }
@@ -417,7 +417,7 @@ namespace IssaPlugin.Items
             }
 
             float dist = Vector3.Distance(transform.position, _currentTarget.transform.position);
-            if (dist <= Configuration.BearChargeRange.Value)
+            if (dist <= ModConfig.Bear.ChargeRange.Value)
             {
                 TransitionTo(BearAIState.Charging);
                 return;
@@ -426,7 +426,7 @@ namespace IssaPlugin.Items
             Vector3 desiredDir = GetDesiredDirection(_currentTarget.transform.position);
             Vector3 steeredDir = ComputeContextSteering(desiredDir);
             float enrageSpd =
-                Configuration.BearRunSpeed.Value * Configuration.BearEnrageSpeedMultiplier.Value;
+                ModConfig.Bear.RunSpeed.Value * ModConfig.Bear.EnrageSpeedMultiplier.Value;
             MoveInDirection(steeredDir, enrageSpd);
         }
 
@@ -527,7 +527,7 @@ namespace IssaPlugin.Items
                 transform.rotation = Quaternion.Slerp(
                     transform.rotation,
                     targetRot,
-                    Configuration.BearTurnSpeed.Value * Time.fixedDeltaTime
+                    ModConfig.Bear.TurnSpeed.Value * Time.fixedDeltaTime
                 );
             }
 
@@ -543,13 +543,13 @@ namespace IssaPlugin.Items
 
             if (_wanderTimer <= 0f || Vector3.Distance(transform.position, _wanderTarget) < 2f)
             {
-                Vector2 rand = Random.insideUnitCircle * Configuration.BearWanderRadius.Value;
+                Vector2 rand = Random.insideUnitCircle * ModConfig.Bear.WanderRadius.Value;
                 _wanderTarget = transform.position + new Vector3(rand.x, 0f, rand.y);
                 _wanderTimer = Random.Range(3f, 8f);
             }
 
             Vector3 dir = GetDesiredDirection(_wanderTarget);
-            MoveInDirection(dir, Configuration.BearWalkSpeed.Value);
+            MoveInDirection(dir, ModConfig.Bear.WalkSpeed.Value);
         }
 
         /// <summary>
@@ -572,7 +572,7 @@ namespace IssaPlugin.Items
 
             Vector3 dir = GetDesiredDirection(flatTarget);
             Vector3 steered = ComputeContextSteering(dir);
-            MoveInDirection(steered, Configuration.BearWalkSpeed.Value * 0.6f);
+            MoveInDirection(steered, ModConfig.Bear.WalkSpeed.Value * 0.6f);
         }
 
         /// <summary>
@@ -585,7 +585,7 @@ namespace IssaPlugin.Items
             // slopes and incorrectly marks them as unreachable. Context steering in
             // ComputeContextSteering handles true walls and cliff faces.
             float heightDiff = targetPos.y - transform.position.y;
-            return Mathf.Abs(heightDiff) <= Configuration.BearMaxClimbHeight.Value;
+            return Mathf.Abs(heightDiff) <= ModConfig.Bear.MaxClimbHeight.Value;
         }
 
         // ── Attack ────────────────────────────────────────────────────────────
@@ -744,7 +744,7 @@ namespace IssaPlugin.Items
             switch (newState)
             {
                 case BearAIState.Spawning:
-                    _stateTimer = Configuration.BearSpawnAnimationDuration.Value;
+                    _stateTimer = ModConfig.Bear.SpawnAnimationDuration.Value;
                     ZeroVelocity();
                     break;
 
@@ -766,7 +766,7 @@ namespace IssaPlugin.Items
                     break;
 
                 case BearAIState.Attacking:
-                    float attackDur = Configuration.BearAttackAnimationDuration.Value;
+                    float attackDur = ModConfig.Bear.AttackAnimationDuration.Value;
                     _stateTimer = attackDur;
                     _attackHitApplied = false;
                     // Hit fires at 55% through the animation (claw impact moment)
@@ -775,24 +775,24 @@ namespace IssaPlugin.Items
                     break;
 
                 case BearAIState.AttackCooldown:
-                    _stateTimer = Configuration.BearAttackCooldown.Value;
+                    _stateTimer = ModConfig.Bear.AttackCooldown.Value;
                     _currentTarget = null;
                     ZeroVelocity();
                     break;
 
                 case BearAIState.Stunned:
-                    _stateTimer = Configuration.BearStunDuration.Value;
+                    _stateTimer = ModConfig.Bear.StunDuration.Value;
                     ZeroVelocity();
                     break;
 
                 case BearAIState.Enraged:
-                    _stateTimer = Configuration.BearEnrageDuration.Value;
+                    _stateTimer = ModConfig.Bear.EnrageDuration.Value;
                     // Force target re-evaluation after stun
                     _selector.ClearLock();
                     break;
 
                 case BearAIState.Dying:
-                    _stateTimer = Configuration.BearDeathAnimationDuration.Value;
+                    _stateTimer = ModConfig.Bear.DeathAnimationDuration.Value;
                     ZeroVelocity();
                     // Disable collisions so dead bear doesn't block players
                     foreach (var col in GetComponents<Collider>())
@@ -862,13 +862,13 @@ namespace IssaPlugin.Items
 
         /// <summary>
         /// Returns the list of players that this bear is allowed to target.
-        /// When <see cref="Configuration.BearFriendlyFire"/> is false, the
+        /// When <see cref="ModConfig.Bear.FriendlyFire"/> is false, the
         /// summoner is excluded so bears never turn on the player who deployed them.
         /// </summary>
         private List<PlayerInfo> GetTargetablePlayers()
         {
             var all = GetActivePlayers();
-            if (Configuration.BearFriendlyFire.Value || SummonerInfo == null)
+            if (ModConfig.Bear.FriendlyFire.Value || SummonerInfo == null)
                 return all;
 
             _targetableScratchpad.Clear();

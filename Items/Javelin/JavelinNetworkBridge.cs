@@ -183,20 +183,20 @@ namespace IssaPlugin.Items
             NetworkServer.Spawn(rocket.gameObject, (NetworkConnectionToClient)null);
 
             // Register for large explosion scaling.
-            ExplosionScaler.Register(rocket, Configuration.JavelinExplosionScale.Value);
+            ExplosionScaler.Register(rocket, ModConfig.Javelin.ExplosionScale.Value);
 
             // Attach the flight behaviour.
             var flight = rocket.gameObject.AddComponent<JavelinRocketBehaviour>();
             flight.TargetPosition = targetPosition;
-            flight.ApexHeightAboveLaunch = Configuration.JavelinApexHeight.Value;
-            flight.AscentSpeed = Configuration.JavelinAscentSpeed.Value;
-            flight.DiveSpeed = Configuration.JavelinDiveSpeed.Value;
-            flight.DiveAcceleration = Configuration.JavelinDiveAcceleration.Value;
-            flight.ArrivalRadius = Configuration.JavelinArrivalRadius.Value;
+            flight.ApexHeightAboveLaunch = ModConfig.Javelin.ApexHeight.Value;
+            flight.AscentSpeed = ModConfig.Javelin.AscentSpeed.Value;
+            flight.DiveSpeed = ModConfig.Javelin.DiveSpeed.Value;
+            flight.DiveAcceleration = ModConfig.Javelin.DiveAcceleration.Value;
+            flight.ArrivalRadius = ModConfig.Javelin.ArrivalRadius.Value;
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[Javelin] Rocket spawned. Target={targetPosition}, "
-                    + $"Apex+{Configuration.JavelinApexHeight.Value} units."
+                    + $"Apex+{ModConfig.Javelin.ApexHeight.Value} units."
             );
 
             // Give Mirror one frame to propagate the new NetworkIdentity to clients.
@@ -210,7 +210,7 @@ namespace IssaPlugin.Items
 
             // Wait for the rocket to die (naturally or via timeout).
             float elapsed = 0f;
-            float timeout = Configuration.JavelinTimeout.Value;
+            float timeout = ModConfig.Javelin.Timeout.Value;
 
             while (rocket != null && rocket.gameObject != null && elapsed < timeout)
             {
@@ -318,7 +318,7 @@ namespace IssaPlugin.Items
                 msg.Position,
                 Quaternion.identity
             );
-            Destroy(vfx, Configuration.JavelinExplosionVfxDuration.Value);
+            Destroy(vfx, ModConfig.Javelin.ExplosionVfxDuration.Value);
         }
 
         // ================================================================

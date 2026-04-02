@@ -80,9 +80,9 @@ namespace IssaPlugin.Items
             // Initialise fuel on first use of this canister; subsequent presses resume
             // from the level at which the player last released LMB.
             if (_fuelRemaining < 0f)
-                _fuelRemaining = Configuration.JetpackFuelPerUse.Value;
+                _fuelRemaining = ModConfig.Jetpack.FuelPerUse.Value;
 
-            FuelFraction = Mathf.Clamp01(_fuelRemaining / Configuration.JetpackFuelPerUse.Value);
+            FuelFraction = Mathf.Clamp01(_fuelRemaining / ModConfig.Jetpack.FuelPerUse.Value);
 
             try
             {
@@ -97,7 +97,7 @@ namespace IssaPlugin.Items
                     // Apply upward thrust this physics step. ForceMode.Acceleration applies
                     // the configured value as m/s² regardless of the player's mass.
                     rb.AddForce(
-                        Vector3.up * Configuration.JetpackThrustForce.Value,
+                        Vector3.up * ModConfig.Jetpack.ThrustForce.Value,
                         ForceMode.Acceleration
                     );
 
@@ -105,7 +105,7 @@ namespace IssaPlugin.Items
                     // and does not vary with render framerate.
                     _fuelRemaining -= Time.fixedDeltaTime;
                     FuelFraction = Mathf.Clamp01(
-                        _fuelRemaining / Configuration.JetpackFuelPerUse.Value
+                        _fuelRemaining / ModConfig.Jetpack.FuelPerUse.Value
                     );
 
                     if (_fuelRemaining <= 0f)
@@ -122,7 +122,7 @@ namespace IssaPlugin.Items
 
                         // Reload the next canister — re-read config so in-session changes
                         // take effect between canisters.
-                        _fuelRemaining = Configuration.JetpackFuelPerUse.Value;
+                        _fuelRemaining = ModConfig.Jetpack.FuelPerUse.Value;
                         FuelFraction = 1f;
                     }
 

@@ -107,7 +107,7 @@ namespace IssaPlugin.Items
 
             // Initial velocity: carry the jet's current forward momentum plus a
             // downward push, then add a nudge from the killing rocket direction.
-            Vector3 crashVel = transform.forward * Configuration.HarrierApproachSpeed.Value * 0.125f
+            Vector3 crashVel = transform.forward * ModConfig.Harrier.ApproachSpeed.Value * 0.125f
                              + Vector3.down * InitialDownSpeed;
 
             if (KillingRocketDir != Vector3.zero)
@@ -195,7 +195,7 @@ namespace IssaPlugin.Items
                 VfxType.RocketLauncherRocketExplosion,
                 transform.position,
                 Quaternion.identity,
-                Vector3.one * Configuration.AC130MaydayExplosionScale.Value
+                Vector3.one * ModConfig.AC130.MaydayExplosionScale.Value
             );
 
             CameraModuleController.Shake(

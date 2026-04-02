@@ -35,7 +35,7 @@ namespace IssaPlugin.Patches
                 GameManager.GolfSettings.SwingHitBoxLocalCenter
             );
 
-            float range = Configuration.BearMeleeHitRange.Value;
+            float range = ModConfig.Bear.MeleeHitRange.Value;
 
             var colliders = Physics.OverlapSphere(
                 swingCenter,
@@ -45,8 +45,8 @@ namespace IssaPlugin.Patches
             );
 
             float damage = isBat
-                ? Configuration.PlaceableWallDamageBaseballBat.Value
-                : Configuration.PlaceableWallDamageGolfClub.Value;
+                ? ModConfig.PlaceableWall.DamageBaseballBat.Value
+                : ModConfig.PlaceableWall.DamageGolfClub.Value;
 
             _hitWalls.Clear();
 

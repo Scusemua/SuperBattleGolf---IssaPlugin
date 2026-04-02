@@ -76,7 +76,7 @@ namespace IssaPlugin.Patches
         {
             var pools = __instance.ItemPools;
             int poolCount = pools.Count;
-            float boostFactor = Configuration.CatchupBoostFactor.Value;
+            float boostFactor = ModConfig.Global.CatchupBoostFactor.Value;
 
             for (int poolIndex = 0; poolIndex < poolCount; poolIndex++)
             {
@@ -113,10 +113,10 @@ namespace IssaPlugin.Patches
             int approxPlace
         )
         {
-            if (!Configuration.CustomItemSpawnsEnabled.Value)
+            if (!ModConfig.Global.CustomItemSpawnsEnabled.Value)
                 return Array.Empty<ItemPool.ItemSpawnChance>();
 
-            float rate = Configuration.CustomItemSpawnRate.Value;
+            float rate = ModConfig.Global.CustomItemSpawnRate.Value;
             if (rate <= 0f)
                 return Array.Empty<ItemPool.ItemSpawnChance>();
 
@@ -133,7 +133,7 @@ namespace IssaPlugin.Patches
                 bool tierAllowed =
                     syncer == null
                     || syncer.IsTierAllowedForPlayer(
-                        Configuration.GetItemTier(def.ItemType),
+                        ModConfig.GetItemTier(def.ItemType),
                         approxDist,
                         approxPlace
                     );

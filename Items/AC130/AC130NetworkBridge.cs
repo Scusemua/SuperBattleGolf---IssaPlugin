@@ -258,8 +258,8 @@ namespace IssaPlugin.Items
             // Server-side rate limit — the client enforces its own cooldown too,
             // but this prevents a lagging or malicious client from over-firing.
             float cooldown = isHeavy
-                ? Configuration.AC130HeavyFireCooldown.Value
-                : Configuration.AC130FireCooldown.Value;
+                ? ModConfig.AC130.HeavyFireCooldown.Value
+                : ModConfig.AC130.FireCooldown.Value;
             ref float lastFireTime = ref (
                 isHeavy ? ref _serverLastHeavyFireTime : ref _serverLastFireTime
             );
@@ -271,7 +271,7 @@ namespace IssaPlugin.Items
             if (inventory == null)
                 return;
 
-            float jitterDeg = Configuration.AC130RocketAngularJitter.Value;
+            float jitterDeg = ModConfig.AC130.RocketAngularJitter.Value;
             Quaternion jitter = Quaternion.Euler(
                 Random.Range(-jitterDeg, jitterDeg),
                 Random.Range(-jitterDeg, jitterDeg),
@@ -285,8 +285,8 @@ namespace IssaPlugin.Items
             Quaternion fireRotation = Quaternion.LookRotation(aimDirection, Vector3.up);
             Vector3 spawnPos = _serverGunship.transform.position + aimDirection * 15f;
             float explosionScale = isHeavy
-                ? Configuration.AC130HeavyRocketExplosionScale.Value
-                : Configuration.AC130ExplosionScale.Value;
+                ? ModConfig.AC130.HeavyRocketExplosionScale.Value
+                : ModConfig.AC130.ExplosionScale.Value;
             AC130Item.SpawnRocketInDirection(
                 inventory,
                 spawnPos,
@@ -332,10 +332,10 @@ namespace IssaPlugin.Items
             if (_serverFlyBehaviour == null)
                 return;
 
-            _serverFlyBehaviour.altitude = Configuration.AC130Altitude.Value + altitudeOffset;
+            _serverFlyBehaviour.altitude = ModConfig.AC130.Altitude.Value + altitudeOffset;
             _serverFlyBehaviour.orbitSpeed = boosting
-                ? Configuration.AC130OrbitSpeed.Value * Configuration.AC130BoostMultiplier.Value
-                : Configuration.AC130OrbitSpeed.Value;
+                ? ModConfig.AC130.OrbitSpeed.Value * ModConfig.AC130.BoostMultiplier.Value
+                : ModConfig.AC130.OrbitSpeed.Value;
         }
 
         /// <summary>
@@ -509,8 +509,8 @@ namespace IssaPlugin.Items
             if (session.OrbitModule != null)
             {
                 session.OrbitModule.SetSubject(session.PivotGo.transform);
-                session.OrbitModule.SetPitch(Configuration.AC130CameraPitch.Value);
-                session.OrbitModule.SetDistanceAddition(Configuration.AC130CameraDistance.Value);
+                session.OrbitModule.SetPitch(ModConfig.AC130.CameraPitch.Value);
+                session.OrbitModule.SetDistanceAddition(ModConfig.AC130.CameraDistance.Value);
                 session.OrbitModule.disablePhysics = true;
             }
 
@@ -518,7 +518,7 @@ namespace IssaPlugin.Items
 
             bool hasFlyComp = session.FlyComp != null;
             float estimatedFlyInTime =
-                Configuration.AC130ApproachDistance.Value / Configuration.AC130ApproachSpeed.Value;
+                ModConfig.AC130.ApproachDistance.Value / ModConfig.AC130.ApproachSpeed.Value;
             float flyInElapsed = 0f;
 
             while (!_forceEnd && !_maydayTriggered)
@@ -831,14 +831,14 @@ namespace IssaPlugin.Items
 
         private void CheckMaydayHotkey()
         {
-            if (!Configuration.AC130MaydayEnabled.Value)
+            if (!ModConfig.AC130.MaydayEnabled.Value)
                 return;
 
             var keyboard = Keyboard.current;
             if (keyboard == null)
                 return;
 
-            if (keyboard[Configuration.AC130MaydayKey.Value].wasPressedThisFrame)
+            if (keyboard[ModConfig.AC130.MaydayKey.Value].wasPressedThisFrame)
             {
                 IssaPluginPlugin.Log.LogInfo("[AC130] Manual mayday hotkey pressed.");
                 NetworkClient.Send(new AC130TriggerMaydayMessage());
@@ -853,7 +853,7 @@ namespace IssaPlugin.Items
 
         internal static void ApplyCoffeeMovementSpeed()
         {
-            if (!Configuration.AC130ApplyCoffeeBoostAfterwards.Value)
+            if (!ModConfig.AC130.ApplyCoffeeBoostAfterwards.Value)
                 return;
 
             // Give players a speed boost.
@@ -990,7 +990,7 @@ namespace IssaPlugin.Items
 
             rocket.ServerInitialize(inventory.PlayerInfo, null, itemUseId);
             NetworkServer.Spawn(rocket.gameObject, (NetworkConnectionToClient)null);
-            ExplosionScaler.Register(rocket, Configuration.AC130MaydayExplosionScale.Value);
+            ExplosionScaler.Register(rocket, ModConfig.AC130.MaydayExplosionScale.Value);
             AC130Item.ServerExplodeRocket(rocket);
         }
 
@@ -1013,8 +1013,8 @@ namespace IssaPlugin.Items
             }
 
             float startAngle = 0f;
-            float altitude = Configuration.AC130Altitude.Value;
-            float orbitRadius = Configuration.AC130OrbitRadius.Value;
+            float altitude = ModConfig.AC130.Altitude.Value;
+            float orbitRadius = ModConfig.AC130.OrbitRadius.Value;
 
             Vector3 orbitEntry = AC130Helpers.OrbitPosition(
                 orbitCenter,
@@ -1023,8 +1023,8 @@ namespace IssaPlugin.Items
                 altitude
             );
             Vector3 approachDir = AC130Helpers.OrbitTangent(startAngle);
-            float approachDist = Configuration.AC130ApproachDistance.Value;
-            float approachSpeed = Configuration.AC130ApproachSpeed.Value;
+            float approachDist = ModConfig.AC130.ApproachDistance.Value;
+            float approachSpeed = ModConfig.AC130.ApproachSpeed.Value;
 
             Vector3 spawnPos = orbitEntry - approachDir * approachDist;
 
@@ -1046,7 +1046,7 @@ namespace IssaPlugin.Items
             flyComp.orbitCenter = orbitCenter;
             flyComp.orbitRadius = orbitRadius;
             flyComp.altitude = altitude;
-            flyComp.orbitSpeed = Configuration.AC130OrbitSpeed.Value;
+            flyComp.orbitSpeed = ModConfig.AC130.OrbitSpeed.Value;
             flyComp.currentAngle = startAngle;
             flyComp.flyTarget = orbitEntry;
             flyComp.flySpeed = approachSpeed;
@@ -1064,7 +1064,7 @@ namespace IssaPlugin.Items
 
         private IEnumerator ServerTimeoutRoutine()
         {
-            yield return new WaitForSeconds(Configuration.AC130Duration.Value + 5f);
+            yield return new WaitForSeconds(ModConfig.AC130.Duration.Value + 5f);
             if (_serverSessionActive)
                 EndServerSession();
         }

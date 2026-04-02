@@ -31,7 +31,7 @@ namespace IssaPlugin.Items
                 IssaPluginPlugin.Log.LogWarning(
                     $"[PlaceableWall] No more active chunks remaining. Cleaning up wall."
                 );
-                Destroy(gameObject, Configuration.PlaceableWallDebrisLifetime.Value);
+                Destroy(gameObject, ModConfig.PlaceableWall.DebrisLifetime.Value);
             }
         }
     }

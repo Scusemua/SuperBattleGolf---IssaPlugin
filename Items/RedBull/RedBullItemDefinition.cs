@@ -15,9 +15,9 @@ namespace IssaPlugin.Items
         public override bool UseRocketIconFallback => false; // pistol fallback if icon missing
         public override GameObject HeldModelPrefab => AssetLoader.RedBullHandheldPrefab;
 
-        public override int MaxUses => (int)Configuration.RedBullUses.Value;
+        public override int MaxUses => (int)ModConfig.RedBull.Uses.Value;
         public override int Tier => 1;
-        public override Key GiveKey => Configuration.RedBullGiveKey.Value;
+        public override Key GiveKey => ModConfig.RedBull.GiveKey.Value;
 
         // PlayerMovement.AddSpeedBoost(float duration) — private, so we need reflection.
         private static readonly MethodInfo _addSpeedBoostMethod;
@@ -35,7 +35,7 @@ namespace IssaPlugin.Items
             if (movement == null)
                 return;
 
-            float duration = Configuration.RedBullDuration.Value;
+            float duration = ModConfig.RedBull.Duration.Value;
 
             // Call the private AddSpeedBoost directly with our custom duration
             // instead of InformDrankCoffee (which hard-codes CoffeeEffectDuration).

@@ -45,7 +45,7 @@ namespace IssaPlugin.Patches
                 shootingPlayer.PlayerInfo,
                 shootingPlayer.GetElephantGunBarrelEndPosition(),
                 direction,
-                Configuration.BearDamageElephantGun.Value
+                ModConfig.Bear.DamageElephantGun.Value
             );
         }
     }
@@ -64,7 +64,7 @@ namespace IssaPlugin.Patches
                 shootingPlayer.PlayerInfo,
                 shootingPlayer.GetDuelingPistolBarrelEndPosition(),
                 direction,
-                Configuration.BearDamageDuelingPistol.Value
+                ModConfig.Bear.DamageDuelingPistol.Value
             );
         }
     }
@@ -115,7 +115,7 @@ namespace IssaPlugin.Patches
 
                 var colliders = Physics.OverlapSphere(
                     swingCenter,
-                    Configuration.BearMeleeHitRange.Value,
+                    ModConfig.Bear.MeleeHitRange.Value,
                     Physics.AllLayers,
                     QueryTriggerInteraction.Collide
                 );
@@ -210,12 +210,12 @@ namespace IssaPlugin.Patches
                 == ItemRegistry.BaseballBatItemType;
 
             float damage = isBat
-                ? Configuration.BearDamageBaseballBat.Value
-                : Configuration.BearDamageGolfClub.Value;
+                ? ModConfig.Bear.DamageBaseballBat.Value
+                : ModConfig.Bear.DamageGolfClub.Value;
 
             float knockbackForce = isBat
-                ? Configuration.BearBatKnockbackForce.Value
-                : Configuration.BearMeleeKnockbackForce.Value;
+                ? ModConfig.Bear.BatKnockbackForce.Value
+                : ModConfig.Bear.MeleeKnockbackForce.Value;
 
             Vector3 swingCenter = swinger.transform.TransformPoint(
                 GameManager.GolfSettings.SwingHitBoxLocalCenter
@@ -223,7 +223,7 @@ namespace IssaPlugin.Patches
 
             var colliders = Physics.OverlapSphere(
                 swingCenter,
-                Configuration.BearMeleeHitRange.Value,
+                ModConfig.Bear.MeleeHitRange.Value,
                 Physics.AllLayers,
                 QueryTriggerInteraction.Collide
             );

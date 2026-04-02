@@ -21,7 +21,7 @@ namespace IssaPlugin.Patches
         [HarmonyPostfix]
         private static void AwakePatch(GameManager __instance)
         {
-            int newInventorySize = (int)Configuration.NumInventorySlots.Value;
+            int newInventorySize = (int)ModConfig.Global.NumInventorySlots.Value;
             if (newInventorySize == 3)
                 return; // Same as base game.
 

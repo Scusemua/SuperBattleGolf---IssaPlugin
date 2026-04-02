@@ -54,21 +54,21 @@ namespace IssaPlugin.Items
         public AC130Session(PlayerInventory inventory, GameObject gunshipGo, Vector3 orbitCenter)
         {
             OrbitCenter = orbitCenter;
-            Altitude = Configuration.AC130Altitude.Value;
-            OrbitRadius = Configuration.AC130OrbitRadius.Value;
-            Duration = Configuration.AC130Duration.Value;
-            FireCooldown = Configuration.AC130FireCooldown.Value;
-            BaseOrbitSpeed = Configuration.AC130OrbitSpeed.Value;
-            BoostedOrbitSpeed = BaseOrbitSpeed * Configuration.AC130BoostMultiplier.Value;
-            AltitudeOffsetMax = Configuration.AC130AltitudeOffsetMax.Value;
-            AltitudeAdjustSpeed = Configuration.AC130AltitudeAdjustSpeed.Value;
+            Altitude = ModConfig.AC130.Altitude.Value;
+            OrbitRadius = ModConfig.AC130.OrbitRadius.Value;
+            Duration = ModConfig.AC130.Duration.Value;
+            FireCooldown = ModConfig.AC130.FireCooldown.Value;
+            BaseOrbitSpeed = ModConfig.AC130.OrbitSpeed.Value;
+            BoostedOrbitSpeed = BaseOrbitSpeed * ModConfig.AC130.BoostMultiplier.Value;
+            AltitudeOffsetMax = ModConfig.AC130.AltitudeOffsetMax.Value;
+            AltitudeAdjustSpeed = ModConfig.AC130.AltitudeAdjustSpeed.Value;
 
-            HeavyFireCooldown = Configuration.AC130HeavyFireCooldown.Value;
+            HeavyFireCooldown = ModConfig.AC130.HeavyFireCooldown.Value;
             HeavyMaxShots = Mathf.Max(
                 1,
-                Mathf.RoundToInt(Configuration.AC130HeavyShotsBeforeReload.Value)
+                Mathf.RoundToInt(ModConfig.AC130.HeavyShotsBeforeReload.Value)
             );
-            HeavyReloadTime = Configuration.AC130HeavyReloadTime.Value;
+            HeavyReloadTime = ModConfig.AC130.HeavyReloadTime.Value;
             HeavyShotsLeft = HeavyMaxShots;
 
             // Save OrbitModule state so we can restore it during Cleanup.
@@ -90,10 +90,10 @@ namespace IssaPlugin.Items
                     gunshipGo.GetComponent<AC130GunshipCamera>()
                     ?? gunshipGo.AddComponent<AC130GunshipCamera>();
                 GunshipCam.orbitCenter = orbitCenter;
-                GunshipCam.baseFov = Configuration.AC130BaseFov.Value;
-                GunshipCam.yawLimit = Configuration.AC130YawLimit.Value;
-                GunshipCam.pitchLimit = Configuration.AC130PitchLimit.Value;
-                GunshipCam.mouseSensitivity = Configuration.AC130MouseSensitivity.Value;
+                GunshipCam.baseFov = ModConfig.AC130.BaseFov.Value;
+                GunshipCam.yawLimit = ModConfig.AC130.YawLimit.Value;
+                GunshipCam.pitchLimit = ModConfig.AC130.PitchLimit.Value;
+                GunshipCam.mouseSensitivity = ModConfig.AC130.MouseSensitivity.Value;
             }
             else
             {

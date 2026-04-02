@@ -27,7 +27,7 @@ namespace IssaPlugin.Items
 
         private void Awake()
         {
-            MaxHP = Configuration.BearMaxHP.Value;
+            MaxHP = ModConfig.Bear.MaxHP.Value;
             CurrentHP = MaxHP;
         }
 

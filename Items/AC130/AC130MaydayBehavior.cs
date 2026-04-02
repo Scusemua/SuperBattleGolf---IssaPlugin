@@ -77,11 +77,11 @@ namespace IssaPlugin.Items
 
         private void Start()
         {
-            _diveAngle = Configuration.AC130MaydayInitialDiveAngle.Value;
+            _diveAngle = ModConfig.AC130.MaydayInitialDiveAngle.Value;
             _rollAngle = 0f;
 
             // Seed a small random lateral drift so each mayday looks slightly different.
-            float drift = Configuration.AC130MaydayDrift.Value;
+            float drift = ModConfig.AC130.MaydayDrift.Value;
             _driftVelX = Random.Range(-drift, drift);
             _driftVelZ = Random.Range(-drift, drift);
 
@@ -170,8 +170,8 @@ namespace IssaPlugin.Items
                 // to drive camera-shake intensity — this value is cosmetic only.
                 if (!NetworkServer.active)
                 {
-                    float steepRate = Configuration.AC130MaydayDiveSteepRate.Value;
-                    float maxAngle = Configuration.AC130MaydayMaxDiveAngle.Value;
+                    float steepRate = ModConfig.AC130.MaydayDiveSteepRate.Value;
+                    float maxAngle = ModConfig.AC130.MaydayMaxDiveAngle.Value;
                     _diveAngle = Mathf.MoveTowards(
                         _diveAngle,
                         maxAngle,
@@ -192,8 +192,8 @@ namespace IssaPlugin.Items
         private void UpdateDive()
         {
             // Steepen the dive over time.
-            float steepRate = Configuration.AC130MaydayDiveSteepRate.Value;
-            float maxAngle = Configuration.AC130MaydayMaxDiveAngle.Value;
+            float steepRate = ModConfig.AC130.MaydayDiveSteepRate.Value;
+            float maxAngle = ModConfig.AC130.MaydayMaxDiveAngle.Value;
             _diveAngle = Mathf.MoveTowards(_diveAngle, maxAngle, steepRate * Time.deltaTime);
 
             // Apply player input forwarded from the owning client via CmdSetMaydayInput.
@@ -201,14 +201,14 @@ namespace IssaPlugin.Items
             // on a dedicated server the last received input is reused until the next packet.
             if (ExternalDiveInfluence != 0f)
             {
-                float pull = Configuration.AC130MaydayPullInfluence.Value;
+                float pull = ModConfig.AC130.MaydayPullInfluence.Value;
                 _diveAngle += ExternalDiveInfluence * pull * Time.deltaTime;
                 _diveAngle = Mathf.Clamp(_diveAngle, 5f, maxAngle);
             }
 
             if (ExternalRollInfluence != 0f)
             {
-                float rollSpeed = Configuration.AC130MaydayRollSpeed.Value;
+                float rollSpeed = ModConfig.AC130.MaydayRollSpeed.Value;
                 _rollAngle += ExternalRollInfluence * rollSpeed * Time.deltaTime;
             }
 
@@ -229,7 +229,7 @@ namespace IssaPlugin.Items
                 transform.forward.z
             ).normalized;
             float angleToCenter = Vector3.SignedAngle(horizontalDir, toCenter, Vector3.up);
-            float maxTurn = Configuration.AC130MaydayCenterBias.Value * Time.deltaTime;
+            float maxTurn = ModConfig.AC130.MaydayCenterBias.Value * Time.deltaTime;
             float yawCorrection = Mathf.Clamp(angleToCenter, -maxTurn, maxTurn);
             horizontalDir = Quaternion.AngleAxis(yawCorrection, Vector3.up) * horizontalDir;
             horizontalDir.Normalize();
@@ -240,7 +240,7 @@ namespace IssaPlugin.Items
             // 90° roll = maximum turn rate, 180° roll = straight again.
             float rollRad = _rollAngle * Mathf.Deg2Rad;
             float yawDelta =
-                Mathf.Sin(rollRad) * Configuration.AC130MaydayRollTurnRate.Value * Time.deltaTime;
+                Mathf.Sin(rollRad) * ModConfig.AC130.MaydayRollTurnRate.Value * Time.deltaTime;
             horizontalDir = Quaternion.AngleAxis(yawDelta, Vector3.up) * horizontalDir;
             horizontalDir.Normalize();
 
@@ -262,7 +262,7 @@ namespace IssaPlugin.Items
             Vector3 rolledUp = Quaternion.AngleAxis(_rollAngle, diveDir) * Vector3.up;
 
             // Move and orient.
-            float speed = Configuration.AC130MaydaySpeed.Value;
+            float speed = ModConfig.AC130.MaydaySpeed.Value;
             transform.position += diveDir * speed * Time.deltaTime;
             if (diveDir.sqrMagnitude > 0.01f)
                 transform.rotation = Quaternion.LookRotation(diveDir, rolledUp);
@@ -275,7 +275,7 @@ namespace IssaPlugin.Items
         private void CheckImpact()
         {
             // Simple ground check: y <= 0 or raycast hit within one frame's travel.
-            float speed = Configuration.AC130MaydaySpeed.Value;
+            float speed = ModConfig.AC130.MaydaySpeed.Value;
             float checkDist = speed * Time.deltaTime * 2f;
 
             bool hitGround = transform.position.y <= 0f;
@@ -356,13 +356,13 @@ namespace IssaPlugin.Items
             if (mouse == null)
                 return;
 
-            float sens = Configuration.AC130MouseSensitivity.Value;
+            float sens = ModConfig.AC130.MouseSensitivity.Value;
             Vector2 delta = mouse.delta.ReadValue();
             _lookOffset.y += delta.x * sens;
             _lookOffset.x -= delta.y * sens;
 
-            float yawLim = Configuration.AC130MaydayCamYawLimit.Value;
-            float pitchLim = Configuration.AC130MaydayCamPitchLimit.Value;
+            float yawLim = ModConfig.AC130.MaydayCamYawLimit.Value;
+            float pitchLim = ModConfig.AC130.MaydayCamPitchLimit.Value;
             _lookOffset.x = Mathf.Clamp(_lookOffset.x, -pitchLim, pitchLim);
             _lookOffset.y = Mathf.Clamp(_lookOffset.y, -yawLim, yawLim);
         }
@@ -373,10 +373,10 @@ namespace IssaPlugin.Items
                 return;
 
             // Shake intensity increases as dive angle steepens.
-            float maxAngle = Configuration.AC130MaydayMaxDiveAngle.Value;
+            float maxAngle = ModConfig.AC130.MaydayMaxDiveAngle.Value;
             float t = Mathf.Clamp01(_diveAngle / maxAngle);
-            float shakeBase = Configuration.AC130MaydayShakeBase.Value;
-            float shakeMax = Configuration.AC130MaydayShakeMax.Value;
+            float shakeBase = ModConfig.AC130.MaydayShakeBase.Value;
+            float shakeMax = ModConfig.AC130.MaydayShakeMax.Value;
             float intensity = Mathf.Lerp(shakeBase, shakeMax, t);
 
             _shakeOffset = new Vector2(

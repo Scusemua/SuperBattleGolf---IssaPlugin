@@ -38,9 +38,9 @@ namespace IssaPlugin.Items
             if (_rb == null)
                 return;
 
-            float speed = Configuration.DonutSpeed.Value;
-            float targetAltitude = Configuration.DonutAltitude.Value;
-            float followSpeed = Configuration.DonutTerrainFollowSpeed.Value;
+            float speed = ModConfig.Donut.Speed.Value;
+            float targetAltitude = ModConfig.Donut.Altitude.Value;
+            float followSpeed = ModConfig.Donut.TerrainFollowSpeed.Value;
 
             // ── Terrain-following Y ──────────────────────────────────────────
             // Start 100 units above the Donut so the ray cannot hit the Donut's own
@@ -82,7 +82,7 @@ namespace IssaPlugin.Items
                 transform.rotation = Quaternion.Slerp(
                     transform.rotation,
                     targetRot,
-                    Configuration.DonutTurnSpeed.Value * Time.fixedDeltaTime
+                    ModConfig.Donut.TurnSpeed.Value * Time.fixedDeltaTime
                 );
             }
         }

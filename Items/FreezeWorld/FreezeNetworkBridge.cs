@@ -60,7 +60,7 @@ namespace IssaPlugin.Items
 
             _globalSessionActive = true;
             _activeInstance = this;
-            float duration = Configuration.FreezeDuration.Value;
+            float duration = ModConfig.Freeze.Duration.Value;
 
             // [ClientRpc] is not IL-weaved in plugin DLLs — use NetworkMessage instead.
             NetworkServer.SendToAll(new FreezeBeginMessage { Duration = duration });

@@ -125,40 +125,40 @@ namespace IssaPlugin.Overlays
             // Compound sine roll — multiple frequencies feel organic rather than mechanical
             float roll =
                 _baseRollZ
-                + Mathf.Sin(_time * Configuration.PoisonRollFreq1.Value)
-                    * Configuration.PoisonRollAmp1.Value
-                + Mathf.Sin(_time * Configuration.PoisonRollFreq2.Value)
-                    * Configuration.PoisonRollAmp2.Value
-                + Mathf.Sin(_time * Configuration.PoisonRollFreq3.Value)
-                    * Configuration.PoisonRollAmp3.Value;
+                + Mathf.Sin(_time * ModConfig.PoisonJar.RollFreq1.Value)
+                    * ModConfig.PoisonJar.RollAmp1.Value
+                + Mathf.Sin(_time * ModConfig.PoisonJar.RollFreq2.Value)
+                    * ModConfig.PoisonJar.RollAmp2.Value
+                + Mathf.Sin(_time * ModConfig.PoisonJar.RollFreq3.Value)
+                    * ModConfig.PoisonJar.RollAmp3.Value;
 
             Vector3 euler = cam.transform.eulerAngles;
             euler.z = roll;
 
             // Aim noise — yaw and pitch drift make aiming harder while poisoned.
             // Phase offset (1.3 rad) keeps pitch and yaw from peaking at the same time.
-            if (Configuration.PoisonAimNoiseEnabled.Value)
+            if (ModConfig.PoisonJar.AimNoiseEnabled.Value)
             {
                 euler.y +=
-                    Mathf.Sin(_time * Configuration.PoisonAimNoiseYawFreq.Value)
-                    * Configuration.PoisonAimNoiseYawAmp.Value;
+                    Mathf.Sin(_time * ModConfig.PoisonJar.AimNoiseYawFreq.Value)
+                    * ModConfig.PoisonJar.AimNoiseYawAmp.Value;
                 euler.x +=
-                    Mathf.Sin(_time * Configuration.PoisonAimNoisePitchFreq.Value + 1.3f)
-                    * Configuration.PoisonAimNoisePitchAmp.Value;
+                    Mathf.Sin(_time * ModConfig.PoisonJar.AimNoisePitchFreq.Value + 1.3f)
+                    * ModConfig.PoisonJar.AimNoisePitchAmp.Value;
             }
 
             cam.transform.eulerAngles = euler;
 
             // FOV breathing
             float fovDelta =
-                Mathf.Sin(_time * Configuration.PoisonFovFreq1.Value)
-                    * Configuration.PoisonFovAmp1.Value
-                + Mathf.Sin(_time * Configuration.PoisonFovFreq2.Value)
-                    * Configuration.PoisonFovAmp2.Value;
+                Mathf.Sin(_time * ModConfig.PoisonJar.FovFreq1.Value)
+                    * ModConfig.PoisonJar.FovAmp1.Value
+                + Mathf.Sin(_time * ModConfig.PoisonJar.FovFreq2.Value)
+                    * ModConfig.PoisonJar.FovAmp2.Value;
             cam.fieldOfView = _baseFov + fovDelta;
 
             // Ghost camera — snap to main cam and render to texture
-            if (Configuration.PoisonGhostEnabled.Value)
+            if (ModConfig.PoisonJar.GhostEnabled.Value)
             {
                 EnsureGhostCamera(cam);
                 _ghostCam.transform.SetPositionAndRotation(
@@ -202,11 +202,11 @@ namespace IssaPlugin.Overlays
             EnsureTextures();
 
             // Ghost image — drawn first so tint/vignette layer on top
-            if (Configuration.PoisonGhostEnabled.Value && _ghostTex != null)
+            if (ModConfig.PoisonJar.GhostEnabled.Value && _ghostTex != null)
             {
-                float offsetX = Configuration.PoisonGhostOffsetX.Value * sw;
-                float offsetY = Configuration.PoisonGhostOffsetY.Value * sh;
-                GUI.color = new Color(1f, 1f, 1f, Configuration.PoisonGhostAlpha.Value);
+                float offsetX = ModConfig.PoisonJar.GhostOffsetX.Value * sw;
+                float offsetY = ModConfig.PoisonJar.GhostOffsetY.Value * sh;
+                GUI.color = new Color(1f, 1f, 1f, ModConfig.PoisonJar.GhostAlpha.Value);
                 GUI.DrawTexture(new Rect(offsetX, offsetY, sw, sh), _ghostTex);
                 GUI.color = Color.white;
             }
@@ -215,9 +215,9 @@ namespace IssaPlugin.Overlays
             if (_tintTex != null)
             {
                 float tintAlpha =
-                    Configuration.PoisonTintBaseAlpha.Value
-                    + Configuration.PoisonTintPulseAmp.Value
-                        * Mathf.Sin(_time * Configuration.PoisonTintPulseFreq.Value);
+                    ModConfig.PoisonJar.TintBaseAlpha.Value
+                    + ModConfig.PoisonJar.TintPulseAmp.Value
+                        * Mathf.Sin(_time * ModConfig.PoisonJar.TintPulseFreq.Value);
                 GUI.color = new Color(1f, 1f, 1f, tintAlpha);
                 GUI.DrawTexture(new Rect(0, 0, sw, sh), _tintTex);
                 GUI.color = Color.white;
@@ -227,11 +227,11 @@ namespace IssaPlugin.Overlays
             if (_vignetteTex != null)
             {
                 float vigAlpha =
-                    Configuration.PoisonVigBaseAlpha.Value
-                    + Configuration.PoisonVigPulseAmp1.Value
-                        * Mathf.Sin(_time * Configuration.PoisonVigPulseFreq1.Value)
-                    + Configuration.PoisonVigPulseAmp2.Value
-                        * Mathf.Sin(_time * Configuration.PoisonVigPulseFreq2.Value);
+                    ModConfig.PoisonJar.VigBaseAlpha.Value
+                    + ModConfig.PoisonJar.VigPulseAmp1.Value
+                        * Mathf.Sin(_time * ModConfig.PoisonJar.VigPulseFreq1.Value)
+                    + ModConfig.PoisonJar.VigPulseAmp2.Value
+                        * Mathf.Sin(_time * ModConfig.PoisonJar.VigPulseFreq2.Value);
                 GUI.color = new Color(1f, 1f, 1f, vigAlpha);
                 GUI.DrawTexture(new Rect(0, 0, sw, sh), _vignetteTex, ScaleMode.StretchToFill);
                 GUI.color = Color.white;

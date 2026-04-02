@@ -27,7 +27,7 @@ namespace IssaPlugin.Items
             // so it works correctly for client-fired missiles, not just the host.
             ItemHelper.ConsumeEquippedItem(inventory);
 
-            float altitude = Configuration.MissileAltitude.Value;
+            float altitude = ModConfig.PredatorMissile.Altitude.Value;
             Vector3 spawnPos = playerTransform.position + Vector3.up * altitude;
             Quaternion spawnRot = Quaternion.LookRotation(Vector3.down, Vector3.forward);
 
@@ -58,7 +58,7 @@ namespace IssaPlugin.Items
             ActiveMissileRockets.Add(rocket);
             bridge.ServerSetActiveRocket(rocket);
 
-            ExplosionScaler.Register(rocket, Configuration.PredatorMissileExplosionScale.Value);
+            ExplosionScaler.Register(rocket, ModConfig.PredatorMissile.ExplosionScale.Value);
 
             IssaPluginPlugin.Log.LogInfo($"[Missile] Launched at {spawnPos}.");
 
@@ -73,7 +73,7 @@ namespace IssaPlugin.Items
 
             // Wait for rocket to die or timeout
             float elapsed = 0f;
-            float timeout = Configuration.MissileTimeout.Value;
+            float timeout = ModConfig.PredatorMissile.Timeout.Value;
 
             while (rocket != null && rocket.gameObject != null && elapsed < timeout)
             {

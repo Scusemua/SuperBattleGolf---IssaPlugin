@@ -109,11 +109,11 @@ namespace IssaPlugin.Overlays
                 return;
 
             float cosHalf = Mathf.Cos(
-                Configuration.RocketTetherLockOnConeAngleDeg.Value * 0.5f * Mathf.Deg2Rad
+                ModConfig.RocketTether.LockOnConeAngleDeg.Value * 0.5f * Mathf.Deg2Rad
             );
             float rangeSq =
-                Configuration.RocketTetherLockOnRange.Value
-                * Configuration.RocketTetherLockOnRange.Value;
+                ModConfig.RocketTether.LockOnRange.Value
+                * ModConfig.RocketTether.LockOnRange.Value;
 
             Vector3 camPos = cam.transform.position;
             Vector3 camFwd = cam.transform.forward;

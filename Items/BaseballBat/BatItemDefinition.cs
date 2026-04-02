@@ -11,9 +11,9 @@ namespace IssaPlugin.Items
         public override Sprite Icon => AssetLoader.BatIcon;
         public override GameObject HeldModelPrefab => AssetLoader.BatModelPrefab;
         public override bool UseRocketIconFallback => false; // uses pistol fallback
-        public override int MaxUses => (int)Configuration.BaseballBatUses.Value;
+        public override int MaxUses => (int)ModConfig.BaseballBat.Uses.Value;
         public override int Tier => 1;
-        public override Key GiveKey => Configuration.BaseballBatGiveKey.Value;
+        public override Key GiveKey => ModConfig.BaseballBat.GiveKey.Value;
         public override EquipmentType EquipmentType => EquipmentType.GolfClub;
 
         // AnimatorItemType: bat falls through all branches in SetEquippedItem with no assignment.

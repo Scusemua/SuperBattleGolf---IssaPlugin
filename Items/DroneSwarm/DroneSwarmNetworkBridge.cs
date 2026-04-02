@@ -96,13 +96,13 @@ namespace IssaPlugin.Items
                 senderNetId: netId
             );
 
-            int droneCount = (int)Configuration.BaseDroneCount.Value;
-            float dronePerPlayerScalingFactor = Configuration.DronePerPlayerScalingFactor.Value;
+            int droneCount = (int)ModConfig.DroneSwarm.BaseDroneCount.Value;
+            float dronePerPlayerScalingFactor = ModConfig.DroneSwarm.PerPlayerScalingFactor.Value;
             float droneCountScaleFactor =
                 1 + (dronePerPlayerScalingFactor * GameManager.RemotePlayers.Count);
             droneCount = (int)(droneCount * droneCountScaleFactor);
-            float altitude = Configuration.DroneAltitude.Value;
-            float radius = Configuration.DroneWanderRadius.Value;
+            float altitude = ModConfig.DroneSwarm.Altitude.Value;
+            float radius = ModConfig.DroneSwarm.WanderRadius.Value;
 
             // Wander centre = player centroid at ground level, lifted to altitude.
             Vector3 wanderCenter = ComputeOrbitCenter(altitude);
@@ -130,8 +130,8 @@ namespace IssaPlugin.Items
             float spawnAngle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
             float spawnRadius = Random.Range(wanderRadius * 0.2f, wanderRadius * 0.8f);
             float altOffset = Random.Range(
-                -Configuration.DroneAltitudeVariance.Value,
-                Configuration.DroneAltitudeVariance.Value
+                -ModConfig.DroneSwarm.AltitudeVariance.Value,
+                ModConfig.DroneSwarm.AltitudeVariance.Value
             );
             Vector3 spawnPos = new Vector3(
                 wanderCenter.x + Mathf.Sin(spawnAngle) * spawnRadius,
@@ -155,22 +155,22 @@ namespace IssaPlugin.Items
             var behaviour = droneGo.AddComponent<DroneBehaviour>();
             behaviour.WanderCenter = wanderCenter;
             behaviour.WanderRadius = wanderRadius;
-            behaviour.WanderSpeed = Configuration.DroneWanderSpeed.Value;
-            behaviour.WanderTurnRate = Configuration.DroneWanderTurnRate.Value;
-            behaviour.AltitudeVariance = Configuration.DroneAltitudeVariance.Value;
+            behaviour.WanderSpeed = ModConfig.DroneSwarm.WanderSpeed.Value;
+            behaviour.WanderTurnRate = ModConfig.DroneSwarm.WanderTurnRate.Value;
+            behaviour.AltitudeVariance = ModConfig.DroneSwarm.AltitudeVariance.Value;
             behaviour.CircleTime = Random.Range(
-                Configuration.DroneCircleTimeMin.Value,
-                Configuration.DroneCircleTimeMax.Value
+                ModConfig.DroneSwarm.CircleTimeMin.Value,
+                ModConfig.DroneSwarm.CircleTimeMax.Value
             );
-            behaviour.DiveSpeed = Configuration.DroneDiveSpeed.Value;
-            behaviour.DiveAcceleration = Configuration.DroneDiveAcceleration.Value;
-            behaviour.HomingStopDistance = Configuration.DroneHomingStopDistance.Value;
-            behaviour.ArrivalRadius = Configuration.DroneArrivalRadius.Value;
-            behaviour.ExplosionScale = Configuration.DroneExplosionScale.Value;
+            behaviour.DiveSpeed = ModConfig.DroneSwarm.DiveSpeed.Value;
+            behaviour.DiveAcceleration = ModConfig.DroneSwarm.DiveAcceleration.Value;
+            behaviour.HomingStopDistance = ModConfig.DroneSwarm.HomingStopDistance.Value;
+            behaviour.ArrivalRadius = ModConfig.DroneSwarm.ArrivalRadius.Value;
+            behaviour.ExplosionScale = ModConfig.DroneSwarm.ExplosionScale.Value;
             behaviour.ThrowerInfo = summoner;
             behaviour.ItemUseId = itemUseId;
-            behaviour.FriendlyFire = Configuration.DroneFriendlyFire.Value;
-            behaviour.AttackFinishedPlayers = Configuration.DroneAttackFinishedPlayers.Value;
+            behaviour.FriendlyFire = ModConfig.DroneSwarm.FriendlyFire.Value;
+            behaviour.AttackFinishedPlayers = ModConfig.DroneSwarm.AttackFinishedPlayers.Value;
 
             // Spawn AFTER full setup so Mirror calls Start() post-Spawn.
             NetworkServer.Spawn(droneGo);
@@ -200,7 +200,7 @@ namespace IssaPlugin.Items
 
         private IEnumerator ServerMaxDurationRoutine()
         {
-            yield return new WaitForSeconds(Configuration.DroneSwarmMaxSessionDuration.Value);
+            yield return new WaitForSeconds(ModConfig.DroneSwarm.MaxSessionDuration.Value);
 
             if (_serverSessionActive)
             {

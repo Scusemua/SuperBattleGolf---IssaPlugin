@@ -34,8 +34,8 @@ namespace IssaPlugin.Items
 
             Vector3 forward = cam.transform.forward;
             Vector3 throwOrigin = cam.transform.position + forward * 1.2f + Vector3.up * 0.3f;
-            Vector3 throwDir = (forward + Vector3.up * Configuration.PoisonJarLobAngle.Value).normalized;
-            Vector3 velocity = throwDir * Configuration.PoisonJarThrowSpeed.Value;
+            Vector3 throwDir = (forward + Vector3.up * ModConfig.PoisonJar.LobAngle.Value).normalized;
+            Vector3 velocity = throwDir * ModConfig.PoisonJar.ThrowSpeed.Value;
 
             NetworkClient.Send(
                 new PoisonJarThrowMessage { ThrowOrigin = throwOrigin, ThrowVelocity = velocity }
@@ -72,7 +72,7 @@ namespace IssaPlugin.Items
             ItemHelper.ConsumeEquippedItem(inventory);
 
             // Clamp server-side to prevent speed exploits
-            Vector3 velocity = Vector3.ClampMagnitude(throwVelocity, Configuration.PoisonJarThrowSpeed.Value * 1.5f);
+            Vector3 velocity = Vector3.ClampMagnitude(throwVelocity, ModConfig.PoisonJar.ThrowSpeed.Value * 1.5f);
 
             var jarGo = Object.Instantiate(
                 AssetLoader.PoisonJarPrefab,
@@ -125,7 +125,7 @@ namespace IssaPlugin.Items
             var splashPrefab = AssetLoader.PoisonSplashPrefab;
             if (splashPrefab != null)
             {
-                float scale = msg.Radius / Configuration.PoisonJarRadius.Value;
+                float scale = msg.Radius / ModConfig.PoisonJar.Radius.Value;
                 var splash = Object.Instantiate(splashPrefab, msg.Position, Quaternion.identity);
                 splash.transform.localScale = Vector3.one * scale;
                 Object.Destroy(splash, 6f);

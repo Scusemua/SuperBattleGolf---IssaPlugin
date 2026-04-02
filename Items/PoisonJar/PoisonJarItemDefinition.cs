@@ -19,9 +19,9 @@ namespace IssaPlugin.Items
         public override Sprite Icon => AssetLoader.PoisonJarIcon;
         public override GameObject HeldModelPrefab => AssetLoader.PoisonJarHandheldPrefab;
 
-        public override int MaxUses => (int)Configuration.PoisonJarUses.Value;
+        public override int MaxUses => (int)ModConfig.PoisonJar.Uses.Value;
         public override int Tier => 2;
-        public override Key GiveKey => Configuration.PoisonJarGiveKey.Value;
+        public override Key GiveKey => ModConfig.PoisonJar.GiveKey.Value;
 
         public override void OnEquip(PlayerInventory inventory)
         {
@@ -30,8 +30,8 @@ namespace IssaPlugin.Items
             {
                 preview = inventory.gameObject.AddComponent<StickyGrenadeTrajectoryPreview>();
                 preview.TargetItemType = ItemRegistry.PoisonJarItemType;
-                preview.ThrowSpeed = () => Configuration.PoisonJarThrowSpeed.Value;
-                preview.LobAngle = () => Configuration.PoisonJarLobAngle.Value;
+                preview.ThrowSpeed = () => ModConfig.PoisonJar.ThrowSpeed.Value;
+                preview.LobAngle = () => ModConfig.PoisonJar.LobAngle.Value;
             }
         }
 

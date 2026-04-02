@@ -144,7 +144,7 @@ namespace IssaPlugin.Items
             // takes over immediately and settles at the configured altitude.
             Vector3 spawnPos =
                 inventory.PlayerInfo.transform.position
-                + Vector3.up * Configuration.DonutAltitude.Value;
+                + Vector3.up * ModConfig.Donut.Altitude.Value;
 
             var donutGo = Object.Instantiate(
                 AssetLoader.DonutPrefab,
@@ -177,7 +177,7 @@ namespace IssaPlugin.Items
             _serverSessionActive = true;
             _ = GlobalSessionLock<DonutNetworkBridge>.TryAcquire(this);
 
-            _laserUsesRemaining = (int)Configuration.DonutLaserUses.Value;
+            _laserUsesRemaining = (int)ModConfig.Donut.LaserUses.Value;
             _laserUseIndex = 0;
             _laserPending = false;
             _lastLaserTime = -999f;
@@ -236,7 +236,7 @@ namespace IssaPlugin.Items
             if (_laserUsesRemaining <= 0)
                 return;
 
-            if (Time.time - _lastLaserTime < Configuration.DonutLaserCooldown.Value)
+            if (Time.time - _lastLaserTime < ModConfig.Donut.LaserCooldown.Value)
                 return;
 
             _lastLaserTime = Time.time;
@@ -301,7 +301,7 @@ namespace IssaPlugin.Items
 
             rocket.ServerInitialize(inventory.PlayerInfo, null, itemUseId);
             NetworkServer.Spawn(rocket.gameObject, (NetworkConnectionToClient)null);
-            ExplosionScaler.Register(rocket, Configuration.DonutCrashExplosionScale.Value);
+            ExplosionScaler.Register(rocket, ModConfig.Donut.CrashExplosionScale.Value);
             AC130Item.ServerExplodeRocket(rocket); // Borrow this method
         }
 
@@ -450,7 +450,7 @@ namespace IssaPlugin.Items
 
         private IEnumerator ServerTimeoutRoutine()
         {
-            yield return new WaitForSeconds(Configuration.DonutDuration.Value + 10f);
+            yield return new WaitForSeconds(ModConfig.Donut.Duration.Value + 10f);
             if (_serverSessionActive)
                 EndServerSession();
         }
@@ -490,8 +490,8 @@ namespace IssaPlugin.Items
             if (orbitModule != null)
             {
                 orbitModule.SetSubject(donutTransform);
-                orbitModule.SetPitch(Configuration.DonutCameraPitch.Value);
-                orbitModule.SetDistanceAddition(Configuration.DonutCameraDistance.Value);
+                orbitModule.SetPitch(ModConfig.Donut.CameraPitch.Value);
+                orbitModule.SetDistanceAddition(ModConfig.Donut.CameraDistance.Value);
                 orbitModule.disablePhysics = true;
                 orbitModule.ForceUpdateModule();
             }
@@ -526,7 +526,7 @@ namespace IssaPlugin.Items
             var keyboard = Keyboard.current;
 
             // Re-enable movement after laser cooldown.
-            if (!_canMove && Time.time - _localLastLaserTime >= Configuration.DonutLaserCooldown.Value)
+            if (!_canMove && Time.time - _localLastLaserTime >= ModConfig.Donut.LaserCooldown.Value)
                 _canMove = true;
 
             // Space → cancel immediately (skips remaining frame work, matches original break).
@@ -540,7 +540,7 @@ namespace IssaPlugin.Items
             // Mouse X → rotate orbit yaw.
             if (mouse != null)
             {
-                float mouseX = mouse.delta.x.ReadValue() * Configuration.DonutMouseSensitivity.Value;
+                float mouseX = mouse.delta.x.ReadValue() * ModConfig.Donut.MouseSensitivity.Value;
                 cameraYaw += mouseX;
                 if (cameraYaw >= 360f)
                     cameraYaw -= 360f;
@@ -597,7 +597,7 @@ namespace IssaPlugin.Items
                 mouse != null
                 && mouse.leftButton.wasPressedThisFrame
                 && _localLaserUsesRemaining > 0
-                && Time.time - _localLastLaserTime >= Configuration.DonutLaserCooldown.Value
+                && Time.time - _localLastLaserTime >= ModConfig.Donut.LaserCooldown.Value
             )
             {
                 NetworkClient.Send(new DonutFireLaserMessage());
@@ -643,9 +643,9 @@ namespace IssaPlugin.Items
             var cameraState = SetupOrbitCamera(donutIdentity.transform);
             float cameraYaw = cameraState.SavedYaw;
 
-            _localLaserUsesRemaining = (int)Configuration.DonutLaserUses.Value;
+            _localLaserUsesRemaining = (int)ModConfig.Donut.LaserUses.Value;
             float sessionElapsed = 0f;
-            float sessionDuration = Configuration.DonutDuration.Value;
+            float sessionDuration = ModConfig.Donut.Duration.Value;
 
             DonutOverlay.SetActive(true, _localLaserUsesRemaining);
 

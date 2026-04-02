@@ -11,9 +11,9 @@ namespace IssaPlugin.Items
         public override string[] ConsoleAliases => new[] { "ac130" };
         public override Sprite Icon => AssetLoader.AC130Icon;
         public override GameObject HeldModelPrefab => AssetLoader.Ac130TabletPrefab;
-        public override int MaxUses => (int)Configuration.AC130Uses.Value;
+        public override int MaxUses => (int)ModConfig.AC130.Uses.Value;
         public override int Tier => 4;
-        public override Key GiveKey => Configuration.AC130GiveKey.Value;
+        public override Key GiveKey => ModConfig.AC130.GiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)
         {

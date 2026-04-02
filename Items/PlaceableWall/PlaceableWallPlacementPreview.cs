@@ -64,7 +64,7 @@ namespace IssaPlugin.Items
             float scrollY = Mouse.current.scroll.ReadValue().y;
             if (scrollY != 0f)
                 CurrentRotationOffset =
-                    (CurrentRotationOffset + Mathf.Sign(scrollY) * Configuration.PlaceableWallRotationStep.Value)
+                    (CurrentRotationOffset + Mathf.Sign(scrollY) * ModConfig.PlaceableWall.RotationStep.Value)
                     % 360f;
 
             var cam = Camera.main;
@@ -74,7 +74,7 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            float maxDist = Configuration.PlaceableWallMaxPlacementDistance.Value;
+            float maxDist = ModConfig.PlaceableWall.MaxPlacementDistance.Value;
             if (
                 !Physics.Raycast(
                     cam.transform.position,
@@ -168,7 +168,7 @@ namespace IssaPlugin.Items
         private static bool IsPlacementValid(Vector3 position, Quaternion rotation)
         {
             // ── Hole distance check ──────────────────────────────────────
-            float minHoleDist = Configuration.PlaceableWallMinHoleDistance.Value;
+            float minHoleDist = ModConfig.PlaceableWall.MinHoleDistance.Value;
             if (minHoleDist > 0f)
             {
                 var mainHole = GolfHoleManager.MainHole;

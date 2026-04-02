@@ -135,8 +135,8 @@ namespace IssaPlugin.Patches
                     float dist = Vector3.Distance(worldPosition, receiver.transform.position);
                     bool isDirect = dist < 1.5f;
                     float damage = isDirect
-                        ? Configuration.BearDamageRocketDirect.Value
-                        : Configuration.BearDamageRocketExplosion.Value;
+                        ? ModConfig.Bear.DamageRocketDirect.Value
+                        : ModConfig.Bear.DamageRocketExplosion.Value;
 
                     IssaPluginPlugin.Log.LogInfo(
                         $"[Bear] Rocket {(isDirect ? "direct hit" : "splash")} at {worldPosition} "

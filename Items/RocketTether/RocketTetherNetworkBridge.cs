@@ -206,8 +206,8 @@ namespace IssaPlugin.Items
             var wielderNetId = GetComponent<NetworkIdentity>().netId;
 
             // ── 5. Compute rocket spawn position (just above target's head) ───
-            float rocketSpeed = Configuration.RocketTetherRocketSpeed.Value;
-            float duration = Configuration.RocketTetherTetherDuration.Value;
+            float rocketSpeed = ModConfig.RocketTether.RocketSpeed.Value;
+            float duration = ModConfig.RocketTether.TetherDuration.Value;
             Vector3 rocketStart = targetInfo.transform.position + Vector3.up * 1.5f;
 
             // ── 6. Store server session state ─────────────────────────────────
@@ -255,8 +255,8 @@ namespace IssaPlugin.Items
             Vector3 explosionPos =
                 _serverRocketStartPos + Vector3.up * _serverRocketSpeed * duration;
 
-            float explosionForce = Configuration.RocketTetherExplosionForce.Value;
-            float explosionRadius = Configuration.RocketTetherExplosionRadius.Value;
+            float explosionForce = ModConfig.RocketTether.ExplosionForce.Value;
+            float explosionRadius = ModConfig.RocketTether.ExplosionRadius.Value;
 
             // Apply explosion to non-player Rigidbodies (golf balls, empty carts, etc.)
             // Player physics are client-authoritative; clients handle their own forces via
@@ -525,17 +525,17 @@ namespace IssaPlugin.Items
 
                     Vector3 toRocket = rocketPos - rb.position;
                     float dist = toRocket.magnitude;
-                    float natural = Configuration.RocketTetherNaturalLength.Value;
+                    float natural = ModConfig.RocketTether.NaturalLength.Value;
 
                     if (dist > natural && dist > 0.05f)
                     {
                         Vector3 dir = toRocket / dist;
                         float stretch = dist - natural;
-                        float targetSpeed = stretch * Configuration.RocketTetherSpringForce.Value;
+                        float targetSpeed = stretch * ModConfig.RocketTether.SpringForce.Value;
                         float currentComp = Vector3.Dot(rb.linearVelocity, dir);
                         float deficit = Mathf.Min(
                             targetSpeed - currentComp,
-                            Configuration.RocketTetherMaxPullSpeed.Value
+                            ModConfig.RocketTether.MaxPullSpeed.Value
                         );
 
                         if (deficit > 0f)
@@ -630,8 +630,8 @@ namespace IssaPlugin.Items
                     _serverRocketStartPos + Vector3.up * _serverRocketSpeed * elapsed;
                 ServerEndSession(
                     explosionPos,
-                    Configuration.RocketTetherExplosionForce.Value,
-                    Configuration.RocketTetherExplosionRadius.Value
+                    ModConfig.RocketTether.ExplosionForce.Value,
+                    ModConfig.RocketTether.ExplosionRadius.Value
                 );
             }
 

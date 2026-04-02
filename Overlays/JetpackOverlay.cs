@@ -90,7 +90,7 @@ namespace IssaPlugin.Overlays
             _labelStyle.normal.textColor = Color.white;
 
             string label =
-                $"Jetpack Fuel Remaining  {fraction * Configuration.JetpackFuelPerUse.Value:F1}s";
+                $"Jetpack Fuel Remaining  {fraction * ModConfig.Jetpack.FuelPerUse.Value:F1}s";
             GUI.Label(new Rect(barX, barY, barW, barH), label, _labelStyle);
         }
 

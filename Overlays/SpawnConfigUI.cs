@@ -2,7 +2,7 @@
 // An IMGUI overlay that lets the host edit all spawn configuration at runtime.
 //
 // ── Opening the panel ─────────────────────────────────────────────────────────
-//   Press the hotkey bound to Configuration.SpawnConfigUIKey (default: F8).
+//   Press the hotkey bound to ModConfig.Global.SpawnConfigUIKey (default: F8).
 //   Alternatively, run the console command "spawnConfigUI".
 //
 // ── Host vs client ────────────────────────────────────────────────────────────
@@ -103,7 +103,7 @@ namespace IssaPlugin.Overlays
                 return;
 
             // Toggle on configured hotkey (default F8)
-            if (keyboard[Configuration.SpawnConfigUIKey.Value].wasPressedThisFrame)
+            if (keyboard[ModConfig.Global.SpawnConfigUIKey.Value].wasPressedThisFrame)
                 Toggle();
         }
 
@@ -119,7 +119,7 @@ namespace IssaPlugin.Overlays
 
         public void Open()
         {
-            if (Configuration.NumTiers == null)
+            if (ModConfig.Global.NumTiers == null)
             {
                 IssaPluginPlugin.Log.LogWarning(
                     "[SpawnConfigUI] Cannot open — Configuration not initialised."
@@ -241,7 +241,7 @@ namespace IssaPlugin.Overlays
             GUILayout.Label(currentNumTiers.ToString(), GUILayout.Width(20), GUILayout.Height(22));
 
             // "+" button: add a new tier above the current highest
-            GUI.enabled = isHost && currentNumTiers < Configuration.MaxTiers;
+            GUI.enabled = isHost && currentNumTiers < ModConfig.MaxTiers;
             if (GUILayout.Button("+", GUILayout.Width(24), GUILayout.Height(22)))
             {
                 int newTier = _working.TierSettings.Keys.Max() + 1;

@@ -50,7 +50,7 @@ namespace IssaPlugin
 
         /// <summary>
         /// The tier this item currently belongs to.
-        /// Loaded from Configuration.GetItemTier() and written back via SetItemTier().
+        /// Loaded from ModConfig.GetItemTier() and written back via SetItemTier().
         /// Defaults to CustomItemDefinition.Tier if no config entry exists yet.
         /// </summary>
         public int AssignedTier;
@@ -62,12 +62,12 @@ namespace IssaPlugin
         public ItemOverrideSettings(int itemTypeId)
         {
             ItemTypeId = itemTypeId;
-            AssignedTier = Configuration.GetItemTier((ItemType)itemTypeId);
-            Enabled = Configuration.GetItemEnabled((ItemType)itemTypeId);
-            SpawnWeightOverrideEnabled = Configuration.GetItemSpawnWeightOverrideEnabled(
+            AssignedTier = ModConfig.GetItemTier((ItemType)itemTypeId);
+            Enabled = ModConfig.GetItemEnabled((ItemType)itemTypeId);
+            SpawnWeightOverrideEnabled = ModConfig.GetItemSpawnWeightOverrideEnabled(
                 (ItemType)itemTypeId
             );
-            SpawnWeightOverride = Configuration.GetItemSpawnWeightOverrideValue(
+            SpawnWeightOverride = ModConfig.GetItemSpawnWeightOverrideValue(
                 (ItemType)itemTypeId
             );
         }
@@ -109,20 +109,20 @@ namespace IssaPlugin
         {
             var snap = new SpawnConfigSnapshot
             {
-                CustomItemSpawnsEnabled = Configuration.CustomItemSpawnsEnabled.Value,
-                GlobalSpawnRateMultiplier = Configuration.CustomItemSpawnRate.Value,
-                CatchupBoostFactor = Configuration.CatchupBoostFactor.Value,
+                CustomItemSpawnsEnabled = ModConfig.Global.CustomItemSpawnsEnabled.Value,
+                GlobalSpawnRateMultiplier = ModConfig.Global.CustomItemSpawnRate.Value,
+                CatchupBoostFactor = ModConfig.Global.CatchupBoostFactor.Value,
             };
 
             int numTiers =
-                Configuration.NumTiers != null
-                    ? Mathf.Clamp(Configuration.NumTiers.Value, 1, Configuration.MaxTiers)
+                ModConfig.Global.NumTiers != null
+                    ? Mathf.Clamp(ModConfig.Global.NumTiers.Value, 1, ModConfig.MaxTiers)
                     : 3;
             for (int t = 1; t <= numTiers; t++)
-                snap.TierSettings[t] = new TierSettings(t, Configuration.GetTierSpawnWeight(t))
+                snap.TierSettings[t] = new TierSettings(t, ModConfig.GetTierSpawnWeight(t))
                 {
-                    MinDistanceBehindLeader = Configuration.GetTierMinDistance(t),
-                    MinPlaceTrigger = Configuration.GetTierMinPlace(t),
+                    MinDistanceBehindLeader = ModConfig.GetTierMinDistance(t),
+                    MinPlaceTrigger = ModConfig.GetTierMinPlace(t),
                 };
 
             foreach (var def in ItemRegistry.AllItems)
@@ -159,23 +159,23 @@ namespace IssaPlugin
         /// </summary>
         public void ApplyToConfiguration()
         {
-            Configuration.CustomItemSpawnsEnabled.Value = CustomItemSpawnsEnabled;
-            Configuration.CustomItemSpawnRate.Value = GlobalSpawnRateMultiplier;
-            Configuration.CatchupBoostFactor.Value = CatchupBoostFactor;
+            ModConfig.Global.CustomItemSpawnsEnabled.Value = CustomItemSpawnsEnabled;
+            ModConfig.Global.CustomItemSpawnRate.Value = GlobalSpawnRateMultiplier;
+            ModConfig.Global.CatchupBoostFactor.Value = CatchupBoostFactor;
 
             // NumTiers — write the count so BindTierWeight loop is accurate on next startup.
             int highestUsedTier = 1;
             foreach (var kv in TierSettings)
                 if (kv.Key > highestUsedTier)
                     highestUsedTier = kv.Key;
-            Configuration.NumTiers.Value = highestUsedTier;
+            ModConfig.Global.NumTiers.Value = highestUsedTier;
 
             // Tier weights and gating
             foreach (var kv in TierSettings)
             {
-                Configuration.SetTierSpawnWeight(kv.Key, kv.Value.SpawnWeight);
-                Configuration.SetTierMinDistance(kv.Key, kv.Value.MinDistanceBehindLeader);
-                Configuration.SetTierMinPlace(kv.Key, kv.Value.MinPlaceTrigger);
+                ModConfig.SetTierSpawnWeight(kv.Key, kv.Value.SpawnWeight);
+                ModConfig.SetTierMinDistance(kv.Key, kv.Value.MinDistanceBehindLeader);
+                ModConfig.SetTierMinPlace(kv.Key, kv.Value.MinPlaceTrigger);
             }
 
             // Per-item overrides + tier assignments
@@ -183,13 +183,13 @@ namespace IssaPlugin
             {
                 var ov = kv.Value;
                 var type = (ItemType)ov.ItemTypeId;
-                Configuration.SetItemEnabled(type, ov.Enabled);
-                Configuration.SetItemSpawnWeightOverride(
+                ModConfig.SetItemEnabled(type, ov.Enabled);
+                ModConfig.SetItemSpawnWeightOverride(
                     type,
                     ov.SpawnWeightOverrideEnabled,
                     ov.SpawnWeightOverride
                 );
-                Configuration.SetItemTier(type, ov.AssignedTier); // ← the new persistent write
+                ModConfig.SetItemTier(type, ov.AssignedTier); // ← the new persistent write
             }
 
             SpawnWeightsSyncer.ForceServerSync();

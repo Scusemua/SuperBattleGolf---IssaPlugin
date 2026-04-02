@@ -20,7 +20,7 @@ namespace IssaPlugin.Items
         private void Awake()
         {
             HitCount    = 0;
-            HitsRequired = (int)Configuration.HarrierHitsToDestroy.Value;
+            HitsRequired = (int)ModConfig.Harrier.HitsToDestroy.Value;
             OnHit += HandleHit;
         }
 

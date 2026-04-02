@@ -11,9 +11,9 @@ namespace IssaPlugin.Items
         public override string[] ConsoleAliases => new[] { "lowgravity", "gravity" };
         public override Sprite Icon => AssetLoader.LowGravityIcon;
         public override GameObject HeldModelPrefab => AssetLoader.LowGravityModelPrefab;
-        public override int MaxUses => (int)Configuration.LowGravityUses.Value;
+        public override int MaxUses => (int)ModConfig.LowGravity.Uses.Value;
         public override int Tier => 3;
-        public override Key GiveKey => Configuration.LowGravityGiveKey.Value;
+        public override Key GiveKey => ModConfig.LowGravity.GiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)
         {

@@ -59,7 +59,7 @@ namespace IssaPlugin.Patches
             // Only boost when the speed-boost status effect is actually running.
             if (local.SpeedBoostRemainingTime <= 0f)
                 return;
-            __result *= Configuration.RedBullExtraSpeedMultiplier.Value;
+            __result *= ModConfig.RedBull.ExtraSpeedMultiplier.Value;
         }
     }
 
@@ -100,7 +100,7 @@ namespace IssaPlugin.Patches
             if (_velocityProp == null)
                 return;
             var vel = (Vector3)_velocityProp.GetValue(local);
-            vel.y += Configuration.RedBullJumpBonus.Value;
+            vel.y += ModConfig.RedBull.JumpBonus.Value;
             _velocityProp.SetValue(local, vel);
         }
     }

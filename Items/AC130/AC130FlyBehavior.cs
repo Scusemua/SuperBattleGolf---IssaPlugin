@@ -160,7 +160,7 @@ namespace IssaPlugin.Items
         {
             mode = AC130FlightMode.FlyOut;
             _flyOutStart = transform.position;
-            flySpeed = Configuration.AC130ApproachSpeed.Value;
+            flySpeed = ModConfig.AC130.ApproachSpeed.Value;
         }
 
         private void OnDestroy()

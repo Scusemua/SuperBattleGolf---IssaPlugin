@@ -35,9 +35,9 @@ namespace IssaPlugin.Items
                 Rigidbody.useGravity = true;
                 Rigidbody.freezeRotation = false;
 
-                Rigidbody.AddForce(Vector3.down * Configuration.DonutCrashDownwardForce.Value);
+                Rigidbody.AddForce(Vector3.down * ModConfig.Donut.CrashDownwardForce.Value);
                 Vector3 torqueImpulse =
-                    UnityEngine.Random.insideUnitSphere * Configuration.DonutCrashTorque.Value;
+                    UnityEngine.Random.insideUnitSphere * ModConfig.Donut.CrashTorque.Value;
                 Rigidbody.AddTorque(torqueImpulse, ForceMode.Impulse);
 
                 _initialForcesApplied = true;
@@ -92,7 +92,7 @@ namespace IssaPlugin.Items
                 VfxType.RocketLauncherRocketExplosion,
                 transform.position,
                 Quaternion.identity,
-                Vector3.one * Configuration.DonutCrashExplosionScale.Value
+                Vector3.one * ModConfig.Donut.CrashExplosionScale.Value
             );
 
             if (AssetLoader.ConfettiBlastRainbow != null)

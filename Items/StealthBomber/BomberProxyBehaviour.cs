@@ -34,7 +34,7 @@ namespace IssaPlugin.Items
         {
             _startTime = Time.time;
             HitCount = 0;
-            HitsRequired = (int)Configuration.BomberHitsToDestroy.Value;
+            HitsRequired = (int)ModConfig.StealthBomber.HitsToDestroy.Value;
             OnHit += OnStealthBomberHit;
         }
 

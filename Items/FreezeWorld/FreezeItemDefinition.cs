@@ -11,9 +11,9 @@ namespace IssaPlugin.Items
         public override string[] ConsoleAliases => new[] { "freezeworld", "freeze" };
         public override Sprite Icon => AssetLoader.FreezeIcon;
         public override GameObject HeldModelPrefab => AssetLoader.FreezeModelPrefab;
-        public override int MaxUses => (int)Configuration.FreezeUses.Value;
+        public override int MaxUses => (int)ModConfig.Freeze.Uses.Value;
         public override int Tier => 1;
-        public override Key GiveKey => Configuration.FreezeGiveKey.Value;
+        public override Key GiveKey => ModConfig.Freeze.GiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)
         {

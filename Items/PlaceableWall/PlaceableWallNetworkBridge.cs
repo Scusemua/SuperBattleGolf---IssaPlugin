@@ -65,7 +65,7 @@ namespace IssaPlugin.Items
 
             // Raycast from the camera position along the camera's forward direction
             // to find the ground surface where the wall should be placed.
-            float maxDist = Configuration.PlaceableWallMaxPlacementDistance.Value;
+            float maxDist = ModConfig.PlaceableWall.MaxPlacementDistance.Value;
             if (
                 !Physics.Raycast(
                     rayOrigin,
@@ -155,7 +155,7 @@ namespace IssaPlugin.Items
         private static bool IsValidPlacement(Vector3 position, Quaternion rotation)
         {
             // ── Hole distance check ──────────────────────────────────────
-            float minDist = Configuration.PlaceableWallMinHoleDistance.Value;
+            float minDist = ModConfig.PlaceableWall.MinHoleDistance.Value;
             if (minDist > 0f)
             {
                 var mainHole = GolfHoleManager.MainHole;

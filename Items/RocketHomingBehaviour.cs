@@ -19,7 +19,7 @@ namespace IssaPlugin.Items
         /// Proximity-fuse distance in metres. When the rocket closes to within
         /// this range it detonates even if no collision occurs (the target may
         /// have no physics collider). Set by the caller after AddComponent;
-        /// defaults to Configuration.AC130RocketProximityFuse when left at -1.
+        /// defaults to ModConfig.AC130.RocketProximityFuse when left at -1.
         public float ProximityFuse = -1f;
 
         private Rigidbody _rb;
@@ -31,7 +31,7 @@ namespace IssaPlugin.Items
                 IssaPluginPlugin.Log.LogWarning("[RocketHomingBehaviour] No Rigidbody on rocket.");
 
             if (ProximityFuse < 0f)
-                ProximityFuse = Configuration.AC130RocketProximityFuse.Value;
+                ProximityFuse = ModConfig.AC130.RocketProximityFuse.Value;
         }
 
         private void FixedUpdate()

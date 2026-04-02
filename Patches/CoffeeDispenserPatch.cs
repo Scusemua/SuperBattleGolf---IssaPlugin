@@ -42,7 +42,7 @@ namespace IssaPlugin.Patches
         {
             if ((ItemType)ItemTypeField.GetValue(__instance) != ItemType.Coffee)
                 return;
-            if (!(Random.value < Configuration.RedBullDispenserChance.Value))
+            if (!(Random.value < ModConfig.RedBull.DispenserChance.Value))
                 return;
 
             // Server: change what the player receives on pick-up.

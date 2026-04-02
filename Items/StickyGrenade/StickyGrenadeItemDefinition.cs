@@ -11,9 +11,9 @@ namespace IssaPlugin.Items
             new[] { "sticky_grenade", "sticky", "stickygrenade" };
         public override Sprite Icon => AssetLoader.StickyGrenadeIcon;
         public override GameObject HeldModelPrefab => AssetLoader.StickyGrenadePrefab;
-        public override int MaxUses => (int)Configuration.StickyGrenadeUses.Value;
+        public override int MaxUses => (int)ModConfig.StickyGrenade.Uses.Value;
         public override int Tier => 2;
-        public override Key GiveKey => Configuration.StickyGrenadeGiveKey.Value;
+        public override Key GiveKey => ModConfig.StickyGrenade.GiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)
         {

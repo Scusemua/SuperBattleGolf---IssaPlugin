@@ -10,9 +10,9 @@ namespace IssaPlugin.Items
         public override string[] ConsoleAliases => new[] { "javelin" };
         public override Sprite Icon => AssetLoader.JavelinIcon;
         public override GameObject HeldModelPrefab => AssetLoader.JavelinHandheldPrefab;
-        public override int MaxUses => (int)Configuration.JavelinUses.Value;
+        public override int MaxUses => (int)ModConfig.Javelin.Uses.Value;
         public override int Tier => 2;
-        public override Key GiveKey => Configuration.JavelinGiveKey.Value;
+        public override Key GiveKey => ModConfig.Javelin.GiveKey.Value;
         public override ItemType AnimatorItemType => ItemType.RocketLauncher;
         public override ItemType AnimatorChangedItemType => ItemType.RocketLauncher;
 

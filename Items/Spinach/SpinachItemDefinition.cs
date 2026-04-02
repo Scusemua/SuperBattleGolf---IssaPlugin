@@ -10,9 +10,9 @@ namespace IssaPlugin.Items
         public override string[] ConsoleAliases => new[] { "steroids", "juice" };
         public override Sprite Icon => AssetLoader.SpinachIcon;
         public override GameObject HeldModelPrefab => AssetLoader.SpinachPrefab;
-        public override int MaxUses => (int)Configuration.SpinachUses.Value;
+        public override int MaxUses => (int)ModConfig.Spinach.Uses.Value;
         public override int Tier => 2;
-        public override Key GiveKey => Configuration.SpinachGiveKey.Value;
+        public override Key GiveKey => ModConfig.Spinach.GiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)
         {
@@ -20,7 +20,7 @@ namespace IssaPlugin.Items
             if (movement == null)
                 return;
 
-            float duration = Configuration.SpinachDuration.Value;
+            float duration = ModConfig.Spinach.Duration.Value;
 
             movement.InformDrankCoffee();
             movement.InformDrankCoffee();

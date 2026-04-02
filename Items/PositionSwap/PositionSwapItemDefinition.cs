@@ -11,9 +11,9 @@ namespace IssaPlugin.Items
         public override string[] ConsoleAliases => new[] { "positionswap", "swap" };
         public override Sprite Icon => AssetLoader.PositionSwapIcon;
         public override GameObject HeldModelPrefab => AssetLoader.PositionSwapHandheldPrefab;
-        public override int MaxUses => (int)Configuration.PositionSwapUses.Value;
+        public override int MaxUses => (int)ModConfig.PositionSwap.Uses.Value;
         public override int Tier => 1;
-        public override Key GiveKey => Configuration.PositionSwapGiveKey.Value;
+        public override Key GiveKey => ModConfig.PositionSwap.GiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)
         {

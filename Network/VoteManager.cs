@@ -164,7 +164,7 @@ namespace IssaPlugin.Network
         {
             foreach (var (key, enabled) in results)
             {
-                Configuration.SetItemEnabled((ItemType)key, enabled);
+                ModConfig.SetItemEnabled((ItemType)key, enabled);
                 IssaPluginPlugin.Log.LogInfo($"[Vote] Item {key} → enabled={enabled}");
             }
         }

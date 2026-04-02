@@ -220,13 +220,13 @@ namespace IssaPlugin.Items
             var pivotGo = new GameObject("BomberTargetPivot");
             pivotGo.transform.position = playerPos;
 
-            float stripLength = Configuration.BomberStripLength.Value;
-            float stripWidth = Configuration.BomberSpread.Value * 2f;
+            float stripLength = ModConfig.StealthBomber.StripLength.Value;
+            float stripWidth = ModConfig.StealthBomber.Spread.Value * 2f;
             float stripAngle = 0f;
             var stripGo = CreateStripVisual(playerPos, stripWidth, stripLength);
 
             float currentDistanceAddition = 0;
-            float zoomSpeed = Configuration.BomberTargetingZoomSpeed.Value;
+            float zoomSpeed = ModConfig.StealthBomber.TargetingZoomSpeed.Value;
             // Rate-limit zoom updates to 20 Hz. mouse.scroll.ReadValue() returns a
             // continuous delta that is non-zero for many consecutive frames during a
             // single scroll gesture. Without this guard, SetDistanceAddition fires
@@ -248,8 +248,8 @@ namespace IssaPlugin.Items
 
             yield return null;
 
-            float moveSpeed = Configuration.BomberTargetMoveSpeed.Value;
-            float rotateSpeed = Configuration.BomberTargetRotateSpeed.Value;
+            float moveSpeed = ModConfig.StealthBomber.TargetMoveSpeed.Value;
+            float rotateSpeed = ModConfig.StealthBomber.TargetRotateSpeed.Value;
             bool confirmed = false;
             bool cancelled = false;
 
@@ -361,13 +361,13 @@ namespace IssaPlugin.Items
             SetCurrentItemUse(inventory, ItemUseType.None);
 
             yield return new WaitForSeconds(0.01f);
-            yield return new WaitForSeconds(Configuration.BomberWaitTime.Value);
+            yield return new WaitForSeconds(ModConfig.StealthBomber.WaitTime.Value);
 
-            float altitude = Configuration.BomberAltitude.Value;
-            float rocketInterval = Configuration.BomberRocketInterval.Value;
-            float spread = Configuration.BomberSpread.Value;
-            float approachDist = Configuration.BomberApproachDistance.Value;
-            float waitTime = Configuration.BomberWaitTime.Value;
+            float altitude = ModConfig.StealthBomber.Altitude.Value;
+            float rocketInterval = ModConfig.StealthBomber.RocketInterval.Value;
+            float spread = ModConfig.StealthBomber.Spread.Value;
+            float approachDist = ModConfig.StealthBomber.ApproachDistance.Value;
+            float waitTime = ModConfig.StealthBomber.WaitTime.Value;
 
             float halfLength = strip.Length / 2f;
             Vector3 stripStart = strip.Center - strip.Forward * halfLength;
@@ -380,7 +380,7 @@ namespace IssaPlugin.Items
             spawnPos.y = strip.Center.y + altitude;
             exitPos.y = strip.Center.y + altitude;
 
-            float exitBufferDist = Configuration.BomberSpeed.Value * waitTime;
+            float exitBufferDist = ModConfig.StealthBomber.Speed.Value * waitTime;
             float dropEndDist = Vector3.Distance(spawnPos, exitPos) - exitBufferDist;
             float totalDist = Vector3.Distance(spawnPos, exitPos);
 
@@ -396,7 +396,7 @@ namespace IssaPlugin.Items
             GameObject proxyGo = SpawnBomberProxy(
                 spawnPos,
                 direction,
-                Configuration.BomberSpeed.Value,
+                ModConfig.StealthBomber.Speed.Value,
                 totalDist,
                 () =>
                 {
@@ -432,7 +432,7 @@ namespace IssaPlugin.Items
                 spawnPos,
                 exitPos,
                 direction,
-                Configuration.BomberSpeed.Value
+                ModConfig.StealthBomber.Speed.Value
             );
 
             float startTime = Time.time;
@@ -441,7 +441,7 @@ namespace IssaPlugin.Items
             while (true)
             {
                 float elapsed = Time.time - startTime;
-                float distanceTravelled = elapsed * Configuration.BomberSpeed.Value;
+                float distanceTravelled = elapsed * ModConfig.StealthBomber.Speed.Value;
 
                 // Abort early if the bomber was shot down.
                 if (proxyShotDown || proxyGo == null)
@@ -464,7 +464,7 @@ namespace IssaPlugin.Items
                     Vector3 offset = perpendicular * offsetAmount;
                     // Vector3 offset = perpendicular * UnityEngine.Random.Range(-spread, spread);
 
-                    float angularJitter = Configuration.BomberRocketAngularJitter.Value;
+                    float angularJitter = ModConfig.StealthBomber.RocketAngularJitter.Value;
                     Quaternion jitter = Quaternion.Euler(
                         UnityEngine.Random.Range(-angularJitter, angularJitter),
                         UnityEngine.Random.Range(-angularJitter, angularJitter),
@@ -474,7 +474,7 @@ namespace IssaPlugin.Items
                         inventory,
                         bomberPos
                             + offset
-                            + Vector3.down * Configuration.BomberRocketSpawnDepth.Value,
+                            + Vector3.down * ModConfig.StealthBomber.RocketSpawnDepth.Value,
                         jitter
                     );
                     rocketsDropped++;
@@ -514,11 +514,11 @@ namespace IssaPlugin.Items
             // Generate tumble torque on the server so all clients receive the
             // same value via the RPC rather than each rolling independently.
             Vector3 torqueImpulse =
-                UnityEngine.Random.insideUnitSphere * Configuration.BomberCrashTorque.Value;
+                UnityEngine.Random.insideUnitSphere * ModConfig.StealthBomber.CrashTorque.Value;
 
             bridge.SendBomberShotDown(
                 direction,
-                Configuration.BomberSpeed.Value,
+                ModConfig.StealthBomber.Speed.Value,
                 rocketImpactDir,
                 torqueImpulse
             );
@@ -738,7 +738,7 @@ namespace IssaPlugin.Items
             rocket.ServerInitialize(inventory.PlayerInfo, null, itemUseId);
             NetworkServer.Spawn(rocket.gameObject, (NetworkConnectionToClient)null);
 
-            ExplosionScaler.Register(rocket, Configuration.StealthBomberExplosionScale.Value);
+            ExplosionScaler.Register(rocket, ModConfig.StealthBomber.ExplosionScale.Value);
             ActiveBomberDropRocketIds.Add(rocket.GetInstanceID());
         }
     }

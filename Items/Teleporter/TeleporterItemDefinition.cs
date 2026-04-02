@@ -10,9 +10,9 @@ namespace IssaPlugin.Items
         public override string[] ConsoleAliases => new[] { "teleporter", "teleport", "tp" };
         public override Sprite Icon => AssetLoader.TeleporterIcon;
         public override GameObject HeldModelPrefab => AssetLoader.TeleporterHandheldPrefab;
-        public override int MaxUses => (int)Configuration.TeleporterUses.Value;
+        public override int MaxUses => (int)ModConfig.Teleporter.Uses.Value;
         public override int Tier => 2;
-        public override Key GiveKey => Configuration.TeleporterGiveKey.Value;
+        public override Key GiveKey => ModConfig.Teleporter.GiveKey.Value;
 
         // OnUse kicks off the client-side targeting coroutine.
         // PlayerInventory is a MonoBehaviour so StartCoroutine is valid here.

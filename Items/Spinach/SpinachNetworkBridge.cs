@@ -41,7 +41,7 @@ namespace IssaPlugin.Items
                 NetworkServer.SendToAll(new SpinachTrailEndMessage { PlayerNetId = netId });
             }
 
-            float duration = Configuration.SpinachDuration.Value;
+            float duration = ModConfig.Spinach.Duration.Value;
             _serverSessionActive = true;
             NetworkServer.SendToAll(
                 new SpinachTrailBeginMessage { PlayerNetId = netId, Duration = duration }

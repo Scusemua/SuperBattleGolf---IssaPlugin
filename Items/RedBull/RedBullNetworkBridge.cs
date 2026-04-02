@@ -54,7 +54,7 @@ namespace IssaPlugin.Items
                 NetworkServer.SendToAll(new RedBullTrailEndMessage { PlayerNetId = netId });
             }
 
-            float duration = Configuration.RedBullDuration.Value;
+            float duration = ModConfig.RedBull.Duration.Value;
             _serverSessionActive = true;
             NetworkServer.SendToAll(
                 new RedBullTrailBeginMessage { PlayerNetId = netId, Duration = duration }

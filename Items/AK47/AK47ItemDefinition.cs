@@ -12,9 +12,9 @@ namespace IssaPlugin.Items
         public override Sprite Icon => AssetLoader.AK47Icon;
         public override GameObject HeldModelPrefab => AssetLoader.AK47Prefab;
         public override bool UseRocketIconFallback => false;
-        public override int MaxUses => (int)Configuration.AK47Uses.Value;
+        public override int MaxUses => (int)ModConfig.AK47.Uses.Value;
         public override int Tier => 3;
-        public override Key GiveKey => Configuration.AK47GiveKey.Value;
+        public override Key GiveKey => ModConfig.AK47.GiveKey.Value;
         public override EquipmentType EquipmentType => EquipmentType.ElephantGun;
         public override ItemType AnimatorItemType => ItemType.ElephantGun;
         public override ItemType AnimatorChangedItemType => ItemType.ElephantGun;

@@ -106,6 +106,11 @@ namespace IssaPlugin.Items
         /// Bundle asset name: <c>red_bull_trail.prefab</c>
         public static GameObject RedBullTrailPrefab { get; private set; }
 
+        /// Local-only trail VFX parented to a player's transform while Spinach is active.
+        /// Not networked — each client instantiates its own copy via SpinachNetworkBridge.
+        /// Bundle asset name: <c>spinach_trail.prefab</c>
+        public static GameObject SpinachTrailPrefab { get; private set; }
+
         // --- Gravity Gun ---
         /// Falls back to the rocket launcher icon at runtime if the asset is absent.
         public static Sprite ElectricGravityGunIcon { get; private set; }
@@ -779,6 +784,9 @@ namespace IssaPlugin.Items
             {
                 DisableRigidbody(SpinachPrefab);
             }
+            SpinachTrailPrefab = Load<GameObject>("spinach_trail.prefab");
+            if (SpinachTrailPrefab != null)
+                StripNetworkComponents(SpinachTrailPrefab);
         }
 
         /// Ensures a prefab has a NetworkIdentity with a stable assetId so Mirror

@@ -67,8 +67,8 @@ namespace IssaPlugin.Items
                 _rb.angularVelocity = Vector3.zero;
             }
 
-            float radius = Configuration.PoisonJarRadius.Value;
-            float duration = Configuration.PoisonJarDuration.Value;
+            float radius = ModConfig.PoisonJar.Radius.Value;
+            float duration = ModConfig.PoisonJar.Duration.Value;
 
             NetworkServer.SendToAll(
                 new PoisonJarLandedMessage

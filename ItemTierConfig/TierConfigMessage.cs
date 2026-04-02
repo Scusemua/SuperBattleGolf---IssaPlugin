@@ -201,7 +201,7 @@ namespace IssaPlugin.Network
             for (int i = 0; i < itemCount; i++)
             {
                 int id = msg.ItemTypeIds[i];
-                snap.ItemOverrides[id] = new IssaPlugin.ItemOverrideSettings(id, fromWire: true)
+                snap.ItemOverrides[id] = new IssaPlugin.ItemOverrideSettings(id)
                 {
                     Enabled = msg.ItemEnabled[i],
                     SpawnWeightOverrideEnabled = msg.ItemSpawnWeightOverrideEnabled[i],

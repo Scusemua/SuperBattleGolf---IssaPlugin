@@ -67,7 +67,7 @@ namespace IssaPlugin.Overlays
 
             _aimingIn = true;
 
-            float inaccuracy = Configuration.AK47Inaccuracy.Value;
+            float inaccuracy = ModConfig.AK47.Inaccuracy.Value;
             if (inaccuracy <= 0f || _mat == null)
                 return;
 

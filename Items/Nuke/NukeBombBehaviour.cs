@@ -115,7 +115,7 @@ namespace IssaPlugin.Items
                     ItemUseId = ItemUseId,
                     SkyBlastForce = SkyBlastForce,
                     SkyBlastVerticalBias = SkyBlastVerticalBias,
-                    NukeExplosionVfxScale = Configuration.NukeExplosionVfxScale.Value,
+                    NukeExplosionVfxScale = ModConfig.Nuke.ExplosionVfxScale.Value,
                 }
             );
 

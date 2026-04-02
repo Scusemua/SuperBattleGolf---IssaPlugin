@@ -42,8 +42,8 @@ namespace IssaPlugin.Items
 
             // Defaults match the sticky grenade so existing callers need no changes.
             TargetItemType = ItemRegistry.StickyGrenadeItemType;
-            ThrowSpeed = () => Configuration.StickyGrenadeThrowSpeed.Value;
-            LobAngle = () => Configuration.StickyGrenadeLobAngle.Value;
+            ThrowSpeed = () => ModConfig.StickyGrenade.ThrowSpeed.Value;
+            LobAngle = () => ModConfig.StickyGrenade.LobAngle.Value;
 
             _line = gameObject.AddComponent<LineRenderer>();
             _line.useWorldSpace = true;

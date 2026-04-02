@@ -94,7 +94,7 @@ namespace IssaPlugin.Items
                         }
                     );
                 }
-                _sendTimer = Configuration.GravityGunInputSendInterval.Value;
+                _sendTimer = ModConfig.GravityGun.InputSendInterval.Value;
             }
         }
 
@@ -252,8 +252,8 @@ namespace IssaPlugin.Items
                 {
                     WielderNetId = wielderNetId,
                     TargetNetId = broadcastTargetNetId,
-                    TetherRadius = Configuration.GravityGunTetherRadius.Value,
-                    Duration = Configuration.GravityGunTetherDuration.Value,
+                    TetherRadius = ModConfig.GravityGun.TetherRadius.Value,
+                    Duration = ModConfig.GravityGun.TetherDuration.Value,
                 }
             );
 
@@ -279,7 +279,7 @@ namespace IssaPlugin.Items
                 var rb = _targetCartGo.GetComponent<Rigidbody>();
                 if (rb != null && msg.AimDir.sqrMagnitude > 0.0001f)
                 {
-                    float tetherRadius = Configuration.GravityGunTetherRadius.Value;
+                    float tetherRadius = ModConfig.GravityGun.TetherRadius.Value;
                     Vector3 desiredPos = msg.WielderPos + msg.AimDir.normalized * tetherRadius;
                     Vector3 toDesired = desiredPos - rb.position;
                     float dist = toDesired.magnitude;
@@ -287,11 +287,11 @@ namespace IssaPlugin.Items
                     if (dist > 0.05f)
                     {
                         Vector3 dir = toDesired / dist;
-                        float targetSpeed = dist * Configuration.GravityGunSpringForce.Value;
+                        float targetSpeed = dist * ModConfig.GravityGun.SpringForce.Value;
                         float currentSpeed = Vector3.Dot(rb.linearVelocity, dir);
                         float deficit = Mathf.Min(
                             targetSpeed - currentSpeed,
-                            Configuration.GravityGunMaxPullSpeed.Value
+                            ModConfig.GravityGun.MaxPullSpeed.Value
                         );
                         if (deficit > 0f)
                             rb.AddForce(dir * deficit, ForceMode.VelocityChange);
@@ -330,7 +330,7 @@ namespace IssaPlugin.Items
 
         private IEnumerator ServerTimeoutCoroutine()
         {
-            yield return new WaitForSeconds(Configuration.GravityGunTetherDuration.Value);
+            yield return new WaitForSeconds(ModConfig.GravityGun.TetherDuration.Value);
 
             if (!_serverSessionActive)
                 yield break; // already ended by manual release
@@ -587,8 +587,8 @@ namespace IssaPlugin.Items
                         Vector3 dir = toDesired / dist;
 
                         // Proportional spring: the further from desired, the stronger the pull.
-                        float springForce = Configuration.GravityGunSpringForce.Value;
-                        float maxPullSpeed = Configuration.GravityGunMaxPullSpeed.Value;
+                        float springForce = ModConfig.GravityGun.SpringForce.Value;
+                        float maxPullSpeed = ModConfig.GravityGun.MaxPullSpeed.Value;
 
                         float targetSpeed = dist * springForce;
                         float currentSpeed = Vector3.Dot(rb.linearVelocity, dir);

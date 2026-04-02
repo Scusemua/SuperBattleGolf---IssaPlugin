@@ -73,7 +73,7 @@ namespace IssaPlugin
 
             var msg = new SpawnWeightsMessage
             {
-                CustomItemSpawnsEnabled = Configuration.CustomItemSpawnsEnabled.Value,
+                CustomItemSpawnsEnabled = ModConfig.Global.CustomItemSpawnsEnabled.Value,
                 ItemSpawnWeights = _cachedItemSpawnWeights,
             };
 

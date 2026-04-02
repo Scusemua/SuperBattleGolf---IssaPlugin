@@ -93,9 +93,9 @@ namespace IssaPlugin.Items
                 senderNetId: netId
             );
 
-            int bearCount = (int)Configuration.BearCount.Value;
-            float spawnRadius = Configuration.BearSpawnRadius.Value;
-            float sessionDur = Configuration.BearSessionDuration.Value;
+            int bearCount = (int)ModConfig.Bear.Count.Value;
+            float spawnRadius = ModConfig.Bear.SpawnRadius.Value;
+            float sessionDur = ModConfig.Bear.SessionDuration.Value;
             Vector3 playerPos = inventory.PlayerInfo.transform.position;
 
             for (int i = 0; i < bearCount; i++)
@@ -184,7 +184,7 @@ namespace IssaPlugin.Items
 
         private IEnumerator ServerTimeoutRoutine()
         {
-            yield return new WaitForSeconds(Configuration.BearSessionDuration.Value);
+            yield return new WaitForSeconds(ModConfig.Bear.SessionDuration.Value);
 
             if (_serverSessionActive)
             {
@@ -343,7 +343,7 @@ namespace IssaPlugin.Items
             // Generous range check — the bear may have moved a little
             // between the client's detection and the server receiving the message.
             float dist = Vector3.Distance(playerInfo.transform.position, bearNi.transform.position);
-            if (dist > Configuration.BearMeleeHitRange.Value * 4f)
+            if (dist > ModConfig.Bear.MeleeHitRange.Value * 4f)
                 return;
 
             // Record this (player, bear) pair so OnFinishedSwinging doesn't
@@ -356,12 +356,12 @@ namespace IssaPlugin.Items
                 == ItemRegistry.BaseballBatItemType;
 
             float damage = isBat
-                ? Configuration.BearDamageBaseballBat.Value
-                : Configuration.BearDamageGolfClub.Value;
+                ? ModConfig.Bear.DamageBaseballBat.Value
+                : ModConfig.Bear.DamageGolfClub.Value;
 
             float knockbackForce = isBat
-                ? Configuration.BearBatKnockbackForce.Value
-                : Configuration.BearMeleeKnockbackForce.Value;
+                ? ModConfig.Bear.BatKnockbackForce.Value
+                : ModConfig.Bear.MeleeKnockbackForce.Value;
 
             Vector3 knockDir = (
                 bearNi.transform.position - playerInfo.transform.position

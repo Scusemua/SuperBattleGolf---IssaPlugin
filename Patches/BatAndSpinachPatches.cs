@@ -49,14 +49,14 @@ namespace IssaPlugin.Patches
             float extraPower = 1.0f;
             if (BatActive)
             {
-                extraPower = Configuration.BaseballBatPowerMultiplier.Value - 1f;
+                extraPower = ModConfig.BaseballBat.PowerMultiplier.Value - 1f;
                 if (extraPower <= 0f)
                     extraPower = 1.0f;
             }
 
             if (SpinachBehaviour.IsActive)
             {
-                float extraPowerFromSpinach = Configuration.SpinachPowerMultiplier.Value - 1f;
+                float extraPowerFromSpinach = ModConfig.Spinach.PowerMultiplier.Value - 1f;
                 if (extraPowerFromSpinach <= 0f)
                     extraPowerFromSpinach = 1.0f;
 

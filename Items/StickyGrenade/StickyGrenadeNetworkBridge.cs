@@ -61,7 +61,7 @@ namespace IssaPlugin.Items
             ItemHelper.ConsumeEquippedItem(inventory);
 
             // Clamp throw speed server-side to prevent exploits
-            float maxSpeed = Configuration.StickyGrenadeMaxThrowSpeed.Value;
+            float maxSpeed = ModConfig.StickyGrenade.MaxThrowSpeed.Value;
             Vector3 velocity = Vector3.ClampMagnitude(throwVelocity, maxSpeed);
 
             var grenadeGo = Object.Instantiate(
@@ -100,10 +100,10 @@ namespace IssaPlugin.Items
             // Attach the server-side flight/stick/fuse behaviour
             var behaviour = grenadeGo.AddComponent<StickyGrenadeBehaviour>();
             behaviour.ThrowerInfo = inventory.PlayerInfo;
-            behaviour.GraceTime = Configuration.StickyGrenadeGraceTime.Value;
-            behaviour.FuseTime = Configuration.StickyGrenadeFuseTime.Value;
-            behaviour.StickRadius = Configuration.StickyGrenadeStickRadius.Value;
-            behaviour.ExplosionScale = Configuration.StickyGrenadeExplosionScale.Value;
+            behaviour.GraceTime = ModConfig.StickyGrenade.GraceTime.Value;
+            behaviour.FuseTime = ModConfig.StickyGrenade.FuseTime.Value;
+            behaviour.StickRadius = ModConfig.StickyGrenade.StickRadius.Value;
+            behaviour.ExplosionScale = ModConfig.StickyGrenade.ExplosionScale.Value;
 
             _serverThrowActive = false; // allow immediate re-throw (uses consumed)
 
@@ -138,9 +138,9 @@ namespace IssaPlugin.Items
 
             // Mix forward with a slight upward arc so the grenade lobs naturally
             Vector3 throwDir = (
-                forward + Vector3.up * Configuration.StickyGrenadeLobAngle.Value
+                forward + Vector3.up * ModConfig.StickyGrenade.LobAngle.Value
             ).normalized;
-            Vector3 velocity = throwDir * Configuration.StickyGrenadeThrowSpeed.Value;
+            Vector3 velocity = throwDir * ModConfig.StickyGrenade.ThrowSpeed.Value;
 
             NetworkClient.Send(
                 new StickyGrenadeThrowMessage
@@ -208,7 +208,7 @@ namespace IssaPlugin.Items
                 VfxType.RocketLauncherRocketExplosion,
                 msg.WorldPosition,
                 Quaternion.identity,
-                Vector3.one * Configuration.StickyGrenadeExplosionScale.Value
+                Vector3.one * ModConfig.StickyGrenade.ExplosionScale.Value
             );
 
             CameraModuleController.Shake(

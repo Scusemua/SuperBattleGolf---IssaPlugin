@@ -89,7 +89,7 @@ namespace IssaPlugin.Items
 
             // ── Choose hover position ────────────────────────────────────
             Vector3 mapCenter = ComputeMapCenter();
-            float altitude = Configuration.HarrierAltitude.Value;
+            float altitude = ModConfig.Harrier.Altitude.Value;
             Vector3 hoverPos = new Vector3(mapCenter.x, mapCenter.y + altitude, mapCenter.z);
 
             // Approach from a random horizontal direction.
@@ -97,7 +97,7 @@ namespace IssaPlugin.Items
             Vector3 approachDir = new Vector3(
                 Mathf.Cos(approachAngle), 0f, Mathf.Sin(approachAngle)
             );
-            float approachDist = Configuration.HarrierApproachDistance.Value;
+            float approachDist = ModConfig.Harrier.ApproachDistance.Value;
             Vector3 spawnPos = hoverPos + approachDir * approachDist;
             // Fly-out destination: continue beyond the hover point in the same direction.
             Vector3 flyOutPos = hoverPos + approachDir * (approachDist * 1.5f);
@@ -118,9 +118,9 @@ namespace IssaPlugin.Items
             var behaviour = harrierGo.AddComponent<HarrierBehaviour>();
             behaviour.HoverTarget    = hoverPos;
             behaviour.FlyOutTarget   = flyOutPos;
-            behaviour.ApproachSpeed  = Configuration.HarrierApproachSpeed.Value;
-            behaviour.DriftSpeed     = Configuration.HarrierDriftSpeed.Value;
-            behaviour.HoverRadius    = Configuration.HarrierHoverRadius.Value;
+            behaviour.ApproachSpeed  = ModConfig.Harrier.ApproachSpeed.Value;
+            behaviour.DriftSpeed     = ModConfig.Harrier.DriftSpeed.Value;
+            behaviour.HoverRadius    = ModConfig.Harrier.HoverRadius.Value;
 
             // Attach the hit receiver so the jet can be shot down immediately
             // (even during fly-in). The OnHitsExceeded callback captures locals
@@ -166,7 +166,7 @@ namespace IssaPlugin.Items
                 crash.ThrowerInventory = inventory;
                 crash.KillingRocketDir =
                     (harrierGo.transform.position - hitReceiver.LastHitWorldPos).normalized;
-                crash.ExplosionScale   = Configuration.HarrierCrashExplosionScale.Value;
+                crash.ExplosionScale   = ModConfig.Harrier.CrashExplosionScale.Value;
             };
 
             IssaPluginPlugin.Log.LogInfo(
@@ -177,7 +177,7 @@ namespace IssaPlugin.Items
 
             // ── Wait for fly-in ──────────────────────────────────────────
             float flyInTimeout = approachDist / Mathf.Max(
-                Configuration.HarrierApproachSpeed.Value, 1f
+                ModConfig.Harrier.ApproachSpeed.Value, 1f
             ) + 8f;
             float elapsed = 0f;
 
@@ -200,9 +200,9 @@ namespace IssaPlugin.Items
             IssaPluginPlugin.Log.LogInfo("[Harrier] Jet arrived — beginning attack phase.");
 
             // ── Attack phase ─────────────────────────────────────────────
-            float duration      = Configuration.HarrierDuration.Value;
-            float fireInterval  = Configuration.HarrierFireInterval.Value;
-            bool  friendlyFire  = Configuration.HarrierFriendlyFire.Value;
+            float duration      = ModConfig.Harrier.Duration.Value;
+            float fireInterval  = ModConfig.Harrier.FireInterval.Value;
+            bool  friendlyFire  = ModConfig.Harrier.FriendlyFire.Value;
 
             float sessionElapsed = 0f;
             // Stagger the first shot by half an interval so the jet isn't

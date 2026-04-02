@@ -349,7 +349,7 @@ namespace IssaPlugin.Items
             GiveItemRequestMessage msg
         )
         {
-            if (!Configuration.AllowHotkeyItemGiving.Value)
+            if (!ModConfig.Global.AllowHotkeyItemGiving.Value)
             {
                 IssaPluginPlugin.Log.LogInfo(
                     "[GiveItem] Rejected hotkey request: AllowHotkeyItemGiving is disabled."

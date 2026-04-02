@@ -74,7 +74,7 @@ namespace IssaPlugin.Items
                 if (inventory.GetEffectivelyEquippedItem(true) != ItemRegistry.AK47ItemType)
                     break;
 
-                yield return new WaitForSeconds(Configuration.AK47FireRate.Value);
+                yield return new WaitForSeconds(ModConfig.AK47.FireRate.Value);
             } while (Mouse.current != null && Mouse.current.leftButton.isPressed);
 
             ItemHelper.SetCurrentItemUse(inventory, ItemUseType.None);
@@ -87,7 +87,7 @@ namespace IssaPlugin.Items
         {
             Vector3 barrelEnd = inventory.GetElephantGunBarrelEndPosition();
 
-            float maxAimDist = Configuration.AK47MaxAimingDistance.Value;
+            float maxAimDist = ModConfig.AK47.MaxAimingDistance.Value;
             Vector3 aimPoint = inventory.GetFirearmAimPoint(
                 maxAimDist,
                 GameManager.LayerSettings.GunHittablesMask,
@@ -104,14 +104,14 @@ namespace IssaPlugin.Items
                 );
             }
 
-            float inaccuracy = Configuration.AK47Inaccuracy.Value;
+            float inaccuracy = ModConfig.AK47.Inaccuracy.Value;
             Vector3 dir = (aimPoint - barrelEnd).RandomlyRotatedDeg(inaccuracy);
             Ray ray = new Ray(barrelEnd, dir);
 
             // ItemHelper.ApplyRecoil(inventory, dir, Configuration.AK47Recoil.Value);
-            ScreenShakeHelper.ApplyScreenShake(Configuration.AK47ScreenShakeIntensity.Value);
+            ScreenShakeHelper.ApplyScreenShake(ModConfig.AK47.ScreenShakeIntensity.Value);
 
-            float maxShot = Configuration.AK47MaxShotDistance.Value;
+            float maxShot = ModConfig.AK47.MaxShotDistance.Value;
             int layerMask = GameManager.LayerSettings.GunHittablesMask;
             int hitCount = Physics.RaycastNonAlloc(
                 ray,

@@ -197,11 +197,11 @@ namespace IssaPlugin.Items
 
                 if (msg.ImpactDir != Vector3.zero)
                     rb.AddForce(
-                        msg.ImpactDir * Configuration.BomberCrashImpactForce.Value,
+                        msg.ImpactDir * ModConfig.StealthBomber.CrashImpactForce.Value,
                         ForceMode.Impulse
                     );
 
-                rb.AddForce(Vector3.down * Configuration.BomberCrashDownwardForce.Value);
+                rb.AddForce(Vector3.down * ModConfig.StealthBomber.CrashDownwardForce.Value);
                 rb.AddTorque(msg.TorqueImpulse, ForceMode.Impulse);
             }
 

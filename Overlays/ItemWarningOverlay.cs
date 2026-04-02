@@ -107,11 +107,11 @@ namespace IssaPlugin.Overlays
         private void AddWarning(ItemWarningMessage msg)
         {
             bool isSelf =
-                !Configuration.WarningShowForSelf.Value
+                !ModConfig.Global.WarningShowForSelf.Value
                 && NetworkClient.localPlayer != null
                 && NetworkClient.localPlayer.netId == msg.SenderNetId;
 
-            float duration = Configuration.WarningDuration.Value;
+            float duration = ModConfig.Global.WarningDuration.Value;
 
             var entry = new WarningEntry
             {
@@ -125,7 +125,7 @@ namespace IssaPlugin.Overlays
             // Warning particle — attach to camera so it follows the view
             if (
                 !isSelf
-                && Configuration.WarningSymbolEnabled.Value
+                && ModConfig.Global.WarningSymbolEnabled.Value
                 && AssetLoader.WarningParticlePrefab != null
             )
             {
@@ -143,7 +143,7 @@ namespace IssaPlugin.Overlays
                     go.transform.localPosition = new Vector3(0f, yUp, z);
                     go.transform.localRotation = Quaternion.identity;
 
-                    float warningScale = Configuration.WarningPrefabScale.Value;
+                    float warningScale = ModConfig.Global.WarningPrefabScale.Value;
                     go.transform.localScale = new Vector3(warningScale, warningScale, warningScale);
 
                     var particleSystem = go.GetComponent<ParticleSystem>();
@@ -154,7 +154,7 @@ namespace IssaPlugin.Overlays
                             1.0f,
                             1.0f,
                             1.0f,
-                            Configuration.WarningSymbolAlpha.Value
+                            ModConfig.Global.WarningSymbolAlpha.Value
                         );
                         main.startColor = newColor;
                     }
@@ -273,7 +273,7 @@ namespace IssaPlugin.Overlays
                 if (w.PiPCamera == null || w.PiPTexture == null)
                     continue;
 
-                float pipScale = Mathf.Clamp(Configuration.WarningPiPScale.Value, 0.5f, 2.0f);
+                float pipScale = Mathf.Clamp(ModConfig.Global.WarningPiPScale.Value, 0.5f, 2.0f);
                 float pipW = PiPWidth * pipScale;
                 float pipH = PiPHeight * pipScale;
                 float pipX = sw - pipW - PiPMargin;

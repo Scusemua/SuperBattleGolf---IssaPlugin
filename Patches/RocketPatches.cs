@@ -19,7 +19,7 @@ namespace IssaPlugin.Patches
             if (entity != null && entity.HasRigidbody)
             {
                 entity.Rigidbody.linearVelocity =
-                    Vector3.down * Configuration.MissileFallSpeed.Value;
+                    Vector3.down * ModConfig.PredatorMissile.FallSpeed.Value;
             }
         }
     }

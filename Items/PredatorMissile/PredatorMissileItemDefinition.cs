@@ -11,9 +11,9 @@ namespace IssaPlugin.Items
         public override string[] ConsoleAliases => new[] { "predatormissile", "missile" };
         public override Sprite Icon => AssetLoader.MissileIcon;
         public override GameObject HeldModelPrefab => AssetLoader.MissileTabletPrefab;
-        public override int MaxUses => (int)Configuration.MissileUses.Value;
+        public override int MaxUses => (int)ModConfig.PredatorMissile.Uses.Value;
         public override int Tier => 2;
-        public override Key GiveKey => Configuration.MissileGiveKey.Value;
+        public override Key GiveKey => ModConfig.PredatorMissile.GiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)
         {

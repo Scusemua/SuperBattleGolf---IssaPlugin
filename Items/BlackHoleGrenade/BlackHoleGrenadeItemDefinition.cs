@@ -11,9 +11,9 @@ namespace IssaPlugin.Items
             new[] { "black_hole_grenade", "blackhole", "blackholegrenade" };
         public override Sprite Icon => AssetLoader.BlackHoleGrenadeIcon;
         public override GameObject HeldModelPrefab => AssetLoader.BlackHoleGrenadePrefab;
-        public override int MaxUses => (int)Configuration.BlackHoleGrenadeUses.Value;
+        public override int MaxUses => (int)ModConfig.BlackHoleGrenade.Uses.Value;
         public override int Tier => 3;
-        public override Key GiveKey => Configuration.BlackHoleGrenadeGiveKey.Value;
+        public override Key GiveKey => ModConfig.BlackHoleGrenade.GiveKey.Value;
 
         public override void OnEquip(PlayerInventory inventory)
         {
@@ -22,8 +22,8 @@ namespace IssaPlugin.Items
             {
                 preview = inventory.gameObject.AddComponent<StickyGrenadeTrajectoryPreview>();
                 preview.TargetItemType = ItemRegistry.BlackHoleGrenadeItemType;
-                preview.ThrowSpeed = () => Configuration.BlackHoleGrenadeThrowSpeed.Value;
-                preview.LobAngle = () => Configuration.BlackHoleGrenadeLobAngle.Value;
+                preview.ThrowSpeed = () => ModConfig.BlackHoleGrenade.ThrowSpeed.Value;
+                preview.LobAngle = () => ModConfig.BlackHoleGrenade.LobAngle.Value;
             }
         }
 
