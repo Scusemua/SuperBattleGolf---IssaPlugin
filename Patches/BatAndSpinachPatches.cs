@@ -76,8 +76,16 @@ namespace IssaPlugin.Patches
             );
 
             var rb = __instance.AsEntity.Rigidbody;
-            rb.linearVelocity += (rb.linearVelocity - _velocityBefore) * extraPower;
-            rb.angularVelocity += (rb.angularVelocity - _angularVelocityBefore) * extraPower;
+            var additionalLinearVelocity = (rb.linearVelocity - _velocityBefore) * extraPower;
+            var additionalAngularVelocity =
+                (rb.angularVelocity - _angularVelocityBefore) * extraPower;
+
+            IssaPluginPlugin.Log.LogInfo(
+                $"[BatSpinachPatch] Additional linear velocity: {additionalLinearVelocity}. Additional angular velocity: {additionalAngularVelocity}."
+            );
+
+            rb.linearVelocity += additionalLinearVelocity;
+            rb.angularVelocity += additionalAngularVelocity;
         }
     }
 
