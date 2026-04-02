@@ -702,7 +702,10 @@ namespace IssaPlugin
             Reg(cfg, ItemEnabledEntries, 119, "RedBullEnabled", "Red Bull");
             Reg(cfg, ItemEnabledEntries, 120, "SuperDonutEnabled", "Super Donut");
             Reg(cfg, ItemEnabledEntries, 121, "GravityGunEnabled", "Gravity Gun");
+            Reg(cfg, ItemEnabledEntries, 122, "RocketTetherEnabled", "Rocket Tether");
             Reg(cfg, ItemEnabledEntries, 123, "JetpackEnabled", "Jetpack");
+            Reg(cfg, ItemEnabledEntries, 124, "TeleporterEnabled", "Teleporter");
+            Reg(cfg, ItemEnabledEntries, 125, "SpinachEnabled", "Spinach");
 
             // --- Baseball Bat ---
             BaseballBatPowerMultiplier = cfg.Bind(

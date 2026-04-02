@@ -1112,6 +1112,24 @@ namespace IssaPlugin.Patches
                 CoffeeDispenserClientHandlers.HandleVisualSwap
             );
 
+            // ── Spinach ───────────────────────────────────────────────────────────
+            Writer<SpinachActivateMessage>.write = SpinachMessageSerialization.WriteActivate;
+            Reader<SpinachActivateMessage>.read = SpinachMessageSerialization.ReadActivate;
+            Writer<SpinachTrailBeginMessage>.write = SpinachMessageSerialization.WriteTrailBegin;
+            Reader<SpinachTrailBeginMessage>.read = SpinachMessageSerialization.ReadTrailBegin;
+            Writer<SpinachTrailEndMessage>.write = SpinachMessageSerialization.WriteTrailEnd;
+            Reader<SpinachTrailEndMessage>.read = SpinachMessageSerialization.ReadTrailEnd;
+            NetworkClient.RegisterHandler<SpinachTrailBeginMessage>(
+                SpinachNetworkBridge.HandleVfxBegin
+            );
+            NetworkClient.RegisterHandler<SpinachTrailEndMessage>(
+                SpinachNetworkBridge.HandleVfxEnd
+            );
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<SpinachActivateMessage>(
+                    (conn, msg) => GetBridge<SpinachNetworkBridge>(conn)?.ServerActivate()
+                );
+
             // ── Hotkey item-giving (Client → Server) ─────────────────────────────
             Writer<GiveItemRequestMessage>.write =
                 GiveItemRequestMessageSerialization.WriteGiveItemRequestMessage;

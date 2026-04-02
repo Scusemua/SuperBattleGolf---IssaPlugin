@@ -26,6 +26,7 @@ namespace IssaPlugin.Items
             movement.InformDrankCoffee();
             movement.InformDrankCoffee();
 
+            SpinachBehaviour.Activate(duration);
             RedBullBehaviour.Activate(duration);
             ItemHelper.ConsumeEquippedItem(inventory);
 

@@ -11,7 +11,7 @@ namespace IssaPlugin.Items
         private Coroutine _serverTimeout;
 
         // ── Client state ─────────────────────────────────────────────────────
-        private GameObject _vfx;
+        private GameObject _trail;
         private Coroutine _clientHideCoroutine;
 
         // ================================================================
@@ -79,7 +79,7 @@ namespace IssaPlugin.Items
         //  Per-client trail management
         // ================================================================
 
-        private void ClientShowVfx(float duration)
+        private void ClientShowTrail(float duration)
         {
             ClientHideTrail();
 
@@ -95,7 +95,7 @@ namespace IssaPlugin.Items
             _clientHideCoroutine = StartCoroutine(HideAfter(duration));
         }
 
-        private void ClientHideVfx()
+        private void ClientHideTrail()
         {
             if (_clientHideCoroutine != null)
             {
