@@ -214,7 +214,8 @@ namespace IssaPlugin.Items
                 // finally block ensures these always run even if the hosting MonoBehaviour
                 // is destroyed mid-flight (e.g. player disconnects), which would otherwise
                 // leave _isFlying permanently true and orphan the server-side thrust state.
-                ItemHelper.SetCurrentItemUse(inventory, ItemUseType.None);
+                if (!fromJump)
+                    ItemHelper.SetCurrentItemUse(inventory, ItemUseType.None);
                 bridge?.ClientNotifyThrustStop();
                 _isFlying = false;
                 // Do NOT reset _fuelRemaining here — the canister level persists until
