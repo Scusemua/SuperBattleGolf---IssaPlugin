@@ -67,9 +67,7 @@ namespace IssaPlugin
             SpawnWeightOverrideEnabled = ModConfig.GetItemSpawnWeightOverrideEnabled(
                 (ItemType)itemTypeId
             );
-            SpawnWeightOverride = ModConfig.GetItemSpawnWeightOverrideValue(
-                (ItemType)itemTypeId
-            );
+            SpawnWeightOverride = ModConfig.GetItemSpawnWeightOverrideValue((ItemType)itemTypeId);
         }
 
         // Wire-construction: caller sets all fields via object initializer.
