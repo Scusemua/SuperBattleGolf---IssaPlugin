@@ -183,7 +183,7 @@ namespace IssaPlugin
             FirstPlaceStarHeight = cfg.Bind(
                 "IssaPlugin",
                 "FirstPlaceStarHeight",
-                2.5f,
+                1.5f,
                 "Height in Unity units above the player's origin at which the gold star appears."
             );
 
