@@ -1,4 +1,8 @@
+using System;
+using System.Collections;
+using System.Linq;
 using System.Reflection;
+using System.Text;
 using HarmonyLib;
 using IssaPlugin.Items;
 using UnityEngine;
@@ -12,8 +16,25 @@ namespace IssaPlugin.Patches
         private static Vector3 _velocityBefore;
         private static Vector3 _angularVelocityBefore;
 
+        private static float _originalMaxPowerSwingHitSpeed;
+        private static readonly FieldInfo MaxPowerSwingHitSpeedField = AccessTools.Field(
+            typeof(SwingHittableSettings),
+            "<MaxPowerSwingHitSpeed>k__BackingField"
+        );
+
         static MethodBase TargetMethod() =>
             AccessTools.Method(typeof(Hittable), "HitWithGolfSwingInternal");
+
+        public static string PropertyList(this object obj)
+        {
+            var props = obj.GetType().GetProperties();
+            var sb = new StringBuilder();
+            foreach (var p in props)
+            {
+                sb.AppendLine(p.Name + ": " + p.GetValue(obj, null));
+            }
+            return sb.ToString();
+        }
 
         static void Prefix(Hittable __instance, PlayerGolfer hitter)
         {
@@ -28,8 +49,27 @@ namespace IssaPlugin.Patches
             )
                 return;
 
+            float extraPower = 1.0f;
             if (inv.GetEffectivelyEquippedItem(true) == ItemRegistry.BaseballBatItemType)
+            {
                 BatActive = true;
+                extraPower = ModConfig.BaseballBat.PowerMultiplier.Value - 1f;
+                if (extraPower <= 0f)
+                    extraPower = 1.0f;
+            }
+
+            if (SpinachBehaviour.IsActive)
+            {
+                float extraPowerFromSpinach = ModConfig.Spinach.PowerMultiplier.Value - 1f;
+                if (extraPowerFromSpinach <= 0f)
+                    extraPowerFromSpinach = 1.0f;
+
+                IssaPluginPlugin.Log.LogInfo(
+                    $"[BatSpinachPatch] Extra power from spinach: {extraPowerFromSpinach}"
+                );
+
+                extraPower *= extraPowerFromSpinach;
+            }
 
             if (__instance.AsEntity.HasRigidbody)
             {
@@ -76,16 +116,34 @@ namespace IssaPlugin.Patches
             );
 
             var rb = __instance.AsEntity.Rigidbody;
+
+            IssaPluginPlugin.Log.LogInfo(
+                $"[BatSpinachPatch] rb.linearVelocity={rb.linearVelocity} (magnitude={rb.linearVelocity.magnitude}), velocityBefore={_velocityBefore} (magnitude={_velocityBefore.magnitude})"
+            );
+
+            IssaPluginPlugin.Log.LogInfo(
+                $"[BatSpinachPatch] rb.angularVelocity={rb.angularVelocity} (magnitude={rb.linearVelocity.magnitude}), velocityBefore={_angularVelocityBefore} (magnitude={_angularVelocityBefore.magnitude})"
+            );
+
+            var swingSettings = __instance.SwingSettings;
+            IssaPluginPlugin.Log.LogInfo(
+                $"[BatSpinachpatch] SwingSettings: {PropertyList(swingSettings)}"
+            );
+
             var additionalLinearVelocity = (rb.linearVelocity - _velocityBefore) * extraPower;
             var additionalAngularVelocity =
                 (rb.angularVelocity - _angularVelocityBefore) * extraPower;
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[BatSpinachPatch] Additional linear velocity: {additionalLinearVelocity}. Additional angular velocity: {additionalAngularVelocity}."
+                $"[BatSpinachPatch] Additional linear velocity: {additionalLinearVelocity} (magnitude={additionalLinearVelocity.magnitude}). Additional angular velocity: {additionalAngularVelocity} (magnitude={additionalAngularVelocity.magnitude})."
             );
 
             rb.linearVelocity += additionalLinearVelocity;
             rb.angularVelocity += additionalAngularVelocity;
+
+            IssaPluginPlugin.Log.LogInfo(
+                $"[BatSpinachPatch] Velocity set to: {rb.linearVelocity.magnitude}"
+            );
         }
     }
 
