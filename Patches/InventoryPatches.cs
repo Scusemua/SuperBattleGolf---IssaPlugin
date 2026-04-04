@@ -1,5 +1,6 @@
 using System.Reflection;
 using HarmonyLib;
+using IssaPlugin.Items;
 using UnityEngine;
 
 namespace IssaPlugin.Patches
@@ -38,6 +39,39 @@ namespace IssaPlugin.Patches
     }
 
     /// <summary>
+    /// Ensures the player re-equips the golf club when a custom item's last use is consumed.
+    ///
+    /// Root cause: custom item routines call SetCurrentItemUse(Regular) before
+    /// DecrementAndRemove, so IsUsingItemAtAll is true when RemoveItemAt fires.
+    /// RemoveItemAt calls TryDeselectItem, but TryDeselectItem's CanDeselectItem guard
+    /// returns false (IsUsingItemAtAll == true), leaving EquippedItemIndex pointing at
+    /// the now-empty slot and keeping the item label visible.
+    ///
+    /// Fix: postfix on RemoveItemAt — if EquippedItemIndex still points at the removed
+    /// slot after the call, TryDeselectItem failed. Reset CurrentItemUse to None and
+    /// retry so the golf club is correctly re-equipped.
+    /// </summary>
+    [HarmonyPatch]
+    static class RemoveItemAtForcedDeselectPatch
+    {
+        static MethodBase TargetMethod() =>
+            AccessTools.Method(typeof(PlayerInventory), "RemoveItemAt");
+
+        static void Postfix(PlayerInventory __instance, int index)
+        {
+            if (!__instance.isLocalPlayer)
+                return;
+            if (__instance.EquippedItemIndex != index)
+                return;
+
+            // TryDeselectItem() failed — EquippedItemIndex still points at the removed slot.
+            // Clear the use state so CanDeselectItem passes, then retry.
+            ItemHelper.SetCurrentItemUse(__instance, ItemUseType.None);
+            __instance.TryDeselectItem();
+        }
+    }
+
+    /// <summary>
     /// Guards against an IndexOutOfRangeException in Hotkeys.UpdatePlayerInventoryHoykeyInternal
     /// when NumInventorySlots exceeds the base-game default (3).
     ///
@@ -56,11 +90,15 @@ namespace IssaPlugin.Patches
     [HarmonyPatch]
     static class HotkeysGolfCartPreviewBoundsPatch
     {
-        private static readonly FieldInfo _currentModeField =
-            AccessTools.Field(typeof(Hotkeys), "currentMode");
+        private static readonly FieldInfo _currentModeField = AccessTools.Field(
+            typeof(Hotkeys),
+            "currentMode"
+        );
 
-        private static readonly FieldInfo _hotkeyPreviewUisField =
-            AccessTools.Field(typeof(Hotkeys), "hotkeyPreviewUis");
+        private static readonly FieldInfo _hotkeyPreviewUisField = AccessTools.Field(
+            typeof(Hotkeys),
+            "hotkeyPreviewUis"
+        );
 
         static MethodBase TargetMethod() =>
             AccessTools.Method(typeof(Hotkeys), "UpdatePlayerInventoryHoykeyInternal");
