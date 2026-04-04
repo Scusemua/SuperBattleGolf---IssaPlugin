@@ -74,6 +74,11 @@ namespace IssaPlugin.Overlays
 
             float elapsed = Time.time - _startTime;
             float fraction = Mathf.Clamp01(1f - elapsed / _duration);
+            if (fraction <= 0f)
+            {
+                _active = false;
+                return;
+            }
             float remaining = Mathf.Max(0f, _duration - elapsed);
 
             float barW = EffectBarLayout.GetBarWidth();
