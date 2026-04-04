@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 1901804721
+CRC: 2246520652
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 776c9747d1f1616694d5e2d5aa9d8051
+    Hash: 3eb3d572f7b6da0443f2293a508e30e8
   TypeTreeHash:
     serializedVersion: 2
     Hash: 12d32a6d7b1bccbbbbab418431dfa151
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: fabb449d9ce18c295885006a3bd97bed
+    Hash: 47fe7b08722c0d3ee24d1ff0562fec8f
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -105,6 +105,7 @@ Assets:
 - Assets/Assets/spinach_icon.png
 - Assets/Assets/bomber_icon.png
 - Assets/Assets/redbull.prefab
+- Assets/Assets/gold_star.prefab
 - Assets/Assets/wall.prefab
 - Assets/Assets/position_swap_handheld.prefab
 - Assets/Assets/spike_ball.prefab

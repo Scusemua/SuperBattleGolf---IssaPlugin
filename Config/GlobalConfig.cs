@@ -15,6 +15,10 @@ namespace IssaPlugin
         public ConfigEntry<bool> BloodEffectsEnabled { get; private set; }
         public ConfigEntry<float> NumInventorySlots { get; private set; }
 
+        // ── First Place Star ──────────────────────────────────────────────────
+        public ConfigEntry<bool> FirstPlaceStarEnabled { get; private set; }
+        public ConfigEntry<float> FirstPlaceStarHeight { get; private set; }
+
         // ── ItemBoxSpawns section ─────────────────────────────────────────────
         public ConfigEntry<float> CatchupBoostFactor { get; private set; }
         public ConfigEntry<int> NumTiers { get; private set; }
@@ -57,12 +61,18 @@ namespace IssaPlugin
         public void SetItemTier(ItemType itemType, int tier)
         {
             if (_itemTierEntries.TryGetValue((int)itemType, out var entry))
-                entry.Value = Mathf.Clamp(tier, 1, Mathf.Max(1, NumTiers?.Value ?? ModConfig.MaxTiers));
+                entry.Value = Mathf.Clamp(
+                    tier,
+                    1,
+                    Mathf.Max(1, NumTiers?.Value ?? ModConfig.MaxTiers)
+                );
         }
 
         // ── Per-item spawn weight overrides ───────────────────────────────────
-        private readonly Dictionary<int, ConfigEntry<float>> _itemSpawnWeightOverrideValueEntries = new();
-        private readonly Dictionary<int, ConfigEntry<bool>> _itemSpawnWeightOverrideEnabledEntries = new();
+        private readonly Dictionary<int, ConfigEntry<float>> _itemSpawnWeightOverrideValueEntries =
+            new();
+        private readonly Dictionary<int, ConfigEntry<bool>> _itemSpawnWeightOverrideEnabledEntries =
+            new();
 
         public bool GetItemSpawnWeightOverrideEnabled(ItemType t) =>
             _itemSpawnWeightOverrideEnabledEntries.TryGetValue((int)t, out var e) && e.Value;
@@ -161,6 +171,20 @@ namespace IssaPlugin
                 "NumInventorySlots",
                 6f,
                 "Change the number of inventory slots available."
+            );
+
+            FirstPlaceStarEnabled = cfg.Bind(
+                "IssaPlugin",
+                "FirstPlaceStarEnabled",
+                false,
+                "Show a gold star above the first-place player so they are easy to spot."
+            );
+
+            FirstPlaceStarHeight = cfg.Bind(
+                "IssaPlugin",
+                "FirstPlaceStarHeight",
+                2.5f,
+                "Height in Unity units above the player's origin at which the gold star appears."
             );
 
             // ── ItemBoxSpawns ──────────────────────────────────────────────────
@@ -303,29 +327,99 @@ namespace IssaPlugin
                     $"Show a warning to all other players when {label} is used."
                 );
 
-            RegWarn(cfg, _itemWarningEnabledEntries, 100, "BaseballBatWarning", "Baseball Bat", false);
+            RegWarn(
+                cfg,
+                _itemWarningEnabledEntries,
+                100,
+                "BaseballBatWarning",
+                "Baseball Bat",
+                false
+            );
             RegWarn(cfg, _itemWarningEnabledEntries, 101, "BomberWarning", "Stealth Bomber", true);
-            RegWarn(cfg, _itemWarningEnabledEntries, 102, "MissileWarning", "Predator Missile", true);
+            RegWarn(
+                cfg,
+                _itemWarningEnabledEntries,
+                102,
+                "MissileWarning",
+                "Predator Missile",
+                true
+            );
             RegWarn(cfg, _itemWarningEnabledEntries, 103, "AC130Warning", "AC-130 Gunship", true);
             RegWarn(cfg, _itemWarningEnabledEntries, 104, "FreezeWarning", "Freeze World", false);
-            RegWarn(cfg, _itemWarningEnabledEntries, 105, "LowGravityWarning", "Low Gravity", false);
-            RegWarn(cfg, _itemWarningEnabledEntries, 106, "SniperRifleWarning", "Sniper Rifle", false);
+            RegWarn(
+                cfg,
+                _itemWarningEnabledEntries,
+                105,
+                "LowGravityWarning",
+                "Low Gravity",
+                false
+            );
+            RegWarn(
+                cfg,
+                _itemWarningEnabledEntries,
+                106,
+                "SniperRifleWarning",
+                "Sniper Rifle",
+                false
+            );
             RegWarn(cfg, _itemWarningEnabledEntries, 107, "DonutWarning", "Donut", true);
             RegWarn(cfg, _itemWarningEnabledEntries, 108, "JavelinWarning", "Javelin", false);
-            RegWarn(cfg, _itemWarningEnabledEntries, 109, "StickyGrenadeWarning", "Sticky Grenade", false);
+            RegWarn(
+                cfg,
+                _itemWarningEnabledEntries,
+                109,
+                "StickyGrenadeWarning",
+                "Sticky Grenade",
+                false
+            );
             RegWarn(cfg, _itemWarningEnabledEntries, 110, "BearWarning", "Bear", true);
             RegWarn(cfg, _itemWarningEnabledEntries, 111, "NukeWarning", "Nuke", true);
-            RegWarn(cfg, _itemWarningEnabledEntries, 112, "BlackHoleGrenadeWarning", "Black Hole Grenade", false);
-            RegWarn(cfg, _itemWarningEnabledEntries, 113, "PlaceableWallWarning", "Placeable Wall", false);
+            RegWarn(
+                cfg,
+                _itemWarningEnabledEntries,
+                112,
+                "BlackHoleGrenadeWarning",
+                "Black Hole Grenade",
+                false
+            );
+            RegWarn(
+                cfg,
+                _itemWarningEnabledEntries,
+                113,
+                "PlaceableWallWarning",
+                "Placeable Wall",
+                false
+            );
             RegWarn(cfg, _itemWarningEnabledEntries, 114, "AK47Warning", "AK-47", false);
             RegWarn(cfg, _itemWarningEnabledEntries, 115, "HarrierWarning", "Harrier Jet", true);
-            RegWarn(cfg, _itemWarningEnabledEntries, 116, "PositionSwapWarning", "Position Swap", false);
+            RegWarn(
+                cfg,
+                _itemWarningEnabledEntries,
+                116,
+                "PositionSwapWarning",
+                "Position Swap",
+                false
+            );
             RegWarn(cfg, _itemWarningEnabledEntries, 117, "PoisonJarWarning", "Poison Jar", false);
             RegWarn(cfg, _itemWarningEnabledEntries, 118, "DroneSwarmWarning", "Drone Swarm", true);
             RegWarn(cfg, _itemWarningEnabledEntries, 119, "RedBullWarning", "Red Bull", false);
             RegWarn(cfg, _itemWarningEnabledEntries, 120, "SuperDonutWarning", "Super Donut", true);
-            RegWarn(cfg, _itemWarningEnabledEntries, 121, "GravityGunWarning", "Gravity Gun", false);
-            RegWarn(cfg, _itemWarningEnabledEntries, 122, "RocketTetherWarning", "Rocket Tether", false);
+            RegWarn(
+                cfg,
+                _itemWarningEnabledEntries,
+                121,
+                "GravityGunWarning",
+                "Gravity Gun",
+                false
+            );
+            RegWarn(
+                cfg,
+                _itemWarningEnabledEntries,
+                122,
+                "RocketTetherWarning",
+                "Rocket Tether",
+                false
+            );
             RegWarn(cfg, _itemWarningEnabledEntries, 123, "JetpackWarning", "Jetpack", false);
             RegWarn(cfg, _itemWarningEnabledEntries, 124, "TeleporterWarning", "Teleporter", false);
             RegWarn(cfg, _itemWarningEnabledEntries, 125, "SpinachWarning", "Spinach", false);
@@ -359,7 +453,12 @@ namespace IssaPlugin
             return valueEntry;
         }
 
-        private void BindTierWeight(ConfigFile cfg, int tier, float defaultValue, string description)
+        private void BindTierWeight(
+            ConfigFile cfg,
+            int tier,
+            float defaultValue,
+            string description
+        )
         {
             _tierSpawnWeightEntries[tier] = cfg.Bind(
                 "ItemBoxSpawns",

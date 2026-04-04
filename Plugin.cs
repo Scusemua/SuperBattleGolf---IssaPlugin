@@ -66,6 +66,7 @@ namespace IssaPlugin
             gameObject.AddComponent<JetpackOverlay>();
             gameObject.AddComponent<TeleporterOverlay>();
             gameObject.AddComponent<SpinachOverlay>();
+            gameObject.AddComponent<FirstPlaceStarOverlay>();
             gameObject.AddComponent<SpawnConfigUI>();
 
             Log.LogInfo("IssaPlugin by Scusemua has loaded.");

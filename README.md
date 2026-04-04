@@ -297,6 +297,10 @@ Assets used in the project:
     (https://skfb.ly/ossnR)
     Licensed under Creative Commons Attribution
 
+-   "Gold Star"\
+    (https://skfb.ly/oqBBw) by AnshiNoWara 
+    Licensed under Creative Commons Attribution
+
 ---
 
 *IssaPlugin is a fan-made mod and is not affiliated with Brimstone or Oro Interactive.*

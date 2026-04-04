@@ -282,6 +282,11 @@ namespace IssaPlugin.Items
         /// </summary>
         public static GameObject WarningParticlePrefab { get; private set; }
 
+        /// Local-only gold star VFX parented above the first-place player's head.
+        /// Not networked — each client instantiates its own copy via FirstPlaceStarOverlay.
+        /// Bundle asset name: <c>gold_star.prefab</c>
+        public static GameObject GoldStarPrefab { get; private set; }
+
         public static bool IsLoaded => _bundle != null;
 
         private static AssetBundle _bundle;
@@ -336,6 +341,7 @@ namespace IssaPlugin.Items
 
             // Load after position swap, as we reuse PositionSwapSmokePrefab for teleporter.
             LoadTeleporterAssets();
+            LoadFirstPlaceStarAssets();
 
             IssaPluginPlugin.Log.LogInfo("[Assets] IssaPluginBundle loaded.");
         }
@@ -775,6 +781,13 @@ namespace IssaPlugin.Items
             JetpackParticlePrefab = Load<GameObject>("jetpack_particles.prefab");
             if (JetpackParticlePrefab != null)
                 StripNetworkComponents(JetpackParticlePrefab);
+        }
+
+        private static void LoadFirstPlaceStarAssets()
+        {
+            GoldStarPrefab = Load<GameObject>("gold_star.prefab");
+            if (GoldStarPrefab != null)
+                StripNetworkComponents(GoldStarPrefab);
         }
 
         private static void LoadSpinachAssets()
