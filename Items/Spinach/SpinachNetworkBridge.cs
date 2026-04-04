@@ -1,4 +1,5 @@
 using System.Collections;
+using IssaPlugin.Overlays;
 using Mirror;
 using UnityEngine;
 
@@ -83,6 +84,9 @@ namespace IssaPlugin.Items
         {
             ClientHideTrail();
 
+            if (isLocalPlayer)
+                SpinachOverlay.Instance?.SetActive(true, duration);
+
             if (AssetLoader.SpinachTrailPrefab == null)
                 return;
 
@@ -107,6 +111,8 @@ namespace IssaPlugin.Items
                 Object.Destroy(_trail);
                 _trail = null;
             }
+            if (isLocalPlayer)
+                SpinachOverlay.Instance?.SetActive(false);
         }
 
         private IEnumerator HideAfter(float duration)
