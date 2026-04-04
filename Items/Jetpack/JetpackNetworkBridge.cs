@@ -1,5 +1,6 @@
 using Mirror;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace IssaPlugin.Items
 {
@@ -128,9 +129,17 @@ namespace IssaPlugin.Items
                 return;
 
             var inventory = GetComponent<PlayerInventory>();
+
+            // Show the backpack prefab whenever the jetpack is the active item, or — when
+            // UseJumpToActivate is on — whenever it is anywhere in the inventory.
             bool jetpackActive =
                 inventory != null
-                && inventory.GetEffectivelyEquippedItem(true) == ItemRegistry.JetpackItemType;
+                && (
+                    ModConfig.Jetpack.UseJumpToActivate.Value
+                        ? JetpackItem.FindJetpackSlot(inventory) >= 0
+                        : inventory.GetEffectivelyEquippedItem(true)
+                            == ItemRegistry.JetpackItemType
+                );
 
             if (
                 jetpackActive
@@ -150,6 +159,21 @@ namespace IssaPlugin.Items
             {
                 Object.Destroy(_equippedPrefabInstance);
                 _equippedPrefabInstance = null;
+            }
+
+            // Jump-trigger: activate the jetpack via Space even when it isn't the equipped item.
+            if (
+                ModConfig.Jetpack.UseJumpToActivate.Value
+                && !JetpackItem.IsFlying
+                && inventory != null
+                && Keyboard.current?.spaceKey.wasPressedThisFrame == true
+            )
+            {
+                int jetpackSlot = JetpackItem.FindJetpackSlot(inventory);
+                if (jetpackSlot >= 0)
+                    inventory.StartCoroutine(
+                        JetpackItem.FireLoop(inventory, fromJump: true, slotOverride: jetpackSlot)
+                    );
             }
         }
 

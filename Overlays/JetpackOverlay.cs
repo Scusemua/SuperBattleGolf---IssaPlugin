@@ -45,12 +45,17 @@ namespace IssaPlugin.Overlays
 
         private void OnGUI()
         {
-            // Only show for the local player while the jetpack is their active item.
+            // Show while the jetpack is the active item, or — when UseJumpToActivate is on —
+            // whenever it is anywhere in the inventory.
             var localInventory = NetworkClient.localPlayer?.GetComponent<PlayerInventory>();
-            if (
-                localInventory == null
-                || localInventory.GetEffectivelyEquippedItem(true) != ItemRegistry.JetpackItemType
-            )
+            if (localInventory == null)
+                return;
+
+            bool shouldShow = ModConfig.Jetpack.UseJumpToActivate.Value
+                ? JetpackItem.FindJetpackSlot(localInventory) >= 0
+                : localInventory.GetEffectivelyEquippedItem(true) == ItemRegistry.JetpackItemType;
+
+            if (!shouldShow)
                 return;
 
             // Rebuild bar textures if the screen width changed.

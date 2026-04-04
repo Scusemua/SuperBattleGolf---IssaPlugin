@@ -8,10 +8,16 @@ namespace IssaPlugin.Items
     /// Jetpack thrust logic — local-only physics, networked VFX via JetpackNetworkBridge.
     ///
     /// Fuel model: each "use" (canister) provides JetpackFuelPerUse seconds of thrust.
-    /// Fuel persists across press/release cycles — releasing LMB pauses consumption;
-    /// the next press resumes from the same level. Only exhausting a full canister
-    /// (fuel reaching zero) calls DecrementAndRemove and loads the next canister.
-    /// Releasing LMB or switching items also exits the loop cleanly.
+    /// Fuel persists across press/release cycles — releasing the activation button pauses
+    /// consumption; the next press resumes from the same level. Only exhausting a full
+    /// canister (fuel reaching zero) calls DecrementAndRemove and loads the next canister.
+    ///
+    /// Activation modes:
+    ///   Normal (fromJump=false): triggered by LMB while the jetpack is the equipped item.
+    ///     Thrust continues while LMB is held.
+    ///   Jump (fromJump=true): triggered by Space when UseJumpToActivate is enabled.
+    ///     Works even when the jetpack is not the equipped item; thrust continues while
+    ///     Space is held; the specific inventory slot is tracked via slotOverride.
     ///
     /// Force is applied via AddForce inside a WaitForFixedUpdate coroutine so each call
     /// lands in the correct physics step — consistent with GravityGun and RocketTether.
@@ -23,7 +29,7 @@ namespace IssaPlugin.Items
         // local player can fly at a time.
         private static bool _isFlying;
 
-        // Persists across press/release cycles so releasing LMB does not refill the canister.
+        // Persists across press/release cycles so releasing the button does not refill the canister.
         // Sentinel value -1 means "not yet initialised for this canister".
         private static float _fuelRemaining = -1f;
 
@@ -45,21 +51,65 @@ namespace IssaPlugin.Items
         /// </summary>
         public static void ResetFuel() => _fuelRemaining = -1f;
 
-        public static IEnumerator FireLoop(PlayerInventory inventory)
+        /// <summary>
+        /// Returns the index of the first inventory slot containing the jetpack, or -1 if
+        /// none. Used to locate the jetpack when it may not be the equipped item.
+        /// </summary>
+        public static int FindJetpackSlot(PlayerInventory inventory)
         {
-            inventory.PlayerInfo.Movement.TryTriggerJump();
+            for (int i = 0; i < inventory.slots.Count; i++)
+            {
+                if (inventory.slots[i].itemType == ItemRegistry.JetpackItemType)
+                    return i;
+            }
+            return -1;
+        }
+
+        /// <summary>
+        /// Starts the thrust loop. Called by JetpackItemDefinition.OnUse (normal/LMB mode)
+        /// and by JetpackNetworkBridge.Update (jump mode).
+        /// </summary>
+        /// <param name="inventory">The local player's inventory.</param>
+        /// <param name="fromJump">
+        /// True when activated by the Jump (Space) key rather than LMB. In this mode the
+        /// loop continues while Space is held instead of LMB, and slotOverride identifies
+        /// which inventory slot holds the jetpack (it need not be equipped).
+        /// </param>
+        /// <param name="slotOverride">
+        /// Inventory slot index of the jetpack. Ignored when fromJump is false (the
+        /// equipped slot is used instead). Must be a valid slot index when fromJump is true.
+        /// </param>
+        public static IEnumerator FireLoop(
+            PlayerInventory inventory,
+            bool fromJump = false,
+            int slotOverride = -1
+        )
+        {
+            if (!fromJump)
+            {
+                // Normal mode: also trigger a jump for the initial liftoff.
+                inventory.PlayerInfo.Movement.TryTriggerJump();
+            }
 
             if (_isFlying)
                 yield break;
 
-            // Guard: TryUseItem can be retried by the game's input buffer system at moments
-            // other than the actual button-press (e.g. when the item is selected while the
-            // Swing action buffer is still active). Without this check the do-while executes
-            // one iteration — applying a single frame of upward force — before the condition
-            // is evaluated, which the player perceives as thrust firing without pressing the
-            // mouse button.
-            if (Mouse.current == null || !Mouse.current.leftButton.isPressed)
-                yield break;
+            if (!fromJump)
+            {
+                // Guard: TryUseItem can be retried by the game's input buffer system at
+                // moments other than the actual button-press (e.g. when the item is selected
+                // while the Swing action buffer is still active). Without this check the
+                // do-while executes one iteration before the condition is evaluated, which
+                // the player perceives as thrust firing without pressing the mouse button.
+                if (Mouse.current == null || !Mouse.current.leftButton.isPressed)
+                    yield break;
+            }
+            else
+            {
+                // Jump mode: validate the slot before starting.
+                if (slotOverride < 0)
+                    yield break;
+            }
 
             _isFlying = true;
 
@@ -75,10 +125,14 @@ namespace IssaPlugin.Items
             }
 
             bridge?.ClientNotifyThrustStart();
-            ItemHelper.SetCurrentItemUse(inventory, ItemUseType.Regular);
+            // In jump mode the jetpack is not the equipped item, so we must not set
+            // CurrentItemUse — doing so would make IsUsingItemAtAll true and block the
+            // player from switching items while thrusting.
+            if (!fromJump)
+                ItemHelper.SetCurrentItemUse(inventory, ItemUseType.Regular);
 
             // Initialise fuel on first use of this canister; subsequent presses resume
-            // from the level at which the player last released LMB.
+            // from the level at which the player last released the activation button.
             if (_fuelRemaining < 0f)
                 _fuelRemaining = ModConfig.Jetpack.FuelPerUse.Value;
 
@@ -88,11 +142,27 @@ namespace IssaPlugin.Items
             {
                 do
                 {
-                    // Exit immediately if the player switched to another item mid-canister
-                    // (e.g. pressed 1/2/3). Without this check thrust would ghost-fire until
-                    // the current canister timer naturally expired.
-                    if (inventory.GetEffectivelyEquippedItem(true) != ItemRegistry.JetpackItemType)
-                        break;
+                    // Exit if the jetpack is no longer available in the relevant slot.
+                    if (fromJump)
+                    {
+                        if (
+                            slotOverride >= inventory.slots.Count
+                            || inventory.slots[slotOverride].itemType
+                                != ItemRegistry.JetpackItemType
+                        )
+                            break;
+                    }
+                    else
+                    {
+                        // Exit immediately if the player switched to another item mid-canister
+                        // (e.g. pressed 1/2/3). Without this check thrust would ghost-fire
+                        // until the canister timer naturally expired.
+                        if (
+                            inventory.GetEffectivelyEquippedItem(true)
+                            != ItemRegistry.JetpackItemType
+                        )
+                            break;
+                    }
 
                     // Apply upward thrust this physics step. ForceMode.Acceleration applies
                     // the configured value as m/s² regardless of the player's mass.
@@ -110,14 +180,18 @@ namespace IssaPlugin.Items
 
                     if (_fuelRemaining <= 0f)
                     {
-                        int slot = inventory.EquippedItemIndex;
-                        ItemHelper.DecrementAndRemove(inventory, slot);
+                        int slotToDrain = fromJump ? slotOverride : inventory.EquippedItemIndex;
+                        ItemHelper.DecrementAndRemove(inventory, slotToDrain);
 
                         // Stop if all canisters are now exhausted.
-                        if (
-                            inventory.GetEffectivelyEquippedItem(true)
-                            != ItemRegistry.JetpackItemType
-                        )
+                        bool hasMore = fromJump
+                            ? slotOverride < inventory.slots.Count
+                                && inventory.slots[slotOverride].itemType
+                                    == ItemRegistry.JetpackItemType
+                            : inventory.GetEffectivelyEquippedItem(true)
+                                == ItemRegistry.JetpackItemType;
+
+                        if (!hasMore)
                             break;
 
                         // Reload the next canister — re-read config so in-session changes
@@ -128,9 +202,11 @@ namespace IssaPlugin.Items
 
                     yield return new WaitForFixedUpdate();
                 } while (
-                    Mouse.current != null
-                    && Mouse.current.leftButton.isPressed
-                    && _fuelRemaining > 0
+                    (
+                        fromJump
+                            ? Keyboard.current != null && Keyboard.current.spaceKey.isPressed
+                            : Mouse.current != null && Mouse.current.leftButton.isPressed
+                    ) && _fuelRemaining > 0
                 );
             }
             finally

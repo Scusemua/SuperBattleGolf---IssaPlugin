@@ -13,6 +13,8 @@ namespace IssaPlugin
         public ConfigEntry<float> FuelPerUse { get; private set; }
         public ConfigEntry<float> ThrustForce { get; private set; }
 
+        public ConfigEntry<bool> UseJumpToActivate { get; private set; }
+
         public JetpackConfig(ConfigFile cfg, GlobalConfig global)
         {
             GiveKey = cfg.Bind(Section, "GiveKey", Key.End, "Hotkey to give yourself a Jetpack (debug/testing).");
@@ -20,6 +22,7 @@ namespace IssaPlugin
             SpawnWeight = global.BindSpawnWeight(cfg, 123, "JetpackSpawnWeight", 10f, "Override spawn weight for the Jetpack.");
             FuelPerUse = cfg.Bind(Section, "FuelPerUse", 1f, "Seconds of thrust provided by each fuel canister. When exhausted, one use is consumed.");
             ThrustForce = cfg.Bind(Section, "ThrustForce", 35f, "Upward acceleration (m/s²) applied each physics step while thrusting. Uses ForceMode.Acceleration.");
+            UseJumpToActivate = cfg.Bind(Section, "UseJumpToActivate", true, "When enabled, pressing Space (Jump) activates the jetpack even if it is not the active item. The fuel gauge is visible whenever the jetpack is in inventory.");
         }
     }
 }
