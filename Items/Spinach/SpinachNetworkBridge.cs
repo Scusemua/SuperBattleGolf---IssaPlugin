@@ -150,5 +150,11 @@ namespace IssaPlugin.Items
                 _serverSessionActive = false;
             }
         }
+
+        public override void OnStopClient()
+        {
+            if (isLocalPlayer)
+                SpinachOverlay.Instance?.SetActive(false);
+        }
     }
 }
