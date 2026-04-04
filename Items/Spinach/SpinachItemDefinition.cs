@@ -7,7 +7,7 @@ namespace IssaPlugin.Items
     {
         public override ItemType ItemType => ItemRegistry.SpinachItemType;
         public override string DisplayName => "Spinach";
-        public override string[] ConsoleAliases => new[] { "steroids", "juice" };
+        public override string[] ConsoleAliases => ["steroids", "juice"];
         public override Sprite Icon => AssetLoader.SpinachIcon;
         public override GameObject HeldModelPrefab => AssetLoader.SpinachPrefab;
         public override int MaxUses => (int)ModConfig.Spinach.Uses.Value;
@@ -27,7 +27,6 @@ namespace IssaPlugin.Items
             movement.InformDrankCoffee();
 
             SpinachBehaviour.Activate(duration);
-            RedBullBehaviour.Activate(duration);
             ItemHelper.ConsumeEquippedItem(inventory);
 
             // Tell the server to broadcast the trail VFX to all clients.
