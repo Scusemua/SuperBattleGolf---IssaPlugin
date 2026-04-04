@@ -1,6 +1,6 @@
 # IssaMod
 
-Adds **21 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
+Adds **26 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
 
 For more information as well as the mod's source code, please see [the mod's GitHub repository](https://github.com/Scusemua/SuperBattleGolf---IssaPlugin/).
 
@@ -68,6 +68,21 @@ Trigger an orbital laser on all other players at the same time.
 
 ### 🌗 Gravity Gun
 Like the icon weapon from the Half Life franchise, use the Gravity Gun to throw players and golf carts around with ease!
+
+### ✈️ Harrier Jet
+Calls in an autonomous Harrier jet that flies in from off-map, hovers over the course, and fires rockets at players on its own. No steering required after activation — you just point and watch. Can be shot down with a rocket launcher before it finishes its run.
+
+### 🚀 Rocket Tether
+Targets another player and fires a rocket that spawns directly above them, then launches straight up. The target is tethered to the rocket by a spring force and gets dragged skyward with it. When the timer runs out, the rocket detonates at altitude. Good for removing someone from the course temporarily — or permanently.
+
+### 🎒 Jetpack
+Strap on a jetpack and hold the fire button to thrust upward. Each canister provides a set amount of burn time; releasing the button pauses fuel consumption, so you can pulse the thrust. Exhaust one canister and the next loads automatically if you have uses remaining. A fuel gauge HUD shows how much burn time is left in the current canister.
+
+### 📡 Teleporter
+The camera pans to a top-down overhead view of the course and a glowing marker appears on the ground. Move the marker with WASD to pick your destination, then confirm to teleport there instantly. Right-click or Space to cancel. Great for repositioning, escaping a bad lie, or just vanishing right before someone shoots at you.
+
+### 🥬 Spinach
+Eat your vegetables. Activates the coffee speed boost three times simultaneously, stacking the effect for a far more extreme burst of speed and jump height than either coffee or Red Bull alone. Short duration, massive payoff — use it for a full-sprint escape or to cover the course in a blink.
 
 ---
 
