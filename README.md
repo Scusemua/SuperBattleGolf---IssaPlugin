@@ -98,16 +98,57 @@ Manual install: drop `IssaPlugin.dll` and `IssaModBundle` into `BepinEx/plugins/
 
 ## Configuration
 
-A config file is generated at `BepInEx/config/com.scusemua.IssaPlugin.cfg` on first launch. Every item has knobs for:
+### In-Game Spawn Config UI (recommended)
 
-- **Uses** -- how many uses come with each pickup
-- **Spawn weight** -- how often it appears in item boxes (set to `0` to disable entirely)
-- **Give key** -- keyboard shortcut to give yourself the item instantly (for testing/hosting)
-- **Damage, knockback, duration, speed, range** -- item-specific tuning values
+The host can open the **Spawn Config** panel at any time during a session by pressing **F8** (default; rebindable via `SpawnConfigUIKey` in the config file). The hotkey and panel are also available via the console command `spawnConfigUI`.
 
-All settings take effect immediately on the next session without restarting the game.
+Clients can open the panel in read-only mode — it updates automatically when the host applies changes.
 
-**Note:** I highly recommend getting AtomicStudio's [ModConfig](https://thunderstore.io/c/super-battle-golf/p/AtomicStudio/ModConfig/) mod to go along with this mod, as it makes it very easy to tweak the numerous available settings.
+#### Tiered spawn system
+
+Items are sorted into up to **5 tiers**. When an item box awards a custom item, the game first selects a tier by weight, then picks a random item from within that tier. This separates "how common is this category?" from "how common is this specific item?" and lets you build rubber-band mechanics by gating tiers behind position or distance from the leader.
+
+**Global controls:**
+
+| Setting | Range | Description |
+|---------|-------|-------------|
+| Custom items enabled | on/off | Master switch. Off = no custom items spawn at all. |
+| Global rate multiplier | 0 – 10 | Scales spawn rate of all custom items. 1.0 = normal. |
+| Catchup boost | 0 – 5 | Extra rate multiplier for players behind the leader. 1.0 = no boost. |
+| Tiers | 1 – 5 | Number of active tiers. Use + / − to add or remove. |
+
+**Per-tier settings:**
+
+| Setting | Description |
+|---------|-------------|
+| Tier enabled | Disables the entire tier when unchecked. |
+| Spawn weight | Relative probability of this tier being chosen. Weights across all enabled tiers are summed; each tier's chance is its share of that total. |
+| Min distance behind leader | Tier is skipped for any player who is not at least this many units behind the leader. 0 = no gate. |
+| Min place to trigger | Tier is skipped for any player ranked better than this place (e.g. 3 = only 3rd place or worse qualify). 0 = no gate. |
+
+Both gating conditions must be satisfied simultaneously. Either can be independently disabled by setting it to 0.
+
+**Per-item settings** (shown in each tier's item list):
+
+| Setting | Description |
+|---------|-------------|
+| Enabled | Excludes the item from the spawn pool entirely when unchecked. |
+| Override weight | Assign this item its own spawn weight instead of inheriting the tier weight. |
+| Move → T*n* | Reassign the item to a different tier (clears the per-item weight override). |
+
+#### Applying and syncing
+
+**Apply & Sync** writes the full snapshot to `BepInEx/config/com.scusemua.IssaPlugin.cfg` and broadcasts it to all connected clients via Mirror immediately. Clients cannot edit settings; their panel shows the host's current config and updates on each sync.
+
+### Item-specific settings (config file)
+
+Every item has additional tuning values that can be edited in the config file or via AtomicStudio's [ModConfig](https://thunderstore.io/c/super-battle-golf/p/AtomicStudio/ModConfig/) mod:
+
+- **Uses** — how many uses come with each pickup
+- **Give key** — keyboard shortcut to give yourself the item (for testing/hosting)
+- **Damage, knockback, duration, speed, range** — item-specific tuning
+
+All settings take effect immediately without restarting the game.
 
 ---
 
@@ -122,7 +163,8 @@ All settings take effect immediately on the next session without restarting the 
 ## Console Commands
 
 - **`vote <timeout>`** — Host only. Starts a vote among all players to enable or disable individual custom items. The timeout (in seconds) controls how long the vote stays open before closing automatically.
-- **`giveCustomItem <item name>** - Give yourself a custom item.
+- **`spawnConfigUI`** — Opens the tiered spawn config panel (same as pressing F8).
+- **`giveCustomItem <item name>`** — Give yourself a custom item.
 
 ---
 
