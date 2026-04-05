@@ -16,7 +16,7 @@ namespace IssaPlugin.Patches
         private static Vector3 _velocityBefore;
         private static Vector3 _angularVelocityBefore;
 
-        private static float _originalMaxPowerSwingHitSpeed;
+        // private static float _originalMaxPowerSwingHitSpeed;
         private static readonly FieldInfo MaxPowerSwingHitSpeedField = AccessTools.Field(
             typeof(SwingHittableSettings),
             "<MaxPowerSwingHitSpeed>k__BackingField"

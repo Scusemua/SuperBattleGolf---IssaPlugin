@@ -62,6 +62,8 @@ namespace IssaPlugin.Patches
                 __instance.gameObject.AddComponent<TeleporterNetworkBridge>();
             if (!__instance.GetComponent<SpinachNetworkBridge>())
                 __instance.gameObject.AddComponent<SpinachNetworkBridge>();
+            if (!__instance.GetComponent<FlamethrowerNetworkBridge>())
+                __instance.gameObject.AddComponent<FlamethrowerNetworkBridge>();
 
             IssaPluginPlugin.Log.LogDebug(
                 "[Network] Bridge components injected onto player object."

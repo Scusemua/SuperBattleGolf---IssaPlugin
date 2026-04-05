@@ -287,6 +287,29 @@ namespace IssaPlugin.Items
         /// Bundle asset name: <c>gold_star.prefab</c>
         public static GameObject GoldStarPrefab { get; private set; }
 
+        // --- Flamethrower ---
+        /// Inventory icon.
+        /// Bundle asset name: <c>flamethrower_icon.png</c>
+        public static Sprite FlamethrowerIcon { get; private set; }
+
+        /// The model the player holds while the Flamethrower is equipped.
+        /// Bundle asset name: <c>flamethrower_handheld.prefab</c>
+        public static GameObject FlamethrowerHandheldPrefab { get; private set; }
+
+        /// Local-only particle VFX (the fire stream). Not networked — each client
+        /// instantiates its own copy via FlamethrowerNetworkBridge. The prefab should
+        /// include a CapsuleCollider trigger sized to match the flame cone; the
+        /// FlamethrowerHitDetector script is added at runtime only on the local
+        /// shooter's instance.
+        /// Bundle asset name: <c>flamethrower_particles.prefab</c>
+        public static GameObject FlamethrowerParticlePrefab { get; private set; }
+
+        /// Local-only looping fire VFX parented to a player while they are burning.
+        /// Not networked — each client instantiates its own copy via
+        /// FlamethrowerNetworkBridge. Should be a compact looping fire particle.
+        /// Bundle asset name: <c>flamethrower_victim_fire.prefab</c>
+        public static GameObject FlamethrowerVictimFirePrefab { get; private set; }
+
         public static bool IsLoaded => _bundle != null;
 
         private static AssetBundle _bundle;
@@ -342,6 +365,7 @@ namespace IssaPlugin.Items
             // Load after position swap, as we reuse PositionSwapSmokePrefab for teleporter.
             LoadTeleporterAssets();
             LoadFirstPlaceStarAssets();
+            LoadFlamethrowerAssets();
 
             IssaPluginPlugin.Log.LogInfo("[Assets] IssaPluginBundle loaded.");
         }
@@ -800,6 +824,27 @@ namespace IssaPlugin.Items
             SpinachTrailPrefab = Load<GameObject>("spinach_trail.prefab");
             if (SpinachTrailPrefab != null)
                 StripNetworkComponents(SpinachTrailPrefab);
+        }
+
+        private static void LoadFlamethrowerAssets()
+        {
+            FlamethrowerIcon = LoadSprite("flamethrower_icon.png");
+
+            FlamethrowerHandheldPrefab = Load<GameObject>("flamethrower.prefab");
+            if (FlamethrowerHandheldPrefab != null)
+                DisableRigidbody(FlamethrowerHandheldPrefab);
+
+            // The particle prefab is local-only (not networked). A CapsuleCollider
+            // trigger should be baked into the prefab in the Unity project; the
+            // FlamethrowerHitDetector script is added to it at runtime on the
+            // local shooter's machine only.
+            FlamethrowerParticlePrefab = Load<GameObject>("flamethrower_vfx.prefab");
+            if (FlamethrowerParticlePrefab != null)
+                StripNetworkComponents(FlamethrowerParticlePrefab);
+
+            FlamethrowerVictimFirePrefab = Load<GameObject>("flamethrower_victim_fire.prefab");
+            if (FlamethrowerVictimFirePrefab != null)
+                StripNetworkComponents(FlamethrowerVictimFirePrefab);
         }
 
         /// Ensures a prefab has a NetworkIdentity with a stable assetId so Mirror

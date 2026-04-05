@@ -343,6 +343,10 @@ Assets used in the project:
     (https://skfb.ly/oqBBw) by AnshiNoWara 
     Licensed under Creative Commons Attribution
 
+-   "Empire Pyro Flamethrower"
+    by Elite Big Speakerman
+    Licensed under Creative Commons Attribution
+
 ---
 
 *IssaPlugin is a fan-made mod and is not affiliated with Brimstone or Oro Interactive.*

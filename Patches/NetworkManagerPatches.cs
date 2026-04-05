@@ -1130,6 +1130,69 @@ namespace IssaPlugin.Patches
                     (conn, msg) => GetBridge<SpinachNetworkBridge>(conn)?.ServerActivate()
                 );
 
+            // ── Flamethrower ──────────────────────────────────────────────────────
+            Writer<FlamethrowerFireStartMessage>.write =
+                FlamethrowerMessageSerialization.WriteFireStart;
+            Reader<FlamethrowerFireStartMessage>.read =
+                FlamethrowerMessageSerialization.ReadFireStart;
+
+            Writer<FlamethrowerFireStopMessage>.write =
+                FlamethrowerMessageSerialization.WriteFireStop;
+            Reader<FlamethrowerFireStopMessage>.read =
+                FlamethrowerMessageSerialization.ReadFireStop;
+
+            Writer<FlamethrowerBurnRequestMessage>.write =
+                FlamethrowerMessageSerialization.WriteBurnRequest;
+            Reader<FlamethrowerBurnRequestMessage>.read =
+                FlamethrowerMessageSerialization.ReadBurnRequest;
+
+            Writer<FlamethrowerFireBeginMessage>.write =
+                FlamethrowerMessageSerialization.WriteFireBegin;
+            Reader<FlamethrowerFireBeginMessage>.read =
+                FlamethrowerMessageSerialization.ReadFireBegin;
+
+            Writer<FlamethrowerFireEndMessage>.write =
+                FlamethrowerMessageSerialization.WriteFireEnd;
+            Reader<FlamethrowerFireEndMessage>.read =
+                FlamethrowerMessageSerialization.ReadFireEnd;
+
+            Writer<FlamethrowerBurnBeginMessage>.write =
+                FlamethrowerMessageSerialization.WriteBurnBegin;
+            Reader<FlamethrowerBurnBeginMessage>.read =
+                FlamethrowerMessageSerialization.ReadBurnBegin;
+
+            Writer<FlamethrowerBurnEndMessage>.write =
+                FlamethrowerMessageSerialization.WriteBurnEnd;
+            Reader<FlamethrowerBurnEndMessage>.read =
+                FlamethrowerMessageSerialization.ReadBurnEnd;
+
+            NetworkClient.RegisterHandler<FlamethrowerFireBeginMessage>(
+                FlamethrowerNetworkBridge.HandleFireBegin
+            );
+            NetworkClient.RegisterHandler<FlamethrowerFireEndMessage>(
+                FlamethrowerNetworkBridge.HandleFireEnd
+            );
+            NetworkClient.RegisterHandler<FlamethrowerBurnBeginMessage>(
+                FlamethrowerNetworkBridge.HandleBurnBegin
+            );
+            NetworkClient.RegisterHandler<FlamethrowerBurnEndMessage>(
+                FlamethrowerNetworkBridge.HandleBurnEnd
+            );
+
+            if (NetworkServer.active)
+            {
+                NetworkServer.RegisterHandler<FlamethrowerFireStartMessage>(
+                    (conn, msg) => GetBridge<FlamethrowerNetworkBridge>(conn)?.ServerHandleFireStart()
+                );
+                NetworkServer.RegisterHandler<FlamethrowerFireStopMessage>(
+                    (conn, msg) => GetBridge<FlamethrowerNetworkBridge>(conn)?.ServerHandleFireStop()
+                );
+                NetworkServer.RegisterHandler<FlamethrowerBurnRequestMessage>(
+                    (conn, msg) => GetBridge<FlamethrowerNetworkBridge>(conn)
+                                       ?.ServerHandleBurnRequest(conn, msg.VictimNetId)
+                );
+            }
+
             // ── Hotkey item-giving (Client → Server) ─────────────────────────────
             Writer<GiveItemRequestMessage>.write =
                 GiveItemRequestMessageSerialization.WriteGiveItemRequestMessage;

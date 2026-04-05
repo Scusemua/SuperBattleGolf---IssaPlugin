@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 2917157157
+CRC: 1060507942
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: ddd23cf2cd382a7ca745d99d7121c635
+    Hash: 25c1a09ae8a1aba0cde26d056bef8977
   TypeTreeHash:
     serializedVersion: 2
     Hash: 12d32a6d7b1bccbbbbab418431dfa151
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: eb75ce62298cdcce57d33803d6399040
+    Hash: 71d3fbf3ebf1eceec2a92b0fd9623fd3
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -91,6 +91,7 @@ Assets:
 - Assets/Assets/bat_icon.png
 - Assets/Assets/spinach.prefab
 - Assets/Assets/donut_icon_v2.png
+- Assets/Assets/flamethrower.prefab
 - Assets/Assets/gravity_gun_vfx.prefab
 - Assets/Assets/javelin_target_indicator.prefab
 - Assets/Assets/bat_model.prefab
@@ -103,6 +104,7 @@ Assets:
 - Assets/Assets/position_swap_orb.prefab
 - Assets/Assets/bomber_model.prefab
 - Assets/Assets/spinach_icon.png
+- Assets/Assets/flamethrower_victim_fire.prefab
 - Assets/Assets/bomber_icon.png
 - Assets/Assets/redbull.prefab
 - Assets/Assets/gold_star.prefab
@@ -129,6 +131,7 @@ Assets:
 - Assets/Assets/ak47.prefab
 - Assets/Assets/poison_bottle_icon.png
 - Assets/Assets/position_swap_icon.png
+- Assets/Assets/flamethrower_vfx.prefab
 - Assets/Assets/harrier_tablet.prefab
 - Assets/Assets/wall_icon.png
 - Assets/Assets/jetpack_icon.png
@@ -155,8 +158,9 @@ Assets:
 - Assets/Assets/smoke_trail_prefab.prefab
 - Assets/Assets/brick.prefab
 - Assets/Assets/wall_ghost_preview.prefab
-- Assets/Assets/ac130_impact_vfx.prefab
+- Assets/Assets/flamethrower_icon.png
 - Assets/Assets/electric_whip_icon.png
+- Assets/Assets/ac130_impact_vfx.prefab
 - Assets/Assets/snowball.prefab
 - Assets/Assets/NukeExplosionFire.prefab
 - Assets/Assets/jetpack_handheld.prefab
