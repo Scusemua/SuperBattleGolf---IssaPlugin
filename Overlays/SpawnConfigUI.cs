@@ -2,7 +2,7 @@
 // An IMGUI overlay that lets the host edit all spawn configuration at runtime.
 //
 // ── Opening the panel ─────────────────────────────────────────────────────────
-//   Press the hotkey bound to ModConfig.Global.SpawnConfigUIKey (default: F8).
+//   Press the hotkey bound to ModConfig.Global.SpawnConfigUIKey (default: M).
 //   Alternatively, run the console command "spawnConfigUI".
 //
 // ── Host vs client ────────────────────────────────────────────────────────────
@@ -103,7 +103,7 @@ namespace IssaPlugin.Overlays
             if (keyboard == null)
                 return;
 
-            // Toggle on configured hotkey (default F8)
+            // Toggle on configured hotkey (default M)
             if (keyboard[ModConfig.Global.SpawnConfigUIKey.Value].wasPressedThisFrame)
                 Toggle();
         }
