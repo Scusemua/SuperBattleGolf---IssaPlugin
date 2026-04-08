@@ -38,9 +38,7 @@ namespace IssaPlugin.Patches
         {
             if (!_prefabsRegistered)
             {
-                IssaPluginPlugin.Log.LogInfo(
-                    "[NetworkManager] Registering custom prefabs."
-                );
+                IssaPluginPlugin.Log.LogInfo("[NetworkManager] Registering custom prefabs.");
                 RegisterPrefabs();
                 _prefabsRegistered = true;
             }
@@ -48,13 +46,9 @@ namespace IssaPlugin.Patches
             // Always re-register message handlers, writers, and readers.
             // Mirror clears Writer<T>/Reader<T> delegates on client shutdown, so
             // re-registering here ensures they are valid for every new session.
-            IssaPluginPlugin.Log.LogInfo(
-                "[NetworkManager] Registering custom message handlers."
-            );
+            IssaPluginPlugin.Log.LogInfo("[NetworkManager] Registering custom message handlers.");
             RegisterNetworkMessages();
-            IssaPluginPlugin.Log.LogInfo(
-                "[NetworkManager] Custom message handlers registered."
-            );
+            IssaPluginPlugin.Log.LogInfo("[NetworkManager] Custom message handlers registered.");
         }
 
         private static T GetBridge<T>(NetworkConnectionToClient conn)
@@ -732,9 +726,7 @@ namespace IssaPlugin.Patches
             // ── Full config sync (server → all clients) ───────────────────────
             Writer<ItemConfigSyncMessage>.write = ItemConfigSyncSerialization.Write;
             Reader<ItemConfigSyncMessage>.read = ItemConfigSyncSerialization.Read;
-            NetworkClient.RegisterHandler<ItemConfigSyncMessage>(
-                ItemConfigSyncer.HandleConfigSync
-            );
+            NetworkClient.RegisterHandler<ItemConfigSyncMessage>(ItemConfigSyncer.HandleConfigSync);
 
             // ── Vote system ───────────────────────────────────────────────────
             Writer<VoteStartMessage>.write = VoteMessageSerialization.WriteVoteStartMessage;
@@ -1177,8 +1169,7 @@ namespace IssaPlugin.Patches
 
             Writer<FlamethrowerFireEndMessage>.write =
                 FlamethrowerMessageSerialization.WriteFireEnd;
-            Reader<FlamethrowerFireEndMessage>.read =
-                FlamethrowerMessageSerialization.ReadFireEnd;
+            Reader<FlamethrowerFireEndMessage>.read = FlamethrowerMessageSerialization.ReadFireEnd;
 
             Writer<FlamethrowerBurnBeginMessage>.write =
                 FlamethrowerMessageSerialization.WriteBurnBegin;
@@ -1187,8 +1178,7 @@ namespace IssaPlugin.Patches
 
             Writer<FlamethrowerBurnEndMessage>.write =
                 FlamethrowerMessageSerialization.WriteBurnEnd;
-            Reader<FlamethrowerBurnEndMessage>.read =
-                FlamethrowerMessageSerialization.ReadBurnEnd;
+            Reader<FlamethrowerBurnEndMessage>.read = FlamethrowerMessageSerialization.ReadBurnEnd;
 
             NetworkClient.RegisterHandler<FlamethrowerFireBeginMessage>(
                 FlamethrowerNetworkBridge.HandleFireBegin
@@ -1206,14 +1196,17 @@ namespace IssaPlugin.Patches
             if (NetworkServer.active)
             {
                 NetworkServer.RegisterHandler<FlamethrowerFireStartMessage>(
-                    (conn, msg) => GetBridge<FlamethrowerNetworkBridge>(conn)?.ServerHandleFireStart()
+                    (conn, msg) =>
+                        GetBridge<FlamethrowerNetworkBridge>(conn)?.ServerHandleFireStart()
                 );
                 NetworkServer.RegisterHandler<FlamethrowerFireStopMessage>(
-                    (conn, msg) => GetBridge<FlamethrowerNetworkBridge>(conn)?.ServerHandleFireStop()
+                    (conn, msg) =>
+                        GetBridge<FlamethrowerNetworkBridge>(conn)?.ServerHandleFireStop()
                 );
                 NetworkServer.RegisterHandler<FlamethrowerBurnRequestMessage>(
-                    (conn, msg) => GetBridge<FlamethrowerNetworkBridge>(conn)
-                                       ?.ServerHandleBurnRequest(conn, msg.VictimNetId)
+                    (conn, msg) =>
+                        GetBridge<FlamethrowerNetworkBridge>(conn)
+                            ?.ServerHandleBurnRequest(conn, msg.VictimNetId)
                 );
             }
 
@@ -1474,8 +1467,11 @@ namespace IssaPlugin.Patches
     static class BNetworkManagerOnServerReadyPatch
     {
         static System.Reflection.MethodBase TargetMethod() =>
-            AccessTools.Method(typeof(BNetworkManager), "OnServerReady",
-                new[] { typeof(NetworkConnectionToClient) });
+            AccessTools.Method(
+                typeof(BNetworkManager),
+                "OnServerReady",
+                new[] { typeof(NetworkConnectionToClient) }
+            );
 
         static void Postfix(NetworkConnectionToClient connection)
         {

@@ -27,8 +27,10 @@ namespace IssaPlugin.Patches
     [HarmonyPatch(typeof(Entity), "GetNetworkedPointVelocity")]
     static class EntityGetNetworkedPointVelocityPatch
     {
-        private static readonly PropertyInfo NetworkRigidbodyProp =
-            AccessTools.Property(typeof(Entity), "NetworkRigidbody");
+        private static readonly PropertyInfo NetworkRigidbodyProp = AccessTools.Property(
+            typeof(Entity),
+            "NetworkRigidbody"
+        );
 
         static bool Prefix(Entity __instance, Vector3 worldPoint, ref Vector3 __result)
         {

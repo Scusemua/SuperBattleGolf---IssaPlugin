@@ -39,11 +39,12 @@ namespace IssaPlugin.Patches
             // Remove returns true if the ID was present, cleaning up the set at the
             // same time. Bombing-run rockets must not count as hits on their own proxy,
             // and Harrier-fired rockets must not count as hits on the HarrierHitReceiver.
-            bool isBomberDrop  = StealthBomberItem.ActiveBomberDropRocketIds.Remove(
+            bool isBomberDrop = StealthBomberItem.ActiveBomberDropRocketIds.Remove(
                 __instance.GetInstanceID()
             );
             bool isHarrierShot = HarrierItem.ActiveHarrierRocketIds.Remove(
-                __instance.GetInstanceID(), out NetworkConnectionToClient harrierSummonerConn
+                __instance.GetInstanceID(),
+                out NetworkConnectionToClient harrierSummonerConn
             );
 
             foreach (var hit in hits)
@@ -100,10 +101,12 @@ namespace IssaPlugin.Patches
                     if (pi != null && !notified.Contains(pi))
                     {
                         notified.Add(pi);
-                        harrierSummonerConn.Send(new HitNotificationMessage
-                        {
-                            Message = $"Harrier hit {pi.PlayerId.PlayerName}!"
-                        });
+                        harrierSummonerConn.Send(
+                            new HitNotificationMessage
+                            {
+                                Message = $"Harrier hit {pi.PlayerId.PlayerName}!",
+                            }
+                        );
                     }
                 }
             }

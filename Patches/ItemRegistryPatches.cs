@@ -25,7 +25,6 @@ namespace IssaPlugin.Patches
         }
     }
 
-
     [HarmonyPatch]
     static class ItemCollectionInitPatch
     {
