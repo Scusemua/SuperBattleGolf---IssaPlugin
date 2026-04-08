@@ -28,6 +28,7 @@ namespace IssaPlugin.Items
     {
         // ── Server state ──────────────────────────────────────────────────────────
         private bool _serverThrusting;
+        private bool _serverEquipped;
 
         // ── Client state ─────────────────────────────────────────────────────────
         private GameObject _particles;
@@ -89,6 +90,35 @@ namespace IssaPlugin.Items
             identity.GetComponent<JetpackNetworkBridge>()?.ClientHideParticles();
         }
 
+        public static void HandleEquipBegin(JetpackEquipBeginMessage msg)
+        {
+            // Cache host config so FireLoop uses authoritative values, not local defaults.
+            // Skip on the listen-server host; it already has the correct values.
+            if (!NetworkServer.active)
+            {
+                JetpackItem.ServerFuelPerUse = msg.FuelPerUse;
+                JetpackItem.ServerThrustForce = msg.ThrustForce;
+            }
+
+            if (!NetworkClient.spawned.TryGetValue(msg.PlayerNetId, out var identity))
+                return;
+            var bridge = identity.GetComponent<JetpackNetworkBridge>();
+            // Local player manages its own prefab via Update(); skip to avoid duplicates.
+            if (bridge == null || bridge.isLocalPlayer)
+                return;
+            bridge.ClientShowEquippedPrefab();
+        }
+
+        public static void HandleEquipEnd(JetpackEquipEndMessage msg)
+        {
+            if (!NetworkClient.spawned.TryGetValue(msg.PlayerNetId, out var identity))
+                return;
+            var bridge = identity.GetComponent<JetpackNetworkBridge>();
+            if (bridge == null || bridge.isLocalPlayer)
+                return;
+            bridge.ClientDestroyEquippedPrefab();
+        }
+
         // ================================================================
         //  Per-client particle management
         // ================================================================
@@ -123,8 +153,40 @@ namespace IssaPlugin.Items
         //  place to manage the full show/hide lifecycle.
         // ================================================================
 
+        // ================================================================
+        //  Server equip-state tracking — broadcasts backpack visibility to all clients
+        // ================================================================
+
         private void Update()
         {
+            if (isServer)
+            {
+                var inv = GetComponent<PlayerInventory>();
+                bool equipped =
+                    inv != null
+                    && (
+                        ModConfig.Jetpack.UseJumpToActivate.Value
+                            ? JetpackItem.FindJetpackSlot(inv) >= 0
+                            : inv.GetEffectivelyEquippedItem(true) == ItemRegistry.JetpackItemType
+                    );
+
+                if (equipped && !_serverEquipped)
+                {
+                    _serverEquipped = true;
+                    NetworkServer.SendToAll(new JetpackEquipBeginMessage
+                    {
+                        PlayerNetId = netId,
+                        FuelPerUse = ModConfig.Jetpack.FuelPerUse.Value,
+                        ThrustForce = ModConfig.Jetpack.ThrustForce.Value,
+                    });
+                }
+                else if (!equipped && _serverEquipped)
+                {
+                    _serverEquipped = false;
+                    NetworkServer.SendToAll(new JetpackEquipEndMessage { PlayerNetId = netId });
+                }
+            }
+
             if (!isLocalPlayer)
                 return;
 
@@ -175,6 +237,19 @@ namespace IssaPlugin.Items
                         JetpackItem.FireLoop(inventory, fromJump: true, slotOverride: jetpackSlot)
                     );
             }
+        }
+
+        private void ClientShowEquippedPrefab()
+        {
+            if (_equippedPrefabInstance != null || AssetLoader.JetpackEquippedPrefab == null)
+                return;
+            _equippedPrefabInstance = Object.Instantiate(AssetLoader.JetpackEquippedPrefab);
+            var rb = _equippedPrefabInstance.GetComponent<Rigidbody>();
+            rb.isKinematic = true;
+            rb.useGravity = false;
+            _equippedPrefabInstance.transform.SetParent(transform, false);
+            _equippedPrefabInstance.transform.localPosition = new Vector3(0f, 0.5f, -0.2f);
+            _equippedPrefabInstance.transform.localRotation = Quaternion.identity;
         }
 
         private void ClientDestroyEquippedPrefab()

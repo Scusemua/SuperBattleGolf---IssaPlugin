@@ -29,6 +29,11 @@ namespace IssaPlugin.Items
         // local player can fly at a time.
         private static bool _isFlying;
 
+        // Config values received from the server. -1 means not yet synced; fall back
+        // to local config (which is correct on the host itself).
+        internal static float ServerFuelPerUse = -1f;
+        internal static float ServerThrustForce = -1f;
+
         // Persists across press/release cycles so releasing the button does not refill the canister.
         // Sentinel value -1 means "not yet initialised for this canister".
         private static float _fuelRemaining = -1f;
@@ -131,12 +136,16 @@ namespace IssaPlugin.Items
             if (!fromJump)
                 ItemHelper.SetCurrentItemUse(inventory, ItemUseType.Regular);
 
+            // Prefer the host-synced fuel value so clients always use the server's config.
+            float fuelPerUse =
+                ServerFuelPerUse >= 0f ? ServerFuelPerUse : ModConfig.Jetpack.FuelPerUse.Value;
+
             // Initialise fuel on first use of this canister; subsequent presses resume
             // from the level at which the player last released the activation button.
             if (_fuelRemaining < 0f)
-                _fuelRemaining = ModConfig.Jetpack.FuelPerUse.Value;
+                _fuelRemaining = fuelPerUse;
 
-            FuelFraction = Mathf.Clamp01(_fuelRemaining / ModConfig.Jetpack.FuelPerUse.Value);
+            FuelFraction = Mathf.Clamp01(_fuelRemaining / fuelPerUse);
 
             try
             {
@@ -166,17 +175,16 @@ namespace IssaPlugin.Items
 
                     // Apply upward thrust this physics step. ForceMode.Acceleration applies
                     // the configured value as m/s² regardless of the player's mass.
-                    rb.AddForce(
-                        Vector3.up * ModConfig.Jetpack.ThrustForce.Value,
-                        ForceMode.Acceleration
-                    );
+                    float thrustForce =
+                        ServerThrustForce >= 0f
+                            ? ServerThrustForce
+                            : ModConfig.Jetpack.ThrustForce.Value;
+                    rb.AddForce(Vector3.up * thrustForce, ForceMode.Acceleration);
 
                     // Drain fuel by the fixed timestep so consumption is physics-accurate
                     // and does not vary with render framerate.
                     _fuelRemaining -= Time.fixedDeltaTime;
-                    FuelFraction = Mathf.Clamp01(
-                        _fuelRemaining / ModConfig.Jetpack.FuelPerUse.Value
-                    );
+                    FuelFraction = Mathf.Clamp01(_fuelRemaining / fuelPerUse);
 
                     if (_fuelRemaining <= 0f)
                     {
@@ -194,9 +202,8 @@ namespace IssaPlugin.Items
                         if (!hasMore)
                             break;
 
-                        // Reload the next canister — re-read config so in-session changes
-                        // take effect between canisters.
-                        _fuelRemaining = ModConfig.Jetpack.FuelPerUse.Value;
+                        // Reload the next canister.
+                        _fuelRemaining = fuelPerUse;
                         FuelFraction = 1f;
                     }
 

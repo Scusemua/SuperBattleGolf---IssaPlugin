@@ -1087,11 +1087,21 @@ namespace IssaPlugin.Patches
             Reader<JetpackThrustBeginMessage>.read = JetpackMessageSerialization.ReadThrustBegin;
             Writer<JetpackThrustEndMessage>.write = JetpackMessageSerialization.WriteThrustEnd;
             Reader<JetpackThrustEndMessage>.read = JetpackMessageSerialization.ReadThrustEnd;
+            Writer<JetpackEquipBeginMessage>.write = JetpackMessageSerialization.WriteEquipBegin;
+            Reader<JetpackEquipBeginMessage>.read = JetpackMessageSerialization.ReadEquipBegin;
+            Writer<JetpackEquipEndMessage>.write = JetpackMessageSerialization.WriteEquipEnd;
+            Reader<JetpackEquipEndMessage>.read = JetpackMessageSerialization.ReadEquipEnd;
             NetworkClient.RegisterHandler<JetpackThrustBeginMessage>(
                 JetpackNetworkBridge.HandleThrustBegin
             );
             NetworkClient.RegisterHandler<JetpackThrustEndMessage>(
                 JetpackNetworkBridge.HandleThrustEnd
+            );
+            NetworkClient.RegisterHandler<JetpackEquipBeginMessage>(
+                JetpackNetworkBridge.HandleEquipBegin
+            );
+            NetworkClient.RegisterHandler<JetpackEquipEndMessage>(
+                JetpackNetworkBridge.HandleEquipEnd
             );
             if (NetworkServer.active)
             {
