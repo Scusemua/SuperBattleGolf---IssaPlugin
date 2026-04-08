@@ -24,29 +24,36 @@ namespace IssaPlugin.Patches
     [HarmonyPatch]
     static class NetworkManagerRegisterPrefabsPatch
     {
-        private static bool _registered;
+        // Prefabs only need to be registered once — Mirror warns on re-registration.
+        // Writers/readers/handlers must be re-registered on every OnStartClient because
+        // Mirror clears them when the client shuts down, and the local (host) connection
+        // bypasses serialization entirely so a null Writer<T>.write only breaks remote
+        // clients, making the bug invisible on the host side.
+        private static bool _prefabsRegistered;
 
         static System.Reflection.MethodBase TargetMethod() =>
             AccessTools.Method(typeof(BNetworkManager), "OnStartClient");
 
         static void Postfix()
         {
-            if (_registered)
-                return;
+            if (!_prefabsRegistered)
+            {
+                IssaPluginPlugin.Log.LogInfo(
+                    "[NetworkManager] Registering custom prefabs."
+                );
+                RegisterPrefabs();
+                _prefabsRegistered = true;
+            }
 
+            // Always re-register message handlers, writers, and readers.
+            // Mirror clears Writer<T>/Reader<T> delegates on client shutdown, so
+            // re-registering here ensures they are valid for every new session.
             IssaPluginPlugin.Log.LogInfo(
-                "[NetworkManager] Registering custom prefabs and message handlers."
+                "[NetworkManager] Registering custom message handlers."
             );
-
-            // ── Prefab registration ──────────────────────────────────────────
-            RegisterPrefabs();
-
-            // ── NetworkMessage handlers ──────────────────────────────────────
             RegisterNetworkMessages();
-
-            _registered = true;
             IssaPluginPlugin.Log.LogInfo(
-                "[NetworkManager] Custom prefabs and message handlers registered."
+                "[NetworkManager] Custom message handlers registered."
             );
         }
 
@@ -1382,7 +1389,7 @@ namespace IssaPlugin.Patches
             });
         }
 
-        public static void ResetRegistration() => _registered = false;
+        public static void ResetRegistration() => _prefabsRegistered = false;
 
         private static void RegisterPrefabs()
         {
