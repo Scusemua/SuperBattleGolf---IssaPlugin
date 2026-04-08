@@ -84,6 +84,9 @@ The camera pans to a top-down overhead view of the course and a glowing marker a
 ### 🥬 Spinach
 Eat your vegetables. Provides a boost to movement speed and swing power.
 
+### 🔥 Flamethrower
+Unleash a continuous stream of fire in front of you. Enemies caught in the flames run around like crazy while they're set ablaze before falling and rolling on the ground.
+
 ---
 
 ## Installation
