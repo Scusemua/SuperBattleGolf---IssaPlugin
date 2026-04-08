@@ -18,15 +18,56 @@ namespace IssaPlugin
 
         public AK47Config(ConfigFile cfg, GlobalConfig global)
         {
-            GiveKey = cfg.Bind(Section, "GiveKey", Key.NumpadPlus, "Debug key to add the Sub-Machine Gun to your inventory.");
-            Uses = cfg.Bind(Section, "Uses", 10f, "Total bullets per Sub-Machine Gun pickup. Each shot consumes one use.");
-            FireRate = cfg.Bind(Section, "FireRate", 0.04f, "Seconds between each bullet in the burst.");
-            Inaccuracy = cfg.Bind(Section, "Inaccuracy", 5f, "Random spread angle (degrees) applied to each bullet. Higher = less accurate.");
-            MaxAimingDistance = cfg.Bind(Section, "MaxAimingDistance", 500f, "Max distance used when computing the aim point for each bullet.");
-            MaxShotDistance = cfg.Bind(Section, "MaxShotDistance", 500f, "Max raycast distance for each bullet.");
-            ScreenShakeIntensity = cfg.Bind(Section, "ScreenShakeIntensity", 0.25f, "Intensity of the screen shake when firing the AK47. 0 disables it. Higher values shake more.");
+            GiveKey = cfg.Bind(
+                Section,
+                "GiveKey",
+                Key.NumpadPlus,
+                "Debug key to add the Sub-Machine Gun to your inventory."
+            );
+            Uses = cfg.Bind(
+                Section,
+                "Uses",
+                10f,
+                "Total bullets per Sub-Machine Gun pickup. Each shot consumes one use."
+            );
+            FireRate = cfg.Bind(
+                Section,
+                "FireRate",
+                0.04f,
+                "Seconds between each bullet in the burst."
+            );
+            Inaccuracy = cfg.Bind(
+                Section,
+                "Inaccuracy",
+                5f,
+                "Random spread angle (degrees) applied to each bullet. Higher = less accurate."
+            );
+            MaxAimingDistance = cfg.Bind(
+                Section,
+                "MaxAimingDistance",
+                500f,
+                "Max distance used when computing the aim point for each bullet."
+            );
+            MaxShotDistance = cfg.Bind(
+                Section,
+                "MaxShotDistance",
+                500f,
+                "Max raycast distance for each bullet."
+            );
+            ScreenShakeIntensity = cfg.Bind(
+                Section,
+                "ScreenShakeIntensity",
+                0.25f,
+                "Intensity of the screen shake when firing the AK47. 0 disables it. Higher values shake more."
+            );
 
-            SpawnWeight = global.BindSpawnWeight(cfg, 114, "AK47Weight", 12f, "Override spawn weight for the AK-47.");
+            SpawnWeight = global.BindSpawnWeight(
+                cfg,
+                114,
+                "AK47Weight",
+                12f,
+                "Override spawn weight for the AK-47."
+            );
         }
     }
 }

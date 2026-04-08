@@ -22,19 +22,75 @@ namespace IssaPlugin
 
         public RocketTetherConfig(ConfigFile cfg, GlobalConfig global)
         {
-            GiveKey = cfg.Bind(Section, "GiveKey", Key.NumpadMultiply, "Hotkey to give yourself a Rocket Tether (debug/testing).");
+            GiveKey = cfg.Bind(
+                Section,
+                "GiveKey",
+                Key.NumpadMultiply,
+                "Hotkey to give yourself a Rocket Tether (debug/testing)."
+            );
             Uses = cfg.Bind(Section, "Uses", 1f, "Number of uses per Rocket Tether pickup.");
-            LockOnRange = cfg.Bind(Section, "LockOnRange", 40f, "Maximum distance (units) at which the Rocket Tether can lock onto a target.");
-            LockOnConeAngleDeg = cfg.Bind(Section, "LockOnConeAngleDeg", 60f, "Full angle (degrees) of the aim cone used to filter lock-on candidates.");
-            TetherDuration = cfg.Bind(Section, "TetherDuration", 8f, "Duration in seconds before the tether automatically disconnects.");
-            SpringForce = cfg.Bind(Section, "SpringForce", 5f, "Spring stiffness coefficient; multiplied by stretch distance to compute pull speed.");
-            MaxPullSpeed = cfg.Bind(Section, "MaxPullSpeed", 20f, "Maximum velocity change (m/s) applied to each player per physics tick.");
-            NaturalLength = cfg.Bind(Section, "NaturalLength", 5f, "Distance (units) below which no force is applied. Set >0 for a rope with slack.");
-            RocketSpeed = cfg.Bind(Section, "RocketSpeed", 35f, "Upward speed (m/s) of the rocket during its flight.");
-            ExplosionForce = cfg.Bind(Section, "ExplosionForce", 100f, "Peak velocity change (m/s, VelocityChange) applied at the explosion centre.");
-            ExplosionRadius = cfg.Bind(Section, "ExplosionRadius", 50f, "Radius (units) within which the explosion affects nearby players.");
+            LockOnRange = cfg.Bind(
+                Section,
+                "LockOnRange",
+                40f,
+                "Maximum distance (units) at which the Rocket Tether can lock onto a target."
+            );
+            LockOnConeAngleDeg = cfg.Bind(
+                Section,
+                "LockOnConeAngleDeg",
+                60f,
+                "Full angle (degrees) of the aim cone used to filter lock-on candidates."
+            );
+            TetherDuration = cfg.Bind(
+                Section,
+                "TetherDuration",
+                8f,
+                "Duration in seconds before the tether automatically disconnects."
+            );
+            SpringForce = cfg.Bind(
+                Section,
+                "SpringForce",
+                5f,
+                "Spring stiffness coefficient; multiplied by stretch distance to compute pull speed."
+            );
+            MaxPullSpeed = cfg.Bind(
+                Section,
+                "MaxPullSpeed",
+                20f,
+                "Maximum velocity change (m/s) applied to each player per physics tick."
+            );
+            NaturalLength = cfg.Bind(
+                Section,
+                "NaturalLength",
+                5f,
+                "Distance (units) below which no force is applied. Set >0 for a rope with slack."
+            );
+            RocketSpeed = cfg.Bind(
+                Section,
+                "RocketSpeed",
+                35f,
+                "Upward speed (m/s) of the rocket during its flight."
+            );
+            ExplosionForce = cfg.Bind(
+                Section,
+                "ExplosionForce",
+                100f,
+                "Peak velocity change (m/s, VelocityChange) applied at the explosion centre."
+            );
+            ExplosionRadius = cfg.Bind(
+                Section,
+                "ExplosionRadius",
+                50f,
+                "Radius (units) within which the explosion affects nearby players."
+            );
 
-            SpawnWeight = global.BindSpawnWeight(cfg, 122, "RocketTetherSpawnWeight", 10f, "Override spawn weight for the Rocket Tether.");
+            SpawnWeight = global.BindSpawnWeight(
+                cfg,
+                122,
+                "RocketTetherSpawnWeight",
+                10f,
+                "Override spawn weight for the Rocket Tether."
+            );
         }
     }
 }

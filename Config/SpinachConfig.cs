@@ -17,7 +17,13 @@ namespace IssaPlugin
         {
             Duration = cfg.Bind(Section, "Duration", 30f, "Duration in seconds of the spinach.");
             PowerMultiplier = cfg.Bind(Section, "PowerMultiplier", 2.5f, "Swing power multiplier.");
-            SpawnWeight = global.BindSpawnWeight(cfg, 125, "SpinachSpawnWeight", 10f, "Override spawn weight for Spinach.");
+            SpawnWeight = global.BindSpawnWeight(
+                cfg,
+                125,
+                "SpinachSpawnWeight",
+                10f,
+                "Override spawn weight for Spinach."
+            );
             Uses = cfg.Bind(Section, "Uses", 1f, "Number of uses");
             GiveKey = cfg.Bind(Section, "GiveKey", Key.F6, "Key to press to get the spinach item.");
         }

@@ -30,10 +30,30 @@ namespace IssaPlugin
 
         public StealthBomberConfig(ConfigFile cfg, GlobalConfig global)
         {
-            Altitude = cfg.Bind(Section, "Altitude", 60f, "Height above the map the bombing run flies at.");
-            Speed = cfg.Bind(Section, "Speed", 35f, "Speed of the bombing run in units per second.");
-            ApproachDistance = cfg.Bind(Section, "ApproachDistance", 300f, "How far away the bomber visual spawns from the targeting strip in units.");
-            RocketInterval = cfg.Bind(Section, "RocketInterval", 0.15f, "Seconds between each rocket drop during a bombing run.");
+            Altitude = cfg.Bind(
+                Section,
+                "Altitude",
+                60f,
+                "Height above the map the bombing run flies at."
+            );
+            Speed = cfg.Bind(
+                Section,
+                "Speed",
+                35f,
+                "Speed of the bombing run in units per second."
+            );
+            ApproachDistance = cfg.Bind(
+                Section,
+                "ApproachDistance",
+                300f,
+                "How far away the bomber visual spawns from the targeting strip in units."
+            );
+            RocketInterval = cfg.Bind(
+                Section,
+                "RocketInterval",
+                0.15f,
+                "Seconds between each rocket drop during a bombing run."
+            );
             Spread = cfg.Bind(
                 Section,
                 "Spread",
@@ -44,21 +64,92 @@ namespace IssaPlugin
                 )
             );
             Uses = cfg.Bind(Section, "Uses", 1f, "Number of bombing runs per pickup.");
-            GiveKey = cfg.Bind(Section, "GiveKey", Key.F8, "Key to press to add the stealth bomber to your inventory.");
-            WaitTime = cfg.Bind(Section, "WaitTime", 1.5f, "Seconds to wait before starting the bombing run.");
-            StripLength = cfg.Bind(Section, "StripLength", 300f, "Length of the targeting strip in units.");
-            TargetingZoomSpeed = cfg.Bind(Section, "TargetingZoomSpeed", 5f, "Speed at which the camera zooms in/out during bomber targeting.");
-            RocketAngularJitter = cfg.Bind(Section, "RocketAngularJitter", 0.8f, "Random angular jitter in degrees for each rocket's rotation.");
-            RocketSpawnDepth = cfg.Bind(Section, "RocketSpawnDepth", 5f, "How far below the bomber (in units) rockets spawn, to avoid colliding with the bomber on creation.");
-            TargetMoveSpeed = cfg.Bind(Section, "TargetMoveSpeed", 50f, "How fast the targeting strip moves with WASD.");
-            TargetRotateSpeed = cfg.Bind(Section, "TargetRotateSpeed", 90f, "Rotation speed of the targeting strip in degrees per second (Q/E).");
-            HitsToDestroy = cfg.Bind(Section, "HitsToDestroy", 1f, "Rocket hits required to shoot down the bomber and cancel its run. Set to 0 to make it invincible.");
-            CrashImpactForce = cfg.Bind(Section, "CrashImpactForce", 500f, "Impulse force applied to the stealth bomber in the direction of the rocket hit when shot down.");
-            CrashDownwardForce = cfg.Bind(Section, "CrashDownwardForce", 15f, "Impulse force applied to the stealth bomber in the downward direction.");
-            CrashTorque = cfg.Bind(Section, "CrashTorque", 1.2f, "Magnitude of the random tumble torque applied to the stealth bomber when shot down.");
+            GiveKey = cfg.Bind(
+                Section,
+                "GiveKey",
+                Key.F8,
+                "Key to press to add the stealth bomber to your inventory."
+            );
+            WaitTime = cfg.Bind(
+                Section,
+                "WaitTime",
+                1.5f,
+                "Seconds to wait before starting the bombing run."
+            );
+            StripLength = cfg.Bind(
+                Section,
+                "StripLength",
+                300f,
+                "Length of the targeting strip in units."
+            );
+            TargetingZoomSpeed = cfg.Bind(
+                Section,
+                "TargetingZoomSpeed",
+                5f,
+                "Speed at which the camera zooms in/out during bomber targeting."
+            );
+            RocketAngularJitter = cfg.Bind(
+                Section,
+                "RocketAngularJitter",
+                0.8f,
+                "Random angular jitter in degrees for each rocket's rotation."
+            );
+            RocketSpawnDepth = cfg.Bind(
+                Section,
+                "RocketSpawnDepth",
+                5f,
+                "How far below the bomber (in units) rockets spawn, to avoid colliding with the bomber on creation."
+            );
+            TargetMoveSpeed = cfg.Bind(
+                Section,
+                "TargetMoveSpeed",
+                50f,
+                "How fast the targeting strip moves with WASD."
+            );
+            TargetRotateSpeed = cfg.Bind(
+                Section,
+                "TargetRotateSpeed",
+                90f,
+                "Rotation speed of the targeting strip in degrees per second (Q/E)."
+            );
+            HitsToDestroy = cfg.Bind(
+                Section,
+                "HitsToDestroy",
+                1f,
+                "Rocket hits required to shoot down the bomber and cancel its run. Set to 0 to make it invincible."
+            );
+            CrashImpactForce = cfg.Bind(
+                Section,
+                "CrashImpactForce",
+                500f,
+                "Impulse force applied to the stealth bomber in the direction of the rocket hit when shot down."
+            );
+            CrashDownwardForce = cfg.Bind(
+                Section,
+                "CrashDownwardForce",
+                15f,
+                "Impulse force applied to the stealth bomber in the downward direction."
+            );
+            CrashTorque = cfg.Bind(
+                Section,
+                "CrashTorque",
+                1.2f,
+                "Magnitude of the random tumble torque applied to the stealth bomber when shot down."
+            );
 
-            SpawnWeight = global.BindSpawnWeight(cfg, 101, "StealthBomberWeight", 10f, "Override spawn weight for the Stealth Bomber.");
-            ExplosionScale = cfg.Bind("Explosions", "StealthBomberScale", 1.5f, "Multiplier for Stealth Bomber rocket explosions. Affects blast radius, knockback, and VFX size.");
+            SpawnWeight = global.BindSpawnWeight(
+                cfg,
+                101,
+                "StealthBomberWeight",
+                10f,
+                "Override spawn weight for the Stealth Bomber."
+            );
+            ExplosionScale = cfg.Bind(
+                "Explosions",
+                "StealthBomberScale",
+                1.5f,
+                "Multiplier for Stealth Bomber rocket explosions. Affects blast radius, knockback, and VFX size."
+            );
         }
     }
 }

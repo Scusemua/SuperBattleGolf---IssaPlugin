@@ -77,27 +77,48 @@ namespace IssaPlugin
         // ── Pass-through helper methods (from GlobalConfig) ───────────────────
 
         public static bool GetItemEnabled(ItemType itemType) => Global.GetItemEnabled(itemType);
-        public static void SetItemEnabled(ItemType itemType, bool enabled) => Global.SetItemEnabled(itemType, enabled);
+
+        public static void SetItemEnabled(ItemType itemType, bool enabled) =>
+            Global.SetItemEnabled(itemType, enabled);
 
         public static int GetItemTier(ItemType itemType) => Global.GetItemTier(itemType);
-        public static void SetItemTier(ItemType itemType, int tier) => Global.SetItemTier(itemType, tier);
 
-        public static bool GetItemSpawnWeightOverrideEnabled(ItemType t) => Global.GetItemSpawnWeightOverrideEnabled(t);
-        public static float GetItemSpawnWeightOverrideValue(ItemType t) => Global.GetItemSpawnWeightOverrideValue(t);
-        public static void SetItemSpawnWeightOverride(ItemType itemType, bool enabled, float value) => Global.SetItemSpawnWeightOverride(itemType, enabled, value);
+        public static void SetItemTier(ItemType itemType, int tier) =>
+            Global.SetItemTier(itemType, tier);
+
+        public static bool GetItemSpawnWeightOverrideEnabled(ItemType t) =>
+            Global.GetItemSpawnWeightOverrideEnabled(t);
+
+        public static float GetItemSpawnWeightOverrideValue(ItemType t) =>
+            Global.GetItemSpawnWeightOverrideValue(t);
+
+        public static void SetItemSpawnWeightOverride(
+            ItemType itemType,
+            bool enabled,
+            float value
+        ) => Global.SetItemSpawnWeightOverride(itemType, enabled, value);
 
         public static bool GetTierEnabled(int tier) => Global.GetTierEnabled(tier);
-        public static void SetTierEnabled(int tier, bool value) => Global.SetTierEnabled(tier, value);
+
+        public static void SetTierEnabled(int tier, bool value) =>
+            Global.SetTierEnabled(tier, value);
 
         public static float GetTierSpawnWeight(int tier) => Global.GetTierSpawnWeight(tier);
-        public static void SetTierSpawnWeight(int tier, float value) => Global.SetTierSpawnWeight(tier, value);
+
+        public static void SetTierSpawnWeight(int tier, float value) =>
+            Global.SetTierSpawnWeight(tier, value);
 
         public static float GetTierMinDistance(int tier) => Global.GetTierMinDistance(tier);
-        public static void SetTierMinDistance(int tier, float value) => Global.SetTierMinDistance(tier, value);
+
+        public static void SetTierMinDistance(int tier, float value) =>
+            Global.SetTierMinDistance(tier, value);
 
         public static int GetTierMinPlace(int tier) => Global.GetTierMinPlace(tier);
-        public static void SetTierMinPlace(int tier, int value) => Global.SetTierMinPlace(tier, value);
 
-        public static bool GetItemWarningEnabled(ItemType itemType) => Global.GetItemWarningEnabled(itemType);
+        public static void SetTierMinPlace(int tier, int value) =>
+            Global.SetTierMinPlace(tier, value);
+
+        public static bool GetItemWarningEnabled(ItemType itemType) =>
+            Global.GetItemWarningEnabled(itemType);
     }
 }

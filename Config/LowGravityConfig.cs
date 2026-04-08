@@ -15,9 +15,19 @@ namespace IssaPlugin
 
         public LowGravityConfig(ConfigFile cfg, GlobalConfig global)
         {
-            GiveKey = cfg.Bind(Section, "GiveKey", Key.Numpad0, "Debug key to add the Low Gravity item to your inventory.");
+            GiveKey = cfg.Bind(
+                Section,
+                "GiveKey",
+                Key.Numpad0,
+                "Debug key to add the Low Gravity item to your inventory."
+            );
             Uses = cfg.Bind(Section, "Uses", 1f, "Number of uses per Low Gravity pickup.");
-            Duration = cfg.Bind(Section, "Duration", 20f, "Seconds the reduced gravity lasts before physics is restored.");
+            Duration = cfg.Bind(
+                Section,
+                "Duration",
+                20f,
+                "Seconds the reduced gravity lasts before physics is restored."
+            );
             Scale = cfg.Bind(
                 Section,
                 "GravityScale",
@@ -27,7 +37,13 @@ namespace IssaPlugin
                     + "since PlayerMovement reads Physics.gravity directly."
             );
 
-            SpawnWeight = global.BindSpawnWeight(cfg, 105, "LowGravityWeight", 8f, "Override spawn weight for the Low Gravity item.");
+            SpawnWeight = global.BindSpawnWeight(
+                cfg,
+                105,
+                "LowGravityWeight",
+                8f,
+                "Override spawn weight for the Low Gravity item."
+            );
         }
     }
 }

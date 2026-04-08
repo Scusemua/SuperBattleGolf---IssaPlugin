@@ -90,10 +90,10 @@ namespace IssaPlugin
         }
 
         // ── Per-tier spawn weights ────────────────────────────────────────────
-        private readonly Dictionary<int, ConfigEntry<bool>>  _tierEnabledEntries      = new();
-        private readonly Dictionary<int, ConfigEntry<float>> _tierSpawnWeightEntries  = new();
-        private readonly Dictionary<int, ConfigEntry<float>> _tierMinDistanceEntries  = new();
-        private readonly Dictionary<int, ConfigEntry<int>>   _tierMinPlaceEntries     = new();
+        private readonly Dictionary<int, ConfigEntry<bool>> _tierEnabledEntries = new();
+        private readonly Dictionary<int, ConfigEntry<float>> _tierSpawnWeightEntries = new();
+        private readonly Dictionary<int, ConfigEntry<float>> _tierMinDistanceEntries = new();
+        private readonly Dictionary<int, ConfigEntry<int>> _tierMinPlaceEntries = new();
 
         public bool GetTierEnabled(int tier) =>
             _tierEnabledEntries.TryGetValue(tier, out var e) ? e.Value : true;

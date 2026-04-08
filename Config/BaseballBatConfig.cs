@@ -35,7 +35,13 @@ namespace IssaPlugin
                 "Key to press to add the baseball bat to your inventory."
             );
 
-            SpawnWeight = global.BindSpawnWeight(cfg, 100, "BaseballBatWeight", 15f, "Override spawn weight for the Baseball Bat.");
+            SpawnWeight = global.BindSpawnWeight(
+                cfg,
+                100,
+                "BaseballBatWeight",
+                15f,
+                "Override spawn weight for the Baseball Bat."
+            );
         }
     }
 }

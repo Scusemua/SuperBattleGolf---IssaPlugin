@@ -47,42 +47,193 @@ namespace IssaPlugin
 
         public PoisonJarConfig(ConfigFile cfg, GlobalConfig global)
         {
-            GiveKey = cfg.Bind(JarSection, "GiveKey", Key.NumpadPeriod, "Debug key to add the Poison Jar to your inventory.");
+            GiveKey = cfg.Bind(
+                JarSection,
+                "GiveKey",
+                Key.NumpadPeriod,
+                "Debug key to add the Poison Jar to your inventory."
+            );
             Uses = cfg.Bind(JarSection, "Uses", 1f, "Number of uses per Poison Jar pickup.");
-            ThrowSpeed = cfg.Bind(JarSection, "ThrowSpeed", 18.0f, "Initial throw speed in metres per second.");
-            LobAngle = cfg.Bind(JarSection, "LobAngle", 0.35f, "Upward component added to the throw direction (0 = flat, 1 = 45° up).");
-            Radius = cfg.Bind(JarSection, "Radius", 2.0f, "Radius in metres of the poison AoE. Also scales the splash VFX.");
-            Duration = cfg.Bind(JarSection, "Duration", 10.0f, "How long (seconds) the poison visual lasts on affected players.");
+            ThrowSpeed = cfg.Bind(
+                JarSection,
+                "ThrowSpeed",
+                18.0f,
+                "Initial throw speed in metres per second."
+            );
+            LobAngle = cfg.Bind(
+                JarSection,
+                "LobAngle",
+                0.35f,
+                "Upward component added to the throw direction (0 = flat, 1 = 45° up)."
+            );
+            Radius = cfg.Bind(
+                JarSection,
+                "Radius",
+                2.0f,
+                "Radius in metres of the poison AoE. Also scales the splash VFX."
+            );
+            Duration = cfg.Bind(
+                JarSection,
+                "Duration",
+                10.0f,
+                "How long (seconds) the poison visual lasts on affected players."
+            );
 
-            SpawnWeight = global.BindSpawnWeight(cfg, 117, "PoisonJarSpawnWeight", 10f, "Override spawn weight for the Poison Jar.");
+            SpawnWeight = global.BindSpawnWeight(
+                cfg,
+                117,
+                "PoisonJarSpawnWeight",
+                10f,
+                "Override spawn weight for the Poison Jar."
+            );
 
-            GhostEnabled = cfg.Bind(OverlaySection, "GhostEnabled", true, "Enable the double-vision ghost image.");
-            GhostOffsetX = cfg.Bind(OverlaySection, "GhostOffsetX", 0.04f, "Horizontal ghost offset as a fraction of screen width (e.g. 0.04 = 4%).");
-            GhostOffsetY = cfg.Bind(OverlaySection, "GhostOffsetY", 0.01f, "Vertical ghost offset as a fraction of screen height.");
-            GhostAlpha = cfg.Bind(OverlaySection, "GhostAlpha", 0.35f, "Opacity of the ghost image (0–1).");
+            GhostEnabled = cfg.Bind(
+                OverlaySection,
+                "GhostEnabled",
+                true,
+                "Enable the double-vision ghost image."
+            );
+            GhostOffsetX = cfg.Bind(
+                OverlaySection,
+                "GhostOffsetX",
+                0.04f,
+                "Horizontal ghost offset as a fraction of screen width (e.g. 0.04 = 4%)."
+            );
+            GhostOffsetY = cfg.Bind(
+                OverlaySection,
+                "GhostOffsetY",
+                0.01f,
+                "Vertical ghost offset as a fraction of screen height."
+            );
+            GhostAlpha = cfg.Bind(
+                OverlaySection,
+                "GhostAlpha",
+                0.35f,
+                "Opacity of the ghost image (0–1)."
+            );
             RollFreq1 = cfg.Bind(OverlaySection, "RollFreq1", 1.0f, "Primary lean frequency (Hz).");
-            RollAmp1 = cfg.Bind(OverlaySection, "RollAmp1", 4.5f, "Primary lean amplitude (degrees).");
+            RollAmp1 = cfg.Bind(
+                OverlaySection,
+                "RollAmp1",
+                4.5f,
+                "Primary lean amplitude (degrees)."
+            );
             RollFreq2 = cfg.Bind(OverlaySection, "RollFreq2", 0.28f, "Slow drift frequency (Hz).");
             RollAmp2 = cfg.Bind(OverlaySection, "RollAmp2", 12f, "Slow drift amplitude (degrees).");
-            RollFreq3 = cfg.Bind(OverlaySection, "RollFreq3", 1.35f, "Subtle tremor frequency (Hz).");
-            RollAmp3 = cfg.Bind(OverlaySection, "RollAmp3", 5f, "Subtle tremor amplitude (degrees).");
-            FovFreq1 = cfg.Bind(OverlaySection, "FovFreq1", 0.5f, "Primary FOV breathing frequency (Hz).");
-            FovAmp1 = cfg.Bind(OverlaySection, "FovAmp1", 5f, "Primary FOV breathing amplitude (degrees).");
-            FovFreq2 = cfg.Bind(OverlaySection, "FovFreq2", 1.2f, "Secondary FOV breathing frequency (Hz).");
-            FovAmp2 = cfg.Bind(OverlaySection, "FovAmp2", 8f, "Secondary FOV breathing amplitude (degrees).");
-            VigPulseFreq1 = cfg.Bind(OverlaySection, "VigPulseFreq1", 1.2f, "Vignette primary pulse frequency (Hz).");
-            VigPulseFreq2 = cfg.Bind(OverlaySection, "VigPulseFreq2", 6f, "Vignette secondary pulse frequency (Hz).");
-            VigBaseAlpha = cfg.Bind(OverlaySection, "VigBaseAlpha", 0.50f, "Vignette base opacity (0–1).");
-            VigPulseAmp1 = cfg.Bind(OverlaySection, "VigPulseAmp1", 0.15f, "Vignette primary pulse amplitude.");
-            VigPulseAmp2 = cfg.Bind(OverlaySection, "VigPulseAmp2", 0.08f, "Vignette secondary pulse amplitude.");
-            TintBaseAlpha = cfg.Bind(OverlaySection, "TintBaseAlpha", 0.1f, "Full-screen tint base opacity (0–1).");
-            TintPulseAmp = cfg.Bind(OverlaySection, "TintPulseAmp", 0.05f, "Full-screen tint pulse amplitude.");
-            TintPulseFreq = cfg.Bind(OverlaySection, "TintPulseFreq", 3f, "Full-screen tint pulse frequency (Hz).");
-            AimNoiseEnabled = cfg.Bind(OverlaySection, "AimNoiseEnabled", true, "If true, adds sinusoidal yaw and pitch drift to make aiming harder while poisoned.");
-            AimNoiseYawAmp = cfg.Bind(OverlaySection, "AimNoiseYawAmp", 2.5f, "Yaw (horizontal) aim drift amplitude in degrees.");
-            AimNoiseYawFreq = cfg.Bind(OverlaySection, "AimNoiseYawFreq", 0.8f, "Yaw aim drift frequency in Hz.");
-            AimNoisePitchAmp = cfg.Bind(OverlaySection, "AimNoisePitchAmp", 1.5f, "Pitch (vertical) aim drift amplitude in degrees.");
-            AimNoisePitchFreq = cfg.Bind(OverlaySection, "AimNoisePitchFreq", 1.1f, "Pitch aim drift frequency in Hz.");
+            RollFreq3 = cfg.Bind(
+                OverlaySection,
+                "RollFreq3",
+                1.35f,
+                "Subtle tremor frequency (Hz)."
+            );
+            RollAmp3 = cfg.Bind(
+                OverlaySection,
+                "RollAmp3",
+                5f,
+                "Subtle tremor amplitude (degrees)."
+            );
+            FovFreq1 = cfg.Bind(
+                OverlaySection,
+                "FovFreq1",
+                0.5f,
+                "Primary FOV breathing frequency (Hz)."
+            );
+            FovAmp1 = cfg.Bind(
+                OverlaySection,
+                "FovAmp1",
+                5f,
+                "Primary FOV breathing amplitude (degrees)."
+            );
+            FovFreq2 = cfg.Bind(
+                OverlaySection,
+                "FovFreq2",
+                1.2f,
+                "Secondary FOV breathing frequency (Hz)."
+            );
+            FovAmp2 = cfg.Bind(
+                OverlaySection,
+                "FovAmp2",
+                8f,
+                "Secondary FOV breathing amplitude (degrees)."
+            );
+            VigPulseFreq1 = cfg.Bind(
+                OverlaySection,
+                "VigPulseFreq1",
+                1.2f,
+                "Vignette primary pulse frequency (Hz)."
+            );
+            VigPulseFreq2 = cfg.Bind(
+                OverlaySection,
+                "VigPulseFreq2",
+                6f,
+                "Vignette secondary pulse frequency (Hz)."
+            );
+            VigBaseAlpha = cfg.Bind(
+                OverlaySection,
+                "VigBaseAlpha",
+                0.50f,
+                "Vignette base opacity (0–1)."
+            );
+            VigPulseAmp1 = cfg.Bind(
+                OverlaySection,
+                "VigPulseAmp1",
+                0.15f,
+                "Vignette primary pulse amplitude."
+            );
+            VigPulseAmp2 = cfg.Bind(
+                OverlaySection,
+                "VigPulseAmp2",
+                0.08f,
+                "Vignette secondary pulse amplitude."
+            );
+            TintBaseAlpha = cfg.Bind(
+                OverlaySection,
+                "TintBaseAlpha",
+                0.1f,
+                "Full-screen tint base opacity (0–1)."
+            );
+            TintPulseAmp = cfg.Bind(
+                OverlaySection,
+                "TintPulseAmp",
+                0.05f,
+                "Full-screen tint pulse amplitude."
+            );
+            TintPulseFreq = cfg.Bind(
+                OverlaySection,
+                "TintPulseFreq",
+                3f,
+                "Full-screen tint pulse frequency (Hz)."
+            );
+            AimNoiseEnabled = cfg.Bind(
+                OverlaySection,
+                "AimNoiseEnabled",
+                true,
+                "If true, adds sinusoidal yaw and pitch drift to make aiming harder while poisoned."
+            );
+            AimNoiseYawAmp = cfg.Bind(
+                OverlaySection,
+                "AimNoiseYawAmp",
+                2.5f,
+                "Yaw (horizontal) aim drift amplitude in degrees."
+            );
+            AimNoiseYawFreq = cfg.Bind(
+                OverlaySection,
+                "AimNoiseYawFreq",
+                0.8f,
+                "Yaw aim drift frequency in Hz."
+            );
+            AimNoisePitchAmp = cfg.Bind(
+                OverlaySection,
+                "AimNoisePitchAmp",
+                1.5f,
+                "Pitch (vertical) aim drift amplitude in degrees."
+            );
+            AimNoisePitchFreq = cfg.Bind(
+                OverlaySection,
+                "AimNoisePitchFreq",
+                1.1f,
+                "Pitch aim drift frequency in Hz."
+            );
         }
     }
 }

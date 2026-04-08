@@ -14,11 +14,27 @@ namespace IssaPlugin
 
         public PositionSwapConfig(ConfigFile cfg, GlobalConfig global)
         {
-            GiveKey = cfg.Bind(Section, "GiveKey", Key.NumpadMinus, "Debug key to add the Position Swap item to your inventory.");
+            GiveKey = cfg.Bind(
+                Section,
+                "GiveKey",
+                Key.NumpadMinus,
+                "Debug key to add the Position Swap item to your inventory."
+            );
             Uses = cfg.Bind(Section, "Uses", 1f, "Number of uses per Position Swap pickup.");
-            Delay = cfg.Bind(Section, "Delay", 3f, "Seconds between selecting a swap target and the swap executing. During this time a warning orb appears under both players.");
+            Delay = cfg.Bind(
+                Section,
+                "Delay",
+                3f,
+                "Seconds between selecting a swap target and the swap executing. During this time a warning orb appears under both players."
+            );
 
-            SpawnWeight = global.BindSpawnWeight(cfg, 116, "PositionSwapWeight", 6f, "Override spawn weight for the Position Swap item.");
+            SpawnWeight = global.BindSpawnWeight(
+                cfg,
+                116,
+                "PositionSwapWeight",
+                6f,
+                "Override spawn weight for the Position Swap item."
+            );
         }
     }
 }
