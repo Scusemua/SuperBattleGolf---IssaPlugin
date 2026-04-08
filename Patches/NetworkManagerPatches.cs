@@ -722,6 +722,13 @@ namespace IssaPlugin.Patches
                 SpawnWeightsSyncer.HandleSpawnWeights
             );
 
+            // ── Full config sync (server → all clients) ───────────────────────
+            Writer<ItemConfigSyncMessage>.write = ItemConfigSyncSerialization.Write;
+            Reader<ItemConfigSyncMessage>.read = ItemConfigSyncSerialization.Read;
+            NetworkClient.RegisterHandler<ItemConfigSyncMessage>(
+                ItemConfigSyncer.HandleConfigSync
+            );
+
             // ── Vote system ───────────────────────────────────────────────────
             Writer<VoteStartMessage>.write = VoteMessageSerialization.WriteVoteStartMessage;
             Reader<VoteStartMessage>.read = VoteMessageSerialization.ReadVoteStartMessage;

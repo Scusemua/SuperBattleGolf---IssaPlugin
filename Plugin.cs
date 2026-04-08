@@ -43,6 +43,7 @@ namespace IssaPlugin
 
             gameObject.AddComponent<SpawnWeightsSyncer>();
             gameObject.AddComponent<TierConfigSyncer>();
+            gameObject.AddComponent<ItemConfigSyncer>();
             gameObject.AddComponent<VoteManager>();
             gameObject.AddComponent<PlayerBoxOverlay>();
             gameObject.AddComponent<VoteOverlay>();
