@@ -39,10 +39,14 @@ namespace IssaPlugin.Items
         public static bool IsFiring => _isFiring;
 
         /// <summary>
-        /// Resets the current canister to full. Called from hole cleanup so the
-        /// next hole always starts with a fresh canister.
+        /// Resets fuel and clears the firing flag. Called from hole cleanup so the
+        /// next hole always starts with a fresh canister and an unblocked fire loop.
         /// </summary>
-        public static void ResetFuel() => _fuelRemaining = -1f;
+        public static void ResetFiringState()
+        {
+            _fuelRemaining = -1f;
+            _isFiring = false;
+        }
 
         /// <summary>
         /// Starts the fire loop. Called by FlamethrowerItemDefinition.OnUse on button-down.
@@ -118,5 +122,6 @@ namespace IssaPlugin.Items
                 // it is fully exhausted or the hole ends (see ResetFuel / ClientHoleCleanup).
             }
         }
+
     }
 }

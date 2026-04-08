@@ -35,7 +35,7 @@ namespace IssaPlugin
             GiveKey = cfg.Bind(
                 Section,
                 "GiveKey",
-                Key.F8,
+                Key.F5,
                 "Hotkey to give yourself a Flamethrower (debug/testing)."
             );
 

@@ -359,7 +359,7 @@ namespace IssaPlugin.Items
             ClientHideVictimFire();
             LocalPlayerIsBurning = false;
             if (isLocalPlayer)
-                FlamethrowerItem.ResetFuel();
+                FlamethrowerItem.ResetFiringState();
         }
 
         public override void OnStopServer()
@@ -367,11 +367,7 @@ namespace IssaPlugin.Items
             // Just clear local state — don't send network messages on shutdown
             // since connections may already be closing (matches JetpackNetworkBridge pattern).
             _serverFiring = false;
-            foreach (var (_, (host, co)) in _serverActiveBurns)
-                if (host != null && co != null)
-                    host.StopCoroutine(co);
-            _serverActiveBurns.Clear();
-            _serverBurnShooters.Clear();
+            ServerCancelAllBurns();
         }
     }
 }
