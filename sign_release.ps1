@@ -31,7 +31,7 @@ $rsa = New-Object System.Security.Cryptography.RSACryptoServiceProvider
 $rsa.FromXmlString($privateKeyXml)
 
 $fileBytes = [System.IO.File]::ReadAllBytes((Resolve-Path $DllPath).Path)
-$sha256    = [System.Security.Cryptography.SHA256]::Create()
+$sha256 = [System.Security.Cryptography.SHA256]::Create()
 $signature = $rsa.SignData($fileBytes, $sha256)
 
 $sigPath = $DllPath + ".sig"
