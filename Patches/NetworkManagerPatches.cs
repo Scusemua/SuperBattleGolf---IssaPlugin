@@ -1470,12 +1470,12 @@ namespace IssaPlugin.Patches
             AccessTools.Method(typeof(BNetworkManager), "OnServerReady",
                 new[] { typeof(NetworkConnectionToClient) });
 
-        static void Postfix(NetworkConnectionToClient conn)
+        static void Postfix(NetworkConnectionToClient connection)
         {
             // The listen-server host's own connection also fires OnServerReady.
             // Skip it: the host already has authoritative values, and all three
             // handler methods guard against NetworkServer.active anyway.
-            if (conn == NetworkServer.localConnection)
+            if (connection == NetworkServer.localConnection)
                 return;
 
             // Resets the change-detection sentinel and immediately broadcasts
