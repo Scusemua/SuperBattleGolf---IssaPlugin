@@ -148,8 +148,8 @@ namespace IssaPlugin
             // (OnClientReceivedTierConfig already writes per-item Enabled via
             // ModConfig.SetItemEnabled; these three mirror that same pattern.)
             ModConfig.Global.CustomItemSpawnsEnabled.Value = snap.CustomItemSpawnsEnabled;
-            ModConfig.Global.CustomItemSpawnRate.Value     = snap.GlobalSpawnRateMultiplier;
-            ModConfig.Global.CatchupBoostFactor.Value      = snap.CatchupBoostFactor;
+            ModConfig.Global.CustomItemSpawnRate.Value = snap.GlobalSpawnRateMultiplier;
+            ModConfig.Global.CatchupBoostFactor.Value = snap.CatchupBoostFactor;
 
             // Apply per-item enable / weight-override to local CustomItemDefinition
             // so the client-side UI reflects the host's settings.

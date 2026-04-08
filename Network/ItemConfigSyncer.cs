@@ -54,11 +54,9 @@ namespace IssaPlugin
                 values.Add(kv.Value.GetSerializedValue() ?? string.Empty);
             }
 
-            NetworkServer.SendToAll(new ItemConfigSyncMessage
-            {
-                Keys = keys.ToArray(),
-                Values = values.ToArray(),
-            });
+            NetworkServer.SendToAll(
+                new ItemConfigSyncMessage { Keys = keys.ToArray(), Values = values.ToArray() }
+            );
 
             IssaPluginPlugin.Log.LogDebug(
                 $"[ItemConfigSyncer] Broadcast {keys.Count} config entries to all clients."

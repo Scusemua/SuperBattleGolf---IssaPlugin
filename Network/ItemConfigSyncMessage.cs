@@ -11,6 +11,7 @@ namespace IssaPlugin.Network
     {
         /// <summary>"Section::Key" for each entry.</summary>
         public string[] Keys;
+
         /// <summary>Serialized value string (BepInEx format) for each entry.</summary>
         public string[] Values;
     }
