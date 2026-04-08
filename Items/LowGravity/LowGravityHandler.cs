@@ -37,7 +37,7 @@ namespace IssaPlugin.Patches
             _applied = true;
             _savedGravity = Physics.gravity;
 
-            float scale = ModConfig.LowGravity.Scale.Value; 
+            float scale = ModConfig.LowGravity.Scale.Value;
             Physics.gravity = new Vector3(
                 _savedGravity.x,
                 _savedGravity.y * scale,
@@ -46,7 +46,7 @@ namespace IssaPlugin.Patches
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[LowGravity] Gravity applied. Scale={scale:F2}, "
-                + $"Physics.gravity.y={Physics.gravity.y:F3}"
+                    + $"Physics.gravity.y={Physics.gravity.y:F3}"
             );
         }
 

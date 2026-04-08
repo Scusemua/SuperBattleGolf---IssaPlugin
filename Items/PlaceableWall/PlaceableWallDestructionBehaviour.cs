@@ -1,19 +1,22 @@
-using UnityEngine;
 using System.Collections;
+using UnityEngine;
 
-namespace IssaPlugin.Items {
-    public class PlaceableWallDestructionBehaviour : MonoBehaviour {
+namespace IssaPlugin.Items
+{
+    public class PlaceableWallDestructionBehaviour : MonoBehaviour
+    {
         public float HealthPoints { get; private set; }
 
         public float VelocityImpactFactor { get; private set; }
 
         public float TorsionMultiplier { get; private set; }
 
-        public Rigidbody Rigidbody {get; private set;}
+        public Rigidbody Rigidbody { get; private set; }
 
         private bool _deformed;
 
-        private void Awake() {
+        private void Awake()
+        {
             Rigidbody = GetComponent<Rigidbody>();
 
             HealthPoints = ModConfig.PlaceableWall.HealthPoints.Value;
@@ -43,7 +46,8 @@ namespace IssaPlugin.Items {
             float debrisLifetime = ModConfig.PlaceableWall.DebrisLifetime.Value;
             float explosionForce = ModConfig.PlaceableWall.RocketExplosionForce.Value;
 
-            foreach(Transform childTransform in transform) {
+            foreach (Transform childTransform in transform)
+            {
                 childTransform.parent = null;
                 Rigidbody spawnedRigidbody = childTransform.gameObject.AddComponent<Rigidbody>();
 
@@ -61,7 +65,9 @@ namespace IssaPlugin.Items {
                 else
                 {
                     // Transfer the parent chunk's velocity (e.g. from a melee hit).
-                    spawnedRigidbody.linearVelocity = Rigidbody.GetPointVelocity(childTransform.position);
+                    spawnedRigidbody.linearVelocity = Rigidbody.GetPointVelocity(
+                        childTransform.position
+                    );
                     spawnedRigidbody.AddTorque(Rigidbody.angularVelocity, ForceMode.VelocityChange);
                 }
 
@@ -77,18 +83,20 @@ namespace IssaPlugin.Items {
             Destroy(gameObject);
         }
 
-        private void FixedUpdate() {
-            // Damage the wall based on torsion/torque. Objects that are rotating rapidly will 
+        private void FixedUpdate()
+        {
+            // Damage the wall based on torsion/torque. Objects that are rotating rapidly will
             // apply torque to the wall, resulting in torsion damage, or something like that.
             // I'm not a physicist.
             float damage = TorsionMultiplier * Rigidbody.angularVelocity.sqrMagnitude;
-            HealthPoints -= damage; 
+            HealthPoints -= damage;
 
             TryDeformWall();
         }
 
         // When the chunk hits another object, take some of its health away
-        void OnCollisionEnter(Collision collision) {
+        void OnCollisionEnter(Collision collision)
+        {
             // Players cannot destroy walls simply by walking into them.
             if (collision.gameObject.GetComponentInParent<PlayerInfo>() != null)
             {
@@ -99,7 +107,8 @@ namespace IssaPlugin.Items {
 
             // If the chunk was hit by a rigidbody, multiply the damage by its mass
             float damage = relativeVelocity * VelocityImpactFactor;
-            if (collision.rigidbody) {
+            if (collision.rigidbody)
+            {
                 // If this chunk of the wall was hit by another Rigidbody,
                 // then multiply the damage by the mass of the other Rigidbody.
                 damage *= collision.rigidbody.mass;

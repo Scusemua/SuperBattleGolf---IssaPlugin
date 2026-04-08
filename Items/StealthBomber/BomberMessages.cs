@@ -119,7 +119,10 @@ namespace IssaPlugin.Items
 
     public static class BomberDamagedMessageSerialization
     {
-        public static void WriteBomberDamagedMessage(NetworkWriter writer, BomberDamagedMessage msg) { }
+        public static void WriteBomberDamagedMessage(
+            NetworkWriter writer,
+            BomberDamagedMessage msg
+        ) { }
 
         public static BomberDamagedMessage ReadBomberDamagedMessage(NetworkReader reader) =>
             new BomberDamagedMessage();

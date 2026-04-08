@@ -116,10 +116,7 @@ namespace IssaPlugin.Items
             IssaPluginPlugin.Log.LogInfo(
                 $"[RocketTether] ClientUse: targeting netId={bestTarget.netId}."
             );
-            NetworkClient.Send(new RocketTetherLockOnMessage
-            {
-                TargetNetId = bestTarget.netId,
-            });
+            NetworkClient.Send(new RocketTetherLockOnMessage { TargetNetId = bestTarget.netId });
         }
 
         // =====================================================================
@@ -148,9 +145,10 @@ namespace IssaPlugin.Items
             // The inventory slots SyncList is server-authoritative so scanning it
             // here is always reliable, regardless of client→server SyncVar timing.
             var inventory = GetComponent<PlayerInventory>();
-            int rocketTetherSlot = inventory != null
-                ? ItemRegistry.FindSlotIndex(inventory, ItemRegistry.RocketTetherItemType)
-                : -1;
+            int rocketTetherSlot =
+                inventory != null
+                    ? ItemRegistry.FindSlotIndex(inventory, ItemRegistry.RocketTetherItemType)
+                    : -1;
             if (rocketTetherSlot < 0)
             {
                 IssaPluginPlugin.Log.LogWarning(

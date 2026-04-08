@@ -1,6 +1,6 @@
+using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using Mirror;
 
 namespace IssaPlugin.Items
 {

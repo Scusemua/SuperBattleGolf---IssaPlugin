@@ -213,7 +213,8 @@ namespace IssaPlugin.Items
                         fromJump
                             ? Keyboard.current != null && Keyboard.current.spaceKey.isPressed
                             : Mouse.current != null && Mouse.current.leftButton.isPressed
-                    ) && _fuelRemaining > 0
+                    )
+                    && _fuelRemaining > 0
                 );
             }
             finally

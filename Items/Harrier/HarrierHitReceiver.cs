@@ -19,7 +19,7 @@ namespace IssaPlugin.Items
 
         private void Awake()
         {
-            HitCount    = 0;
+            HitCount = 0;
             HitsRequired = (int)ModConfig.Harrier.HitsToDestroy.Value;
             OnHit += HandleHit;
         }
@@ -37,9 +37,7 @@ namespace IssaPlugin.Items
                 return;
 
             HitCount++;
-            IssaPluginPlugin.Log.LogInfo(
-                $"[Harrier] Rocket impact {HitCount}/{HitsRequired}."
-            );
+            IssaPluginPlugin.Log.LogInfo($"[Harrier] Rocket impact {HitCount}/{HitsRequired}.");
 
             if (HitCount >= HitsRequired)
             {

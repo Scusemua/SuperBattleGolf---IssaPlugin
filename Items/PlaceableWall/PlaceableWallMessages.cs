@@ -11,6 +11,7 @@ namespace IssaPlugin.Items
     {
         public Vector3 RayOrigin;
         public Vector3 RayDirection;
+
         /// Extra clockwise yaw rotation (degrees) accumulated via the R key in the
         /// placement preview. Added on top of the camera-facing base rotation.
         public float ExtraYawDegrees;
@@ -44,10 +45,7 @@ namespace IssaPlugin.Items
 
     public static class WallDestroyedMessageSerialization
     {
-        public static void WriteWallDestroyedMessage(
-            NetworkWriter writer,
-            WallDestroyedMessage msg
-        )
+        public static void WriteWallDestroyedMessage(NetworkWriter writer, WallDestroyedMessage msg)
         {
             writer.WriteVector3(msg.DestroyPosition);
         }

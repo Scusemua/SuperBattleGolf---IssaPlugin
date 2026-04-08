@@ -51,8 +51,7 @@ namespace IssaPlugin.Items
             CoffeeDispenserRedBullMessage msg
         ) => w.WriteUInt(msg.NetId);
 
-        public static CoffeeDispenserRedBullMessage ReadCoffeeDispenserRedBull(
-            NetworkReader r
-        ) => new() { NetId = r.ReadUInt() };
+        public static CoffeeDispenserRedBullMessage ReadCoffeeDispenserRedBull(NetworkReader r) =>
+            new() { NetId = r.ReadUInt() };
     }
 }

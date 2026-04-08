@@ -45,10 +45,10 @@ namespace IssaPlugin.Items
         private bool _impacted;
         private float _lifetime;
 
-        private const float MaxLifetime      = 20f;
-        private const float ImpactProximity  = 3f;
+        private const float MaxLifetime = 20f;
+        private const float ImpactProximity = 3f;
         private const float InitialDownSpeed = 15f;
-        private const float RocketImpulse    = 25f;
+        private const float RocketImpulse = 25f;
 
         // ----------------------------------------------------------------
         //  Smoke trail (all clients)
@@ -103,12 +103,13 @@ namespace IssaPlugin.Items
             if (_rb == null)
                 _rb = gameObject.AddComponent<Rigidbody>();
             _rb.isKinematic = false;
-            _rb.useGravity  = true;
+            _rb.useGravity = true;
 
             // Initial velocity: carry the jet's current forward momentum plus a
             // downward push, then add a nudge from the killing rocket direction.
-            Vector3 crashVel = transform.forward * ModConfig.Harrier.ApproachSpeed.Value * 0.125f
-                             + Vector3.down * InitialDownSpeed;
+            Vector3 crashVel =
+                transform.forward * ModConfig.Harrier.ApproachSpeed.Value * 0.125f
+                + Vector3.down * InitialDownSpeed;
 
             if (KillingRocketDir != Vector3.zero)
                 crashVel += KillingRocketDir * RocketImpulse;
@@ -117,11 +118,8 @@ namespace IssaPlugin.Items
 
             // Add a random tumble so it looks like a stricken aircraft.
             _rb.AddTorque(
-                new Vector3(
-                    Random.Range(-1f, 1f),
-                    Random.Range(-0.5f, 0.5f),
-                    Random.Range(-1f, 1f)
-                ) * 3f,
+                new Vector3(Random.Range(-1f, 1f), Random.Range(-0.5f, 0.5f), Random.Range(-1f, 1f))
+                    * 3f,
                 ForceMode.Impulse
             );
         }
@@ -150,8 +148,8 @@ namespace IssaPlugin.Items
             // 2. Velocity-direction lookahead — prevents tunnelling at high speed.
             if (_rb != null)
             {
-                Vector3 vel   = _rb.linearVelocity;
-                float   speed = vel.magnitude;
+                Vector3 vel = _rb.linearVelocity;
+                float speed = vel.magnitude;
                 if (speed > 0.1f && vel.y < 0f)
                 {
                     float lookahead = speed * Time.fixedDeltaTime + ImpactProximity;
@@ -177,12 +175,10 @@ namespace IssaPlugin.Items
             if (_impacted)
                 return;
 
-            _impacted  = true;
+            _impacted = true;
             IsComplete = true;
 
-            IssaPluginPlugin.Log.LogInfo(
-                $"[HarrierCrash] Impact at {transform.position:F0}."
-            );
+            IssaPluginPlugin.Log.LogInfo($"[HarrierCrash] Impact at {transform.position:F0}.");
 
             if (ThrowerInventory != null)
                 HarrierItem.SpawnAndExplodeImpactRocket(
@@ -190,7 +186,7 @@ namespace IssaPlugin.Items
                     transform.position,
                     ExplosionScale
                 );
-            
+
             VfxManager.PlayPooledVfxLocalOnly(
                 VfxType.RocketLauncherRocketExplosion,
                 transform.position,

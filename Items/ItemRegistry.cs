@@ -38,7 +38,7 @@ namespace IssaPlugin.Items
         public static readonly ItemType RocketTetherItemType = (ItemType)122;
         public static readonly ItemType JetpackItemType = (ItemType)123;
         public static readonly ItemType TeleporterItemType = (ItemType)124;
-        public static readonly ItemType SpinachItemType      = (ItemType)125;
+        public static readonly ItemType SpinachItemType = (ItemType)125;
         public static readonly ItemType FlamethrowerItemType = (ItemType)126;
 
         // Static initialization order note: AllItems is a static field initializer that only

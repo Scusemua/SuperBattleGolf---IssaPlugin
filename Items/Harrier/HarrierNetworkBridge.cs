@@ -95,7 +95,9 @@ namespace IssaPlugin.Items
             // Approach from a random horizontal direction.
             float approachAngle = Random.value * 360f * Mathf.Deg2Rad;
             Vector3 approachDir = new Vector3(
-                Mathf.Cos(approachAngle), 0f, Mathf.Sin(approachAngle)
+                Mathf.Cos(approachAngle),
+                0f,
+                Mathf.Sin(approachAngle)
             );
             float approachDist = ModConfig.Harrier.ApproachDistance.Value;
             Vector3 spawnPos = hoverPos + approachDir * approachDist;
@@ -116,11 +118,11 @@ namespace IssaPlugin.Items
 
             // Attach the movement driver (server-only; not replicated to clients).
             var behaviour = harrierGo.AddComponent<HarrierBehaviour>();
-            behaviour.HoverTarget    = hoverPos;
-            behaviour.FlyOutTarget   = flyOutPos;
-            behaviour.ApproachSpeed  = ModConfig.Harrier.ApproachSpeed.Value;
-            behaviour.DriftSpeed     = ModConfig.Harrier.DriftSpeed.Value;
-            behaviour.HoverRadius    = ModConfig.Harrier.HoverRadius.Value;
+            behaviour.HoverTarget = hoverPos;
+            behaviour.FlyOutTarget = flyOutPos;
+            behaviour.ApproachSpeed = ModConfig.Harrier.ApproachSpeed.Value;
+            behaviour.DriftSpeed = ModConfig.Harrier.DriftSpeed.Value;
+            behaviour.HoverRadius = ModConfig.Harrier.HoverRadius.Value;
 
             // Attach the hit receiver so the jet can be shot down immediately
             // (even during fly-in). The OnHitsExceeded callback captures locals
@@ -132,13 +134,15 @@ namespace IssaPlugin.Items
                 ItemRegistry.HarrierItemType,
                 "Harrier Jet",
                 trackedNetId: harrierIdentity.netId,
-                senderNetId:  netId
+                senderNetId: netId
             );
             hitReceiver.OnHit += () =>
             {
-                if (hitReceiver.HitsRequired > 0
+                if (
+                    hitReceiver.HitsRequired > 0
                     && hitReceiver.HitCount > 0
-                    && hitReceiver.HitCount < hitReceiver.HitsRequired)
+                    && hitReceiver.HitCount < hitReceiver.HitsRequired
+                )
                 {
                     IssaPluginPlugin.Log.LogInfo(
                         $"[Harrier] Damaged ({hitReceiver.HitCount}/{hitReceiver.HitsRequired}) — broadcasting smoke."
@@ -157,16 +161,16 @@ namespace IssaPlugin.Items
                 _shotDown = true;
                 IssaPluginPlugin.Log.LogInfo("[Harrier] Shot down — initiating crash.");
 
-                NetworkServer.SendToAll(new HarrierShotDownMessage
-                {
-                    HarrierNetId = harrierIdentity.netId
-                });
+                NetworkServer.SendToAll(
+                    new HarrierShotDownMessage { HarrierNetId = harrierIdentity.netId }
+                );
 
                 var crash = harrierGo.AddComponent<HarrierCrashBehaviour>();
                 crash.ThrowerInventory = inventory;
-                crash.KillingRocketDir =
-                    (harrierGo.transform.position - hitReceiver.LastHitWorldPos).normalized;
-                crash.ExplosionScale   = ModConfig.Harrier.CrashExplosionScale.Value;
+                crash.KillingRocketDir = (
+                    harrierGo.transform.position - hitReceiver.LastHitWorldPos
+                ).normalized;
+                crash.ExplosionScale = ModConfig.Harrier.CrashExplosionScale.Value;
             };
 
             IssaPluginPlugin.Log.LogInfo(
@@ -176,13 +180,17 @@ namespace IssaPlugin.Items
             NetworkServer.SendToAll(new HarrierBeginClientMessage { HoverCenter = mapCenter });
 
             // ── Wait for fly-in ──────────────────────────────────────────
-            float flyInTimeout = approachDist / Mathf.Max(
-                ModConfig.Harrier.ApproachSpeed.Value, 1f
-            ) + 8f;
+            float flyInTimeout =
+                approachDist / Mathf.Max(ModConfig.Harrier.ApproachSpeed.Value, 1f) + 8f;
             float elapsed = 0f;
 
-            while (harrierGo != null && behaviour != null
-                   && !behaviour.HasArrived && !_shotDown && elapsed < flyInTimeout)
+            while (
+                harrierGo != null
+                && behaviour != null
+                && !behaviour.HasArrived
+                && !_shotDown
+                && elapsed < flyInTimeout
+            )
             {
                 elapsed += Time.deltaTime;
                 yield return null;
@@ -200,9 +208,9 @@ namespace IssaPlugin.Items
             IssaPluginPlugin.Log.LogInfo("[Harrier] Jet arrived — beginning attack phase.");
 
             // ── Attack phase ─────────────────────────────────────────────
-            float duration      = ModConfig.Harrier.Duration.Value;
-            float fireInterval  = ModConfig.Harrier.FireInterval.Value;
-            bool  friendlyFire  = ModConfig.Harrier.FriendlyFire.Value;
+            float duration = ModConfig.Harrier.Duration.Value;
+            float fireInterval = ModConfig.Harrier.FireInterval.Value;
+            bool friendlyFire = ModConfig.Harrier.FriendlyFire.Value;
 
             float sessionElapsed = 0f;
             // Stagger the first shot by half an interval so the jet isn't
@@ -212,7 +220,7 @@ namespace IssaPlugin.Items
             while (sessionElapsed < duration && harrierGo != null && !_shotDown)
             {
                 sessionElapsed += Time.deltaTime;
-                fireCooldown   -= Time.deltaTime;
+                fireCooldown -= Time.deltaTime;
 
                 if (fireCooldown <= 0f)
                 {
@@ -235,8 +243,12 @@ namespace IssaPlugin.Items
                 float crashTimeout = 20f;
                 elapsed = 0f;
                 var crashBehaviour = harrierGo?.GetComponent<HarrierCrashBehaviour>();
-                while (harrierGo != null && crashBehaviour != null
-                       && !crashBehaviour.IsComplete && elapsed < crashTimeout)
+                while (
+                    harrierGo != null
+                    && crashBehaviour != null
+                    && !crashBehaviour.IsComplete
+                    && elapsed < crashTimeout
+                )
                 {
                     elapsed += Time.deltaTime;
                     yield return null;
@@ -250,8 +262,12 @@ namespace IssaPlugin.Items
 
                 float flyOutTimeout = 12f;
                 elapsed = 0f;
-                while (harrierGo != null && behaviour != null
-                       && !behaviour.IsComplete && elapsed < flyOutTimeout)
+                while (
+                    harrierGo != null
+                    && behaviour != null
+                    && !behaviour.IsComplete
+                    && elapsed < flyOutTimeout
+                )
                 {
                     elapsed += Time.deltaTime;
                     yield return null;
@@ -304,12 +320,16 @@ namespace IssaPlugin.Items
         {
             if (AssetLoader.HarrierPrefab == null)
             {
-                IssaPluginPlugin.Log.LogError("[Harrier] HarrierPrefab is null — was AssetLoader.Load() called?");
+                IssaPluginPlugin.Log.LogError(
+                    "[Harrier] HarrierPrefab is null — was AssetLoader.Load() called?"
+                );
                 return null;
             }
 
             var harrierGo = Object.Instantiate(
-                AssetLoader.HarrierPrefab, spawnPos, Quaternion.identity
+                AssetLoader.HarrierPrefab,
+                spawnPos,
+                Quaternion.identity
             );
 
             if (harrierGo == null)
@@ -321,7 +341,7 @@ namespace IssaPlugin.Items
             {
                 rigidBody = harrierGo.AddComponent<Rigidbody>();
                 rigidBody.isKinematic = true;
-                rigidBody.useGravity  = false;
+                rigidBody.useGravity = false;
             }
 
             // Orient toward the hover point on spawn.
@@ -356,9 +376,7 @@ namespace IssaPlugin.Items
 
         public static void ClientHandleBegin(HarrierBeginClientMessage msg)
         {
-            IssaPluginPlugin.Log.LogInfo(
-                $"[Harrier] Inbound — hover center {msg.HoverCenter:F0}."
-            );
+            IssaPluginPlugin.Log.LogInfo($"[Harrier] Inbound — hover center {msg.HoverCenter:F0}.");
             var local = NetworkClient.localPlayer?.GetComponent<HarrierNetworkBridge>();
             if (local != null)
                 local.LocalSessionActive = true;

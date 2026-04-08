@@ -42,9 +42,8 @@ namespace IssaPlugin.Items
             JavelinRocketTrailMessage m
         ) => w.WriteUInt(m.RocketNetId);
 
-        public static JavelinRocketTrailMessage ReadJavelinRocketTrailMessage(
-            NetworkReader r
-        ) => new JavelinRocketTrailMessage { RocketNetId = r.ReadUInt() };
+        public static JavelinRocketTrailMessage ReadJavelinRocketTrailMessage(NetworkReader r) =>
+            new JavelinRocketTrailMessage { RocketNetId = r.ReadUInt() };
     }
 
     /// Broadcast to every client when the Javelin rocket detonates so each

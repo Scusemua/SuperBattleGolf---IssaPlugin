@@ -38,7 +38,12 @@ namespace IssaPlugin.Items
         //  Internal state
         // ================================================================
 
-        private enum Phase { FlyIn, Hover, FlyOut }
+        private enum Phase
+        {
+            FlyIn,
+            Hover,
+            FlyOut,
+        }
 
         private Phase _phase = Phase.FlyIn;
         private Rigidbody _rb;
@@ -75,9 +80,15 @@ namespace IssaPlugin.Items
         {
             switch (_phase)
             {
-                case Phase.FlyIn:  UpdateFlyIn();  break;
-                case Phase.Hover:  UpdateHover();  break;
-                case Phase.FlyOut: UpdateFlyOut(); break;
+                case Phase.FlyIn:
+                    UpdateFlyIn();
+                    break;
+                case Phase.Hover:
+                    UpdateHover();
+                    break;
+                case Phase.FlyOut:
+                    UpdateFlyOut();
+                    break;
             }
         }
 
@@ -142,7 +153,9 @@ namespace IssaPlugin.Items
             }
 
             float speed = ApproachSpeed * FlyOutSpeedMultiplier;
-            _rb.MovePosition(transform.position + toExit.normalized * (speed * Time.fixedDeltaTime));
+            _rb.MovePosition(
+                transform.position + toExit.normalized * (speed * Time.fixedDeltaTime)
+            );
             _rb.MoveRotation(Quaternion.LookRotation(toExit.normalized));
         }
 

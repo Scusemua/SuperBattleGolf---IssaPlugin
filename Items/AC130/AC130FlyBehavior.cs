@@ -85,9 +85,8 @@ namespace IssaPlugin.Items
             );
 
             Vector3 dir = (flyTarget - transform.position).normalized;
-            Quaternion nextRot = dir != Vector3.zero
-                ? Quaternion.LookRotation(dir, Vector3.up)
-                : transform.rotation;
+            Quaternion nextRot =
+                dir != Vector3.zero ? Quaternion.LookRotation(dir, Vector3.up) : transform.rotation;
 
             Move(nextPos, nextRot);
 
@@ -119,16 +118,18 @@ namespace IssaPlugin.Items
             );
 
             Vector3 tangent = new Vector3(-Mathf.Sin(rad), 0f, Mathf.Cos(rad)).normalized;
-            Quaternion nextRot = tangent != Vector3.zero
-                ? Quaternion.LookRotation(tangent, Vector3.up)
-                : transform.rotation;
+            Quaternion nextRot =
+                tangent != Vector3.zero
+                    ? Quaternion.LookRotation(tangent, Vector3.up)
+                    : transform.rotation;
 
             Move(nextPos, nextRot);
         }
 
         private void UpdateFlyOut()
         {
-            Vector3 nextPos = transform.position + transform.forward * flySpeed * Time.fixedDeltaTime;
+            Vector3 nextPos =
+                transform.position + transform.forward * flySpeed * Time.fixedDeltaTime;
             Move(nextPos, transform.rotation);
 
             if (Vector3.Distance(nextPos, _flyOutStart) > FlyOutDestroyDistance)

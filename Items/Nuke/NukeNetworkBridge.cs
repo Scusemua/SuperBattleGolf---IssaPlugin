@@ -90,7 +90,7 @@ namespace IssaPlugin.Items
                 ItemRegistry.NukeItemType,
                 "Nuke",
                 trackedNetId: bombGo.GetComponent<NetworkIdentity>()?.netId ?? 0,
-                senderNetId:  netId
+                senderNetId: netId
             );
             var itemUseId = new ItemUseId(
                 playerInfo.PlayerId.Guid,

@@ -8,10 +8,13 @@ namespace IssaPlugin.Items
 
     public static class HarrierRequestMessageSerialization
     {
-        public static void WriteHarrierRequestMessage(NetworkWriter writer, HarrierRequestMessage msg) {}
+        public static void WriteHarrierRequestMessage(
+            NetworkWriter writer,
+            HarrierRequestMessage msg
+        ) { }
 
         public static HarrierRequestMessage ReadHarrierRequestMessage(NetworkReader reader) =>
-            new HarrierRequestMessage {};
+            new HarrierRequestMessage { };
     }
 
     /// <summary>
@@ -25,16 +28,17 @@ namespace IssaPlugin.Items
 
     public static class HarrierBeginClientMessageSerialization
     {
-        public static void WriteHarrierBeginClientMessage(NetworkWriter writer, HarrierBeginClientMessage msg)
+        public static void WriteHarrierBeginClientMessage(
+            NetworkWriter writer,
+            HarrierBeginClientMessage msg
+        )
         {
             writer.WriteVector3(msg.HoverCenter);
         }
 
-        public static HarrierBeginClientMessage ReadHarrierBeginClientMessage(NetworkReader reader) =>
-            new HarrierBeginClientMessage
-            {
-                HoverCenter = reader.ReadVector3(),
-            };
+        public static HarrierBeginClientMessage ReadHarrierBeginClientMessage(
+            NetworkReader reader
+        ) => new HarrierBeginClientMessage { HoverCenter = reader.ReadVector3() };
     }
 
     /// <summary>Broadcast by the server to all clients when the Harrier session ends.</summary>
@@ -42,10 +46,13 @@ namespace IssaPlugin.Items
 
     public static class HarrierEndClientMessageSerialization
     {
-        public static void WriteHarrierEndClientMessage(NetworkWriter writer, HarrierEndClientMessage msg) {}
+        public static void WriteHarrierEndClientMessage(
+            NetworkWriter writer,
+            HarrierEndClientMessage msg
+        ) { }
 
         public static HarrierEndClientMessage ReadHarrierEndClientMessage(NetworkReader reader) =>
-            new HarrierEndClientMessage {};
+            new HarrierEndClientMessage { };
     }
 
     /// <summary>
@@ -56,10 +63,14 @@ namespace IssaPlugin.Items
 
     public static class HarrierPrepareHomingMessageSerialization
     {
-        public static void WriteHarrierPrepareHomingMessage(NetworkWriter writer, HarrierPrepareHomingMessage msg) {}
+        public static void WriteHarrierPrepareHomingMessage(
+            NetworkWriter writer,
+            HarrierPrepareHomingMessage msg
+        ) { }
 
-        public static HarrierPrepareHomingMessage ReadHarrierPrepareHomingMessage(NetworkReader reader) =>
-            new HarrierPrepareHomingMessage {};
+        public static HarrierPrepareHomingMessage ReadHarrierPrepareHomingMessage(
+            NetworkReader reader
+        ) => new HarrierPrepareHomingMessage { };
     }
 
     /// <summary>
@@ -78,16 +89,16 @@ namespace IssaPlugin.Items
 
     public static class HarrierShotDownMessageSerialization
     {
-        public static void WriteHarrierShotDownMessage(NetworkWriter writer, HarrierShotDownMessage msg)
+        public static void WriteHarrierShotDownMessage(
+            NetworkWriter writer,
+            HarrierShotDownMessage msg
+        )
         {
             writer.WriteUInt(msg.HarrierNetId);
         }
 
         public static HarrierShotDownMessage ReadHarrierShotDownMessage(NetworkReader reader) =>
-            new HarrierShotDownMessage
-            {
-                HarrierNetId = reader.ReadUInt(),
-            };
+            new HarrierShotDownMessage { HarrierNetId = reader.ReadUInt() };
     }
 
     /// <summary>
@@ -101,15 +112,15 @@ namespace IssaPlugin.Items
 
     public static class HarrierDamagedMessageSerialization
     {
-        public static void WriteHarrierDamagedMessage(NetworkWriter writer, HarrierDamagedMessage msg)
+        public static void WriteHarrierDamagedMessage(
+            NetworkWriter writer,
+            HarrierDamagedMessage msg
+        )
         {
             writer.WriteUInt(msg.HarrierNetId);
         }
 
         public static HarrierDamagedMessage ReadHarrierDamagedMessage(NetworkReader reader) =>
-            new HarrierDamagedMessage
-            {
-                HarrierNetId = reader.ReadUInt(),
-            };
+            new HarrierDamagedMessage { HarrierNetId = reader.ReadUInt() };
     }
 }

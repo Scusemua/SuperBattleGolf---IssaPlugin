@@ -187,7 +187,7 @@ namespace IssaPlugin.Items
                 ItemRegistry.DonutItemType,
                 "Donut",
                 trackedNetId: ni.netId,
-                senderNetId:  netId
+                senderNetId: netId
             );
             connectionToClient.Send(new DonutBeginClientMessage { DonutNetId = ni.netId });
 
@@ -437,8 +437,7 @@ namespace IssaPlugin.Items
             ReleaseGlobalLock();
         }
 
-        private static void ReleaseGlobalLock() =>
-            GlobalSessionLock<DonutNetworkBridge>.Release();
+        private static void ReleaseGlobalLock() => GlobalSessionLock<DonutNetworkBridge>.Release();
 
         public static void ForceReleaseGlobalLock()
         {

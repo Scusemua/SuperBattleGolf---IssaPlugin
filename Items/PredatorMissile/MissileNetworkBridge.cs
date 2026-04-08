@@ -59,7 +59,8 @@ namespace IssaPlugin.Items
             // Clamp magnitude so a modified client cannot teleport the rocket
             // by sending an arbitrarily large velocity vector.
             float maxSpeed =
-                ModConfig.PredatorMissile.FallSpeed.Value + ModConfig.PredatorMissile.SteerSpeed.Value * 1.5f;
+                ModConfig.PredatorMissile.FallSpeed.Value
+                + ModConfig.PredatorMissile.SteerSpeed.Value * 1.5f;
             _activeRocketRigidbody.linearVelocity = Vector3.ClampMagnitude(velocity, maxSpeed);
         }
 

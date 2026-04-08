@@ -128,8 +128,7 @@ namespace IssaPlugin.Items
             }
 
             Vector3 forward = cam.transform.forward;
-            Vector3 throwOrigin =
-                cam.transform.position + forward * 1.2f + Vector3.up * 0.3f;
+            Vector3 throwOrigin = cam.transform.position + forward * 1.2f + Vector3.up * 0.3f;
 
             Vector3 throwDir = (
                 forward + Vector3.up * ModConfig.BlackHoleGrenade.LobAngle.Value
@@ -156,8 +155,10 @@ namespace IssaPlugin.Items
 
         // Tracks active suction coroutines keyed by the black hole's netId.
         // Each coroutine runs on the local PlayerMovement.
-        private static readonly Dictionary<uint, (Coroutine coroutine, PlayerMovement movement)>
-            s_activeSuctions = [];
+        private static readonly Dictionary<
+            uint,
+            (Coroutine coroutine, PlayerMovement movement)
+        > s_activeSuctions = [];
 
         // Tracks the local-only VFX instance spawned during the suction phase,
         // keyed by the black hole's netId.  Destroyed when the spit fires or the
@@ -186,8 +187,7 @@ namespace IssaPlugin.Items
             }
 
             // If configured to exclude the thrower, skip suction for them.
-            if (ModConfig.BlackHoleGrenade.ExcludeThrower.Value
-                && localInfo == msg.ThrowerInfo)
+            if (ModConfig.BlackHoleGrenade.ExcludeThrower.Value && localInfo == msg.ThrowerInfo)
                 return;
 
             var movement = localInfo.Movement;
@@ -224,18 +224,14 @@ namespace IssaPlugin.Items
                 return;
 
             // Don't spit the thrower if the config says to exclude them.
-            if (ModConfig.BlackHoleGrenade.ExcludeThrower.Value
-                && localInfo == msg.ThrowerInfo)
+            if (ModConfig.BlackHoleGrenade.ExcludeThrower.Value && localInfo == msg.ThrowerInfo)
             {
                 PlaySpitVfx(msg.BlackHolePosition);
                 return;
             }
 
             // Only apply spit if the local player is within range.
-            float dist = Vector3.Distance(
-                localInfo.transform.position,
-                msg.BlackHolePosition
-            );
+            float dist = Vector3.Distance(localInfo.transform.position, msg.BlackHolePosition);
             if (dist > msg.SpitRadius)
             {
                 PlaySpitVfx(msg.BlackHolePosition);
@@ -247,9 +243,10 @@ namespace IssaPlugin.Items
 
             // When in a golf cart, spit the cart instead (driver has authority).
             var spitSeat = localInfo.ActiveGolfCartSeat;
-            Rigidbody spitTarget = spitSeat.IsValid() && spitSeat.golfCart != null
-                ? spitSeat.golfCart.AsEntity.Rigidbody
-                : rb;
+            Rigidbody spitTarget =
+                spitSeat.IsValid() && spitSeat.golfCart != null
+                    ? spitSeat.golfCart.AsEntity.Rigidbody
+                    : rb;
 
             if (movement == null || spitTarget == null)
             {
@@ -265,7 +262,10 @@ namespace IssaPlugin.Items
 
             spitTarget.AddForce(velocityChange, ForceMode.VelocityChange);
 
-            if (!localInfo.ActiveGolfCartSeat.IsValid() /* not in golf cart */) {
+            if (
+                !localInfo.ActiveGolfCartSeat.IsValid() /* not in golf cart */
+            )
+            {
                 bool _;
                 movement.TryKnockOut(
                     msg.ThrowerInfo,
@@ -336,9 +336,8 @@ namespace IssaPlugin.Items
                     // authority over the cart's Rigidbody, so apply force to the
                     // cart rather than to the player.  The server skips occupied
                     // carts, so there is no double-application.
-                    Rigidbody forceTarget = inCart && seat.golfCart != null
-                        ? seat.golfCart.AsEntity.Rigidbody
-                        : rb;
+                    Rigidbody forceTarget =
+                        inCart && seat.golfCart != null ? seat.golfCart.AsEntity.Rigidbody : rb;
 
                     if (forceTarget != null)
                     {
@@ -376,8 +375,7 @@ namespace IssaPlugin.Items
 
                 // Knock the player down once they enter the knockdown radius,
                 // then respect a cooldown so we don't hammer the server every frame.
-                float knockdownRadius =
-                    ModConfig.BlackHoleGrenade.KnockdownRadius.Value;
+                float knockdownRadius = ModConfig.BlackHoleGrenade.KnockdownRadius.Value;
                 knockdownCooldown -= Time.fixedDeltaTime;
                 if (
                     knockdownRadius > 0f
@@ -476,6 +474,6 @@ namespace IssaPlugin.Items
             );
         }
 
-        public override void ClientHoleCleanup() {}
+        public override void ClientHoleCleanup() { }
     }
 }

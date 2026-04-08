@@ -44,14 +44,19 @@ namespace IssaPlugin.Items
         /// netId of the black hole NetworkIdentity — used to pair with the spit message.
         public uint BlackHoleNetId;
         public Vector3 BlackHolePosition;
+
         /// Who threw the grenade (used for ExcludeThrower config check).
         public PlayerInfo ThrowerInfo;
+
         /// Seconds the suction phase lasts (client coroutine timeout guard).
         public float SuckDuration;
+
         /// Radius of the suction field.
         public float SuckRadius;
+
         /// Suction acceleration (m/s²) applied at the outer edge of the field.
         public float SuckForce;
+
         /// Suction acceleration (m/s²) applied right at the center.
         public float MaxSuckForce;
     }
@@ -94,8 +99,10 @@ namespace IssaPlugin.Items
         /// netId of the black hole that is spitting — pairs with BlackHoleGrenadeLandedMessage.
         public uint BlackHoleNetId;
         public Vector3 BlackHolePosition;
+
         /// Radius within which players receive the spit impulse.
         public float SpitRadius;
+
         /// Speed (m/s) applied to all ejected objects.
         public float SpitForce;
         public PlayerInfo ThrowerInfo;

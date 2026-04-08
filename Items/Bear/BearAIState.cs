@@ -13,40 +13,40 @@ namespace IssaPlugin.Items
     public enum BearAIState : byte
     {
         /// Brief entry sequence: plays the Buff animation. Transitions to Idle.
-        Spawning        = 0,
+        Spawning = 0,
 
         /// No target nearby or reachable. Bear wanders slowly.
-        Idle            = 1,
+        Idle = 1,
 
         /// Bear has a locked target and is running toward it.
-        Pursuing        = 2,
+        Pursuing = 2,
 
         /// Bear is within charge range and sprinting at maximum speed toward target.
         /// No longer re-evaluates target or steers around obstacles — committed.
-        Charging        = 3,
+        Charging = 3,
 
         /// Attack animation playing. Hit is applied mid-animation by the server.
-        Attacking       = 4,
+        Attacking = 4,
 
         /// Brief pause after an attack before returning to Pursuing.
-        AttackCooldown  = 5,
+        AttackCooldown = 5,
 
         /// Bear was hit by a rocket/explosion. Plays GetHitFromFront then StunnedLoop.
         /// After the stun duration, transitions to Enraged.
-        Stunned         = 6,
+        Stunned = 6,
 
         /// Temporary speed boost after recovering from a stun.
         /// Same as Pursuing but at enrage speed. Returns to Pursuing after duration.
-        Enraged         = 7,
+        Enraged = 7,
 
         /// Death animation playing. Bear cannot interact with anything.
-        Dying           = 8,
+        Dying = 8,
 
         /// Death animation finished. Server will call NetworkServer.Destroy this frame.
-        Dead            = 9,
+        Dead = 9,
 
         /// No target nearby. Bear is actively walking to a wander destination.
         /// Distinct from Idle so clients can play the Walk animation instead of Idle.
-        Wander          = 10,
+        Wander = 10,
     }
 }

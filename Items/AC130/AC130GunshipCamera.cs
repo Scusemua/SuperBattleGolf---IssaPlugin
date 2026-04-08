@@ -51,17 +51,17 @@ namespace IssaPlugin.Items
         private Camera _previousCam;
         private bool _active;
 
-        /// 
+        ///
         /// Player's accumulated pan offset from the neutral (map-centre) direction,
         /// in degrees.  x = pitch offset (up/down), y = yaw offset (left/right).
         /// Reset to zero when Activate() is called.
-        /// 
+        ///
         private Vector2 _lookOffset;
 
-        /// 
+        ///
         /// Current shake rotation offset in degrees (x = pitch, y = yaw).
         /// Decays to zero each frame; set to a random kick by TriggerFireShake.
-        /// 
+        ///
         private Vector2 _shakeOffset;
 
         // ----------------------------------------------------------------
@@ -126,10 +126,10 @@ namespace IssaPlugin.Items
             IssaPluginPlugin.Log.LogInfo("[AC130] Gunship camera deactivated.");
         }
 
-        /// 
+        ///
         /// Call every frame from the on-station loop to consume mouse delta
         /// and accumulate the look offset.
-        /// 
+        ///
         public void UpdateLook()
         {
             if (!_active)
@@ -148,12 +148,12 @@ namespace IssaPlugin.Items
             _lookOffset.y = Mathf.Clamp(_lookOffset.y, -yawLimit, yawLimit);
         }
 
-        /// 
+        ///
         /// Triggers a small recoil shake. Call this each time a rocket fires.
         /// The shake is purely rotational and decays smoothly — it does not
         /// affect <see cref="_lookOffset"/> so the player's aim stays where
         /// they left it once the shake settles.
-        /// 
+        ///
         public void TriggerFireShake()
         {
             // Kick the camera upward (negative pitch = tilt up) with a tiny
@@ -162,9 +162,9 @@ namespace IssaPlugin.Items
             _shakeOffset.y = Random.Range(-shakePeakDegrees * 0.4f, shakePeakDegrees * 0.4f);
         }
 
-        /// 
+        ///
         /// Smoothly interpolates FOV toward <paramref name="targetFov"/>.
-        /// 
+        ///
         public void SetFov(float targetFov, float lerpSpeed)
         {
             if (_gunshipCam == null)

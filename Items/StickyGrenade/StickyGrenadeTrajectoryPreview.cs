@@ -87,10 +87,7 @@ namespace IssaPlugin.Items
 
         private void Update()
         {
-            if (
-                _inventory == null
-                || _inventory.GetEffectivelyEquippedItem(true) != TargetItemType
-            )
+            if (_inventory == null || _inventory.GetEffectivelyEquippedItem(true) != TargetItemType)
             {
                 Destroy(this);
                 return;
@@ -116,9 +113,7 @@ namespace IssaPlugin.Items
             // Mirror ClientThrow exactly so the preview matches the real throw.
             Vector3 forward = cam.transform.forward;
             Vector3 pos = cam.transform.position + forward * 1.2f + Vector3.up * 0.3f;
-            Vector3 vel =
-                (forward + Vector3.up * LobAngle()).normalized
-                * ThrowSpeed();
+            Vector3 vel = (forward + Vector3.up * LobAngle()).normalized * ThrowSpeed();
 
             // Combine both masks so the arc stops on terrain, walls, players,
             // and vehicles — mirroring the two-phase check in StickyGrenadeBehaviour.

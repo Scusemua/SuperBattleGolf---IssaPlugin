@@ -29,7 +29,8 @@ namespace IssaPlugin.Items
             }
 
             // Pick up the accumulated R-key rotation from the preview component if present.
-            float extraYaw = GetComponent<PlaceableWallPlacementPreview>()?.CurrentRotationOffset ?? 0f;
+            float extraYaw =
+                GetComponent<PlaceableWallPlacementPreview>()?.CurrentRotationOffset ?? 0f;
 
             NetworkClient.Send(
                 new PlaceWallMessage
@@ -43,7 +44,11 @@ namespace IssaPlugin.Items
 
         // ── Server handler ───────────────────────────────────────────────
 
-        public void ServerHandlePlacement(Vector3 rayOrigin, Vector3 rayDirection, float extraYawDegrees = 0f)
+        public void ServerHandlePlacement(
+            Vector3 rayOrigin,
+            Vector3 rayDirection,
+            float extraYawDegrees = 0f
+        )
         {
             var inventory = GetComponent<PlayerInventory>();
             if (inventory == null)

@@ -122,6 +122,5 @@ namespace IssaPlugin.Items
                 // it is fully exhausted or the hole ends (see ResetFuel / ClientHoleCleanup).
             }
         }
-
     }
 }

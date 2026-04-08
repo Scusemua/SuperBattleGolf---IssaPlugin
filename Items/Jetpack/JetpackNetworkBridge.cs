@@ -188,12 +188,14 @@ namespace IssaPlugin.Items
                 if (equipped && !_serverEquipped)
                 {
                     _serverEquipped = true;
-                    NetworkServer.SendToAll(new JetpackEquipBeginMessage
-                    {
-                        PlayerNetId = netId,
-                        FuelPerUse = ModConfig.Jetpack.FuelPerUse.Value,
-                        ThrustForce = ModConfig.Jetpack.ThrustForce.Value,
-                    });
+                    NetworkServer.SendToAll(
+                        new JetpackEquipBeginMessage
+                        {
+                            PlayerNetId = netId,
+                            FuelPerUse = ModConfig.Jetpack.FuelPerUse.Value,
+                            ThrustForce = ModConfig.Jetpack.ThrustForce.Value,
+                        }
+                    );
                 }
                 else if (!equipped && _serverEquipped)
                 {
@@ -214,8 +216,7 @@ namespace IssaPlugin.Items
                 && (
                     ModConfig.Jetpack.UseJumpToActivate.Value
                         ? JetpackItem.FindJetpackSlot(inventory) >= 0
-                        : inventory.GetEffectivelyEquippedItem(true)
-                            == ItemRegistry.JetpackItemType
+                        : inventory.GetEffectivelyEquippedItem(true) == ItemRegistry.JetpackItemType
                 );
 
             if (

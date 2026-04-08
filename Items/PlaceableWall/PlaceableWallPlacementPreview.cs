@@ -64,8 +64,10 @@ namespace IssaPlugin.Items
             float scrollY = Mouse.current.scroll.ReadValue().y;
             if (scrollY != 0f)
                 CurrentRotationOffset =
-                    (CurrentRotationOffset + Mathf.Sign(scrollY) * ModConfig.PlaceableWall.RotationStep.Value)
-                    % 360f;
+                    (
+                        CurrentRotationOffset
+                        + Mathf.Sign(scrollY) * ModConfig.PlaceableWall.RotationStep.Value
+                    ) % 360f;
 
             var cam = Camera.main;
             if (cam == null)
@@ -118,11 +120,7 @@ namespace IssaPlugin.Items
                 if (AssetLoader.WallGhostPrefab == null)
                     return;
 
-                _ghost = Object.Instantiate(
-                    AssetLoader.WallGhostPrefab,
-                    position,
-                    rotation
-                );
+                _ghost = Object.Instantiate(AssetLoader.WallGhostPrefab, position, rotation);
                 _ghost.name = "PlaceableWall_Ghost";
                 _ghost.SetActive(true);
             }

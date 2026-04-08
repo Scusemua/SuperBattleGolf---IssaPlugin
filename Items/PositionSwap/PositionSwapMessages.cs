@@ -7,6 +7,7 @@ namespace IssaPlugin.Items
     public struct PositionSwapRequestMessage : NetworkMessage
     {
         public uint TargetNetId;
+
         /// <summary>
         /// The client's local EquippedItemIndex when the item was used.
         /// Passed so the server can validate and consume the correct inventory slot
@@ -101,6 +102,7 @@ namespace IssaPlugin.Items
     {
         public uint InitiatorNetId;
         public uint TargetNetId;
+
         // Both "new" positions are the swapped destinations, included so every client
         // can spawn smoke at the correct world-space locations regardless of latency.
         public Vector3 InitiatorDestination;

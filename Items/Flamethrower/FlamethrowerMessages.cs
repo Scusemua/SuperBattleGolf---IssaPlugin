@@ -69,33 +69,39 @@ namespace IssaPlugin.Items
     {
         // ---- FireStart ----
         public static void WriteFireStart(NetworkWriter w, FlamethrowerFireStartMessage msg) { }
+
         public static FlamethrowerFireStartMessage ReadFireStart(NetworkReader r) => new();
 
         // ---- FireStop ----
         public static void WriteFireStop(NetworkWriter w, FlamethrowerFireStopMessage msg) { }
+
         public static FlamethrowerFireStopMessage ReadFireStop(NetworkReader r) => new();
 
         // ---- BurnRequest ----
         public static void WriteBurnRequest(NetworkWriter w, FlamethrowerBurnRequestMessage msg) =>
             w.WriteUInt(msg.VictimNetId);
+
         public static FlamethrowerBurnRequestMessage ReadBurnRequest(NetworkReader r) =>
             new() { VictimNetId = r.ReadUInt() };
 
         // ---- FireBegin ----
         public static void WriteFireBegin(NetworkWriter w, FlamethrowerFireBeginMessage msg) =>
             w.WriteUInt(msg.ShooterNetId);
+
         public static FlamethrowerFireBeginMessage ReadFireBegin(NetworkReader r) =>
             new() { ShooterNetId = r.ReadUInt() };
 
         // ---- FireEnd ----
         public static void WriteFireEnd(NetworkWriter w, FlamethrowerFireEndMessage msg) =>
             w.WriteUInt(msg.ShooterNetId);
+
         public static FlamethrowerFireEndMessage ReadFireEnd(NetworkReader r) =>
             new() { ShooterNetId = r.ReadUInt() };
 
         // ---- BurnBegin ----
         public static void WriteBurnBegin(NetworkWriter w, FlamethrowerBurnBeginMessage msg) =>
             w.WriteUInt(msg.VictimNetId);
+
         public static FlamethrowerBurnBeginMessage ReadBurnBegin(NetworkReader r) =>
             new() { VictimNetId = r.ReadUInt() };
 
@@ -106,12 +112,13 @@ namespace IssaPlugin.Items
             w.WriteUInt(msg.ShooterNetId);
             w.WriteVector3(msg.KnockImpulse);
         }
+
         public static FlamethrowerBurnEndMessage ReadBurnEnd(NetworkReader r) =>
             new()
             {
-                VictimNetId   = r.ReadUInt(),
-                ShooterNetId  = r.ReadUInt(),
-                KnockImpulse  = r.ReadVector3(),
+                VictimNetId = r.ReadUInt(),
+                ShooterNetId = r.ReadUInt(),
+                KnockImpulse = r.ReadVector3(),
             };
     }
 }
