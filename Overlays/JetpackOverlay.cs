@@ -21,7 +21,8 @@ namespace IssaPlugin.Overlays
         //    JetpackEquipEndMessage for the local player) ──────────────────
         public static bool IsEquippedLocally { get; private set; }
 
-        public static void OnLocalEquip()  => IsEquippedLocally = true;
+        public static void OnLocalEquip() => IsEquippedLocally = true;
+
         public static void OnLocalUnequip() => IsEquippedLocally = false;
 
         // ── Textures ──────────────────────────────────────────────────────

@@ -174,11 +174,28 @@ namespace IssaPlugin.Overlays
 
             // ── Window header ─────────────────────────────────────────────────
             GUILayout.BeginHorizontal();
-            GUILayout.Label(new GUIContent("⚙  Spawn Config", "Configure which custom items spawn and how often. Changes take effect when the host clicks Apply & Sync."), _styleHeader);
+            GUILayout.Label(
+                new GUIContent(
+                    "⚙  Spawn Config",
+                    "Configure which custom items spawn and how often. Changes take effect when the host clicks Apply & Sync."
+                ),
+                _styleHeader
+            );
             GUILayout.FlexibleSpace();
             if (!isHost)
-                GUILayout.Label(new GUIContent("  ⚠ Read-only (host controls config)", "Only the host can edit spawn settings. Your view updates automatically when the host applies changes."), _styleReadOnly);
-            if (GUILayout.Button(new GUIContent("✕ Close", "Close this panel. Unsaved changes will be lost."), GUILayout.Width(80)))
+                GUILayout.Label(
+                    new GUIContent(
+                        "  ⚠ Read-only (host controls config)",
+                        "Only the host can edit spawn settings. Your view updates automatically when the host applies changes."
+                    ),
+                    _styleReadOnly
+                );
+            if (
+                GUILayout.Button(
+                    new GUIContent("✕ Close", "Close this panel. Unsaved changes will be lost."),
+                    GUILayout.Width(80)
+                )
+            )
                 Close();
             GUILayout.EndHorizontal();
 
@@ -192,14 +209,23 @@ namespace IssaPlugin.Overlays
             bool customEnabled = snap.CustomItemSpawnsEnabled;
             bool newCustomEnabled = GUILayout.Toggle(
                 customEnabled,
-                new GUIContent(" Custom items enabled", "Master switch for all custom items. When off, no custom items will appear in the item pool regardless of other settings."),
+                new GUIContent(
+                    " Custom items enabled",
+                    "Master switch for all custom items. When off, no custom items will appear in the item pool regardless of other settings."
+                ),
                 GUILayout.Width(200)
             );
             if (isHost && newCustomEnabled != customEnabled)
                 snap.CustomItemSpawnsEnabled = newCustomEnabled;
 
             GUILayout.Space(20);
-            GUILayout.Label(new GUIContent("Global rate multiplier:", "Scales the spawn rate of ALL custom items up or down. 1.0 = normal rate. 2.0 = twice as often. 0.5 = half as often."), GUILayout.Width(150));
+            GUILayout.Label(
+                new GUIContent(
+                    "Global rate multiplier:",
+                    "Scales the spawn rate of ALL custom items up or down. 1.0 = normal rate. 2.0 = twice as often. 0.5 = half as often."
+                ),
+                GUILayout.Width(150)
+            );
             snap.GlobalSpawnRateMultiplier = DrawFloatField(
                 "globalRate",
                 snap.GlobalSpawnRateMultiplier,
@@ -210,7 +236,13 @@ namespace IssaPlugin.Overlays
             );
 
             GUILayout.Space(20);
-            GUILayout.Label(new GUIContent("Catchup boost:", "Extra spawn-rate multiplier applied only to players who are behind the leader. Helps losing players get powerful items more often. 1.0 = no boost."), GUILayout.Width(110));
+            GUILayout.Label(
+                new GUIContent(
+                    "Catchup boost:",
+                    "Extra spawn-rate multiplier applied only to players who are behind the leader. Helps losing players get powerful items more often. 1.0 = no boost."
+                ),
+                GUILayout.Width(110)
+            );
             snap.CatchupBoostFactor = DrawFloatField(
                 "catchup",
                 snap.CatchupBoostFactor,
@@ -221,19 +253,30 @@ namespace IssaPlugin.Overlays
             );
 
             GUILayout.Space(20);
-            GUILayout.Label(new GUIContent("Tiers:", "The number of item tiers. Each tier has its own spawn weight and gating rules. Items in higher tiers are typically rarer or more powerful."), GUILayout.Width(42));
+            GUILayout.Label(
+                new GUIContent(
+                    "Tiers:",
+                    "The number of item tiers. Each tier has its own spawn weight and gating rules. Items in higher tiers are typically rarer or more powerful."
+                ),
+                GUILayout.Width(42)
+            );
             int currentNumTiers = _working.TierSettings.Count;
 
             // "−" button: remove the highest tier (only if it has no items assigned to it)
             int _topTier = currentNumTiers > 1 ? _working.TierSettings.Keys.Max() : 0;
             bool _topTierHasItems =
-                _topTier > 0
-                && _working.ItemOverrides.Values.Any(o => o.AssignedTier == _topTier);
+                _topTier > 0 && _working.ItemOverrides.Values.Any(o => o.AssignedTier == _topTier);
             GUI.enabled = isHost && currentNumTiers > 1 && !_topTierHasItems;
             string removeTierTip = _topTierHasItems
                 ? "Cannot remove this tier — move all its items to another tier first."
                 : "Remove the highest-numbered tier.";
-            if (GUILayout.Button(new GUIContent("−", removeTierTip), GUILayout.Width(24), GUILayout.Height(22)))
+            if (
+                GUILayout.Button(
+                    new GUIContent("−", removeTierTip),
+                    GUILayout.Width(24),
+                    GUILayout.Height(22)
+                )
+            )
             {
                 _working.TierSettings.Remove(_topTier);
                 if (_selectedTier == _topTier)
@@ -246,7 +289,16 @@ namespace IssaPlugin.Overlays
 
             // "+" button: add a new tier above the current highest
             GUI.enabled = isHost && currentNumTiers < ModConfig.MaxTiers;
-            if (GUILayout.Button(new GUIContent("+", $"Add a new tier above the current highest. Maximum {ModConfig.MaxTiers} tiers."), GUILayout.Width(24), GUILayout.Height(22)))
+            if (
+                GUILayout.Button(
+                    new GUIContent(
+                        "+",
+                        $"Add a new tier above the current highest. Maximum {ModConfig.MaxTiers} tiers."
+                    ),
+                    GUILayout.Width(24),
+                    GUILayout.Height(22)
+                )
+            )
             {
                 int newTier = _working.TierSettings.Keys.Max() + 1;
                 // Default weight: half the current highest tier's weight, minimum 1.
@@ -303,13 +355,31 @@ namespace IssaPlugin.Overlays
                 GUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
 
-                if (GUILayout.Button(new GUIContent("Cancel", "Discard all unsaved changes and close the panel."), GUILayout.Width(100), GUILayout.Height(28)))
+                if (
+                    GUILayout.Button(
+                        new GUIContent(
+                            "Cancel",
+                            "Discard all unsaved changes and close the panel."
+                        ),
+                        GUILayout.Width(100),
+                        GUILayout.Height(28)
+                    )
+                )
                     Close();
 
                 GUILayout.Space(10);
 
                 GUI.backgroundColor = new Color(0.3f, 0.9f, 0.3f);
-                if (GUILayout.Button(new GUIContent("✔  Apply & Sync", "Save changes to the config file and broadcast the new settings to all connected clients immediately."), GUILayout.Width(140), GUILayout.Height(28)))
+                if (
+                    GUILayout.Button(
+                        new GUIContent(
+                            "✔  Apply & Sync",
+                            "Save changes to the config file and broadcast the new settings to all connected clients immediately."
+                        ),
+                        GUILayout.Width(140),
+                        GUILayout.Height(28)
+                    )
+                )
                     ApplyAndClose();
                 GUI.backgroundColor = Color.white;
 
@@ -339,7 +409,10 @@ namespace IssaPlugin.Overlays
             GUILayout.BeginHorizontal();
             bool newTierEnabled = GUILayout.Toggle(
                 ts.TierEnabled,
-                new GUIContent(" Tier enabled", "When disabled, no items from this tier will spawn. The tier still exists and can be re-enabled later."),
+                new GUIContent(
+                    " Tier enabled",
+                    "When disabled, no items from this tier will spawn. The tier still exists and can be re-enabled later."
+                ),
                 GUILayout.Width(140)
             );
             if (isHost)
@@ -349,7 +422,13 @@ namespace IssaPlugin.Overlays
             GUILayout.Space(4);
 
             GUILayout.BeginHorizontal();
-            GUILayout.Label(new GUIContent("Spawn weight:", "How likely items from this tier are to spawn relative to other tiers. Higher weight = spawns more often. All enabled tier weights are summed and each tier's chance is its share of that total."), GUILayout.Width(130));
+            GUILayout.Label(
+                new GUIContent(
+                    "Spawn weight:",
+                    "How likely items from this tier are to spawn relative to other tiers. Higher weight = spawns more often. All enabled tier weights are summed and each tier's chance is its share of that total."
+                ),
+                GUILayout.Width(130)
+            );
             ts.SpawnWeight = DrawFloatField(
                 $"tier{ts.Tier}weight",
                 ts.SpawnWeight,
@@ -359,14 +438,26 @@ namespace IssaPlugin.Overlays
                 80
             );
             GUILayout.Space(20);
-            GUILayout.Label(new GUIContent("(relative to other tier weights)", "Example: Tier 1 weight 70, Tier 2 weight 30 → Tier 1 spawns 70% of the time, Tier 2 spawns 30%."), GUILayout.Width(240));
+            GUILayout.Label(
+                new GUIContent(
+                    "(relative to other tier weights)",
+                    "Example: Tier 1 weight 70, Tier 2 weight 30 → Tier 1 spawns 70% of the time, Tier 2 spawns 30%."
+                ),
+                GUILayout.Width(240)
+            );
             GUILayout.EndHorizontal();
 
             GUILayout.Space(4);
 
             // ── Distance gating ───────────────────────────────────────────────
             GUILayout.BeginHorizontal();
-            GUILayout.Label(new GUIContent("Min distance behind leader:", "A player must be at least this many units behind the current leader to receive items from this tier. Set to 0 to disable the gate (anyone can get this tier)."), GUILayout.Width(200));
+            GUILayout.Label(
+                new GUIContent(
+                    "Min distance behind leader:",
+                    "A player must be at least this many units behind the current leader to receive items from this tier. Set to 0 to disable the gate (anyone can get this tier)."
+                ),
+                GUILayout.Width(200)
+            );
             ts.MinDistanceBehindLeader = DrawFloatField(
                 $"tier{ts.Tier}dist",
                 ts.MinDistanceBehindLeader,
@@ -376,14 +467,26 @@ namespace IssaPlugin.Overlays
                 80
             );
             GUILayout.Space(8);
-            GUILayout.Label(new GUIContent("units  (0 = no gate)", "Set to 0 to allow any player to receive items from this tier regardless of their distance from the leader."), GUILayout.Width(150));
+            GUILayout.Label(
+                new GUIContent(
+                    "units  (0 = no gate)",
+                    "Set to 0 to allow any player to receive items from this tier regardless of their distance from the leader."
+                ),
+                GUILayout.Width(150)
+            );
             GUILayout.EndHorizontal();
 
             GUILayout.Space(4);
 
             // ── Place gating ──────────────────────────────────────────────────
             GUILayout.BeginHorizontal();
-            GUILayout.Label(new GUIContent("Min place to trigger:", "A player must be in this place or worse to receive items from this tier. E.g. 3 means only 3rd place, 4th place, etc. Set to 0 to disable — any place can receive this tier."), GUILayout.Width(200));
+            GUILayout.Label(
+                new GUIContent(
+                    "Min place to trigger:",
+                    "A player must be in this place or worse to receive items from this tier. E.g. 3 means only 3rd place, 4th place, etc. Set to 0 to disable — any place can receive this tier."
+                ),
+                GUILayout.Width(200)
+            );
             ts.MinPlaceTrigger = DrawIntField(
                 $"tier{ts.Tier}place",
                 ts.MinPlaceTrigger,
@@ -394,7 +497,10 @@ namespace IssaPlugin.Overlays
             );
             GUILayout.Space(8);
             GUILayout.Label(
-                new GUIContent("  (e.g. 3 = only 3rd place or worse; 0 = no gate)", "Both distance and place gates must be satisfied for a player to receive items from this tier. Either gate can be independently disabled by setting it to 0."),
+                new GUIContent(
+                    "  (e.g. 3 = only 3rd place or worse; 0 = no gate)",
+                    "Both distance and place gates must be satisfied for a player to receive items from this tier. Either gate can be independently disabled by setting it to 0."
+                ),
                 GUILayout.Width(340)
             );
             GUILayout.EndHorizontal();
@@ -452,24 +558,41 @@ namespace IssaPlugin.Overlays
             if (def.Icon != null)
             {
                 Texture2D tex = def.Icon.texture;
-                GUILayout.Box(new GUIContent(tex, def.DisplayName), _styleIconBox, GUILayout.Width(40), GUILayout.Height(40));
+                GUILayout.Box(
+                    new GUIContent(tex, def.DisplayName),
+                    _styleIconBox,
+                    GUILayout.Width(40),
+                    GUILayout.Height(40)
+                );
             }
             else
             {
-                GUILayout.Box(new GUIContent("?", def.DisplayName), _styleIconBox, GUILayout.Width(40), GUILayout.Height(40));
+                GUILayout.Box(
+                    new GUIContent("?", def.DisplayName),
+                    _styleIconBox,
+                    GUILayout.Width(40),
+                    GUILayout.Height(40)
+                );
             }
 
             GUILayout.Space(6);
 
             // ── Name ─────────────────────────────────────────────────────────
-            GUILayout.Label(new GUIContent(def.DisplayName, $"Item type ID: {id}"), GUILayout.Width(160), GUILayout.Height(40));
+            GUILayout.Label(
+                new GUIContent(def.DisplayName, $"Item type ID: {id}"),
+                GUILayout.Width(160),
+                GUILayout.Height(40)
+            );
 
             GUILayout.Space(8);
 
             // ── Enabled toggle ────────────────────────────────────────────────
             bool newEnabled = GUILayout.Toggle(
                 ov.Enabled,
-                new GUIContent(" Enabled", $"When disabled, {def.DisplayName} will never spawn regardless of weight settings."),
+                new GUIContent(
+                    " Enabled",
+                    $"When disabled, {def.DisplayName} will never spawn regardless of weight settings."
+                ),
                 GUILayout.Width(90),
                 GUILayout.Height(40)
             );
@@ -481,7 +604,10 @@ namespace IssaPlugin.Overlays
             // ── Spawn weight override ─────────────────────────────────────────
             bool newOvEnabled = GUILayout.Toggle(
                 ov.SpawnWeightOverrideEnabled,
-                new GUIContent(" Override weight:", $"Give {def.DisplayName} its own spawn weight instead of inheriting the tier's weight. Useful for making one item rarer or more common than others in the same tier."),
+                new GUIContent(
+                    " Override weight:",
+                    $"Give {def.DisplayName} its own spawn weight instead of inheriting the tier's weight. Useful for making one item rarer or more common than others in the same tier."
+                ),
                 GUILayout.Width(145),
                 GUILayout.Height(40)
             );
@@ -525,7 +651,14 @@ namespace IssaPlugin.Overlays
             // ── Move to tier dropdown ─────────────────────────────────────────
             if (isHost && allTiers.Count > 1)
             {
-                GUILayout.Label(new GUIContent("Move →", "Reassign this item to a different tier. Its per-item weight override will be cleared so it inherits the new tier's weight."), GUILayout.Width(48), GUILayout.Height(40));
+                GUILayout.Label(
+                    new GUIContent(
+                        "Move →",
+                        "Reassign this item to a different tier. Its per-item weight override will be cleared so it inherits the new tier's weight."
+                    ),
+                    GUILayout.Width(48),
+                    GUILayout.Height(40)
+                );
                 foreach (int targetTier in allTiers)
                 {
                     if (targetTier == GetEffectiveTier(def, snap))
@@ -536,7 +669,13 @@ namespace IssaPlugin.Overlays
                     string moveTip = TierLabels.TryGetValue(targetTier, out var fullTl)
                         ? $"Move {def.DisplayName} to {fullTl}."
                         : $"Move {def.DisplayName} to Tier {targetTier}.";
-                    if (GUILayout.Button(new GUIContent(tierLabel, moveTip), GUILayout.Width(32), GUILayout.Height(28)))
+                    if (
+                        GUILayout.Button(
+                            new GUIContent(tierLabel, moveTip),
+                            GUILayout.Width(32),
+                            GUILayout.Height(28)
+                        )
+                    )
                         MoveItemToTier(def, targetTier);
                 }
             }

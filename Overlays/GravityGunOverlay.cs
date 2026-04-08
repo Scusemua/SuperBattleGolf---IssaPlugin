@@ -61,8 +61,16 @@ namespace IssaPlugin.Overlays
 
         // ── Unity lifecycle ───────────────────────────────────────────────────
 
-        private void OnEnable()  { Instance = this; }
-        private void OnDisable() { if (Instance == this) Instance = null; }
+        private void OnEnable()
+        {
+            Instance = this;
+        }
+
+        private void OnDisable()
+        {
+            if (Instance == this)
+                Instance = null;
+        }
 
         private void Update()
         {
@@ -125,8 +133,7 @@ namespace IssaPlugin.Overlays
                 ModConfig.GravityGun.LockOnConeAngleDeg.Value * 0.5f * Mathf.Deg2Rad
             );
             float rangeSq =
-                ModConfig.GravityGun.LockOnRange.Value
-                * ModConfig.GravityGun.LockOnRange.Value;
+                ModConfig.GravityGun.LockOnRange.Value * ModConfig.GravityGun.LockOnRange.Value;
 
             Vector3 camPos = cam.transform.position;
             Vector3 camFwd = cam.transform.forward;
