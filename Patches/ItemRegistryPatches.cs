@@ -6,6 +6,26 @@ using IssaPlugin.Items;
 
 namespace IssaPlugin.Patches
 {
+    /// <summary>
+    /// Short-circuits ItemData.Name for custom items so the name is returned directly
+    /// from CustomItemDefinition.DisplayName instead of going through Unity Localization.
+    /// This avoids the Unity 6 async localization table issue that causes custom item
+    /// names to display as "DATA_ITEM{id}" on all clients.
+    /// </summary>
+    [HarmonyPatch(typeof(ItemData), "get_Name")]
+    static class ItemDataNamePatch
+    {
+        static bool Prefix(ItemData __instance, ref string __result)
+        {
+            var def = ItemRegistry.GetDefinition(__instance.Type);
+            if (def == null)
+                return true; // not a custom item — run base game logic
+            __result = def.DisplayName;
+            return false;
+        }
+    }
+
+
     [HarmonyPatch]
     static class ItemCollectionInitPatch
     {

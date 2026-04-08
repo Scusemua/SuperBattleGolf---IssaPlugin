@@ -1,3 +1,4 @@
+using IssaPlugin.Overlays;
 using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -103,9 +104,16 @@ namespace IssaPlugin.Items
             if (!NetworkClient.spawned.TryGetValue(msg.PlayerNetId, out var identity))
                 return;
             var bridge = identity.GetComponent<JetpackNetworkBridge>();
-            // Local player manages its own prefab via Update(); skip to avoid duplicates.
-            if (bridge == null || bridge.isLocalPlayer)
+            if (bridge == null)
                 return;
+
+            if (bridge.isLocalPlayer)
+            {
+                // Notify overlay so it shows for the local player on all clients (including host).
+                JetpackOverlay.OnLocalEquip();
+                return;
+            }
+
             bridge.ClientShowEquippedPrefab();
         }
 
@@ -114,8 +122,15 @@ namespace IssaPlugin.Items
             if (!NetworkClient.spawned.TryGetValue(msg.PlayerNetId, out var identity))
                 return;
             var bridge = identity.GetComponent<JetpackNetworkBridge>();
-            if (bridge == null || bridge.isLocalPlayer)
+            if (bridge == null)
                 return;
+
+            if (bridge.isLocalPlayer)
+            {
+                JetpackOverlay.OnLocalUnequip();
+                return;
+            }
+
             bridge.ClientDestroyEquippedPrefab();
         }
 
@@ -283,7 +298,10 @@ namespace IssaPlugin.Items
             ClientHideParticles();
             ClientDestroyEquippedPrefab();
             if (isLocalPlayer)
+            {
                 JetpackItem.ResetFuel();
+                JetpackOverlay.OnLocalUnequip();
+            }
         }
 
         public override void OnStopServer()

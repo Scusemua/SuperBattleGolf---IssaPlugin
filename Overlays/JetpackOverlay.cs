@@ -1,5 +1,4 @@
 using IssaPlugin.Items;
-using Mirror;
 using UnityEngine;
 
 namespace IssaPlugin.Overlays
@@ -17,6 +16,13 @@ namespace IssaPlugin.Overlays
     public class JetpackOverlay : MonoBehaviour
     {
         public static JetpackOverlay Instance { get; private set; }
+
+        // ── Equip state (push-based, driven by JetpackEquipBeginMessage /
+        //    JetpackEquipEndMessage for the local player) ──────────────────
+        public static bool IsEquippedLocally { get; private set; }
+
+        public static void OnLocalEquip()  => IsEquippedLocally = true;
+        public static void OnLocalUnequip() => IsEquippedLocally = false;
 
         // ── Textures ──────────────────────────────────────────────────────
         private Texture2D _barBgTexture;
@@ -37,7 +43,10 @@ namespace IssaPlugin.Overlays
         private void OnDestroy()
         {
             if (Instance == this)
+            {
                 Instance = null;
+                IsEquippedLocally = false;
+            }
             DestroyBarTextures();
         }
 
@@ -45,17 +54,7 @@ namespace IssaPlugin.Overlays
 
         private void OnGUI()
         {
-            // Show while the jetpack is the active item, or — when UseJumpToActivate is on —
-            // whenever it is anywhere in the inventory.
-            var localInventory = NetworkClient.localPlayer?.GetComponent<PlayerInventory>();
-            if (localInventory == null)
-                return;
-
-            bool shouldShow = ModConfig.Jetpack.UseJumpToActivate.Value
-                ? JetpackItem.FindJetpackSlot(localInventory) >= 0
-                : localInventory.GetEffectivelyEquippedItem(true) == ItemRegistry.JetpackItemType;
-
-            if (!shouldShow)
+            if (!IsEquippedLocally)
                 return;
 
             // Rebuild bar textures if the screen width changed.
