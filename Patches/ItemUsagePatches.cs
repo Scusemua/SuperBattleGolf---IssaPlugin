@@ -36,6 +36,13 @@ namespace IssaPlugin.Patches
                 return false; // block custom items during tee-off, matching base game behaviour
             }
 
+            var movement = __instance.PlayerInfo?.Movement;
+            if (movement != null && movement.IsKnockedOutOrRecovering)
+            {
+                __result = false;
+                return false; // block custom items while knocked over / recovering
+            }
+
             shouldEatInput = def.ShouldEatInputOnUse;
             __result = def.UseResult;
             def.OnUse(__instance);
