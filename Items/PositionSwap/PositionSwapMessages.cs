@@ -7,6 +7,13 @@ namespace IssaPlugin.Items
     public struct PositionSwapRequestMessage : NetworkMessage
     {
         public uint TargetNetId;
+        /// <summary>
+        /// The client's local EquippedItemIndex when the item was used.
+        /// Passed so the server can validate and consume the correct inventory slot
+        /// without relying on NetworkedEquippedItemIndex (which is not synced
+        /// client→server).
+        /// </summary>
+        public int EquippedSlotIndex;
     }
 
     public static class PositionSwapRequestMessageSerialization
@@ -17,13 +24,18 @@ namespace IssaPlugin.Items
         )
         {
             writer.WriteUInt(msg.TargetNetId);
+            writer.WriteInt(msg.EquippedSlotIndex);
         }
 
         public static PositionSwapRequestMessage ReadPositionSwapRequestMessage(
             NetworkReader reader
         )
         {
-            return new PositionSwapRequestMessage { TargetNetId = reader.ReadUInt() };
+            return new PositionSwapRequestMessage
+            {
+                TargetNetId = reader.ReadUInt(),
+                EquippedSlotIndex = reader.ReadInt(),
+            };
         }
     }
 

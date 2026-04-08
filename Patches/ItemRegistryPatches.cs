@@ -12,7 +12,7 @@ namespace IssaPlugin.Patches
     /// This avoids the Unity 6 async localization table issue that causes custom item
     /// names to display as "DATA_ITEM{id}" on all clients.
     /// </summary>
-    [HarmonyPatch(typeof(ItemData), "get_Name")]
+    [HarmonyPatch(typeof(ItemData), nameof(ItemData.Name), MethodType.Getter)]
     static class ItemDataNamePatch
     {
         static bool Prefix(ItemData __instance, ref string __result)

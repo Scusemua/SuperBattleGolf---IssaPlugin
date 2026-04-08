@@ -113,10 +113,18 @@ namespace IssaPlugin.Items
                 return;
             }
 
+            var localInventory = GameManager.LocalPlayerInventory;
+            if (localInventory == null)
+                return;
+
             IssaPluginPlugin.Log.LogInfo(
                 $"[RocketTether] ClientUse: targeting netId={bestTarget.netId}."
             );
-            NetworkClient.Send(new RocketTetherLockOnMessage { TargetNetId = bestTarget.netId });
+            NetworkClient.Send(new RocketTetherLockOnMessage
+            {
+                TargetNetId = bestTarget.netId,
+                EquippedSlotIndex = localInventory.EquippedItemIndex,
+            });
         }
 
         // =====================================================================
@@ -141,11 +149,16 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            // ── 2. Validate wielder has Rocket Tether equipped ────────────────
+            // ── 2. Validate wielder has Rocket Tether in the reported slot ────
+            // NetworkedEquippedItemIndex is a server→client SyncVar and is never
+            // updated on the server when a non-host client equips an item, so we
+            // use the slot index the client sent instead and verify it directly
+            // against the slots SyncList (which IS properly synced server→client).
             var inventory = GetComponent<PlayerInventory>();
             if (
                 inventory == null
-                || inventory.GetEffectivelyEquippedItem(true) != ItemRegistry.RocketTetherItemType
+                || ItemRegistry.GetItemTypeAtSlot(inventory, msg.EquippedSlotIndex)
+                    != ItemRegistry.RocketTetherItemType
             )
             {
                 IssaPluginPlugin.Log.LogWarning(
@@ -156,10 +169,7 @@ namespace IssaPlugin.Items
             }
 
             // ── 3. Cache wielder's slot index before any state can change it ──
-            _wielderLinkerSlot =
-                (!inventory.isLocalPlayer && NetworkServer.active)
-                    ? inventory.PlayerInfo.NetworkedEquippedItemIndex
-                    : inventory.EquippedItemIndex;
+            _wielderLinkerSlot = msg.EquippedSlotIndex;
 
             // ── 4. Validate target — players only, no self-link ───────────────
             if (!NetworkServer.spawned.TryGetValue(msg.TargetNetId, out var targetIdentity))

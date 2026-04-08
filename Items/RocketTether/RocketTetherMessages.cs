@@ -11,6 +11,13 @@ namespace IssaPlugin.Items
     public struct RocketTetherLockOnMessage : NetworkMessage
     {
         public uint TargetNetId;
+        /// <summary>
+        /// The client's local EquippedItemIndex when the item was used.
+        /// Passed so the server can validate and consume the correct inventory slot
+        /// without relying on NetworkedEquippedItemIndex (which is not synced
+        /// client→server).
+        /// </summary>
+        public int EquippedSlotIndex;
     }
 
     public static class RocketTetherLockOnMessageSerialization
@@ -18,11 +25,20 @@ namespace IssaPlugin.Items
         public static void WriteRocketTetherLockOnMessage(
             NetworkWriter writer,
             RocketTetherLockOnMessage msg
-        ) => writer.WriteUInt(msg.TargetNetId);
+        )
+        {
+            writer.WriteUInt(msg.TargetNetId);
+            writer.WriteInt(msg.EquippedSlotIndex);
+        }
 
         public static RocketTetherLockOnMessage ReadRocketTetherLockOnMessage(
             NetworkReader reader
-        ) => new RocketTetherLockOnMessage { TargetNetId = reader.ReadUInt() };
+        ) =>
+            new RocketTetherLockOnMessage
+            {
+                TargetNetId = reader.ReadUInt(),
+                EquippedSlotIndex = reader.ReadInt(),
+            };
     }
 
     // ── Server → All Clients ─────────────────────────────────────────────────

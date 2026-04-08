@@ -965,7 +965,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<PositionSwapRequestMessage>(
                     (conn, msg) =>
                         GetBridge<PositionSwapNetworkBridge>(conn)
-                            ?.ServerHandleRequest(msg.TargetNetId)
+                            ?.ServerHandleRequest(msg.TargetNetId, msg.EquippedSlotIndex)
                 );
 
             // Server → All clients: warning orbs

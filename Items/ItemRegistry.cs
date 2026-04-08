@@ -315,6 +315,22 @@ namespace IssaPlugin.Items
             }
         }
 
+        /// <summary>
+        /// Returns the <see cref="ItemType"/> stored at <paramref name="slotIndex"/> in the
+        /// inventory's slots SyncList.  Safe to call on the server for any player (host or
+        /// remote client) because the SyncList is authoritative on the server.
+        /// Returns <see cref="ItemType.None"/> for out-of-range or null inputs.
+        /// </summary>
+        public static ItemType GetItemTypeAtSlot(PlayerInventory inventory, int slotIndex)
+        {
+            if (inventory == null || slotIndex < 0)
+                return ItemType.None;
+            var slots = SlotsField.GetValue(inventory) as IList<InventorySlot>;
+            if (slots == null || slotIndex >= slots.Count)
+                return ItemType.None;
+            return slots[slotIndex].itemType;
+        }
+
         public static bool DirectAddCustomItem(
             PlayerInventory inventory,
             ItemType itemType,

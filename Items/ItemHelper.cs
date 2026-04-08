@@ -75,11 +75,26 @@ namespace IssaPlugin.Items
         //     inventory.PlayerInfo.Rigidbody.linearVelocity -= shotDirection.normalized * recoil;
         // }
 
+        /// <summary>
+        /// Server-side: consumes the item at an explicit <paramref name="slotIndex"/>.
+        /// Use this overload when the slot index was transmitted in a network message,
+        /// because <c>NetworkedEquippedItemIndex</c> is never synced client→server and
+        /// <c>EquippedItemIndex</c> is not set on the server for remote-client objects.
+        /// </summary>
+        public static void ConsumeItemAtSlot(PlayerInventory inventory, int slotIndex)
+        {
+            if (slotIndex < 0)
+                return;
+
+            SetCurrentItemUse(inventory, ItemUseType.Regular);
+            DecrementAndRemove(inventory, slotIndex);
+            SetCurrentItemUse(inventory, ItemUseType.None);
+        }
+
         /// Server-side convenience: wraps SetCurrentItemUse + DecrementAndRemove + SetCurrentItemUse.
         ///
-        /// EquippedItemIndex is a client-local field and is not reliably set on the server
-        /// for remote-client player objects. When running server-side for a non-local-player
-        /// inventory, use NetworkedEquippedItemIndex instead (the synced value).
+        /// Only reliable for the host's own inventory. For remote-client inventories use
+        /// <see cref="ConsumeItemAtSlot"/> with the slot index passed in the network message.
         public static void ConsumeEquippedItem(PlayerInventory inventory)
         {
             int slot =

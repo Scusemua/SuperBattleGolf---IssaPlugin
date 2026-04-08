@@ -255,7 +255,12 @@ namespace IssaPlugin.Overlays
                         if (identity != null)
                         {
                             NetworkClient.Send(
-                                new PositionSwapRequestMessage { TargetNetId = identity.netId }
+                                new PositionSwapRequestMessage
+                                {
+                                    TargetNetId = identity.netId,
+                                    EquippedSlotIndex =
+                                        GameManager.LocalPlayerInventory?.EquippedItemIndex ?? -1,
+                                }
                             );
                             _isChooserOpen = false;
                         }

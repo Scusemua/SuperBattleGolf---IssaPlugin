@@ -35,7 +35,7 @@ namespace IssaPlugin.Items
         //  Called from NetworkManagerPatches when PositionSwapRequestMessage arrives.
         // ================================================================
 
-        public void ServerHandleRequest(uint targetNetId)
+        public void ServerHandleRequest(uint targetNetId, int equippedSlotIndex)
         {
             if (_isServerRoutineActive)
             {
@@ -48,8 +48,13 @@ namespace IssaPlugin.Items
             if (_inventory == null)
                 return;
 
-            var equipped = _inventory.GetEffectivelyEquippedItem(true);
-            if (equipped != ItemRegistry.PositionSwapItemType)
+            // Validate against the slots SyncList directly using the slot index the
+            // client sent. NetworkedEquippedItemIndex is a server→client SyncVar and
+            // is never updated on the server when a non-host client equips an item.
+            if (
+                ItemRegistry.GetItemTypeAtSlot(_inventory, equippedSlotIndex)
+                != ItemRegistry.PositionSwapItemType
+            )
             {
                 IssaPluginPlugin.Log.LogWarning("[PositionSwap] Item not equipped on initiator.");
                 return;
@@ -103,7 +108,7 @@ namespace IssaPlugin.Items
             }
 
             // Consume the item before starting the coroutine.
-            ItemHelper.ConsumeEquippedItem(_inventory);
+            ItemHelper.ConsumeItemAtSlot(_inventory, equippedSlotIndex);
 
             float delay = ModConfig.PositionSwap.Delay.Value;
 
