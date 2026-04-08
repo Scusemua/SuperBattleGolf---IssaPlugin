@@ -90,9 +90,19 @@ namespace IssaPlugin
         }
 
         // ── Per-tier spawn weights ────────────────────────────────────────────
-        private readonly Dictionary<int, ConfigEntry<float>> _tierSpawnWeightEntries = new();
-        private readonly Dictionary<int, ConfigEntry<float>> _tierMinDistanceEntries = new();
-        private readonly Dictionary<int, ConfigEntry<int>> _tierMinPlaceEntries = new();
+        private readonly Dictionary<int, ConfigEntry<bool>>  _tierEnabledEntries      = new();
+        private readonly Dictionary<int, ConfigEntry<float>> _tierSpawnWeightEntries  = new();
+        private readonly Dictionary<int, ConfigEntry<float>> _tierMinDistanceEntries  = new();
+        private readonly Dictionary<int, ConfigEntry<int>>   _tierMinPlaceEntries     = new();
+
+        public bool GetTierEnabled(int tier) =>
+            _tierEnabledEntries.TryGetValue(tier, out var e) ? e.Value : true;
+
+        public void SetTierEnabled(int tier, bool value)
+        {
+            if (_tierEnabledEntries.TryGetValue(tier, out var entry))
+                entry.Value = value;
+        }
 
         public float GetTierSpawnWeight(int tier)
         {
@@ -460,6 +470,12 @@ namespace IssaPlugin
             string description
         )
         {
+            _tierEnabledEntries[tier] = cfg.Bind(
+                "ItemBoxSpawns",
+                $"Tier{tier}Enabled",
+                true,
+                $"Whether Tier {tier} items are allowed to spawn at all."
+            );
             _tierSpawnWeightEntries[tier] = cfg.Bind(
                 "ItemBoxSpawns",
                 $"Tier{tier}Weight",

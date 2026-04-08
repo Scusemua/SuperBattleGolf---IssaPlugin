@@ -119,6 +119,7 @@ namespace IssaPlugin
             for (int t = 1; t <= numTiers; t++)
                 snap.TierSettings[t] = new TierSettings(t, ModConfig.GetTierSpawnWeight(t))
                 {
+                    TierEnabled = ModConfig.GetTierEnabled(t),
                     MinDistanceBehindLeader = ModConfig.GetTierMinDistance(t),
                     MinPlaceTrigger = ModConfig.GetTierMinPlace(t),
                 };
@@ -168,9 +169,10 @@ namespace IssaPlugin
                     highestUsedTier = kv.Key;
             ModConfig.Global.NumTiers.Value = highestUsedTier;
 
-            // Tier weights and gating
+            // Tier enabled flag + weights + gating
             foreach (var kv in TierSettings)
             {
+                ModConfig.SetTierEnabled(kv.Key, kv.Value.TierEnabled);
                 ModConfig.SetTierSpawnWeight(kv.Key, kv.Value.SpawnWeight);
                 ModConfig.SetTierMinDistance(kv.Key, kv.Value.MinDistanceBehindLeader);
                 ModConfig.SetTierMinPlace(kv.Key, kv.Value.MinPlaceTrigger);

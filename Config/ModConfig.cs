@@ -86,6 +86,9 @@ namespace IssaPlugin
         public static float GetItemSpawnWeightOverrideValue(ItemType t) => Global.GetItemSpawnWeightOverrideValue(t);
         public static void SetItemSpawnWeightOverride(ItemType itemType, bool enabled, float value) => Global.SetItemSpawnWeightOverride(itemType, enabled, value);
 
+        public static bool GetTierEnabled(int tier) => Global.GetTierEnabled(tier);
+        public static void SetTierEnabled(int tier, bool value) => Global.SetTierEnabled(tier, value);
+
         public static float GetTierSpawnWeight(int tier) => Global.GetTierSpawnWeight(tier);
         public static void SetTierSpawnWeight(int tier, float value) => Global.SetTierSpawnWeight(tier, value);
 
