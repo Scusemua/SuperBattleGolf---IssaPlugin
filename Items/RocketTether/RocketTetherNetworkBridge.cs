@@ -113,17 +113,12 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            var localInventory = GameManager.LocalPlayerInventory;
-            if (localInventory == null)
-                return;
-
             IssaPluginPlugin.Log.LogInfo(
                 $"[RocketTether] ClientUse: targeting netId={bestTarget.netId}."
             );
             NetworkClient.Send(new RocketTetherLockOnMessage
             {
                 TargetNetId = bestTarget.netId,
-                EquippedSlotIndex = localInventory.EquippedItemIndex,
             });
         }
 
@@ -149,27 +144,24 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            // ── 2. Validate wielder has Rocket Tether in the reported slot ────
-            // NetworkedEquippedItemIndex is a server→client SyncVar and is never
-            // updated on the server when a non-host client equips an item, so we
-            // use the slot index the client sent instead and verify it directly
-            // against the slots SyncList (which IS properly synced server→client).
+            // ── 2. Validate wielder has Rocket Tether and find which slot it's in ──
+            // The inventory slots SyncList is server-authoritative so scanning it
+            // here is always reliable, regardless of client→server SyncVar timing.
             var inventory = GetComponent<PlayerInventory>();
-            if (
-                inventory == null
-                || ItemRegistry.GetItemTypeAtSlot(inventory, msg.EquippedSlotIndex)
-                    != ItemRegistry.RocketTetherItemType
-            )
+            int rocketTetherSlot = inventory != null
+                ? ItemRegistry.FindSlotIndex(inventory, ItemRegistry.RocketTetherItemType)
+                : -1;
+            if (rocketTetherSlot < 0)
             {
                 IssaPluginPlugin.Log.LogWarning(
-                    "[RocketTether] Server: wielder does not have Rocket Tether equipped."
+                    "[RocketTether] Server: wielder does not have Rocket Tether."
                 );
                 GlobalSessionLock<RocketTetherNetworkBridge>.Release();
                 return;
             }
 
             // ── 3. Cache wielder's slot index before any state can change it ──
-            _wielderLinkerSlot = msg.EquippedSlotIndex;
+            _wielderLinkerSlot = rocketTetherSlot;
 
             // ── 4. Validate target — players only, no self-link ───────────────
             if (!NetworkServer.spawned.TryGetValue(msg.TargetNetId, out var targetIdentity))

@@ -331,6 +331,24 @@ namespace IssaPlugin.Items
             return slots[slotIndex].itemType;
         }
 
+        /// <summary>
+        /// Finds the first slot index that contains <paramref name="itemType"/>.
+        /// Returns -1 if not found. Safe to call on the server for any player because
+        /// the SyncList is authoritative on the server.
+        /// </summary>
+        public static int FindSlotIndex(PlayerInventory inventory, ItemType itemType)
+        {
+            if (inventory == null)
+                return -1;
+            var slots = SlotsField.GetValue(inventory) as IList<InventorySlot>;
+            if (slots == null)
+                return -1;
+            for (int i = 0; i < slots.Count; i++)
+                if (slots[i].itemType == itemType)
+                    return i;
+            return -1;
+        }
+
         public static bool DirectAddCustomItem(
             PlayerInventory inventory,
             ItemType itemType,
