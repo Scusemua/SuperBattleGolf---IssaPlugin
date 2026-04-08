@@ -143,6 +143,14 @@ namespace IssaPlugin
             var snap = TierConfigMessageSerialization.ToSnapshot(msg);
             CurrentSnapshot = snap;
 
+            // Propagate global values to ModConfig so BuildCustomEntries reads the
+            // host's settings rather than the client's local defaults.
+            // (OnClientReceivedTierConfig already writes per-item Enabled via
+            // ModConfig.SetItemEnabled; these three mirror that same pattern.)
+            ModConfig.Global.CustomItemSpawnsEnabled.Value = snap.CustomItemSpawnsEnabled;
+            ModConfig.Global.CustomItemSpawnRate.Value     = snap.GlobalSpawnRateMultiplier;
+            ModConfig.Global.CatchupBoostFactor.Value      = snap.CatchupBoostFactor;
+
             // Apply per-item enable / weight-override to local CustomItemDefinition
             // so the client-side UI reflects the host's settings.
             foreach (var kv in snap.ItemOverrides)

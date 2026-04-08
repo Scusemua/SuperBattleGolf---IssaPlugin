@@ -146,6 +146,10 @@ namespace IssaPlugin
             if (NetworkServer.active)
                 return;
 
+            // Apply the master kill-switch immediately so BuildCustomEntries uses the
+            // host's value on any subsequent pool rebuild.
+            ModConfig.Global.CustomItemSpawnsEnabled.Value = msg.CustomItemSpawnsEnabled;
+
             foreach (var (itemType, spawnWeight) in msg.ItemSpawnWeights)
             {
                 if (ItemRegistry.CustomItemDefinitionMap.TryGetValue(itemType, out var itemDef))
