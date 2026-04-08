@@ -1452,4 +1452,44 @@ namespace IssaPlugin.Patches
 
         static void Postfix() => NetworkManagerRegisterPrefabsPatch.ResetRegistration();
     }
+
+    /// When a remote client signals ready (after OnStartClient has registered their
+    /// handlers), immediately broadcast the host's current config state so they don't
+    /// have to wait up to 5 seconds for the next periodic sync cycle.
+    ///
+    /// This fixes two related bugs:
+    ///   1. Gameplay config (e.g. FuelPerUse) was only synced periodically, leaving a
+    ///      window where a freshly-joined client used local defaults instead of the
+    ///      host's values.
+    ///   2. Spawn weights and tier config were never sent to late-joining clients at all
+    ///      unless the host made a change via the UI after they joined.
+    [HarmonyPatch]
+    static class BNetworkManagerOnServerReadyPatch
+    {
+        static System.Reflection.MethodBase TargetMethod() =>
+            AccessTools.Method(typeof(BNetworkManager), "OnServerReady",
+                new[] { typeof(NetworkConnectionToClient) });
+
+        static void Postfix(NetworkConnectionToClient conn)
+        {
+            // The listen-server host's own connection also fires OnServerReady.
+            // Skip it: the host already has authoritative values, and all three
+            // handler methods guard against NetworkServer.active anyway.
+            if (conn == NetworkServer.localConnection)
+                return;
+
+            // Resets the change-detection sentinel and immediately broadcasts
+            // current spawn weights + rebuilds server item pools.
+            SpawnWeightsSyncer.ForceServerSync();
+
+            // Rebuilds SpawnConfigSnapshot from current config and broadcasts
+            // tiers + per-item overrides.
+            TierConfigSyncer.Instance?.ForceBroadcast();
+
+            // Broadcasts all BepInEx config entries so the client's local
+            // ConfigEntry<T> values (FuelPerUse, BurnDuration, etc.) reflect
+            // the host's settings before the player can interact with any item.
+            ItemConfigSyncer.Broadcast();
+        }
+    }
 }

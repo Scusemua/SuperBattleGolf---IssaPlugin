@@ -146,15 +146,15 @@ namespace IssaPlugin.Items
         }
 
         // ================================================================
-        //  Equipped-prefab management (local player only)
+        //  Equipped-prefab management + server equip-state tracking
         //
         //  OnEquip on the definition is called every frame while the item is active,
         //  but has no corresponding OnUnequip hook — so Update() is the appropriate
         //  place to manage the full show/hide lifecycle.
-        // ================================================================
-
-        // ================================================================
-        //  Server equip-state tracking — broadcasts backpack visibility to all clients
+        //
+        //  The server block polls inventory every frame and broadcasts
+        //  JetpackEquipBeginMessage / JetpackEquipEndMessage so all clients can show
+        //  the backpack prefab on remote players.
         // ================================================================
 
         private void Update()
@@ -266,10 +266,16 @@ namespace IssaPlugin.Items
 
         public override void ServerHoleCleanup()
         {
-            if (!_serverThrusting)
-                return;
-            NetworkServer.SendToAll(new JetpackThrustEndMessage { PlayerNetId = netId });
-            _serverThrusting = false;
+            if (_serverThrusting)
+            {
+                NetworkServer.SendToAll(new JetpackThrustEndMessage { PlayerNetId = netId });
+                _serverThrusting = false;
+            }
+
+            // Reset so Update() re-broadcasts equip state on the next hole.
+            // ClientHoleCleanup always destroys the backpack prefab on clients, so
+            // they need a fresh JetpackEquipBeginMessage even if the player kept the jetpack.
+            _serverEquipped = false;
         }
 
         public override void ClientHoleCleanup()
@@ -283,6 +289,7 @@ namespace IssaPlugin.Items
         public override void OnStopServer()
         {
             _serverThrusting = false;
+            _serverEquipped = false;
         }
     }
 }

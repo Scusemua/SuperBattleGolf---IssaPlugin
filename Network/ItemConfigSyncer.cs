@@ -13,6 +13,7 @@ using BepInEx.Configuration;
 using IssaPlugin.Network;
 using Mirror;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace IssaPlugin
 {
@@ -45,6 +46,10 @@ namespace IssaPlugin
 
             foreach (KeyValuePair<ConfigDefinition, ConfigEntryBase> kv in cfg)
             {
+                // Skip keybinding entries — clients control their own key mappings.
+                if (kv.Value.SettingType == typeof(Key))
+                    continue;
+
                 keys.Add($"{kv.Key.Section}::{kv.Key.Key}");
                 values.Add(kv.Value.GetSerializedValue() ?? string.Empty);
             }
