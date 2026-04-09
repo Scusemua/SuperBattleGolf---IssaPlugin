@@ -109,8 +109,21 @@ namespace IssaPlugin.Patches
                 string label = assembly.GetName().Name;
                 foreach (var t in SafeGetTypes(assembly))
                 {
-                    if (!t.IsValueType || !networkMessageInterface.IsAssignableFrom(t))
+                    // IsAssignableFrom walks the interface list and can throw TypeLoadException
+                    // for partially-loaded types surfaced by ReflectionTypeLoadException above.
+                    bool isNetworkMessage;
+                    try
+                    {
+                        isNetworkMessage =
+                            t.IsValueType && networkMessageInterface.IsAssignableFrom(t);
+                    }
+                    catch
+                    {
                         continue;
+                    }
+                    if (!isNetworkMessage)
+                        continue;
+
                     ushort id = GetMessageIdForType(t);
                     if (id == 0)
                         continue; // ID lookup failed — already warned inside GetMessageIdForType
@@ -122,7 +135,16 @@ namespace IssaPlugin.Patches
             var pluginMessageTypes = new List<Type>();
             foreach (var t in SafeGetTypes(pluginAssembly))
             {
-                if (t.IsValueType && networkMessageInterface.IsAssignableFrom(t))
+                bool isNetworkMessage;
+                try
+                {
+                    isNetworkMessage = t.IsValueType && networkMessageInterface.IsAssignableFrom(t);
+                }
+                catch
+                {
+                    continue;
+                }
+                if (isNetworkMessage)
                     pluginMessageTypes.Add(t);
             }
 
