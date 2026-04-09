@@ -27,19 +27,19 @@ namespace IssaPlugin
             Duration = cfg.Bind(
                 Section,
                 "Duration",
-                8f,
+                10f,
                 "How long the Red Bull speed and jump boost lasts (seconds)."
             );
             ExtraSpeedMultiplier = cfg.Bind(
                 Section,
                 "ExtraSpeedMultiplier",
-                1.5f,
+                1.625f,
                 "Additional speed multiplier applied on top of the coffee speed-boost factor while Red Bull is active."
             );
             JumpBonus = cfg.Bind(
                 Section,
                 "JumpBonus",
-                3f,
+                10f,
                 "Extra upward velocity (m/s) added to each jump while Red Bull is active."
             );
             DispenserChance = cfg.Bind(
