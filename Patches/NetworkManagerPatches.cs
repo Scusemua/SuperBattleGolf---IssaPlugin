@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 using HarmonyLib;
 using IssaPlugin;
 using IssaPlugin.Items;
@@ -49,13 +52,112 @@ namespace IssaPlugin.Patches
             IssaPluginPlugin.Log.LogInfo("[NetworkManager] Registering custom message handlers.");
             RegisterNetworkMessages();
             IssaPluginPlugin.Log.LogInfo("[NetworkManager] Custom message handlers registered.");
+            ValidateMessageIds();
         }
 
         private static T GetBridge<T>(NetworkConnectionToClient conn)
             where T : Component
         {
             var identity = conn.identity;
-            return identity != null ? identity.GetComponent<T>() : null;
+            if (identity == null)
+            {
+                IssaPluginPlugin.Log.LogWarning(
+                    $"[GetBridge<{typeof(T).Name}>] conn.identity is NULL for conn={conn}"
+                );
+                return null;
+            }
+            var bridge = identity.GetComponent<T>();
+            if (bridge == null)
+                IssaPluginPlugin.Log.LogWarning(
+                    $"[GetBridge<{typeof(T).Name}>] No {typeof(T).Name} component on identity netId={identity.netId}"
+                );
+            return bridge;
+        }
+
+        // ── Message ID collision detection ────────────────────────────────────────
+        // Mirror assigns each NetworkMessage type a 16-bit ID derived from its
+        // full type name via GetStableHashCode16. With 65,536 possible slots and a
+        // growing message count, the birthday paradox makes collisions inevitable
+        // unless caught early. Run this after every RegisterNetworkMessages() call.
+        //
+        // HOW TO FIX a reported collision:
+        //   Rename one of the two conflicting structs so its hash changes.
+        //   Any rename works — there is no "good" name; just pick one that differs.
+
+        private static void ValidateMessageIds()
+        {
+            // Use Mirror's own NetworkMessageId<T> to get the actual runtime ID for
+            // each type — this is the same value Mirror uses for dispatch, so it
+            // catches collisions regardless of how Mirror's hash function is implemented.
+            var networkMessageInterface = typeof(NetworkMessage);
+            var assembly = typeof(NetworkManagerRegisterPrefabsPatch).Assembly;
+
+            // Collect every struct that implements NetworkMessage in our plugin.
+            var messageTypes = new List<Type>();
+            foreach (var t in assembly.GetTypes())
+            {
+                if (t.IsValueType && !t.IsAbstract && networkMessageInterface.IsAssignableFrom(t))
+                    messageTypes.Add(t);
+            }
+
+            var seenIds = new Dictionary<ushort, Type>();
+            var collisions = new List<string>();
+
+            foreach (var msgType in messageTypes)
+            {
+                ushort id = GetMessageIdForType(msgType);
+                if (id == 0)
+                    continue; // reflection failed for this type — skip silently
+
+                if (seenIds.TryGetValue(id, out var existing))
+                    collisions.Add($"  id={id}: {existing.FullName}  vs  {msgType.FullName}");
+                else
+                    seenIds[id] = msgType;
+            }
+
+            if (collisions.Count > 0)
+            {
+                IssaPluginPlugin.Log.LogError(
+                    $"[MessageCollision] {collisions.Count} Mirror message ID collision(s) detected! "
+                        + "Rename one type from each pair to fix:"
+                );
+                foreach (var c in collisions)
+                    IssaPluginPlugin.Log.LogError(c);
+            }
+            else
+            {
+                IssaPluginPlugin.Log.LogInfo(
+                    $"[MessageCollision] All {messageTypes.Count} message IDs are unique. No collisions."
+                );
+            }
+        }
+
+        /// Returns the Mirror-assigned 16-bit dispatch ID for <paramref name="msgType"/>
+        /// by reflecting into <c>NetworkMessageId&lt;T&gt;.Id</c>.
+        /// Returns 0 if the field cannot be found (version mismatch).
+        private static ushort GetMessageIdForType(Type msgType)
+        {
+            try
+            {
+                var generic = typeof(NetworkMessageId<>).MakeGenericType(msgType);
+
+                // Mirror stores the ID as a public static readonly ushort field named "Id".
+                var field = generic.GetField("Id", BindingFlags.Public | BindingFlags.Static);
+                if (field != null)
+                    return (ushort)field.GetValue(null);
+
+                // Some Mirror versions expose it as a property instead.
+                var prop = generic.GetProperty("Id", BindingFlags.Public | BindingFlags.Static);
+                if (prop != null)
+                    return (ushort)prop.GetValue(null);
+            }
+            catch (Exception ex)
+            {
+                IssaPluginPlugin.Log.LogWarning(
+                    $"[MessageCollision] Could not get ID for {msgType.FullName}: {ex.Message}"
+                );
+            }
+            return 0;
         }
 
         private static void RegisterNetworkMessages()
@@ -753,15 +855,32 @@ namespace IssaPlugin.Patches
             // ── Client → Server ───────────────────────────────────────────────────────
 
             // Player activates Bear item
-            Writer<BearSummonMessage>.write = BearSummonMessageSerialization.WriteBearSummonMessage;
-            Reader<BearSummonMessage>.read = BearSummonMessageSerialization.ReadBearSummonMessage;
+            Writer<BearActivateMessage>.write =
+                BearActivateMessageSerialization.WriteBearActivateMessage;
+            Reader<BearActivateMessage>.read =
+                BearActivateMessageSerialization.ReadBearActivateMessage;
+            IssaPluginPlugin.Log.LogInfo(
+                $"[Bear] Registering BearActivateMessage handler — NetworkServer.active={NetworkServer.active}"
+            );
             if (NetworkServer.active)
             {
-                NetworkServer.RegisterHandler<BearSummonMessage>(
+                NetworkServer.RegisterHandler<BearActivateMessage>(
                     (conn, msg) =>
                     {
+                        IssaPluginPlugin.Log.LogInfo(
+                            $"[Bear] BearActivateMessage handler invoked — conn={conn}, identity={conn?.identity?.netId}"
+                        );
                         GetBridge<BearNetworkBridge>(conn)?.ServerSummonBears();
                     }
+                );
+                IssaPluginPlugin.Log.LogInfo(
+                    "[Bear] BearActivateMessage server handler registered."
+                );
+            }
+            else
+            {
+                IssaPluginPlugin.Log.LogWarning(
+                    "[Bear] Skipped BearActivateMessage server handler — NetworkServer not active."
                 );
             }
 
