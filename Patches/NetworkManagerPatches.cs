@@ -159,9 +159,10 @@ namespace IssaPlugin.Patches
         }
 
         /// Returns all loadable types from <paramref name="assembly"/>.
-        /// If some types fail to load due to missing dependencies, returns the rest
-        /// rather than throwing — <see cref="ReflectionTypeLoadException"/> is common
-        /// in BepInEx environments where not all transitive dependencies are present.
+        /// Never throws: if some types fail to load due to missing dependencies the rest
+        /// are returned; if the assembly itself is unreadable an empty array is returned.
+        /// Both cases are common in BepInEx environments where not all transitive
+        /// dependencies are present.
         private static Type[] SafeGetTypes(Assembly assembly)
         {
             try
@@ -170,11 +171,20 @@ namespace IssaPlugin.Patches
             }
             catch (ReflectionTypeLoadException ex)
             {
+                // Partial load — return whichever types did resolve.
                 var loadable = new List<Type>(ex.Types.Length);
                 foreach (var t in ex.Types)
                     if (t != null)
                         loadable.Add(t);
                 return loadable.ToArray();
+            }
+            catch (Exception ex)
+            {
+                // SecurityException, BadImageFormatException, etc. — skip the assembly.
+                IssaPluginPlugin.Log.LogWarning(
+                    $"[MessageCollision] Skipping assembly '{assembly.GetName().Name}' — GetTypes() threw: {ex.Message}"
+                );
+                return [];
             }
         }
 
