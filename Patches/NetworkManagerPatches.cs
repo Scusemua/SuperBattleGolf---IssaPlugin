@@ -109,19 +109,7 @@ namespace IssaPlugin.Patches
                 string label = assembly.GetName().Name;
                 foreach (var t in SafeGetTypes(assembly))
                 {
-                    // IsAssignableFrom walks the interface list and can throw TypeLoadException
-                    // for partially-loaded types surfaced by ReflectionTypeLoadException above.
-                    bool isNetworkMessage;
-                    try
-                    {
-                        isNetworkMessage =
-                            t.IsValueType && networkMessageInterface.IsAssignableFrom(t);
-                    }
-                    catch
-                    {
-                        continue;
-                    }
-                    if (!isNetworkMessage)
+                    if (!IsNetworkMessageType(t, networkMessageInterface))
                         continue;
 
                     ushort id = GetMessageIdForType(t);
@@ -135,16 +123,7 @@ namespace IssaPlugin.Patches
             var pluginMessageTypes = new List<Type>();
             foreach (var t in SafeGetTypes(pluginAssembly))
             {
-                bool isNetworkMessage;
-                try
-                {
-                    isNetworkMessage = t.IsValueType && networkMessageInterface.IsAssignableFrom(t);
-                }
-                catch
-                {
-                    continue;
-                }
-                if (isNetworkMessage)
+                if (IsNetworkMessageType(t, networkMessageInterface))
                     pluginMessageTypes.Add(t);
             }
 
@@ -177,6 +156,23 @@ namespace IssaPlugin.Patches
                     $"[MessageCollision] All {pluginMessageTypes.Count} plugin message IDs are unique "
                         + "(no collisions found across all loaded assemblies)."
                 );
+            }
+        }
+
+        /// Returns true if <paramref name="t"/> is a concrete struct implementing
+        /// <paramref name="networkMessageInterface"/>.
+        /// Returns false (never throws) — <see cref="Type.IsAssignableFrom"/> can throw
+        /// <see cref="TypeLoadException"/> for partially-loaded types from assemblies that
+        /// had missing dependencies.
+        private static bool IsNetworkMessageType(Type t, Type networkMessageInterface)
+        {
+            try
+            {
+                return t.IsValueType && networkMessageInterface.IsAssignableFrom(t);
+            }
+            catch
+            {
+                return false;
             }
         }
 
