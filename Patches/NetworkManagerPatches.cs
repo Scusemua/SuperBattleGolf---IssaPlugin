@@ -144,11 +144,28 @@ namespace IssaPlugin.Patches
             if (collisions.Count > 0)
             {
                 IssaPluginPlugin.Log.LogError(
-                    $"[MessageCollision] {collisions.Count} Mirror message ID collision(s) detected! "
-                        + "Rename one type from each pair to fix:"
+                    "╔══════════════════════════════════════════════════════════╗"
+                );
+                IssaPluginPlugin.Log.LogError(
+                    "║        MIRROR MESSAGE ID COLLISION DETECTED              ║"
+                );
+                IssaPluginPlugin.Log.LogError(
+                    "╚══════════════════════════════════════════════════════════╝"
+                );
+                IssaPluginPlugin.Log.LogError(
+                    $"  {collisions.Count} collision(s) found. Multiplayer message dispatch is broken."
+                );
+                IssaPluginPlugin.Log.LogError(
+                    "  FIX: Rename one struct from each pair below so its hash changes."
+                );
+                IssaPluginPlugin.Log.LogError(
+                    "  ──────────────────────────────────────────────────────────"
                 );
                 foreach (var c in collisions)
                     IssaPluginPlugin.Log.LogError(c);
+                IssaPluginPlugin.Log.LogError(
+                    "╚══════════════════════════════════════════════════════════╝"
+                );
             }
             else
             {
