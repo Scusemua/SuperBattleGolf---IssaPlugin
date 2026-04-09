@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using HarmonyLib;
 using IssaPlugin.Items;
@@ -31,14 +32,11 @@ namespace IssaPlugin.Patches
                 );
                 return;
             }
-            _groundSpeedMb = AccessTools.Method(
-                pmType,
-                "<UpdateMovementSpeed>g__GetCurrentMoveSpeed|246_0"
-            );
-            _airSpeedMb = AccessTools.Method(
-                pmType,
-                "<UpdateMovementSpeed>g__GetTargetSpeedInAir|246_1"
-            );
+            // Local function names contain a compiler-generated index suffix (e.g. |246_0)
+            // that can change between game builds, so we match by the stable name fragment.
+            var methods = AccessTools.GetDeclaredMethods(pmType);
+            _groundSpeedMb = methods.FirstOrDefault(m => m.Name.Contains("GetTargetSpeedOnGround"));
+            _airSpeedMb    = methods.FirstOrDefault(m => m.Name.Contains("GetTargetSpeedInAir"));
         }
 
         static IEnumerable<MethodBase> TargetMethods()

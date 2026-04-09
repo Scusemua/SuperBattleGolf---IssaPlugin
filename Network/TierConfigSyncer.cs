@@ -57,10 +57,8 @@ namespace IssaPlugin
 
         private void Start()
         {
-            // Register message reader/writer with Mirror.
-            // Mirror looks these up by type name, so they must be registered
-            // before any connection is established.  Start() is early enough.
-            NetworkClient.RegisterHandler<TierConfigMessage>(OnClientReceivedTierConfig, false);
+            // Note: TierConfigMessage handler is registered by NetworkManagerPatches
+            // (alongside the custom reader/writer).  Do not register it here again.
 
             // ModConfig.Initialize() is called in Plugin.Awake() before AddComponent,
             // but guard anyway in case of ordering surprises.
@@ -79,8 +77,7 @@ namespace IssaPlugin
             if (Instance == this)
                 Instance = null;
 
-            if (NetworkClient.active)
-                NetworkClient.UnregisterHandler<TierConfigMessage>();
+            // Handler was registered by NetworkManagerPatches — do not unregister here.
         }
 
         // ── Host API ──────────────────────────────────────────────────────────
