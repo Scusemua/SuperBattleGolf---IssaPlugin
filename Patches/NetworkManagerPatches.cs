@@ -90,29 +90,54 @@ namespace IssaPlugin.Patches
             // each type — this is the same value Mirror uses for dispatch, so it
             // catches collisions regardless of how Mirror's hash function is implemented.
             var networkMessageInterface = typeof(NetworkMessage);
-            var assembly = typeof(NetworkManagerRegisterPrefabsPatch).Assembly;
+            var pluginAssembly = typeof(NetworkManagerRegisterPrefabsPatch).Assembly;
 
-            // Collect every struct that implements NetworkMessage in our plugin.
-            var messageTypes = new List<Type>();
-            foreach (var t in assembly.GetTypes())
-            {
-                if (t.IsValueType && !t.IsAbstract && networkMessageInterface.IsAssignableFrom(t))
-                    messageTypes.Add(t);
-            }
-
-            var seenIds = new Dictionary<ushort, Type>();
+            // Map: id → (type, assemblyLabel). Built from all external assemblies first
+            // so any collision is reported as "plugin type vs external type".
+            var seenIds = new Dictionary<ushort, (Type Type, string Label)>();
             var collisions = new List<string>();
 
-            foreach (var msgType in messageTypes)
+            // Scan every assembly currently loaded in the AppDomain except our own.
+            // Using the AppDomain (rather than hard-coded anchors) automatically covers
+            // Mirror, GameAssembly, SharedAssembly, and any other game-side DLLs without
+            // needing a typeof() anchor for each one.
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                if (assembly == pluginAssembly)
+                    continue;
+
+                string label = assembly.GetName().Name;
+                foreach (var t in SafeGetTypes(assembly))
+                {
+                    if (!t.IsValueType || !networkMessageInterface.IsAssignableFrom(t))
+                        continue;
+                    ushort id = GetMessageIdForType(t);
+                    if (id == 0)
+                        continue; // ID lookup failed — already warned inside GetMessageIdForType
+                    seenIds.TryAdd(id, (t, label));
+                }
+            }
+
+            // Now scan the plugin assembly and check every ID against all external IDs.
+            var pluginMessageTypes = new List<Type>();
+            foreach (var t in SafeGetTypes(pluginAssembly))
+            {
+                if (t.IsValueType && networkMessageInterface.IsAssignableFrom(t))
+                    pluginMessageTypes.Add(t);
+            }
+
+            foreach (var msgType in pluginMessageTypes)
             {
                 ushort id = GetMessageIdForType(msgType);
                 if (id == 0)
-                    continue; // reflection failed for this type — skip silently
+                    continue; // ID lookup failed — already warned inside GetMessageIdForType
 
                 if (seenIds.TryGetValue(id, out var existing))
-                    collisions.Add($"  id={id}: {existing.FullName}  vs  {msgType.FullName}");
+                    collisions.Add(
+                        $"  id={id}: [{existing.Label}] {existing.Type.FullName}  vs  [Plugin] {msgType.FullName}"
+                    );
                 else
-                    seenIds[id] = msgType;
+                    seenIds[id] = (msgType, "Plugin");
             }
 
             if (collisions.Count > 0)
@@ -127,14 +152,40 @@ namespace IssaPlugin.Patches
             else
             {
                 IssaPluginPlugin.Log.LogInfo(
-                    $"[MessageCollision] All {messageTypes.Count} message IDs are unique. No collisions."
+                    $"[MessageCollision] All {pluginMessageTypes.Count} plugin message IDs are unique "
+                        + "(no collisions found across all loaded assemblies)."
                 );
             }
         }
 
+        /// Returns all loadable types from <paramref name="assembly"/>.
+        /// If some types fail to load due to missing dependencies, returns the rest
+        /// rather than throwing — <see cref="ReflectionTypeLoadException"/> is common
+        /// in BepInEx environments where not all transitive dependencies are present.
+        private static Type[] SafeGetTypes(Assembly assembly)
+        {
+            try
+            {
+                return assembly.GetTypes();
+            }
+            catch (ReflectionTypeLoadException ex)
+            {
+                var loadable = new List<Type>(ex.Types.Length);
+                foreach (var t in ex.Types)
+                    if (t != null)
+                        loadable.Add(t);
+                return loadable.ToArray();
+            }
+        }
+
+        // Set to true after the first time we fail to find NetworkMessageId<T>.Id via
+        // reflection, so we emit at most one warning about a potential Mirror API change
+        // rather than spamming one line per message type.
+        private static bool _networkMessageIdApiWarned;
+
         /// Returns the Mirror-assigned 16-bit dispatch ID for <paramref name="msgType"/>
         /// by reflecting into <c>NetworkMessageId&lt;T&gt;.Id</c>.
-        /// Returns 0 if the field cannot be found (version mismatch).
+        /// Returns 0 and logs a warning if the ID cannot be obtained (Mirror version mismatch).
         private static ushort GetMessageIdForType(Type msgType)
         {
             try
@@ -150,6 +201,16 @@ namespace IssaPlugin.Patches
                 var prop = generic.GetProperty("Id", BindingFlags.Public | BindingFlags.Static);
                 if (prop != null)
                     return (ushort)prop.GetValue(null);
+
+                // Neither field nor property found — Mirror's internal API may have changed.
+                if (!_networkMessageIdApiWarned)
+                {
+                    _networkMessageIdApiWarned = true;
+                    IssaPluginPlugin.Log.LogWarning(
+                        "[MessageCollision] NetworkMessageId<T> has no 'Id' field or property. "
+                            + "Mirror's API may have changed — message ID collision detection is unreliable."
+                    );
+                }
             }
             catch (Exception ex)
             {
