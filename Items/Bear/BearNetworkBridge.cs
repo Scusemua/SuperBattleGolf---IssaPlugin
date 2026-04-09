@@ -68,6 +68,8 @@ namespace IssaPlugin.Items
         /// </summary>
         public void ServerSummonBears()
         {
+            IssaPluginPlugin.Log.LogInfo("ServerSummonBears called.");
+
             var inventory = GetComponent<PlayerInventory>();
             if (inventory == null)
                 return;

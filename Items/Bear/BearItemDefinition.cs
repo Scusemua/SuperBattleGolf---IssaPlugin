@@ -19,7 +19,7 @@ namespace IssaPlugin.Items
         {
             var bridge = inventory.GetComponent<BearNetworkBridge>();
             if (bridge != null)
-                NetworkClient.Send(new BearSummonMessage());
+                NetworkClient.Send(new BearActivateMessage());
             else
                 IssaPluginPlugin.Log.LogError("[Bear] No BearNetworkBridge on player.");
         }

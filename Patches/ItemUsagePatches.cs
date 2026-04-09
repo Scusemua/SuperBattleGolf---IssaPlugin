@@ -45,6 +45,7 @@ namespace IssaPlugin.Patches
 
             shouldEatInput = def.ShouldEatInputOnUse;
             __result = def.UseResult;
+            IssaPluginPlugin.Log.LogInfo($"[TryUseItem] Calling OnUse for item={(int)equipped} ({def.GetType().Name}), isAirhornReaction={isAirhornReaction}, shouldEatInput={shouldEatInput}, UseResult={__result}");
             def.OnUse(__instance);
             return false;
         }

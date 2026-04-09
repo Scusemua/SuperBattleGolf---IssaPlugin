@@ -8,8 +8,9 @@ namespace IssaPlugin.Items
     /// <summary>
     /// Sent when the local player activates the Bear item.
     /// The server validates ownership and spawns the bears.
+    /// Renamed from BearSummonMessage to resolve a Mirror message ID collision with JetpackThrustStartMessage (both hashed to id=48286).
     /// </summary>
-    public struct BearSummonMessage : NetworkMessage { }
+    public struct BearActivateMessage : NetworkMessage { }
 
     /// <summary>
     /// Sent by the local client during the swing hit window when a bear is
@@ -34,12 +35,12 @@ namespace IssaPlugin.Items
             new BearSwingHitMessage { BearNetId = reader.ReadUInt() };
     }
 
-    public static class BearSummonMessageSerialization
+    public static class BearActivateMessageSerialization
     {
-        public static void WriteBearSummonMessage(NetworkWriter writer, BearSummonMessage msg) { }
+        public static void WriteBearActivateMessage(NetworkWriter writer, BearActivateMessage msg) { }
 
-        public static BearSummonMessage ReadBearSummonMessage(NetworkReader reader) =>
-            new BearSummonMessage();
+        public static BearActivateMessage ReadBearActivateMessage(NetworkReader reader) =>
+            new BearActivateMessage();
     }
 
     // ── Server → All Clients ─────────────────────────────────────────────────
