@@ -125,7 +125,7 @@ namespace IssaPlugin.Overlays
                         + $"  IsAimingItem={localInfo.Inventory.IsAimingItem}"
                         + $"  IsHoldingAimSwing={localInfo.Input?.IsHoldingAimSwing}"
                 );
-                localInfo.PlayerAudio.PlayGunAimForAllClients(ItemType.ElephantGun);
+                localInfo.PlayerAudio.PlayItemAimForAllClients(ItemType.ElephantGun);
                 CorrectAimRotation();
             }
 
