@@ -59,7 +59,7 @@ namespace IssaPlugin.Patches
     [HarmonyPatch]
     static class GunshipLockOnIsValidPatch
     {
-        static MethodBase TargetMethod() => AccessTools.Method(typeof(LockOnTarget), "IsValid");
+        static MethodBase TargetMethod() => AccessTools.Method(typeof(LockOnTarget), "IsValidForLocalPlayer");
 
         static bool Prefix(LockOnTarget __instance, ref bool __result)
         {
