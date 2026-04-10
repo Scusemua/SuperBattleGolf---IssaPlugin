@@ -2,15 +2,13 @@
 
 <img src="icon.png" width="256" height="256" />
 
-Adds **26 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
+Adds **27 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
 
 To download and/or install the mod, please check out the GitHub releases or the mod's [ThunderStore page](https://thunderstore.io/c/super-battle-golf/p/TeamScusemua/IssaMod/).
 
 ## Regarding the **Frozen Fairway Update**
 
-GitHub release v0.0.25 re-enables IssaMod/IssaPlugin up through Hotfix 4 of the **Frozen Fairway Update**. The mod is very under-tested at this point, so there are likely bugs and strange interactions with the new game mechanics. The custom items also do appear in the pause menu, but their spawn weights are not updated properly. 
-
-This will be addressed in v0.0.26.
+GitHub release v0.0.25 re-enables IssaMod/IssaPlugin up through Hotfix 4 of the **Frozen Fairway Update**. The mod is very under-tested at this point, so there are likely bugs and strange interactions with the new game mechanics. The custom items also do appear in the pause menu, but their spawn weights are not updated properly. This will be addressed in a future update.
 
 ## Items
 
@@ -94,6 +92,9 @@ Eat your vegetables. Provides a boost to movement speed and swing power.
 
 ### 🔥 Flamethrower
 Unleash a continuous stream of fire in front of you. Enemies caught in the flames run around like crazy while they're set ablaze before falling and rolling on the ground.
+
+### 🚀💣 Rocket Tether Grenade
+Throw a toy rocket at the ground, causing a small spark. Anybody within range will be tethered to a rocket - like the rocket tether item, but somehow even more chaotic.
 
 ---
 
