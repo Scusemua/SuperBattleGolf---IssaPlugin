@@ -239,6 +239,10 @@ Assets used in the project:
     (https://skfb.ly/oqBBw) by AnshiNoWara 
     Licensed under Creative Commons Attribution
 
+-   "Toy Rocket 4K Free 3D model"\
+    (https://skfb.ly/oyYKJ) by Desertsage
+    Licensed under Creative Commons Attribution
+
 ---
 
 *IssaPlugin is a fan-made mod and is not affiliated with Brimstone or Oro Interactive.*

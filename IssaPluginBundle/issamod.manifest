@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 1574281188
+CRC: 434866415
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 33b48a4480c6dfea485ca052261f48a4
+    Hash: 2c1e7fa5d5f76b1af3980e0adc65fcff
   TypeTreeHash:
     serializedVersion: 2
     Hash: 82d52513d6b19822b87b688cdb5147d6
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: ea6c776dab3b648fbe11a96d27a54cab
+    Hash: 050baefd391b56e69058bcb60f639a5f
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -92,17 +92,19 @@ Assets:
 - Assets/Assets/flamethrower.prefab
 - Assets/Assets/gravity_gun_vfx.prefab
 - Assets/Assets/javelin_target_indicator.prefab
-- Assets/Assets/bat_model.prefab
+- Assets/Assets/toy_rocket.prefab
 - Assets/Assets/javelin_icon.png
 - Assets/Assets/drone_swarm_icon.png
 - Assets/Assets/jetpack_particles.prefab
 - Assets/Assets/position_swap_smoke.prefab
+- Assets/Assets/bat_model.prefab
 - Assets/Assets/intervention.prefab
 - Assets/Assets/player_linker.prefab
 - Assets/Assets/position_swap_orb.prefab
 - Assets/Assets/bomber_model.prefab
 - Assets/Assets/spinach_icon.png
 - Assets/Assets/flamethrower_victim_fire.prefab
+- Assets/Assets/rocket_tether_grenade_icon.png
 - Assets/Assets/bomber_icon.png
 - Assets/Assets/redbull.prefab
 - Assets/Assets/gold_star.prefab

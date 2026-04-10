@@ -30,6 +30,10 @@ namespace IssaPlugin.Overlays
         private float _time;
         private bool _sessionActive;
 
+        // Live reference to the current tether session affecting the local player.
+        // Populated by TryGetSessionForVictim; null when no session is active.
+        private TetherSessionState _activeSession;
+
         // Nearest lock-on candidate (updated in Update, idle only)
         private bool _hasTarget;
         private bool _aimingIn;
@@ -69,15 +73,11 @@ namespace IssaPlugin.Overlays
             _time = Time.time;
 
             // Only the tethered TARGET sees the active HUD.
-            if (RocketTetherNetworkBridge.TetherActive)
-            {
-                uint localNetId = localInfo.GetComponent<NetworkIdentity>()?.netId ?? 0u;
-                _sessionActive = localNetId == RocketTetherNetworkBridge.TargetNetId;
-            }
-            else
-            {
-                _sessionActive = false;
-            }
+            // TryGetSessionForVictim returns a live class reference so Duration/StartTime
+            // are always current without needing a second lookup in DrawActiveHUD.
+            uint localNetId = localInfo.GetComponent<NetworkIdentity>()?.netId ?? 0u;
+            _sessionActive = localNetId != 0u
+                && RocketTetherClientLogic.TryGetSessionForVictim(localNetId, out _activeSession);
 
             if (_sessionActive)
             {
@@ -220,8 +220,8 @@ namespace IssaPlugin.Overlays
 
         private void DrawActiveHUD()
         {
-            float duration = RocketTetherNetworkBridge.TetherDuration;
-            float elapsed = _time - RocketTetherNetworkBridge.TetherStartTime;
+            float duration = _activeSession?.Duration ?? 0f;
+            float elapsed  = _time - (_activeSession?.StartTime ?? _time);
             float remaining = Mathf.Max(0f, duration - elapsed);
             bool lowTime = remaining <= 3f;
 

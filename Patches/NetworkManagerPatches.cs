@@ -1518,33 +1518,17 @@ namespace IssaPlugin.Patches
                 false
             );
 
-            // ── Rocket Tether Messages ────────────────────────────────────────────
+            // ── Rocket Tether (lock-on item specific) ────────────────────────────
             Writer<RocketTetherLockOnMessage>.write =
                 RocketTetherLockOnMessageSerialization.WriteRocketTetherLockOnMessage;
             Reader<RocketTetherLockOnMessage>.read =
                 RocketTetherLockOnMessageSerialization.ReadRocketTetherLockOnMessage;
-
-            Writer<RocketTetherConnectedMessage>.write =
-                RocketTetherConnectedMessageSerialization.WriteRocketTetherConnectedMessage;
-            Reader<RocketTetherConnectedMessage>.read =
-                RocketTetherConnectedMessageSerialization.ReadRocketTetherConnectedMessage;
-
-            Writer<RocketTetherDisconnectedMessage>.write =
-                RocketTetherDisconnectedMessageSerialization.WriteRocketTetherDisconnectedMessage;
-            Reader<RocketTetherDisconnectedMessage>.read =
-                RocketTetherDisconnectedMessageSerialization.ReadRocketTetherDisconnectedMessage;
 
             Writer<RocketTetherBusyMessage>.write =
                 RocketTetherBusyMessageSerialization.WriteRocketTetherBusyMessage;
             Reader<RocketTetherBusyMessage>.read =
                 RocketTetherBusyMessageSerialization.ReadRocketTetherBusyMessage;
 
-            NetworkClient.RegisterHandler<RocketTetherConnectedMessage>(
-                RocketTetherNetworkBridge.HandleRocketTetherConnected
-            );
-            NetworkClient.RegisterHandler<RocketTetherDisconnectedMessage>(
-                RocketTetherNetworkBridge.HandleRocketTetherDisconnected
-            );
             NetworkClient.RegisterHandler<RocketTetherBusyMessage>(
                 RocketTetherNetworkBridge.HandleRocketTetherBusy
             );
@@ -1556,6 +1540,39 @@ namespace IssaPlugin.Patches
                         GetBridge<RocketTetherNetworkBridge>(conn)?.ServerHandleLockOn(conn, msg)
                 );
             }
+
+            // ── Shared Rocket Victim Messages (Rocket Tether + Rocket Tether Grenade) ──
+            // Registered once here; RocketTetherClientLogic handles both items.
+            Writer<RocketVictimConnectedMessage>.write =
+                RocketVictimConnectedMessageSerialization.WriteRocketVictimConnectedMessage;
+            Reader<RocketVictimConnectedMessage>.read =
+                RocketVictimConnectedMessageSerialization.ReadRocketVictimConnectedMessage;
+
+            Writer<RocketVictimDisconnectedMessage>.write =
+                RocketVictimDisconnectedMessageSerialization.WriteRocketVictimDisconnectedMessage;
+            Reader<RocketVictimDisconnectedMessage>.read =
+                RocketVictimDisconnectedMessageSerialization.ReadRocketVictimDisconnectedMessage;
+
+            // Server → Client handlers: registered without NetworkServer.active guard
+            // so all clients (including non-hosts) receive them.
+            NetworkClient.RegisterHandler<RocketVictimConnectedMessage>(
+                RocketTetherClientLogic.HandleVictimConnected
+            );
+            NetworkClient.RegisterHandler<RocketVictimDisconnectedMessage>(
+                RocketTetherClientLogic.HandleVictimDisconnected
+            );
+
+            // ── Rocket Tether Grenade Messages ────────────────────────────────────
+            Writer<RocketTetherGrenadeThrowMessage>.write =
+                RocketTetherGrenadeThrowMessageSerialization.WriteRocketTetherGrenadeThrowMessage;
+            Reader<RocketTetherGrenadeThrowMessage>.read =
+                RocketTetherGrenadeThrowMessageSerialization.ReadRocketTetherGrenadeThrowMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<RocketTetherGrenadeThrowMessage>(
+                    (conn, msg) =>
+                        GetBridge<RocketTetherGrenadeNetworkBridge>(conn)
+                            ?.ServerHandleThrow(msg.ThrowOrigin, msg.ThrowVelocity)
+                );
 
             // ── Teleporter Messages ───────────────────────────────────────────────
 
@@ -1635,6 +1652,9 @@ namespace IssaPlugin.Patches
             RegisterPrefab(AssetLoader.HarrierPrefab);
             RegisterPrefab(AssetLoader.PoisonJarPrefab);
             RegisterPrefab(AssetLoader.DronePrefab);
+            // Null-safe: RocketTetherGrenadePrefab is null when no dedicated asset exists.
+            if (AssetLoader.RocketTetherGrenadePrefab != null)
+                RegisterPrefab(AssetLoader.RocketTetherGrenadePrefab);
         }
 
         private static void RegisterPrefab(GameObject prefab)
