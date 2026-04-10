@@ -1564,15 +1564,23 @@ namespace IssaPlugin.Patches
 
             // ── Rocket Tether Grenade Messages ────────────────────────────────────
             Writer<RocketTetherGrenadeThrowMessage>.write =
-                RocketTetherGrenadeThrowMessageSerialization.WriteRocketTetherGrenadeThrowMessage;
+                RocketTetherGrenadeMessageSerialization.WriteRocketTetherGrenadeThrowMessage;
             Reader<RocketTetherGrenadeThrowMessage>.read =
-                RocketTetherGrenadeThrowMessageSerialization.ReadRocketTetherGrenadeThrowMessage;
+                RocketTetherGrenadeMessageSerialization.ReadRocketTetherGrenadeThrowMessage;
             if (NetworkServer.active)
                 NetworkServer.RegisterHandler<RocketTetherGrenadeThrowMessage>(
                     (conn, msg) =>
                         GetBridge<RocketTetherGrenadeNetworkBridge>(conn)
                             ?.ServerHandleThrow(msg.ThrowOrigin, msg.ThrowVelocity)
                 );
+
+            Writer<RocketTetherGrenadeLandedMessage>.write =
+                RocketTetherGrenadeMessageSerialization.WriteRocketTetherGrenadeLandedMessage;
+            Reader<RocketTetherGrenadeLandedMessage>.read =
+                RocketTetherGrenadeMessageSerialization.ReadRocketTetherGrenadeLandedMessage;
+            NetworkClient.RegisterHandler<RocketTetherGrenadeLandedMessage>(
+                msg => RocketTetherGrenadeNetworkBridge.ClientHandleLand(msg.Position, msg.ThrowerNetId)
+            );
 
             // ── Teleporter Messages ───────────────────────────────────────────────
 

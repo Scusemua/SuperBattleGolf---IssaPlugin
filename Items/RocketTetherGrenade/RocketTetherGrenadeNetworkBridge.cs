@@ -33,9 +33,9 @@ namespace IssaPlugin.Items
         private struct ServerVictimSession
         {
             public Coroutine Coroutine;
-            public Vector3   RocketStartPos;
-            public float     RocketSpeed;
-            public float     StartTime;     // Time.time when the session began
+            public Vector3 RocketStartPos;
+            public float RocketSpeed;
+            public float StartTime; // Time.time when the session began
         }
 
         private readonly Dictionary<uint, ServerVictimSession> _serverVictimSessions =
@@ -58,15 +58,17 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            Vector3 forward     = cam.transform.forward;
+            Vector3 forward = cam.transform.forward;
             Vector3 throwOrigin = cam.transform.position + forward * 1.2f + Vector3.up * 0.3f;
-            Vector3 throwDir    = (forward + Vector3.up * ModConfig.RocketTetherGrenade.LobAngle.Value).normalized;
-            Vector3 velocity    = throwDir * ModConfig.RocketTetherGrenade.ThrowSpeed.Value;
+            Vector3 throwDir = (
+                forward + Vector3.up * ModConfig.RocketTetherGrenade.LobAngle.Value
+            ).normalized;
+            Vector3 velocity = throwDir * ModConfig.RocketTetherGrenade.ThrowSpeed.Value;
 
             NetworkClient.Send(
                 new RocketTetherGrenadeThrowMessage
                 {
-                    ThrowOrigin   = throwOrigin,
+                    ThrowOrigin = throwOrigin,
                     ThrowVelocity = velocity,
                 }
             );
@@ -74,6 +76,11 @@ namespace IssaPlugin.Items
             IssaPluginPlugin.Log.LogInfo(
                 $"[RTGrenade] Client throw: origin={throwOrigin} speed={velocity.magnitude:F1}"
             );
+        }
+
+        public static void ClientHandleLand(Vector3 position, uint throwerNetId)
+        {
+            // VFX placeholder — no explosion asset loaded yet.
         }
 
         // =====================================================================
@@ -92,9 +99,14 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            if (inventory.GetEffectivelyEquippedItem(true) != ItemRegistry.RocketTetherGrenadeItemType)
+            if (
+                inventory.GetEffectivelyEquippedItem(true)
+                != ItemRegistry.RocketTetherGrenadeItemType
+            )
             {
-                IssaPluginPlugin.Log.LogWarning("[RTGrenade] Player does not have RTGrenade equipped.");
+                IssaPluginPlugin.Log.LogWarning(
+                    "[RTGrenade] Player does not have RTGrenade equipped."
+                );
                 return;
             }
 
@@ -130,9 +142,9 @@ namespace IssaPlugin.Items
             var rb = grenadeGo.GetComponent<Rigidbody>();
             if (rb != null)
             {
-                rb.useGravity      = true;
-                rb.isKinematic     = false;
-                rb.linearVelocity  = velocity;
+                rb.useGravity = true;
+                rb.isKinematic = false;
+                rb.linearVelocity = velocity;
 
                 // Spin axis perpendicular to throw direction for a tumbling effect.
                 Vector3 spinAxis = Vector3.Cross(velocity.normalized, Vector3.up).normalized;
@@ -163,7 +175,7 @@ namespace IssaPlugin.Items
                 return;
 
             float rocketSpeed = ModConfig.RocketTetherGrenade.RocketSpeed.Value;
-            float duration    = ModConfig.RocketTetherGrenade.TetherDuration.Value;
+            float duration = ModConfig.RocketTetherGrenade.TetherDuration.Value;
 
             foreach (var victim in victims)
             {
@@ -188,14 +200,14 @@ namespace IssaPlugin.Items
                 NetworkServer.SendToAll(
                     new RocketVictimConnectedMessage
                     {
-                        WielderNetId   = netId,
-                        VictimNetId    = victimNetId,
+                        WielderNetId = netId,
+                        VictimNetId = victimNetId,
                         RocketStartPos = rocketStart,
-                        RocketSpeed    = rocketSpeed,
-                        Duration       = duration,
-                        SpringForce    = ModConfig.RocketTetherGrenade.SpringForce.Value,
-                        MaxPullSpeed   = ModConfig.RocketTetherGrenade.MaxPullSpeed.Value,
-                        NaturalLength  = ModConfig.RocketTetherGrenade.NaturalLength.Value,
+                        RocketSpeed = rocketSpeed,
+                        Duration = duration,
+                        SpringForce = ModConfig.RocketTetherGrenade.SpringForce.Value,
+                        MaxPullSpeed = ModConfig.RocketTetherGrenade.MaxPullSpeed.Value,
+                        NaturalLength = ModConfig.RocketTetherGrenade.NaturalLength.Value,
                     }
                 );
 
@@ -204,8 +216,8 @@ namespace IssaPlugin.Items
                 var session = new ServerVictimSession
                 {
                     RocketStartPos = rocketStart,
-                    RocketSpeed    = rocketSpeed,
-                    StartTime      = Time.time,
+                    RocketSpeed = rocketSpeed,
+                    StartTime = Time.time,
                 };
 
                 session.Coroutine = StartCoroutine(
@@ -213,9 +225,7 @@ namespace IssaPlugin.Items
                 );
                 _serverVictimSessions[victimNetId] = session;
 
-                IssaPluginPlugin.Log.LogInfo(
-                    $"[RTGrenade] Tethered victim netId={victimNetId}."
-                );
+                IssaPluginPlugin.Log.LogInfo($"[RTGrenade] Tethered victim netId={victimNetId}.");
             }
         }
 
@@ -235,29 +245,35 @@ namespace IssaPlugin.Items
             if (!_serverVictimSessions.ContainsKey(victimNetId))
                 yield break;
 
-            float explosionForce  = ModConfig.RocketTetherGrenade.ExplosionForce.Value;
+            float explosionForce = ModConfig.RocketTetherGrenade.ExplosionForce.Value;
             float explosionRadius = ModConfig.RocketTetherGrenade.ExplosionRadius.Value;
-            Vector3 explosionPos  =
+            Vector3 explosionPos =
                 session.RocketStartPos + Vector3.up * session.RocketSpeed * duration;
 
             // Apply explosion to non-player Rigidbodies (same as RocketTetherNetworkBridge).
             foreach (var col in Physics.OverlapSphere(explosionPos, explosionRadius))
             {
                 var rb = col.attachedRigidbody;
-                if (rb == null || rb.isKinematic) continue;
-                if (col.GetComponentInParent<PlayerInfo>() != null) continue;
+                if (rb == null || rb.isKinematic)
+                    continue;
+                if (col.GetComponentInParent<PlayerInfo>() != null)
+                    continue;
                 rb.AddExplosionForce(
-                    explosionForce, explosionPos, explosionRadius, 0.5f, ForceMode.VelocityChange
+                    explosionForce,
+                    explosionPos,
+                    explosionRadius,
+                    0.5f,
+                    ForceMode.VelocityChange
                 );
             }
 
             NetworkServer.SendToAll(
                 new RocketVictimDisconnectedMessage
                 {
-                    VictimNetId       = victimNetId,
+                    VictimNetId = victimNetId,
                     ExplosionPosition = explosionPos,
-                    ExplosionForce    = explosionForce,
-                    ExplosionRadius   = explosionRadius,
+                    ExplosionForce = explosionForce,
+                    ExplosionRadius = explosionRadius,
                 }
             );
 
@@ -283,28 +299,29 @@ namespace IssaPlugin.Items
             foreach (var kvp in _serverVictimSessions)
                 snapshot[i++] = kvp;
 
-            float explosionForce  = ModConfig.RocketTetherGrenade.ExplosionForce.Value;
+            float explosionForce = ModConfig.RocketTetherGrenade.ExplosionForce.Value;
             float explosionRadius = ModConfig.RocketTetherGrenade.ExplosionRadius.Value;
 
             foreach (var kvp in snapshot)
             {
-                uint               victimNetId = kvp.Key;
-                ServerVictimSession session     = kvp.Value;
+                uint victimNetId = kvp.Key;
+                ServerVictimSession session = kvp.Value;
 
                 if (session.Coroutine != null)
                     StopCoroutine(session.Coroutine);
 
                 // Compute explosion position using the server-recorded start time.
-                float   elapsed      = Time.time - session.StartTime;
-                Vector3 explosionPos = session.RocketStartPos + Vector3.up * session.RocketSpeed * elapsed;
+                float elapsed = Time.time - session.StartTime;
+                Vector3 explosionPos =
+                    session.RocketStartPos + Vector3.up * session.RocketSpeed * elapsed;
 
                 NetworkServer.SendToAll(
                     new RocketVictimDisconnectedMessage
                     {
-                        VictimNetId       = victimNetId,
+                        VictimNetId = victimNetId,
                         ExplosionPosition = explosionPos,
-                        ExplosionForce    = explosionForce,
-                        ExplosionRadius   = explosionRadius,
+                        ExplosionForce = explosionForce,
+                        ExplosionRadius = explosionRadius,
                     }
                 );
             }

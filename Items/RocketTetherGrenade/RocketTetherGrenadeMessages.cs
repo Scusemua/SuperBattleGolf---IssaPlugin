@@ -19,8 +19,36 @@ namespace IssaPlugin.Items
         public Vector3 ThrowVelocity;
     }
 
-    public static class RocketTetherGrenadeThrowMessageSerialization
+    /// <summary>
+    /// Server → All clients: grenade has landed.
+    /// Clients use this to spawn the local explosion VFX.
+    /// </summary>
+    public struct RocketTetherGrenadeLandedMessage : NetworkMessage
     {
+        public Vector3 Position;
+        public uint ThrowerNetId;
+    }
+
+    public static class RocketTetherGrenadeMessageSerialization
+    {
+        public static void WriteRocketTetherGrenadeLandedMessage(
+            NetworkWriter writer,
+            RocketTetherGrenadeLandedMessage msg
+        )
+        {
+            writer.WriteVector3(msg.Position);
+            writer.WriteUInt(msg.ThrowerNetId);
+        }
+
+        public static RocketTetherGrenadeLandedMessage ReadRocketTetherGrenadeLandedMessage(
+            NetworkReader reader
+        ) =>
+            new RocketTetherGrenadeLandedMessage
+            {
+                Position = reader.ReadVector3(),
+                ThrowerNetId = reader.ReadUInt(),
+            };
+
         public static void WriteRocketTetherGrenadeThrowMessage(
             NetworkWriter writer,
             RocketTetherGrenadeThrowMessage msg
@@ -35,7 +63,7 @@ namespace IssaPlugin.Items
         ) =>
             new RocketTetherGrenadeThrowMessage
             {
-                ThrowOrigin   = reader.ReadVector3(),
+                ThrowOrigin = reader.ReadVector3(),
                 ThrowVelocity = reader.ReadVector3(),
             };
     }
