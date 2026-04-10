@@ -6,6 +6,12 @@ Adds **26 new items** to Super Battle Golf -- from an orbiting gunship you pilot
 
 To download and/or install the mod, please check out the GitHub releases or the mod's [ThunderStore page](https://thunderstore.io/c/super-battle-golf/p/TeamScusemua/IssaMod/).
 
+## Regarding the **Frozen Fairway Update**
+
+GitHub release v0.0.25 re-enables IssaMod/IssaPlugin up through Hotfix 4 of the **Frozen Fairway Update**. The mod is very under-tested at this point, so there are likely bugs and strange interactions with the new game mechanics. The custom items also do appear in the pause menu, but their spawn weights are not updated properly. 
+
+This will be addressed in v0.0.26.
+
 ## Items
 
 ### ⚾ Baseball Bat
