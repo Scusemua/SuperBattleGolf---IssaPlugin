@@ -60,6 +60,7 @@ namespace IssaPlugin.Items
         private GameObject _victimFireParticles; // shown on all clients while this player burns
         private FlamethrowerHitDetector _hitDetector; // non-null only on the local shooter's instance
         private Camera _camera;
+        private bool _wasAimedIn;
 
         // ================================================================
         //  Client → Server helpers (called by FlamethrowerItem.FireLoop)
@@ -287,12 +288,30 @@ namespace IssaPlugin.Items
 
         private void LateUpdate()
         {
-            if (Mouse.current == null || !Mouse.current.rightButton.isPressed)
+            var localInfo = GameManager.LocalPlayerInfo;
+            bool flameThrowerEquipped =
+                localInfo?.Inventory != null
+                && localInfo.Inventory.GetEffectivelyEquippedItem(true)
+                    == ItemRegistry.FlamethrowerItemType;
+
+            bool aimedIn = Mouse.current?.rightButton.isPressed ?? false;
+
+            // Play the aim sound once on scope entry.
+            if (flameThrowerEquipped && aimedIn && !_wasAimedIn)
             {
-                return;
+                var rot = localInfo.Movement?.transform.eulerAngles ?? default;
+                var camRot = Camera.main?.transform.eulerAngles ?? default;
+                localInfo.PlayerAudio.PlayItemAimForAllClients(ItemType.ElephantGun);
+                CorrectAimRotation();
             }
 
-            CorrectAimRotation();
+            if (flameThrowerEquipped && !aimedIn && _wasAimedIn)
+            {
+                var rot = localInfo.Movement?.transform.eulerAngles ?? default;
+                FixLookRotationAfterScope();
+            }
+
+            _wasAimedIn = aimedIn;
         }
 
         private void CorrectAimRotation()
@@ -309,7 +328,18 @@ namespace IssaPlugin.Items
             if (fwd.sqrMagnitude < 0.01f)
                 return;
             li.Movement.transform.rotation =
-                Quaternion.LookRotation(fwd.normalized) * Quaternion.Euler(0f, 5f, 0f);
+                Quaternion.LookRotation(fwd.normalized) * Quaternion.Euler(0f, 0f, 0f);
+        }
+
+        private void FixLookRotationAfterScope()
+        {
+            if (Camera.main != null)
+                GameManager
+                    .LocalPlayerInfo
+                    ?.Movement
+                    ?.transform.rotation = Quaternion.LookRotation(
+                        Camera.main.transform.forward.normalized
+                    );
         }
 
         // ================================================================

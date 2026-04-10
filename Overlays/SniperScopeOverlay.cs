@@ -90,7 +90,7 @@ namespace IssaPlugin.Overlays
             if (fwd.sqrMagnitude < 0.01f)
                 return;
             li.Movement.transform.rotation =
-                Quaternion.LookRotation(fwd.normalized) * Quaternion.Euler(0f, 0f, 0f);
+                Quaternion.LookRotation(fwd.normalized) * Quaternion.Euler(0f, 5f, 0f);
         }
 
         private void FixLookRotationAfterScope()
@@ -120,11 +120,6 @@ namespace IssaPlugin.Overlays
             {
                 var rot = localInfo.Movement?.transform.eulerAngles ?? default;
                 var camRot = Camera.main?.transform.eulerAngles ?? default;
-                IssaPluginPlugin.Log.LogInfo(
-                    $"[Sniper] Scope ENTER — charYaw={rot.y:F1}  camYaw={camRot.y:F1}"
-                        + $"  IsAimingItem={localInfo.Inventory.IsAimingItem}"
-                        + $"  IsHoldingAimSwing={localInfo.Input?.IsHoldingAimSwing}"
-                );
                 localInfo.PlayerAudio.PlayItemAimForAllClients(ItemType.ElephantGun);
                 CorrectAimRotation();
             }
@@ -132,10 +127,6 @@ namespace IssaPlugin.Overlays
             if (sniperEquipped && !wantsScope && _prevScoped)
             {
                 var rot = localInfo.Movement?.transform.eulerAngles ?? default;
-                IssaPluginPlugin.Log.LogInfo(
-                    $"[Sniper] Scope EXIT — charYaw={rot.y:F1}"
-                        + $"  IsAimingItem={localInfo.Inventory.IsAimingItem}"
-                );
                 FixLookRotationAfterScope();
             }
 

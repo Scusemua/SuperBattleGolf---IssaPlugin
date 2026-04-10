@@ -85,6 +85,16 @@ namespace IssaPlugin.Patches
             // OnEquipmentTypeChangedPatch. Call it again here as a fallback for items that share
             // the same EquipmentType (SyncVar unchanged → hook doesn't re-fire).
             EnsureCustomModel(rightSwitcher, __instance, equipped);
+
+            // Ensure the animator body pose is correct. When switching between two custom items
+            // with different AnimatorItemTypes (e.g. OrbitalLaser → ElephantGun), the
+            // NetworknetworkedEquippedItem SyncVar stays None for both — the hook never fires —
+            // so PlayerAnimatorOnEquippedChangedPatch.Postfix never runs. Only Case 2 in
+            // SetEquippedItemPatch fires (one TriggerReevaluateUpperBody), which is insufficient
+            // to transition between two active upper-body poses. Calling SetEquippedItem here
+            // provides a second trigger that makes the transition reliable, matching the two-
+            // trigger path used when the SyncVar hook does fire (e.g. Sniper → custom item).
+            __instance.PlayerInfo.AnimatorIo.SetEquippedItem(def.AnimatorItemType);
         }
 
         private static void HideDefaultEquipment(EquipmentSwitcher switcher)
