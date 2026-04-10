@@ -39,6 +39,7 @@ namespace IssaPlugin
         public static TeleporterConfig Teleporter { get; private set; }
         public static SpinachConfig Spinach { get; private set; }
         public static FlamethrowerConfig Flamethrower { get; private set; }
+        public static RocketTetherGrenadeConfig RocketTetherGrenade { get; private set; }
 
         public static void Initialize(ConfigFile cfg)
         {
@@ -72,6 +73,7 @@ namespace IssaPlugin
             Teleporter = new TeleporterConfig(cfg, Global);
             Spinach = new SpinachConfig(cfg, Global);
             Flamethrower = new FlamethrowerConfig(cfg, Global);
+            RocketTetherGrenade = new RocketTetherGrenadeConfig(cfg, Global);
         }
 
         // ── Pass-through helper methods (from GlobalConfig) ───────────────────

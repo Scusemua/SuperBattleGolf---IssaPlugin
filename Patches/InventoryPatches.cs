@@ -72,13 +72,13 @@ namespace IssaPlugin.Patches
     }
 
     /// <summary>
-    /// Guards against an IndexOutOfRangeException in Hotkeys.UpdatePlayerInventoryHoykeyInternal
+    /// Guards against an IndexOutOfRangeException in Hotkeys.UpdatePlayerInventoryHotkeyInternal
     /// when NumInventorySlots exceeds the base-game default (3).
     ///
     /// Root cause: Hotkeys stores a fixed-size <c>hotkeyPreviewUis</c> array whose length
     /// matches the base-game inventory size (3).  When the player enters a golf cart, the
     /// hotkey mode switches to HotkeyMode.GolfCart, and the game calls
-    /// UpdatePlayerInventoryHoykeyInternal for every inventory slot.  In GolfCart mode the
+    /// UpdatePlayerInventoryHotkeyInternal for every inventory slot.  In GolfCart mode the
     /// method indexes directly into <c>hotkeyPreviewUis[inventorySlotIndex]</c> without a
     /// bounds check, so any slot index ≥ hotkeyPreviewUis.Length throws
     /// IndexOutOfRangeException and crashes the game.
@@ -101,7 +101,7 @@ namespace IssaPlugin.Patches
         );
 
         static MethodBase TargetMethod() =>
-            AccessTools.Method(typeof(Hotkeys), "UpdatePlayerInventoryHoykeyInternal");
+            AccessTools.Method(typeof(Hotkeys), "UpdatePlayerInventoryHotkeyInternal");
 
         static bool Prefix(Hotkeys __instance, int inventorySlotIndex)
         {

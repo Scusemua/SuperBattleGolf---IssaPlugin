@@ -32,6 +32,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="OLD_DECOMPILED_SOURCE\**" />
+    <Content Remove="OLD_DECOMPILED_SOURCE**" />
+    <EmbeddedResource Remove="OLD_DECOMPILED_SOURCE**" />
+    <None Remove="OLD_DECOMPILED_SOURCE**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Remove="SAMPLE_PLUGIN\**" />
     <Content Remove="SAMPLE_PLUGIN**" />
     <EmbeddedResource Remove="SAMPLE_PLUGIN**" />

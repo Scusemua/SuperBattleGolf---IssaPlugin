@@ -310,6 +310,17 @@ namespace IssaPlugin.Items
         /// Bundle asset name: <c>flamethrower_victim_fire.prefab</c>
         public static GameObject FlamethrowerVictimFirePrefab { get; private set; }
 
+        // --- Rocket Tether Grenade ---
+        /// Inventory icon. Falls back to <see cref="RocketTetherIcon"/> if absent.
+        /// Bundle asset name: <c>rocket_tether_grenade_icon.png</c>
+        public static Sprite RocketTetherGrenadeIcon { get; private set; }
+
+        /// The networked thrown grenade projectile.
+        /// Null if no dedicated asset is present — the item still works (tethers apply),
+        /// but there is no in-flight grenade model.
+        /// Bundle asset name: <c>rocket_tether_grenade.prefab</c>
+        public static GameObject RocketTetherGrenadePrefab { get; private set; }
+
         public static bool IsLoaded => _bundle != null;
 
         private static AssetBundle _bundle;
@@ -366,6 +377,7 @@ namespace IssaPlugin.Items
             LoadTeleporterAssets();
             LoadFirstPlaceStarAssets();
             LoadFlamethrowerAssets();
+            LoadRocketTetherGrenadeAssets();
 
             IssaPluginPlugin.Log.LogInfo("[Assets] IssaPluginBundle loaded.");
         }
@@ -845,6 +857,23 @@ namespace IssaPlugin.Items
             FlamethrowerVictimFirePrefab = Load<GameObject>("flamethrower_victim_fire.prefab");
             if (FlamethrowerVictimFirePrefab != null)
                 StripNetworkComponents(FlamethrowerVictimFirePrefab);
+        }
+
+        private static void LoadRocketTetherGrenadeAssets()
+        {
+            // Icon — fall back to Rocket Tether icon if no dedicated asset exists.
+            RocketTetherGrenadeIcon =
+                LoadSprite("rocket_tether_grenade_icon.png") ?? RocketTetherIcon;
+
+            // Networked grenade projectile — null if no dedicated asset.
+            // Do NOT fall back to PoisonJarPrefab; it would cause a Mirror
+            // double-registration error (same GameObject, two RegisterPrefab calls).
+            RocketTetherGrenadePrefab = Load<GameObject>("toy_rocket.prefab");
+            if (RocketTetherGrenadePrefab != null)
+            {
+                EnsureNetworkIdentity(RocketTetherGrenadePrefab, 0xE7000001u);
+                DisableRigidbody(RocketTetherGrenadePrefab);
+            }
         }
 
         /// Ensures a prefab has a NetworkIdentity with a stable assetId so Mirror

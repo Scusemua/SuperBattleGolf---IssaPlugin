@@ -40,6 +40,7 @@ namespace IssaPlugin.Items
         public static readonly ItemType TeleporterItemType = (ItemType)124;
         public static readonly ItemType SpinachItemType = (ItemType)125;
         public static readonly ItemType FlamethrowerItemType = (ItemType)126;
+        public static readonly ItemType RocketTetherGrenadeItemType = (ItemType)127;
 
         // Static initialization order note: AllItems is a static field initializer that only
         // instantiates the definition objects; it does not call any abstract members. Properties like
@@ -75,6 +76,7 @@ namespace IssaPlugin.Items
                 new TeleporterItemDefinition(),
                 new SpinachItemDefinition(),
                 new FlamethrowerItemDefinition(),
+                new RocketTetherGrenadeItemDefinition(),
             };
 
         private static IReadOnlyDictionary<int, CustomItemDefinition> _customItemDefinitionMap;
