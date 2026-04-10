@@ -7,27 +7,28 @@ namespace IssaPlugin
     {
         private const string Section = "RocketTetherGrenade";
 
-        public ConfigEntry<Key>   GiveKey     { get; private set; }
-        public ConfigEntry<float> Uses        { get; private set; }
+        public ConfigEntry<Key> GiveKey { get; private set; }
+        public ConfigEntry<float> Uses { get; private set; }
         public ConfigEntry<float> SpawnWeight { get; private set; }
+        public ConfigEntry<bool> ExcludeThrower { get; private set; }
 
         // ── Throw arc ─────────────────────────────────────────────────────────
-        public ConfigEntry<float> ThrowSpeed  { get; private set; }
-        public ConfigEntry<float> LobAngle    { get; private set; }
+        public ConfigEntry<float> ThrowSpeed { get; private set; }
+        public ConfigEntry<float> LobAngle { get; private set; }
 
         // ── Area-of-effect on landing ─────────────────────────────────────────
         public ConfigEntry<float> BlastRadius { get; private set; }
-        public ConfigEntry<int>   MaxVictims  { get; private set; }
+        public ConfigEntry<int> MaxVictims { get; private set; }
 
         // ── Per-victim tether (independently tunable from the single-target item) ──
         public ConfigEntry<float> TetherDuration { get; private set; }
-        public ConfigEntry<float> RocketSpeed    { get; private set; }
-        public ConfigEntry<float> SpringForce    { get; private set; }
-        public ConfigEntry<float> MaxPullSpeed   { get; private set; }
-        public ConfigEntry<float> NaturalLength  { get; private set; }
+        public ConfigEntry<float> RocketSpeed { get; private set; }
+        public ConfigEntry<float> SpringForce { get; private set; }
+        public ConfigEntry<float> MaxPullSpeed { get; private set; }
+        public ConfigEntry<float> NaturalLength { get; private set; }
 
         // ── Per-victim explosion ──────────────────────────────────────────────
-        public ConfigEntry<float> ExplosionForce  { get; private set; }
+        public ConfigEntry<float> ExplosionForce { get; private set; }
         public ConfigEntry<float> ExplosionRadius { get; private set; }
 
         public RocketTetherGrenadeConfig(ConfigFile cfg, GlobalConfig global)
@@ -67,6 +68,12 @@ namespace IssaPlugin
                 "MaxVictims",
                 4,
                 "Maximum number of players that can be simultaneously tethered by one grenade."
+            );
+            ExcludeThrower = cfg.Bind(
+                Section,
+                "ExcludeThrower",
+                true,
+                "If true, the thrower cannot tether themselves with a grenade."
             );
             TetherDuration = cfg.Bind(
                 Section,

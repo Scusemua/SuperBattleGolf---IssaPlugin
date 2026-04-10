@@ -155,7 +155,7 @@ namespace IssaPlugin.Overlays
             if (fwd.sqrMagnitude < 0.01f)
                 return;
             li.Movement.transform.rotation =
-                Quaternion.LookRotation(fwd.normalized) * Quaternion.Euler(0f, 65f, 0f);
+                Quaternion.LookRotation(fwd.normalized) * Quaternion.Euler(0f, 5f, 0f);
         }
 
         private static void DrawRing(float cx, float cy, float radius, Color color)

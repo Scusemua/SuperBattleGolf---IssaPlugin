@@ -377,18 +377,44 @@ namespace IssaPlugin.Patches
         }
     }
 
-    /// Redirects the animator integer parameter to OrbitalLaser when a non-bat
-    /// custom item is equipped. The animator state machine uses this integer to
-    /// transition to the correct upper-body pose (rocket-launcher-style hold).
+    /// Redirects the animator integer parameter to the correct type when a custom
+    /// item is equipped. The animator state machine uses this integer to transition
+    /// to the correct upper-body pose (e.g. rocket-launcher-style hold).
+    ///
+    /// Two cases handled:
+    ///   1. Direct custom ItemType passed — substitute AnimatorItemType (same as before).
+    ///   2. ItemType.None passed — this happens because the game update now routes
+    ///      through UpdateIsEquipmentForceHidden, which calls
+    ///      SetEquippedItem(GetEffectivelyEquippedItem(false)). Our
+    ///      GetEffectivelyEquippedItemPatch returns None for custom items, so we
+    ///      look up the actual equipped item via the instance's PlayerInfo and
+    ///      substitute the correct AnimatorItemType.
     [HarmonyPatch(typeof(PlayerAnimatorIo), "SetEquippedItem")]
     static class PlayerAnimatorSetEquippedItemPatch
     {
-        static void Prefix(ref ItemType equippedItem)
+        static void Prefix(PlayerAnimatorIo __instance, ref ItemType equippedItem)
         {
+            // Case 1: direct custom item type.
             var def = ItemRegistry.GetDefinition(equippedItem);
-            if (def == null)
+            if (def != null)
+            {
+                equippedItem = def.AnimatorItemType;
                 return;
-            equippedItem = def.AnimatorItemType;
+            }
+
+            // Case 2: None was passed because GetEffectivelyEquippedItem(false) suppressed
+            // the custom item. Check whether a custom item is actually equipped.
+            if (equippedItem != ItemType.None)
+                return;
+
+            var playerInfo = __instance.GetComponent<PlayerInfo>();
+            if (playerInfo?.Inventory == null)
+                return;
+
+            var actualEquipped = playerInfo.Inventory.GetEffectivelyEquippedItem(true);
+            var actualDef = ItemRegistry.GetDefinition(actualEquipped);
+            if (actualDef != null)
+                equippedItem = actualDef.AnimatorItemType;
         }
     }
 
@@ -477,29 +503,46 @@ namespace IssaPlugin.Patches
         }
     }
 
-    /// Redirects the runtime animator controller lookup to OrbitalLaser when a
-    /// non-bat custom item is equipped. Without this, GameManager.AllItems fails
-    /// to find ItemData for our custom item types and logs an error.
+    /// Redirects the runtime animator controller lookup when a custom item is equipped.
+    ///
+    /// Without this, GameManager.AllItems fails to find ItemData for our custom item
+    /// types and logs an error (direct custom type case). Also handles the case where
+    /// the game passes ItemType.None because GetEffectivelyEquippedItem(false) suppresses
+    /// custom items — in that case we look up the actual equipped item and substitute its
+    /// AnimatorChangedItemType so the correct controller is applied rather than resetting
+    /// to the default.
+    ///
+    /// The Postfix then calls SetEquippedItem(AnimatorItemType) to restore the
+    /// equippedItemHash parameter (which was reset by the controller change) and
+    /// re-enable the upper body layer. This covers both the local player and remote
+    /// clients (for whom SetEquippedItem is never called by the local-player code path).
     [HarmonyPatch(typeof(PlayerAnimatorIo), "OnNetworkedEquippedItemChanged")]
     static class PlayerAnimatorOnEquippedChangedPatch
     {
-        static void Prefix(ref ItemType equippedItem)
+        static void Prefix(PlayerAnimatorIo __instance, ref ItemType equippedItem)
         {
-            if (!ItemRegistry.IsCustomItem(equippedItem))
+            if (ItemRegistry.IsCustomItem(equippedItem))
+            {
+                equippedItem = ItemRegistry
+                    .CustomItemDefinitionMap[(int)equippedItem]
+                    .AnimatorChangedItemType;
+                return;
+            }
+
+            // The game passes None when GetEffectivelyEquippedItem(false) suppresses a
+            // custom item. Look up the actual equipped item and substitute so the correct
+            // animator controller is set instead of resetting to the default controller.
+            if (equippedItem != ItemType.None)
                 return;
 
-            equippedItem = ItemRegistry
-                .CustomItemDefinitionMap[(int)equippedItem]
-                .AnimatorChangedItemType;
+            var playerInfo = __instance.GetComponent<PlayerInfo>();
+            if (playerInfo?.Inventory == null)
+                return;
 
-            // if (equippedItem == ItemRegistry.SniperRifleItemType)
-            //     equippedItem = ItemType.ElephantGun;
-            // else if (equippedItem == ItemRegistry.JavelinItemType)
-            //     equippedItem = ItemType.RocketLauncher;
-            // else if (equippedItem == ItemRegistry.BaseballBatItemType)
-            //     equippedItem = ItemType.None; // gives correct hand pose on remote clients
-            // else
-            //     equippedItem = ItemType.OrbitalLaser;
+            var actual = playerInfo.Inventory.GetEffectivelyEquippedItem(true);
+            var actualDef = ItemRegistry.GetDefinition(actual);
+            if (actualDef != null)
+                equippedItem = actualDef.AnimatorChangedItemType;
         }
 
         static void Postfix(PlayerAnimatorIo __instance)
@@ -515,6 +558,13 @@ namespace IssaPlugin.Patches
 
             var equipped = inventory.GetEffectivelyEquippedItem(true);
             var def = ItemRegistry.GetDefinition(equipped);
+
+            // Restore equippedItemHash and re-enable the upper body layer after the
+            // controller change reset all animator parameters. Covers both the local
+            // player (where the hook fires synchronously before AnimatorIo.SetEquippedItem
+            // runs) and remote clients (where SetEquippedItem is never called).
+            if (def != null)
+                __instance.SetEquippedItem(def.AnimatorItemType);
 
             if (def?.EquipmentType == EquipmentType.GolfClub)
             {

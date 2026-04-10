@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace IssaPlugin.Items
 {
@@ -58,6 +59,7 @@ namespace IssaPlugin.Items
         private GameObject _flameParticles; // shown on all clients while this player fires
         private GameObject _victimFireParticles; // shown on all clients while this player burns
         private FlamethrowerHitDetector _hitDetector; // non-null only on the local shooter's instance
+        private Camera _camera;
 
         // ================================================================
         //  Client → Server helpers (called by FlamethrowerItem.FireLoop)
@@ -281,6 +283,33 @@ namespace IssaPlugin.Items
                 return;
             Object.Destroy(_victimFireParticles);
             _victimFireParticles = null;
+        }
+
+        private void LateUpdate()
+        {
+            if (Mouse.current == null || !Mouse.current.rightButton.isPressed)
+            {
+                return;
+            }
+
+            CorrectAimRotation();
+        }
+
+        private void CorrectAimRotation()
+        {
+            var li = GameManager.LocalPlayerInfo;
+            if (li?.Movement == null)
+                return;
+            _camera ??= Camera.main;
+            var cam = _camera;
+            if (cam == null)
+                return;
+            Vector3 fwd = cam.transform.forward;
+            fwd.y = 0f;
+            if (fwd.sqrMagnitude < 0.01f)
+                return;
+            li.Movement.transform.rotation =
+                Quaternion.LookRotation(fwd.normalized) * Quaternion.Euler(0f, 5f, 0f);
         }
 
         // ================================================================

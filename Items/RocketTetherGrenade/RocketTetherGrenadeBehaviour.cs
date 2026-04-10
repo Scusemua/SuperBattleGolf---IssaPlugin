@@ -63,8 +63,8 @@ namespace IssaPlugin.Items
 
             if (_rb != null)
             {
-                _rb.isKinematic     = true;
-                _rb.linearVelocity  = Vector3.zero;
+                _rb.isKinematic = true;
+                _rb.linearVelocity = Vector3.zero;
                 _rb.angularVelocity = Vector3.zero;
             }
 
@@ -93,7 +93,7 @@ namespace IssaPlugin.Items
             }
 
             float blastRadius = ModConfig.RocketTetherGrenade.BlastRadius.Value;
-            int   maxVictims  = ModConfig.RocketTetherGrenade.MaxVictims.Value;
+            int maxVictims = ModConfig.RocketTetherGrenade.MaxVictims.Value;
 
             var victims = new List<PlayerInfo>(maxVictims);
 
@@ -111,7 +111,7 @@ namespace IssaPlugin.Items
                     continue;
 
                 // Skip the thrower.
-                if (nid.netId == ThrowerNetId)
+                if (nid.netId == ThrowerNetId && ModConfig.RocketTetherGrenade.ExcludeThrower.Value)
                     continue;
 
                 // Skip already-queued players (a player with many colliders might
@@ -132,7 +132,9 @@ namespace IssaPlugin.Items
 
             if (victims.Count == 0)
             {
-                IssaPluginPlugin.Log.LogInfo("[RocketTetherGrenade] Landed — no valid victims in radius.");
+                IssaPluginPlugin.Log.LogInfo(
+                    "[RocketTetherGrenade] Landed — no valid victims in radius."
+                );
                 return;
             }
 
