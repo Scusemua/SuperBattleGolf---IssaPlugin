@@ -294,21 +294,30 @@ namespace IssaPlugin.Items
                 && localInfo.Inventory.GetEffectivelyEquippedItem(true)
                     == ItemRegistry.FlamethrowerItemType;
 
+            if (!flameThrowerEquipped)
+                return;
+
             bool aimedIn = Mouse.current?.rightButton.isPressed ?? false;
 
-            // Play the aim sound once on scope entry.
-            if (flameThrowerEquipped && aimedIn && !_wasAimedIn)
-            {
-                var rot = localInfo.Movement?.transform.eulerAngles ?? default;
-                var camRot = Camera.main?.transform.eulerAngles ?? default;
-                localInfo.PlayerAudio.PlayItemAimForAllClients(ItemType.ElephantGun);
-                CorrectAimRotation();
-            }
-
-            if (flameThrowerEquipped && !aimedIn && _wasAimedIn)
+            if (!aimedIn && _wasAimedIn)
             {
                 var rot = localInfo.Movement?.transform.eulerAngles ?? default;
                 FixLookRotationAfterScope();
+            }
+            else if (aimedIn)
+            {
+                // Play the aim sound once on scope entry.
+                if (!_wasAimedIn)
+                {
+                    var rot = localInfo.Movement?.transform.eulerAngles ?? default;
+                    var camRot = Camera.main?.transform.eulerAngles ?? default;
+                    localInfo.PlayerAudio.PlayItemAimForAllClients(ItemType.ElephantGun);
+                }
+
+                // For some cursed reason, we only need to rotate the flamethrower when aimed-in
+                // and NOT actively shooting...
+                if (Mouse.current != null && !Mouse.current.leftButton.isPressed)
+                    CorrectAimRotation();
             }
 
             _wasAimedIn = aimedIn;
@@ -328,7 +337,7 @@ namespace IssaPlugin.Items
             if (fwd.sqrMagnitude < 0.01f)
                 return;
             li.Movement.transform.rotation =
-                Quaternion.LookRotation(fwd.normalized) * Quaternion.Euler(0f, 0f, 0f);
+                Quaternion.LookRotation(fwd.normalized) * Quaternion.Euler(0f, 65f, 0f);
         }
 
         private void FixLookRotationAfterScope()

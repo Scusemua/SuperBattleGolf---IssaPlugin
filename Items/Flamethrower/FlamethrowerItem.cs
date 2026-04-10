@@ -90,6 +90,8 @@ namespace IssaPlugin.Items
                         _fuelRemaining / ModConfig.Flamethrower.FuelPerUse.Value
                     );
 
+                    ScreenShakeHelper.ApplyScreenShake(0.025f);
+
                     if (_fuelRemaining <= 0f)
                     {
                         ItemHelper.DecrementAndRemove(inventory, inventory.EquippedItemIndex);
