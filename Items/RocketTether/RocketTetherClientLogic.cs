@@ -195,6 +195,12 @@ namespace IssaPlugin.Items
             // ── Tether line ───────────────────────────────────────────────────
             state.TetherLine = CreateTetherLine();
 
+            // ── Register session before starting the coroutine ────────────────
+            // ForceCoroutine checks s_activeSessions.ContainsKey on its first
+            // synchronous execution (before any yield). If the session is not yet
+            // in the dict the while loop exits immediately and no force is applied.
+            s_activeSessions[victimNetId] = state;
+
             // ── Spring force coroutine (victim's client only) ─────────────────
             uint localNetId = localInfo.GetComponent<NetworkIdentity>()?.netId ?? 0u;
             if (localNetId == victimNetId)
@@ -211,8 +217,6 @@ namespace IssaPlugin.Items
                     );
                 }
             }
-
-            s_activeSessions[victimNetId] = state;
         }
 
         private static void EndVictimSession(

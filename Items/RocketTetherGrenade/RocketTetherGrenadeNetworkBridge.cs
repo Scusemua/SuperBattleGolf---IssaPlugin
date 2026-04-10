@@ -80,7 +80,12 @@ namespace IssaPlugin.Items
 
         public static void ClientHandleLand(Vector3 position, uint throwerNetId)
         {
-            // VFX placeholder — no explosion asset loaded yet.
+            var vfxPrefab = AssetLoader.RocketTetherGrenadeExplosionVfx;
+            if (vfxPrefab != null)
+            {
+                var splash = Object.Instantiate(vfxPrefab, position, Quaternion.identity);
+                Object.Destroy(splash, 5f);
+            }
         }
 
         // =====================================================================

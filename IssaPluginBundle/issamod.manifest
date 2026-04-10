@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 434866415
+CRC: 3663568938
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 2c1e7fa5d5f76b1af3980e0adc65fcff
+    Hash: 5c682a6c3f22d1ed624dde60a8b8c11b
   TypeTreeHash:
     serializedVersion: 2
     Hash: 82d52513d6b19822b87b688cdb5147d6
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 050baefd391b56e69058bcb60f639a5f
+    Hash: e08bfbf05acd3b9bfa1cb0d8c0ef9122
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -116,6 +116,7 @@ Assets:
 - Assets/Assets/predator_missile_tablet.prefab
 - Assets/Assets/spinach_trail.prefab
 - Assets/Assets/NukeVerticalExplosionFire.prefab
+- Assets/Assets/rocket_tether_grenade_explosion_vfx.prefab
 - Assets/Assets/nuke_icon.png
 - Assets/Assets/fire_torch_intense.prefab
 - Assets/Assets/nuclear_explosion.prefab

@@ -59,6 +59,14 @@ namespace IssaPlugin.Items
             if (!NetworkServer.active)
                 return;
 
+            NetworkServer.SendToAll(
+                new RocketTetherGrenadeLandedMessage
+                {
+                    Position = transform.position,
+                    ThrowerNetId = ThrowerNetId,
+                }
+            );
+
             _landed = true;
 
             if (_rb != null)
