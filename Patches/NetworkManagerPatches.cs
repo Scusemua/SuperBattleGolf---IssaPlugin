@@ -1578,8 +1578,8 @@ namespace IssaPlugin.Patches
                 RocketTetherGrenadeMessageSerialization.WriteRocketTetherGrenadeLandedMessage;
             Reader<RocketTetherGrenadeLandedMessage>.read =
                 RocketTetherGrenadeMessageSerialization.ReadRocketTetherGrenadeLandedMessage;
-            NetworkClient.RegisterHandler<RocketTetherGrenadeLandedMessage>(
-                msg => RocketTetherGrenadeNetworkBridge.ClientHandleLand(msg.Position, msg.ThrowerNetId)
+            NetworkClient.RegisterHandler<RocketTetherGrenadeLandedMessage>(msg =>
+                RocketTetherGrenadeNetworkBridge.ClientHandleLand(msg.Position, msg.ThrowerNetId)
             );
 
             // ── Teleporter Messages ───────────────────────────────────────────────
