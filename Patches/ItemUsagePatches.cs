@@ -45,7 +45,7 @@ namespace IssaPlugin.Patches
 
             shouldEatInput = def.ShouldEatInputOnUse;
             __result = def.UseResult;
-            IssaPluginPlugin.Log.LogInfo(
+            IssaPluginPlugin.Log.LogDebug(
                 $"[TryUseItem] Calling OnUse for item={(int)equipped} ({def.GetType().Name}), isAirhornReaction={isAirhornReaction}, shouldEatInput={shouldEatInput}, UseResult={__result}"
             );
             def.OnUse(__instance);
@@ -149,7 +149,7 @@ namespace IssaPlugin.Patches
 
                 _states[inventory] = new CustomEquipState { Model = model, ItemType = equipped };
 
-                IssaPluginPlugin.Log.LogInfo(
+                IssaPluginPlugin.Log.LogDebug(
                     $"[Equipment] Custom model spawned for item {(int)equipped}."
                 );
             }
@@ -403,18 +403,11 @@ namespace IssaPlugin.Patches
         {
             if (__instance.IsEquipmentForceHidden)
             {
-                IssaPluginPlugin.Log.LogInfo(
-                    "[AnimDebug] UpdateIsEquipmentForceHidden Postfix — equipment IS force-hidden, skipping."
-                );
                 return;
             }
 
             var equipped = __instance.GetEffectivelyEquippedItem(true);
             var def = ItemRegistry.GetDefinition(equipped);
-
-            IssaPluginPlugin.Log.LogInfo(
-                $"[AnimDebug] UpdateIsEquipmentForceHidden Postfix — equipped(true)={equipped} def={def?.GetType().Name ?? "null"} AnimatorChangedItemType={def?.AnimatorChangedItemType.ToString() ?? "n/a"} AnimatorItemType={def?.AnimatorItemType.ToString() ?? "n/a"}"
-            );
 
             if (def == null)
                 return;
@@ -424,9 +417,6 @@ namespace IssaPlugin.Patches
             // whose SyncVar stays None (so the hook never fires and the controller is never switched).
             // SetEquippedItem only sets equippedItemHash; without the right controller, the hash
             // change has no visible effect.
-            IssaPluginPlugin.Log.LogInfo(
-                $"[AnimDebug] UpdateIsEquipmentForceHidden → calling OnNetworkedEquippedItemChanged({def.AnimatorChangedItemType}) + SetEquippedItem({def.AnimatorItemType})"
-            );
             __instance.PlayerInfo.AnimatorIo.OnNetworkedEquippedItemChanged(
                 def.AnimatorChangedItemType
             );
@@ -458,9 +448,6 @@ namespace IssaPlugin.Patches
             if (def != null)
             {
                 equippedItem = def.AnimatorItemType;
-                IssaPluginPlugin.Log.LogInfo(
-                    $"[AnimDebug] SetEquippedItem Prefix — Case1: {originalItem} → {equippedItem}"
-                );
                 return;
             }
 
@@ -468,18 +455,12 @@ namespace IssaPlugin.Patches
             // the custom item. Check whether a custom item is actually equipped.
             if (equippedItem != ItemType.None)
             {
-                IssaPluginPlugin.Log.LogInfo(
-                    $"[AnimDebug] SetEquippedItem Prefix — standard item, passing through: {equippedItem}"
-                );
                 return;
             }
 
             var playerInfo = __instance.GetComponent<PlayerInfo>();
             if (playerInfo?.Inventory == null)
             {
-                IssaPluginPlugin.Log.LogInfo(
-                    "[AnimDebug] SetEquippedItem Prefix — Case2: None, no PlayerInfo/Inventory found."
-                );
                 return;
             }
 
@@ -488,16 +469,6 @@ namespace IssaPlugin.Patches
             if (actualDef != null)
             {
                 equippedItem = actualDef.AnimatorItemType;
-                IssaPluginPlugin.Log.LogInfo(
-                    $"[AnimDebug] SetEquippedItem Prefix — Case2: None → actual={actualEquipped} → {equippedItem}"
-                );
-            }
-            else
-            {
-                IssaPluginPlugin.Log.LogInfo(
-                    $"[AnimDebug] SetEquippedItem Prefix — Case2: None, actual={actualEquipped} (not custom), passing None through.\n"
-                        + System.Environment.StackTrace
-                );
             }
         }
     }
@@ -572,16 +543,9 @@ namespace IssaPlugin.Patches
             bool currentlyAiming = (bool)(IsAimingItemProp?.GetValue(__instance) ?? false);
             bool isHoldingAimSwing = __instance.PlayerInfo?.Input?.IsHoldingAimSwing ?? false;
 
-            IssaPluginPlugin.Log.LogInfo(
-                $"[Sniper/AK47] UpdateIsAimingItem Postfix — shouldAim={shouldAim} currentlyAiming={currentlyAiming} IsHoldingAimSwing={isHoldingAimSwing}"
-            );
-
             if (currentlyAiming == shouldAim)
                 return;
 
-            IssaPluginPlugin.Log.LogInfo(
-                $"[Sniper/AK47] Correcting IsAimingItem: {currentlyAiming}→{shouldAim}, calling InformIsAimingItemChanged"
-            );
             __instance.PlayerInfo.SetIsAimingItem(shouldAim);
             __instance.PlayerInfo.Movement.InformIsAimingItemChanged();
         }
@@ -612,9 +576,6 @@ namespace IssaPlugin.Patches
                 equippedItem = ItemRegistry
                     .CustomItemDefinitionMap[(int)equippedItem]
                     .AnimatorChangedItemType;
-                IssaPluginPlugin.Log.LogInfo(
-                    $"[AnimDebug] OnNetworkedEquippedItemChanged Prefix — custom item {originalItem} → AnimatorChangedItemType={equippedItem}"
-                );
                 return;
             }
 
@@ -623,18 +584,12 @@ namespace IssaPlugin.Patches
             // animator controller is set instead of resetting to the default controller.
             if (equippedItem != ItemType.None)
             {
-                IssaPluginPlugin.Log.LogInfo(
-                    $"[AnimDebug] OnNetworkedEquippedItemChanged Prefix — standard item {equippedItem}, passing through."
-                );
                 return;
             }
 
             var playerInfo = __instance.GetComponent<PlayerInfo>();
             if (playerInfo?.Inventory == null)
             {
-                IssaPluginPlugin.Log.LogInfo(
-                    "[AnimDebug] OnNetworkedEquippedItemChanged Prefix — None, no PlayerInfo/Inventory."
-                );
                 return;
             }
 
@@ -643,15 +598,6 @@ namespace IssaPlugin.Patches
             if (actualDef != null)
             {
                 equippedItem = actualDef.AnimatorChangedItemType;
-                IssaPluginPlugin.Log.LogInfo(
-                    $"[AnimDebug] OnNetworkedEquippedItemChanged Prefix — None → actual={actual} → AnimatorChangedItemType={equippedItem}"
-                );
-            }
-            else
-            {
-                IssaPluginPlugin.Log.LogInfo(
-                    $"[AnimDebug] OnNetworkedEquippedItemChanged Prefix — None, actual={actual} (not custom), resetting to default controller."
-                );
             }
         }
 
@@ -669,19 +615,12 @@ namespace IssaPlugin.Patches
             var equipped = inventory.GetEffectivelyEquippedItem(true);
             var def = ItemRegistry.GetDefinition(equipped);
 
-            IssaPluginPlugin.Log.LogInfo(
-                $"[AnimDebug] OnNetworkedEquippedItemChanged Postfix — equipped(true)={equipped} def={def?.GetType().Name ?? "null"}"
-            );
-
             // Restore equippedItemHash and re-enable the upper body layer after the
             // controller change reset all animator parameters. Covers both the local
             // player (where the hook fires synchronously before AnimatorIo.SetEquippedItem
             // runs) and remote clients (where SetEquippedItem is never called).
             if (def != null)
             {
-                IssaPluginPlugin.Log.LogInfo(
-                    $"[AnimDebug] OnNetworkedEquippedItemChanged Postfix → calling SetEquippedItem({def.AnimatorItemType})"
-                );
                 __instance.SetEquippedItem(def.AnimatorItemType);
             }
 
