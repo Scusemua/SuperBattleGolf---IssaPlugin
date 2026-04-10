@@ -321,6 +321,8 @@ namespace IssaPlugin.Items
         /// Bundle asset name: <c>rocket_tether_grenade.prefab</c>
         public static GameObject RocketTetherGrenadePrefab { get; private set; }
 
+        public static GameObject RocketTetherGrenadeExplosionVfx { get; private set; }
+
         public static bool IsLoaded => _bundle != null;
 
         private static AssetBundle _bundle;
@@ -872,6 +874,15 @@ namespace IssaPlugin.Items
             if (RocketTetherGrenadePrefab != null)
             {
                 EnsureNetworkIdentity(RocketTetherGrenadePrefab, 0xE7000001u);
+                DisableRigidbody(RocketTetherGrenadePrefab);
+            }
+
+            RocketTetherGrenadeExplosionVfx = Load<GameObject>(
+                "rocket_tether_grenade_explosion_vfx.prefab"
+            );
+            if (RocketTetherGrenadePrefab != null)
+            {
+                EnsureNetworkIdentity(RocketTetherGrenadePrefab, 0xE7000002u);
                 DisableRigidbody(RocketTetherGrenadePrefab);
             }
         }
