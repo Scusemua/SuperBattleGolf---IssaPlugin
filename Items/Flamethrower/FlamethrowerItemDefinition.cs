@@ -11,7 +11,7 @@ namespace IssaPlugin.Items
             new[] { "flamethrower", "flame", "flamer", "fire" };
 
         public override Sprite Icon => AssetLoader.FlamethrowerIcon;
-        public override GameObject HeldModelPrefab => AssetLoader.FlamethrowerHandheldPrefab;
+        public override GameObject HeldModelPrefab => AssetLoader.FlamethrowerPrefab;
 
         public override bool UseRocketIconFallback => true;
 

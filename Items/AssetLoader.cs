@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using Mirror;
@@ -5,329 +6,838 @@ using UnityEngine;
 
 namespace IssaPlugin.Items
 {
+    // ─────────────────────────────────────────────────────────────────────────
+    //  AssetLoader
+    //
+    //  All mod assets live in a single AssetBundle ("issamod") shipped next to
+    //  the plugin DLL.  This class loads the bundle once at startup, populates
+    //  every public property, and unloads cleanly on plugin shutdown.
+    //
+    //  HOW TO ADD A NEW ASSET
+    //  ──────────────────────
+    //  1. Add a public static property below (with an XML summary if the asset
+    //     has a non-obvious purpose).
+    //  2. Add one entry to the _assetDefs table in BuildAssetDefs(), using the
+    //     helper that matches your asset's type/treatment:
+    //
+    //     • SpriteAsset(prop, "file.png")
+    //         Loads a Texture2D and wraps it as a centered Sprite.
+    //
+    //     • Texture(prop, "file.png")
+    //         Loads a raw Texture2D (e.g. for SniperScopeTexture).
+    //
+    //     • Prefab(prop, "name.prefab")
+    //         Loads a GameObject. No further mutations.
+    //
+    //     • HandheldPrefab(prop, "name.prefab")
+    //         Loads a GameObject and disables its Rigidbody so it can sit in
+    //         the player's hand without interfering with physics.
+    //
+    //     • NetworkedPrefab(prop, "name.prefab", assetId, clientSetupType?)
+    //         Loads a networked GameObject, assigns a stable Mirror assetId,
+    //         disables its Rigidbody (re-enabled at runtime by the behaviour),
+    //         and optionally adds a one-time ClientSetup component.
+    //
+    //     • LocalVfxPrefab(prop, "name.prefab")
+    //         Loads a local-only VFX prefab and strips all Mirror components
+    //         so it can be instantiated freely without a network context.
+    //
+    //     • Audio(prop, "name")
+    //         Loads an AudioClip (no file extension — Unity compiles audio to
+    //         an internal format at bundle-build time).
+    //
+    //  That's it.  No private Load*() method needed.
+    // ─────────────────────────────────────────────────────────────────────────
     public static class AssetLoader
     {
+        // ── Icons / Textures ──────────────────────────────────────────────────
         public static Sprite BatIcon { get; private set; }
         public static Sprite BomberIcon { get; private set; }
         public static Sprite MissileIcon { get; private set; }
         public static Sprite AC130Icon { get; private set; }
         public static Sprite FreezeIcon { get; private set; }
         public static Sprite LowGravityIcon { get; private set; }
-
         public static Sprite SniperRifleIcon { get; private set; }
         public static Sprite DonutIcon { get; private set; }
-
         public static Sprite JavelinIcon { get; private set; }
         public static Sprite StickyGrenadeIcon { get; private set; }
+        public static Sprite BearIcon { get; private set; }
+        public static Sprite NukeIcon { get; private set; }
+        public static Sprite BlackHoleGrenadeIcon { get; private set; }
+        public static Sprite WallIcon { get; private set; }
+        public static Sprite AK47Icon { get; private set; }
+        public static Sprite HarrierIcon { get; private set; }
+        public static Sprite PositionSwapIcon { get; private set; }
+        public static Sprite PoisonJarIcon { get; private set; }
+        public static Sprite DroneSwarmIcon { get; private set; }
+        public static Sprite ElectricGravityGunIcon { get; private set; }
+        public static Sprite RedBullIcon { get; private set; }
 
+        /// Falls back to DonutIcon at runtime if the asset is absent from the bundle.
+        public static Sprite SuperDonutIcon { get; private set; }
+
+        /// Used by SniperScopeOverlay as a raw texture (not a Sprite).
         public static Texture2D SniperScopeTexture { get; private set; }
 
+        // ── Handheld / simple prefabs (no network, Rigidbody disabled) ────────
         public static GameObject BatModelPrefab { get; private set; }
-        public static GameObject BomberPrefab { get; private set; }
-        public static GameObject BomberProxyPrefab { get; private set; }
-        public static GameObject AC130Prefab { get; private set; }
+        public static GameObject FreezeModelPrefab { get; private set; }
+        public static GameObject LowGravityModelPrefab { get; private set; }
+        public static GameObject SniperRiflePrefab { get; private set; }
+        public static GameObject DonutHandheldPrefab { get; private set; }
+        public static GameObject JavelinHandheldPrefab { get; private set; }
+        public static GameObject TeddyBearPrefab { get; private set; }
+        public static GameObject NuclearDetonatorPrefab { get; private set; }
+        public static GameObject WallHandheldPrefab { get; private set; }
+        public static GameObject AK47Prefab { get; private set; }
+        public static GameObject HarrierTabletPrefab { get; private set; }
+        public static GameObject PositionSwapHandheldPrefab { get; private set; }
+        public static GameObject PoisonJarHandheldPrefab { get; private set; }
+        public static GameObject DroneControllerPrefab { get; private set; }
+        public static GameObject ElectricWhipHandheldPrefab { get; private set; }
+        public static GameObject RedBullHandheldPrefab { get; private set; }
+
+        /// Falls back to DonutHandheldPrefab at runtime if the asset is absent.
+        public static GameObject SuperDonutHandheldPrefab { get; private set; }
+
+        // ── Tablet / UI prefabs (no network, Rigidbody disabled) ─────────────
         public static GameObject BomberTabletPrefab { get; private set; }
         public static GameObject MissileTabletPrefab { get; private set; }
         public static GameObject Ac130TabletPrefab { get; private set; }
-        public static GameObject FreezeModelPrefab { get; private set; }
-        public static GameObject LowGravityModelPrefab { get; private set; }
 
-        public static GameObject SniperRiflePrefab { get; private set; }
+        // ── Networked prefabs (Mirror NetworkIdentity + stable assetId) ───────
+        public static GameObject BomberPrefab { get; private set; }
+        public static GameObject BomberProxyPrefab { get; private set; }
+        public static GameObject AC130Prefab { get; private set; }
         public static GameObject DonutPrefab { get; private set; }
-        public static GameObject DonutHandheldPrefab { get; private set; }
-
-        public static GameObject JavelinHandheldPrefab { get; private set; }
-        public static GameObject JavelinTargetIndicatorPrefab { get; private set; }
-        public static GameObject JavelinExplosionVfxPrefab { get; private set; }
-        public static GameObject JavelinTrailVfxPrefab { get; private set; }
-
-        // public static GameObject DonutLaserZoneRed { get; private set; }
         public static GameObject StickyGrenadePrefab { get; private set; }
-
         public static GameObject BearPrefab { get; private set; }
-        public static GameObject TeddyBearPrefab { get; private set; }
-        public static Sprite BearIcon { get; private set; }
-
-        public static Sprite NukeIcon { get; private set; }
-        public static Sprite BlackHoleGrenadeIcon { get; private set; }
-
-        /// The networked black hole grenade projectile.
-        /// Falls back to a runtime-built sphere if 'black_hole_grenade.prefab' is absent.
+        public static GameObject NukeBombPrefab { get; private set; }
         public static GameObject BlackHoleGrenadePrefab { get; private set; }
-
-        /// Local-only visual spawned on all clients during the suction phase.
-        /// Not networked — each client instantiates and destroys its own copy.
-        public static GameObject BlackHoleVfxPrefab { get; private set; }
-
-        /// The networked wall that is spawned when the Placeable Wall item is used.
-        /// Falls back to a runtime-built box if 'wall.prefab' is absent.
         public static GameObject WallPrefab { get; private set; }
-
-        /// The model the player holds while the Placeable Wall item is equipped.
-        /// Falls back to a small runtime box if 'wall_handheld.prefab' is absent.
-        public static GameObject WallHandheldPrefab { get; private set; }
-
-        public static GameObject SpinachPrefab { get; private set; }
-
-        public static Sprite WallIcon { get; private set; }
-
-        public static Sprite AK47Icon { get; private set; }
-        public static GameObject AK47Prefab { get; private set; }
-
-        public static Sprite HarrierIcon { get; private set; }
-
-        public static Sprite SpinachIcon { get; private set; }
-
-        // --- Position Swap ---
-        public static Sprite PositionSwapIcon { get; private set; }
-
-        /// Model held while the Position Swap item is equipped.
-        public static GameObject PositionSwapHandheldPrefab { get; private set; }
-
-        // --- Poison Jar ---
-        public static Sprite PoisonJarIcon { get; private set; }
-
-        // --- Super Donut ---
-        /// Falls back to <see cref="DonutIcon"/> at runtime if the asset is absent.
-        public static Sprite SuperDonutIcon { get; private set; }
-
-        /// Falls back to <see cref="DonutHandheldPrefab"/> at runtime if the asset is absent.
-        public static GameObject SuperDonutHandheldPrefab { get; private set; }
-
-        // --- Red Bull ---
-        public static Sprite RedBullIcon { get; private set; }
-
-        /// The can the player holds while the Red Bull item is equipped.
-        /// Bundle asset name: <c>red_bull_can.prefab</c>
-        public static GameObject RedBullHandheldPrefab { get; private set; }
-
-        /// Local-only trail VFX parented to a player's transform while Red Bull is active.
-        /// Not networked — each client instantiates its own copy via RedBullNetworkBridge.
-        /// Bundle asset name: <c>red_bull_trail.prefab</c>
-        public static GameObject RedBullTrailPrefab { get; private set; }
-
-        /// Local-only trail VFX parented to a player's transform while Spinach is active.
-        /// Not networked — each client instantiates its own copy via SpinachNetworkBridge.
-        /// Bundle asset name: <c>spinach_trail.prefab</c>
-        public static GameObject SpinachTrailPrefab { get; private set; }
-
-        // --- Gravity Gun ---
-        /// Falls back to the rocket launcher icon at runtime if the asset is absent.
-        public static Sprite ElectricGravityGunIcon { get; private set; }
-
-        /// The model the player holds while the Gravity Gun item is equipped.
-        /// Bundle asset name: <c>electric_whip.prefab</c>
-        public static GameObject ElectricWhipHandheldPrefab { get; private set; }
-
-        /// Local-only VFX parented to the tether target while the session is active.
-        /// Not networked — each client instantiates its own copy.
-        /// Bundle asset name: <c>gravity_tether_vfx.prefab</c>
-        public static GameObject GravityGunTetherVfxPrefab { get; private set; }
-
-        // --- Rocket Tether ---
-        /// Falls back to the rocket launcher icon at runtime if the asset is absent.
-        public static Sprite RocketTetherIcon { get; private set; }
-
-        /// The model the player holds while the Rocket Tether item is equipped.
-        /// Bundle asset name: <c>player_linker.prefab</c>
-        public static GameObject RocketTetherPrefab { get; private set; }
-
-        /// Local-only rocket VFX spawned above the target and moved upward each frame.
-        /// Not networked — each client instantiates its own copy.
-        /// Bundle asset name: <c>player_linker_rocket.prefab</c>
-        public static GameObject RocketTetherRocketPrefab { get; private set; }
-
-        // --- Jetpack ---
-        /// Bundle asset name: <c>jetpack_icon.png</c>
-        public static Sprite JetpackIcon { get; private set; }
-
-        /// The model the player holds while the Jetpack item is equipped.
-        /// Bundle asset name: <c>jetpack_handheld.prefab</c>
-        public static GameObject JetpackHandheldPrefab { get; private set; }
-
-        /// Local-only body-worn prefab (backpack), shown on the local player while the
-        /// Jetpack is their active item. Not networked — managed by JetpackNetworkBridge.Update().
-        /// Bundle asset name: <c>jetpack_equipped.prefab</c>
-        public static GameObject JetpackEquippedPrefab { get; private set; }
-
-        /// Local-only particle VFX (thrust flames/smoke). Not networked — each client
-        /// instantiates its own copy via JetpackNetworkBridge.
-        /// Bundle asset name: <c>jetpack_particles.prefab</c>
-        public static GameObject JetpackParticlePrefab { get; private set; }
-
-        // --- Teleporter ---
-        /// Inventory icon for the Teleporter.
-        /// Bundle asset name: <c>teleporter_icon.png</c>
-        public static Sprite TeleporterIcon { get; private set; }
-
-        /// The model the player holds while the Teleporter item is equipped.
-        /// Bundle asset name: <c>teleporter_handheld.prefab</c>
-        public static GameObject TeleporterHandheldPrefab { get; private set; }
-
-        /// Local-only particle system spawned on all clients at both the origin and
-        /// destination when a teleport fires.
-        /// Not networked — each client instantiates and auto-destroys its own copy.
-        /// Bundle asset name: <c>teleporter_vfx.prefab</c>
-        public static GameObject TeleporterVfxPrefab { get; private set; }
-
-        // --- Drone Swarm ---
-        public static Sprite DroneSwarmIcon { get; private set; }
-
-        /// <summary>
-        /// The model the player holds while the Drone Swarm item is equipped.
-        /// Bundle asset name: <c>drone_controller.prefab</c>
-        /// </summary>
-        public static GameObject DroneControllerPrefab { get; private set; }
-
-        /// <summary>
-        /// The networked drone object spawned for each swarm member.
-        /// Requires NetworkIdentity + NetworkTransform in the bundle.
-        /// Bundle asset name: <c>drone.prefab</c>
-        /// </summary>
+        public static GameObject HarrierPrefab { get; private set; }
+        public static GameObject PoisonJarPrefab { get; private set; }
         public static GameObject DronePrefab { get; private set; }
 
-        /// <summary>
-        /// Local-only VFX instantiated on all clients when a drone detonates.
-        /// Not networked — each client instantiates and destroys its own copy.
-        /// Bundle asset name: <c>drone_explosion.prefab</c>
-        /// </summary>
-        public static GameObject DroneExplosionVfxPrefab { get; private set; }
-
-        /// The networked jar projectile. Bundle asset name: <c>poison_jar.prefab</c>
-        public static GameObject PoisonJarPrefab { get; private set; }
-
-        /// The model the player holds while the Poison Jar is equipped.
-        /// Bundle asset name: <c>poison_jar_handheld.prefab</c>
-        public static GameObject PoisonJarHandheldPrefab { get; private set; }
-
-        /// Local-only splash VFX instantiated on all clients when the jar lands.
-        /// Not networked — each client instantiates and destroys its own copy.
-        /// Bundle asset name: <c>poison_splash.prefab</c>
-        public static GameObject PoisonSplashPrefab { get; private set; }
-
-        /// Local-only VFX parented to each player during the swap countdown.
-        /// Bundle asset name: <c>position_swap_orb.prefab</c>
-        public static GameObject PositionSwapOrbPrefab { get; private set; }
-
-        /// Local-only VFX spawned at both swap positions on execution.
-        /// Bundle asset name: <c>position_swap_smoke.prefab</c>
-        public static GameObject PositionSwapSmokePrefab { get; private set; }
-
-        /// <summary>
-        /// The networked Harrier Jet object spawned by HarrierNetworkBridge.
-        /// Requires NetworkIdentity + NetworkTransform in the bundle.
-        /// Falls back to a runtime capsule if 'harrier_jet.prefab' is absent.
-        /// </summary>
-        public static GameObject HarrierPrefab { get; private set; }
-        public static GameObject HarrierTabletPrefab { get; private set; }
-
-        /// Local-only non-networked copy of WallPrefab used as the placement ghost.
-        /// Network components and physics are stripped so it can be instantiated freely
-        /// on the client without Mirror context.
-        public static GameObject WallGhostPrefab { get; private set; }
-
-        /// The model the player holds while the Nuke item is equipped.
-        public static GameObject NuclearDetonatorPrefab { get; private set; }
-
-        /// The networked bomb object that falls from the sky.
-        /// Requires NetworkIdentity + NetworkTransform in the bundle.
-        public static GameObject NukeBombPrefab { get; private set; }
-
-        /// VFX prefab spawned on all clients when the nuke detonates.
-        /// Reuses NukeVerticalExplosionFire.prefab already present in the bundle.
-        public static GameObject NukeExplosionVfxPrefab { get; private set; }
-
-        /// Impact sound played on all clients at detonation.
-        /// Reuses etfx_explosion_nuke.wav already present in the bundle.
-        public static AudioClip NukeExplosionClip { get; private set; }
-
-        public static GameObject ConfettiBlastRainbow { get; private set; }
-
-        public static GameObject BloodSplatterPrefab { get; private set; }
-
-        /// Programmatically-built prefab for dropped custom items.
-        /// Root carries NetworkIdentity, NetworkTransform, Rigidbody, SphereCollider,
-        /// Entity, and DroppedCustomItem.  The visual child is added client-side in
-        /// DroppedCustomItem.OnStartClient() from the synced ItemType.
+        /// Networked droppable-item prefab; carries NetworkIdentity, NetworkTransform,
+        /// Rigidbody (kinematic), SphereCollider (trigger), Entity, and DroppedCustomItem.
         public static GameObject DroppedCustomItemPrefab { get; private set; }
 
-        /// Secondary debris / dust VFX spawned at the crash site.
+        // ── Local-only VFX prefabs (Mirror components stripped) ───────────────
+        public static GameObject BlackHoleVfxPrefab { get; private set; }
+        public static GameObject PositionSwapOrbPrefab { get; private set; }
+        public static GameObject PositionSwapSmokePrefab { get; private set; }
+        public static GameObject PoisonSplashPrefab { get; private set; }
+        public static GameObject DroneExplosionVfxPrefab { get; private set; }
+        public static GameObject RedBullTrailPrefab { get; private set; }
+        public static GameObject GravityGunTetherVfxPrefab { get; private set; }
+        public static GameObject WarningParticlePrefab { get; private set; }
+        public static GameObject MaydaySmokeTrailPrefab { get; private set; }
+        public static GameObject MaydayFireTrailPrefab { get; private set; }
+        public static GameObject ConfettiBlastRainbow { get; private set; }
+        public static GameObject BloodSplatterPrefab { get; private set; }
+
+        // ── Shared VFX prefabs (used by multiple items) ───────────────────────
+        /// Shared explosion VFX.  Used by Javelin, Nuke, and AC130 Mayday.
+        public static GameObject NukeVerticalExplosionVfxPrefab { get; private set; }
+
+        /// Nuke-specific explosion VFX.  Falls back to NukeVerticalExplosionVfxPrefab
+        /// if "nuclear_explosion.prefab" is absent from the bundle.
+        public static GameObject NukeExplosionVfxPrefab { get; private set; }
+
+        // Javelin convenience aliases that point at the shared assets.
+        public static GameObject JavelinExplosionVfxPrefab => NukeVerticalExplosionVfxPrefab;
+        public static GameObject JavelinTrailVfxPrefab { get; private set; }
+
+        /// Explosion VFX for the AC130 Mayday crash.  Points at the shared
+        /// NukeVerticalExplosionVfxPrefab.
+        public static GameObject MaydayExplosionVfxPrefab => NukeVerticalExplosionVfxPrefab;
+
+        // ── Impact / crash VFX ────────────────────────────────────────────────
+        /// Secondary debris/dust VFX spawned at a crash site (e.g. AC130 impact).
+        /// Bundle asset name: <c>impact_vfx.prefab</c>  (fill in if different).
         public static GameObject ImpactVfxPrefab { get; private set; }
 
-        // ----------------------------------------------------------------
-        //  Audio
-        // ----------------------------------------------------------------
+        // ── Teleporter ────────────────────────────────────────────────────────
+        public static Sprite TeleporterIcon { get; private set; }
+        public static GameObject TeleporterHandheldPrefab { get; private set; }
+        public static GameObject TeleporterVfxPrefab { get; private set; }
+
+        // ── Flamethrower ──────────────────────────────────────────────────────
+        public static Sprite FlamethrowerIcon { get; private set; }
+        public static GameObject FlamethrowerPrefab { get; private set; }
+        public static GameObject FlamethrowerParticlePrefab { get; private set; }
+        public static GameObject FlamethrowerVictimFirePrefab { get; private set; }
+
+        // ── Jetpack ───────────────────────────────────────────────────────────
+        public static Sprite JetpackIcon { get; private set; }
+        public static GameObject JetpackHandheldPrefab { get; private set; }
+        public static GameObject JetpackParticlePrefab { get; private set; }
+
+        /// The networked equipped-jetpack object visible on all clients.
+        public static GameObject JetpackEquippedPrefab { get; private set; }
+
+        // ── Rocket Tether ─────────────────────────────────────────────────────
+        public static Sprite RocketTetherIcon { get; private set; }
+
+        /// The networked handheld/model prefab for the Rocket Tether item.
+        public static GameObject RocketTetherPrefab { get; private set; }
+
+        /// Local-only rocket visual used during tethering.
+        public static GameObject RocketTetherRocketPrefab { get; private set; }
+
+        // ── Rocket Tether Grenade ─────────────────────────────────────────────
+        public static Sprite RocketTetherGrenadeIcon { get; private set; }
+
+        /// Networked grenade projectile for the Rocket Tether Grenade item.
+        public static GameObject RocketTetherGrenadePrefab { get; private set; }
+
+        /// Local-only explosion VFX spawned when the grenade detonates.
+        public static GameObject RocketTetherGrenadeExplosionVfx { get; private set; }
+
+        // ── Spinach ───────────────────────────────────────────────────────────
+        public static Sprite SpinachIcon { get; private set; }
+        public static GameObject SpinachPrefab { get; private set; }
+
+        /// Local-only speed-boost trail VFX parented to the player.
+        public static GameObject SpinachTrailPrefab { get; private set; }
+
+        // ── First Place Star ──────────────────────────────────────────────────
+        /// Local-only gold star VFX shown above the leading player.
+        public static GameObject GoldStarPrefab { get; private set; }
+
+        // ── Ghost prefab (built at load time from WallPrefab) ─────────────────
+        /// Local-only ghost used by PlaceableWallPlacementPreview.
+        /// Mirror and physics components are stripped; the prefab starts inactive.
+        public static GameObject WallGhostPrefab { get; private set; }
+
+        // ── Javelin secondary assets ──────────────────────────────────────────
+        public static GameObject JavelinTargetIndicatorPrefab { get; private set; }
+
+        // ── Audio ─────────────────────────────────────────────────────────────
         public static AudioClip AC130AboveClip { get; private set; }
         public static AudioClip HomerunAudioClip { get; private set; }
 
-        // --- AC130 Mayday assets (placeholders — add to bundle when ready) ---
-        /// Looping cockpit alarm that plays during the mayday dive.
+        /// Looping cockpit alarm played during the AC130 Mayday dive.
         public static AudioClip MaydayAlarmClip { get; private set; }
 
-        /// One-shot impact / explosion sound at crash site.
+        /// One-shot impact/explosion sound at the Mayday crash site.
+        /// Also reused as NukeExplosionClip.
         public static AudioClip MaydayImpactClip { get; private set; }
 
-        /// Smoke trail particle prefab — attached to the gunship during the dive.
-        public static GameObject MaydaySmokeTrailPrefab { get; private set; }
-        public static GameObject MaydayFireTrailPrefab { get; private set; }
+        /// Convenience alias — points at MaydayImpactClip.
+        public static AudioClip NukeExplosionClip => MaydayImpactClip;
 
-        /// Impact explosion VFX prefab — spawned at the crash position.
-        public static GameObject MaydayExplosionVfxPrefab { get; private set; }
-
-        /// <summary>
-        /// Local-only particle system prefab spawned near the camera when a warning fires.
-        /// Bundle asset name: <c>warning_particle.prefab</c>
-        /// The prefab should be a screen-space or billboard particle effect that looks good
-        /// when attached 2.5 units in front of the main camera.
-        /// </summary>
-        public static GameObject WarningParticlePrefab { get; private set; }
-
-        /// Local-only gold star VFX parented above the first-place player's head.
-        /// Not networked — each client instantiates its own copy via FirstPlaceStarOverlay.
-        /// Bundle asset name: <c>gold_star.prefab</c>
-        public static GameObject GoldStarPrefab { get; private set; }
-
-        // --- Flamethrower ---
-        /// Inventory icon.
-        /// Bundle asset name: <c>flamethrower_icon.png</c>
-        public static Sprite FlamethrowerIcon { get; private set; }
-
-        /// The model the player holds while the Flamethrower is equipped.
-        /// Bundle asset name: <c>flamethrower_handheld.prefab</c>
-        public static GameObject FlamethrowerHandheldPrefab { get; private set; }
-
-        /// Local-only particle VFX (the fire stream). Not networked — each client
-        /// instantiates its own copy via FlamethrowerNetworkBridge. The prefab should
-        /// include a CapsuleCollider trigger sized to match the flame cone; the
-        /// FlamethrowerHitDetector script is added at runtime only on the local
-        /// shooter's instance.
-        /// Bundle asset name: <c>flamethrower_particles.prefab</c>
-        public static GameObject FlamethrowerParticlePrefab { get; private set; }
-
-        /// Local-only looping fire VFX parented to a player while they are burning.
-        /// Not networked — each client instantiates its own copy via
-        /// FlamethrowerNetworkBridge. Should be a compact looping fire particle.
-        /// Bundle asset name: <c>flamethrower_victim_fire.prefab</c>
-        public static GameObject FlamethrowerVictimFirePrefab { get; private set; }
-
-        // --- Rocket Tether Grenade ---
-        /// Inventory icon. Falls back to <see cref="RocketTetherIcon"/> if absent.
-        /// Bundle asset name: <c>rocket_tether_grenade_icon.png</c>
-        public static Sprite RocketTetherGrenadeIcon { get; private set; }
-
-        /// The networked thrown grenade projectile.
-        /// Null if no dedicated asset is present — the item still works (tethers apply),
-        /// but there is no in-flight grenade model.
-        /// Bundle asset name: <c>rocket_tether_grenade.prefab</c>
-        public static GameObject RocketTetherGrenadePrefab { get; private set; }
-
-        public static GameObject RocketTetherGrenadeExplosionVfx { get; private set; }
-
+        // ── State ─────────────────────────────────────────────────────────────
         public static bool IsLoaded => _bundle != null;
 
         private static AssetBundle _bundle;
 
+        // ─────────────────────────────────────────────────────────────────────
+        //  Public API
+        // ─────────────────────────────────────────────────────────────────────
+
         public static void Load()
+        {
+            if (!TryLoadBundle())
+                return;
+
+            // Phase 1: load every asset declared in the table.
+            foreach (var def in BuildAssetDefs())
+                def.Execute(_bundle);
+
+            // Phase 2: post-load mutations that require cross-asset references
+            //          or programmatic construction.
+            ApplyPostLoadMutations();
+
+            IssaPluginPlugin.Log.LogInfo("[Assets] IssaPluginBundle loaded.");
+        }
+
+        public static void Unload()
+        {
+            _bundle?.Unload(true);
+            _bundle = null;
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        //  Asset definition table
+        //
+        //  Each entry fully describes one asset: where to find it in the bundle,
+        //  which property to write, and how to post-process it.  The Execute()
+        //  method on each record performs the actual load + mutation.
+        //
+        //  Helper factories at the bottom of this region keep call-sites terse.
+        // ─────────────────────────────────────────────────────────────────────
+
+        private static IEnumerable<AssetDef> BuildAssetDefs()
+        {
+            return new AssetDef[]
+            {
+                // ── Icons (Sprite) ────────────────────────────────────────────
+                SpriteAsset(p => BatIcon = p, "bat_icon.png"),
+                SpriteAsset(p => BomberIcon = p, "bomber_icon.png"),
+                SpriteAsset(p => MissileIcon = p, "missile_icon.png"),
+                SpriteAsset(p => AC130Icon = p, "ac130_icon.png"),
+                SpriteAsset(p => FreezeIcon = p, "freeze_effect_icon.png"),
+                SpriteAsset(p => LowGravityIcon = p, "gravity_remote_icon.png"),
+                SpriteAsset(p => SniperRifleIcon = p, "sniper_rifle_icon.png"),
+                SpriteAsset(p => DonutIcon = p, "donut_icon_v2.png"),
+                SpriteAsset(p => JavelinIcon = p, "javelin_icon.png"),
+                SpriteAsset(p => StickyGrenadeIcon = p, "spike_ball_icon.png"),
+                SpriteAsset(p => BearIcon = p, "bear_icon.png"),
+                SpriteAsset(p => NukeIcon = p, "nuke_icon.png"),
+                SpriteAsset(p => BlackHoleGrenadeIcon = p, "black_hole_grenade_icon.png"),
+                SpriteAsset(p => WallIcon = p, "wall_icon.png"),
+                SpriteAsset(p => AK47Icon = p, "ak47_icon.png"),
+                SpriteAsset(p => HarrierIcon = p, "harrier_icon.png"),
+                SpriteAsset(p => PositionSwapIcon = p, "position_swap_icon.png"),
+                SpriteAsset(p => PoisonJarIcon = p, "poison_bottle_icon.png"),
+                SpriteAsset(p => DroneSwarmIcon = p, "drone_swarm_icon.png"),
+                SpriteAsset(p => ElectricGravityGunIcon = p, "gravity_gun_icon.png"),
+                SpriteAsset(p => RedBullIcon = p, "redbull_icon.png"),
+                SpriteAsset(p => SuperDonutIcon = p, "super_donut_icon.png", optional: true),
+                // ── Textures ──────────────────────────────────────────────────
+                Texture(p => SniperScopeTexture = p, "sniper_scope.png"),
+                // ── Handheld prefabs (Rigidbody disabled) ─────────────────────
+                HandheldPrefab(p => BatModelPrefab = p, "bat_model.prefab"),
+                HandheldPrefab(p => FreezeModelPrefab = p, "snowball.prefab"),
+                HandheldPrefab(p => LowGravityModelPrefab = p, "gravity_remote.prefab"),
+                HandheldPrefab(p => SniperRiflePrefab = p, "intervention.prefab"),
+                HandheldPrefab(p => DonutHandheldPrefab = p, "donut_model.prefab"),
+                HandheldPrefab(p => JavelinHandheldPrefab = p, "javelin_rocket_launcher.prefab"),
+                HandheldPrefab(p => TeddyBearPrefab = p, "teddy.prefab"),
+                HandheldPrefab(p => NuclearDetonatorPrefab = p, "nuclear_detonator.prefab"),
+                HandheldPrefab(
+                    p => WallHandheldPrefab = p,
+                    "brick.prefab",
+                    optional: true,
+                    fallback: BuildWallHandheldFallback
+                ),
+                HandheldPrefab(p => AK47Prefab = p, "ak47.prefab"),
+                HandheldPrefab(p => HarrierTabletPrefab = p, "harrier_tablet.prefab"),
+                HandheldPrefab(
+                    p => PositionSwapHandheldPrefab = p,
+                    "position_swap_handheld.prefab"
+                ),
+                HandheldPrefab(p => PoisonJarHandheldPrefab = p, "posion_bottle.prefab"),
+                HandheldPrefab(p => DroneControllerPrefab = p, "drone_swarm_tablet.prefab"),
+                HandheldPrefab(p => ElectricWhipHandheldPrefab = p, "gravity_gun.prefab"),
+                HandheldPrefab(p => RedBullHandheldPrefab = p, "redbull.prefab"),
+                HandheldPrefab(
+                    p => SuperDonutHandheldPrefab = p,
+                    "super_donut_model.prefab",
+                    optional: true
+                ),
+                // ── Tablet / control-surface prefabs (Rigidbody disabled) ─────
+                HandheldPrefab(p => BomberTabletPrefab = p, "stealth_bomber_tablet.prefab"),
+                HandheldPrefab(p => MissileTabletPrefab = p, "predator_missile_tablet.prefab"),
+                HandheldPrefab(p => Ac130TabletPrefab = p, "ac130_tablet.prefab"),
+                // ── Simple (non-networked) prefabs ────────────────────────────
+                Prefab(p => BomberPrefab = p, "bomber_model.prefab"),
+                Prefab(p => JavelinTargetIndicatorPrefab = p, "javelin_target_indicator.prefab"),
+                // ── Networked prefabs ─────────────────────────────────────────
+                // assetId constants are stable across builds; they identify each prefab
+                // to Mirror's spawning system.  Never reuse an id for a different prefab.
+                NetworkedPrefab(
+                    p => BomberProxyPrefab = p,
+                    "bomber_proxy.prefab",
+                    0xB0AA0001u,
+                    typeof(BomberProxyClientSetup)
+                ),
+                NetworkedPrefab(
+                    p => AC130Prefab = p,
+                    "ac130_model.prefab",
+                    0xAC130001u,
+                    typeof(AC130ClientSetup)
+                ),
+                NetworkedPrefab(
+                    p => DonutPrefab = p,
+                    "donut_vehicle.prefab",
+                    0xF0000001u,
+                    typeof(DonutClientSetup)
+                ),
+                NetworkedPrefab(
+                    p => StickyGrenadePrefab = p,
+                    "spike_ball.prefab",
+                    0x5E47EC01u,
+                    typeof(StickyGrenadeClientSetup)
+                ),
+                NetworkedPrefab(
+                    p => BearPrefab = p,
+                    "bear.prefab",
+                    0xBEA00001u,
+                    typeof(BearClientSetup)
+                ),
+                NetworkedPrefab(p => NukeBombPrefab = p, "nuclear_bomb.prefab", 0xF1550001u),
+                NetworkedPrefab(
+                    p => HarrierPrefab = p,
+                    "harrier.prefab",
+                    0xA7700001u,
+                    typeof(HarrierClientSetup),
+                    optional: true,
+                    fallback: BuildHarrierFallback
+                ),
+                NetworkedPrefab(
+                    p => WallPrefab = p,
+                    "wall.prefab",
+                    0x4411000Au,
+                    optional: true,
+                    fallback: BuildWallFallback
+                ),
+                NetworkedPrefab(p => PoisonJarPrefab = p, "posion_bottle.prefab", 0xD001A501u),
+                NetworkedPrefab(p => DronePrefab = p, "drone.prefab", 0xD40E0001u),
+                NetworkedPrefab(
+                    p => BlackHoleGrenadePrefab = p,
+                    "black_hole_grenade.prefab",
+                    0xB14C0001u,
+                    optional: true,
+                    fallback: BuildBlackHoleGrenadeFallback
+                ),
+                // DroppedCustomItemPrefab needs extra component wiring — see PostLoad.
+                NetworkedPrefab(
+                    p => DroppedCustomItemPrefab = p,
+                    "DroppedCustomItem.prefab",
+                    0xD20D0001u
+                ),
+                // ── Shared VFX ────────────────────────────────────────────────
+                Prefab(p => NukeVerticalExplosionVfxPrefab = p, "NukeVerticalExplosionFire.prefab"),
+                // ── Local-only VFX (Mirror components stripped) ───────────────
+                LocalVfxPrefab(p => BlackHoleVfxPrefab = p, "black_hole.prefab"),
+                LocalVfxPrefab(p => PositionSwapOrbPrefab = p, "position_swap_orb.prefab"),
+                LocalVfxPrefab(p => PositionSwapSmokePrefab = p, "position_swap_smoke.prefab"),
+                LocalVfxPrefab(p => PoisonSplashPrefab = p, "poison_cloud_vfx.prefab"),
+                LocalVfxPrefab(p => DroneExplosionVfxPrefab = p, "drone_explosion.prefab"),
+                LocalVfxPrefab(p => RedBullTrailPrefab = p, "red_bull_trail.prefab"),
+                LocalVfxPrefab(p => GravityGunTetherVfxPrefab = p, "gravity_gun_vfx.prefab"),
+                LocalVfxPrefab(p => WarningParticlePrefab = p, "warning_particle.prefab"),
+                LocalVfxPrefab(p => MaydaySmokeTrailPrefab = p, "smoke_prefab.prefab"),
+                LocalVfxPrefab(p => MaydayFireTrailPrefab = p, "fire_torch_intense.prefab"),
+                LocalVfxPrefab(p => ConfettiBlastRainbow = p, "ConfettiBlastRainbow.prefab"),
+                LocalVfxPrefab(p => BloodSplatterPrefab = p, "blood_explosion_vfx.prefab"),
+                LocalVfxPrefab(p => JavelinTrailVfxPrefab = p, "javelin_trail.prefab"),
+                // ── Audio ─────────────────────────────────────────────────────
+                // AudioClips are addressed without file extensions — Unity compiles
+                // audio to an internal format at bundle-build time.
+                Audio(p => AC130AboveClip = p, "ac130_above"),
+                Audio(p => HomerunAudioClip = p, "homerun"),
+                Audio(p => MaydayAlarmClip = p, "missile_locked"),
+                Audio(p => MaydayImpactClip = p, "etfx_explosion_nuke"),
+                // ── Impact VFX ────────────────────────────────────────────────
+                LocalVfxPrefab(p => ImpactVfxPrefab = p, "impact_vfx.prefab"),
+                // ── Teleporter ────────────────────────────────────────────────
+                // TODO: replace asset names with the real bundle names once known.
+                SpriteAsset(p => TeleporterIcon = p, "teleporter_icon.png"),
+                HandheldPrefab(p => TeleporterHandheldPrefab = p, "teleporter_handheld.prefab"),
+                LocalVfxPrefab(p => TeleporterVfxPrefab = p, "teleporter_vfx.prefab"),
+                // ── Flamethrower ──────────────────────────────────────────────
+                // TODO: replace asset names with the real bundle names once known.
+                SpriteAsset(p => FlamethrowerIcon = p, "flamethrower_icon.png"),
+                HandheldPrefab(p => FlamethrowerPrefab = p, "flamethrower.prefab"),
+                LocalVfxPrefab(p => FlamethrowerParticlePrefab = p, "flamethrower_vfx.prefab"),
+                LocalVfxPrefab(
+                    p => FlamethrowerVictimFirePrefab = p,
+                    "flamethrower_victim_fire.prefab"
+                ),
+                // ── Jetpack ───────────────────────────────────────────────────
+                // TODO: replace asset names with the real bundle names once known.
+                SpriteAsset(p => JetpackIcon = p, "jetpack_icon.png"),
+                HandheldPrefab(p => JetpackHandheldPrefab = p, "jetpack_handheld.prefab"),
+                LocalVfxPrefab(p => JetpackParticlePrefab = p, "jetpack_particle.prefab"),
+                NetworkedPrefab(p => JetpackEquippedPrefab = p, "jetpack.prefab", 0x00000000u), // TODO: assign a stable assetId
+                // ── Rocket Tether ─────────────────────────────────────────────
+                // TODO: replace asset names and assetId with the real values once known.
+                SpriteAsset(p => RocketTetherIcon = p, "rocket_tether_icon.png"),
+                HandheldPrefab(p => RocketTetherPrefab = p, "rocket_tether_handheld.prefab"),
+                LocalVfxPrefab(p => RocketTetherRocketPrefab = p, "rocket_tether_rocket.prefab"),
+                // ── Rocket Tether Grenade ─────────────────────────────────────
+                // TODO: replace asset names and assetId with the real values once known.
+                SpriteAsset(p => RocketTetherGrenadeIcon = p, "rocket_tether_grenade_icon.png"),
+                NetworkedPrefab(
+                    p => RocketTetherGrenadePrefab = p,
+                    "toy_rocket.prefab",
+                    0x00000000u
+                ), // TODO: assign a stable assetId
+                LocalVfxPrefab(
+                    p => RocketTetherGrenadeExplosionVfx = p,
+                    "rocket_tether_grenade_explosion.prefab"
+                ),
+                // ── Spinach ───────────────────────────────────────────────────
+                // TODO: replace asset names with the real bundle names once known.
+                SpriteAsset(p => SpinachIcon = p, "spinach_icon.png"),
+                HandheldPrefab(p => SpinachPrefab = p, "spinach.prefab"),
+                LocalVfxPrefab(p => SpinachTrailPrefab = p, "spinach_trail.prefab"),
+                // ── First Place Star ──────────────────────────────────────────
+                // TODO: replace asset name with the real bundle name once known.
+                LocalVfxPrefab(p => GoldStarPrefab = p, "gold_star.prefab"),
+            };
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        //  Post-load mutations
+        //
+        //  Anything that requires cross-referencing already-loaded assets, or
+        //  that mutates a prefab in ways that go beyond what an AssetDef can
+        //  express, lives here.
+        // ─────────────────────────────────────────────────────────────────────
+
+        private static void ApplyPostLoadMutations()
+        {
+            // NukeExplosionVfxPrefab prefers a dedicated asset; falls back to the
+            // shared nuke-fire VFX that Javelin and Mayday already use.
+            NukeExplosionVfxPrefab =
+                LoadRaw<GameObject>("nuclear_explosion.prefab") ?? NukeVerticalExplosionVfxPrefab;
+
+            // DroppedCustomItemPrefab needs two components wired in code, and its
+            // collider must be a trigger (so it doesn't block player movement).
+            if (DroppedCustomItemPrefab != null)
+            {
+                DroppedCustomItemPrefab.SetActive(false);
+                var col = DroppedCustomItemPrefab.GetComponent<SphereCollider>();
+                if (col != null)
+                    col.isTrigger = true;
+                DroppedCustomItemPrefab.AddComponent<Entity>();
+                DroppedCustomItemPrefab.AddComponent<DroppedCustomItem>();
+            }
+
+            // WallGhostPrefab is a stripped, inactive copy of WallPrefab used as the
+            // placement-preview ghost.  It is built here (after WallPrefab is loaded)
+            // rather than in the asset-def table because it requires the wall itself.
+            if (WallPrefab != null)
+                WallGhostPrefab = BuildWallGhost(WallPrefab);
+
+            // SuperDonut fallbacks: use Donut assets when the dedicated ones are absent.
+            SuperDonutIcon ??= DonutIcon;
+            SuperDonutHandheldPrefab ??= DonutHandheldPrefab;
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        //  Fallback builders
+        //
+        //  Called by an AssetDef when the named bundle asset is absent.
+        //  Each builder returns a fully configured, DontDestroyOnLoad prefab.
+        //  Kept here so the asset table remains readable and these details are
+        //  all in one place.
+        // ─────────────────────────────────────────────────────────────────────
+
+        private static GameObject BuildWallHandheldFallback()
+        {
+            var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            go.name = "PlaceableWallHandheld_Fallback";
+            go.transform.localScale = new Vector3(0.4f, 0.3f, 0.05f);
+            DisableRigidbody(go);
+            GameObject.DontDestroyOnLoad(go);
+            return go;
+        }
+
+        private static GameObject BuildWallFallback()
+        {
+            IssaPluginPlugin.Log.LogWarning("[Assets] wall.prefab not found — using fallback box.");
+            var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            go.name = "PlaceableWall_Fallback";
+            go.transform.localScale = new Vector3(4f, 3f, 0.3f);
+            var rb = go.AddComponent<Rigidbody>();
+            rb.isKinematic = true;
+            rb.useGravity = false;
+            EnsureNetworkIdentity(go, 0x4411000Au);
+            GameObject.DontDestroyOnLoad(go);
+            return go;
+        }
+
+        private static GameObject BuildHarrierFallback()
+        {
+            IssaPluginPlugin.Log.LogWarning(
+                "[Assets] harrier.prefab not found — using fallback capsule."
+            );
+            var go = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            go.name = "Harrier_Fallback";
+            DisableRigidbody(go);
+            EnsureNetworkIdentity(go, 0xA7700001u);
+            go.AddComponent<HarrierClientSetup>();
+            GameObject.DontDestroyOnLoad(go);
+            return go;
+        }
+
+        private static GameObject BuildBlackHoleGrenadeFallback()
+        {
+            IssaPluginPlugin.Log.LogWarning(
+                "[Assets] black_hole_grenade.prefab not found — using fallback sphere."
+            );
+            var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            go.name = "BlackHoleGrenade_Fallback";
+            go.transform.localScale = Vector3.one * 0.4f;
+            var rb = go.GetComponent<Rigidbody>() ?? go.AddComponent<Rigidbody>();
+            rb.isKinematic = true;
+            rb.useGravity = false;
+            var col = go.GetComponent<SphereCollider>();
+            if (col != null)
+                col.enabled = false;
+            EnsureNetworkIdentity(go, 0xB14C0001u);
+            GameObject.DontDestroyOnLoad(go);
+            return go;
+        }
+
+        private static GameObject BuildWallGhost(GameObject wallPrefab)
+        {
+            var ghost = GameObject.Instantiate(wallPrefab);
+            ghost.name = "PlaceableWall_GhostTemplate";
+            StripNetworkComponents(ghost);
+            foreach (var rb in ghost.GetComponentsInChildren<Rigidbody>(true))
+            {
+                rb.isKinematic = true;
+                rb.detectCollisions = false;
+            }
+            foreach (var col in ghost.GetComponentsInChildren<Collider>(true))
+                col.enabled = false;
+            ghost.SetActive(false);
+            GameObject.DontDestroyOnLoad(ghost);
+            IssaPluginPlugin.Log.LogInfo("[Assets] WallGhostPrefab created from WallPrefab.");
+            return ghost;
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        //  Asset definition record + factory helpers
+        // ─────────────────────────────────────────────────────────────────────
+
+        /// Describes one asset: how to load it, and what to do with the result.
+        private abstract class AssetDef
+        {
+            public abstract void Execute(AssetBundle bundle);
+        }
+
+        // -- Sprite -------------------------------------------------------
+        private sealed class SpriteDef : AssetDef
+        {
+            private readonly System.Action<Sprite> _set;
+            private readonly string _name;
+            private readonly bool _optional;
+
+            public SpriteDef(System.Action<Sprite> set, string name, bool optional)
+            {
+                _set = set;
+                _name = name;
+                _optional = optional;
+            }
+
+            public override void Execute(AssetBundle bundle)
+            {
+                var tex = _optional
+                    ? LoadOptionalRaw<Texture2D>(bundle, _name)
+                    : LoadRequiredRaw<Texture2D>(bundle, _name);
+                if (tex != null)
+                    _set(
+                        Sprite.Create(
+                            tex,
+                            new Rect(0, 0, tex.width, tex.height),
+                            new Vector2(0.5f, 0.5f)
+                        )
+                    );
+            }
+        }
+
+        // -- Texture2D -------------------------------------------------------
+        private sealed class TextureDef : AssetDef
+        {
+            private readonly System.Action<Texture2D> _set;
+            private readonly string _name;
+
+            public TextureDef(System.Action<Texture2D> set, string name)
+            {
+                _set = set;
+                _name = name;
+            }
+
+            public override void Execute(AssetBundle bundle) =>
+                _set(LoadRequiredRaw<Texture2D>(bundle, _name));
+        }
+
+        // -- AudioClip -------------------------------------------------------
+        private sealed class AudioDef : AssetDef
+        {
+            private readonly System.Action<AudioClip> _set;
+            private readonly string _name;
+
+            public AudioDef(System.Action<AudioClip> set, string name)
+            {
+                _set = set;
+                _name = name;
+            }
+
+            public override void Execute(AssetBundle bundle) =>
+                _set(LoadOptionalRaw<AudioClip>(bundle, _name));
+        }
+
+        // -- Plain prefab (no mutations) -------------------------------------
+        private sealed class PrefabDef : AssetDef
+        {
+            private readonly System.Action<GameObject> _set;
+            private readonly string _name;
+
+            public PrefabDef(System.Action<GameObject> set, string name)
+            {
+                _set = set;
+                _name = name;
+            }
+
+            public override void Execute(AssetBundle bundle) =>
+                _set(LoadRequiredRaw<GameObject>(bundle, _name));
+        }
+
+        // -- Handheld prefab (Rigidbody disabled) ---------------------------
+        private sealed class HandheldPrefabDef : AssetDef
+        {
+            private readonly System.Action<GameObject> _set;
+            private readonly string _name;
+            private readonly bool _optional;
+            private readonly System.Func<GameObject> _fallback;
+
+            public HandheldPrefabDef(
+                System.Action<GameObject> set,
+                string name,
+                bool optional,
+                System.Func<GameObject> fallback
+            )
+            {
+                _set = set;
+                _name = name;
+                _optional = optional;
+                _fallback = fallback;
+            }
+
+            public override void Execute(AssetBundle bundle)
+            {
+                var go = _optional
+                    ? LoadOptionalRaw<GameObject>(bundle, _name)
+                    : LoadRequiredRaw<GameObject>(bundle, _name);
+                if (go == null && _fallback != null)
+                    go = _fallback();
+                if (go != null)
+                    DisableRigidbody(go);
+                _set(go);
+            }
+        }
+
+        // -- Networked prefab -----------------------------------------------
+        private sealed class NetworkedPrefabDef : AssetDef
+        {
+            private readonly System.Action<GameObject> _set;
+            private readonly string _name;
+            private readonly uint _assetId;
+            private readonly System.Type _clientSetupType;
+            private readonly bool _optional;
+            private readonly System.Func<GameObject> _fallback;
+
+            public NetworkedPrefabDef(
+                System.Action<GameObject> set,
+                string name,
+                uint assetId,
+                System.Type clientSetupType,
+                bool optional,
+                System.Func<GameObject> fallback
+            )
+            {
+                _set = set;
+                _name = name;
+                _assetId = assetId;
+                _clientSetupType = clientSetupType;
+                _optional = optional;
+                _fallback = fallback;
+            }
+
+            public override void Execute(AssetBundle bundle)
+            {
+                var go = _optional
+                    ? LoadOptionalRaw<GameObject>(bundle, _name)
+                    : LoadRequiredRaw<GameObject>(bundle, _name);
+                if (go == null && _fallback != null)
+                    go = _fallback();
+                if (go == null)
+                {
+                    _set(null);
+                    return;
+                }
+                EnsureNetworkIdentity(go, _assetId);
+                DisableRigidbody(go);
+                if (_clientSetupType != null)
+                    go.AddComponent(_clientSetupType);
+                _set(go);
+            }
+        }
+
+        // -- Local VFX prefab (network components stripped) -----------------
+        private sealed class LocalVfxPrefabDef : AssetDef
+        {
+            private readonly System.Action<GameObject> _set;
+            private readonly string _name;
+
+            public LocalVfxPrefabDef(System.Action<GameObject> set, string name)
+            {
+                _set = set;
+                _name = name;
+            }
+
+            public override void Execute(AssetBundle bundle)
+            {
+                var go = LoadOptionalRaw<GameObject>(bundle, _name);
+                if (go != null)
+                {
+                    StripNetworkComponents(go);
+                    GameObject.DontDestroyOnLoad(go);
+                }
+                _set(go);
+            }
+        }
+
+        // ── Factory helpers ──────────────────────────────────────────────────
+        // These produce terse, readable entries in BuildAssetDefs().
+
+        private static AssetDef SpriteAsset(
+            System.Action<UnityEngine.Sprite> set,
+            string name,
+            bool optional = false
+        ) => new SpriteDef(set, name, optional);
+
+        private static AssetDef Texture(System.Action<Texture2D> set, string name) =>
+            new TextureDef(set, name);
+
+        private static AssetDef Audio(System.Action<AudioClip> set, string name) =>
+            new AudioDef(set, name);
+
+        private static AssetDef Prefab(System.Action<GameObject> set, string name) =>
+            new PrefabDef(set, name);
+
+        private static AssetDef HandheldPrefab(
+            System.Action<GameObject> set,
+            string name,
+            bool optional = false,
+            System.Func<GameObject> fallback = null
+        ) => new HandheldPrefabDef(set, name, optional, fallback);
+
+        private static AssetDef NetworkedPrefab(
+            System.Action<GameObject> set,
+            string name,
+            uint assetId,
+            System.Type clientSetupType = null,
+            bool optional = false,
+            System.Func<GameObject> fallback = null
+        ) => new NetworkedPrefabDef(set, name, assetId, clientSetupType, optional, fallback);
+
+        // Convenience overload: clientSetupType is positional-third and common enough to warrant one.
+        private static AssetDef NetworkedPrefab(
+            System.Action<GameObject> set,
+            string name,
+            uint assetId,
+            System.Type clientSetupType
+        ) => new NetworkedPrefabDef(set, name, assetId, clientSetupType, false, null);
+
+        private static AssetDef LocalVfxPrefab(System.Action<GameObject> set, string name) =>
+            new LocalVfxPrefabDef(set, name);
+
+        // ─────────────────────────────────────────────────────────────────────
+        //  Low-level utilities
+        // ─────────────────────────────────────────────────────────────────────
+
+        /// Finds and opens the asset bundle.  Returns true on success.
+        private static bool TryLoadBundle()
         {
             string pluginDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             string bundlePath = Path.Combine(pluginDir, "IssaPluginBundle", "issamod");
@@ -341,7 +851,7 @@ namespace IssaPlugin.Items
                         "[Assets] Asset bundle not found. "
                             + "Place 'issamod' in IssaPluginBundle/ next to the plugin DLL."
                     );
-                    return;
+                    return false;
                 }
             }
 
@@ -349,548 +859,33 @@ namespace IssaPlugin.Items
             if (_bundle == null)
             {
                 IssaPluginPlugin.Log.LogError("[Assets] Failed to load asset bundle.");
-                return;
+                return false;
             }
-
-            LoadSpritesAndTextures();
-            LoadSimpleItemPrefabs();
-            LoadAircraftPrefabs();
-            LoadDonutAssets();
-            LoadStickyGrenadeAssets();
-            LoadBearAssets();
-            LoadNukeAssets(); // must precede LoadAudioAndVfx (shares MaydayExplosionVfxPrefab)
-            LoadAudioAndVfx();
-            LoadBlackHoleGrenadeAssets();
-            LoadDroppedItemPrefab();
-            LoadPlaceableWallAssets();
-            LoadAK47Assets();
-            LoadHarrierAssets();
-            LoadPositionSwapAssets();
-            LoadPoisonJarAssets();
-            LoadDroneSwarmAssets();
-            LoadRedBullAssets();
-            LoadSuperDonutAssets();
-            LoadGravityGunAssets();
-            LoadRocketTetherAssets();
-            LoadJetpackAssets();
-            LoadSpinachAssets();
-
-            // Load after position swap, as we reuse PositionSwapSmokePrefab for teleporter.
-            LoadTeleporterAssets();
-            LoadFirstPlaceStarAssets();
-            LoadFlamethrowerAssets();
-            LoadRocketTetherGrenadeAssets();
-
-            IssaPluginPlugin.Log.LogInfo("[Assets] IssaPluginBundle loaded.");
+            return true;
         }
 
-        private static void LoadSpritesAndTextures()
+        /// Loads from the bundle and logs an error if the asset is missing.
+        private static T LoadRequiredRaw<T>(AssetBundle bundle, string name)
+            where T : Object
         {
-            BatIcon = LoadSprite("bat_icon.png");
-            BomberIcon = LoadSprite("bomber_icon.png");
-            MissileIcon = LoadSprite("missile_icon.png");
-            AC130Icon = LoadSprite("ac130_icon.png");
-            FreezeIcon = LoadSprite("freeze_effect_icon.png");
-            LowGravityIcon = LoadSprite("gravity_remote_icon.png");
-            SniperRifleIcon = LoadSprite("sniper_rifle_icon.png");
-            DonutIcon = LoadSprite("donut_icon_v2.png");
-            JavelinIcon = LoadSprite("javelin_icon.png");
-            StickyGrenadeIcon = LoadSprite("spike_ball_icon.png");
-            BearIcon = LoadSprite("bear_icon.png");
-            NukeIcon = LoadSprite("nuke_icon.png");
-            BlackHoleGrenadeIcon = LoadSprite("black_hole_grenade_icon.png");
-            WallIcon = LoadSprite("wall_icon.png");
-            AK47Icon = LoadSprite("ak47_icon.png");
-            HarrierIcon = LoadSprite("harrier_icon.png");
-            PositionSwapIcon = LoadSprite("position_swap_icon.png");
-            PoisonJarIcon = LoadSprite("poison_bottle_icon.png");
-            DroneSwarmIcon = LoadSprite("drone_swarm_icon.png");
-            ElectricGravityGunIcon = LoadSprite("gravity_gun_icon.png");
-            RedBullIcon = LoadSprite("redbull_icon.png");
-            RocketTetherIcon = LoadSprite("rocket_tether_icon.png");
-            TeleporterIcon = LoadSprite("teleporter_icon.png");
-            SpinachIcon = LoadSprite("spinach_icon.png");
-
-            SniperScopeTexture = LoadTexture2D("sniper_scope.png");
-            if (SniperScopeTexture == null)
-                IssaPluginPlugin.Log.LogError("[Assets] Failed to load sniper scope texture.");
+            var asset = bundle.LoadAsset<T>(name);
+            if (asset == null)
+                IssaPluginPlugin.Log.LogError($"[Assets] Missing required asset: {name}");
+            return asset;
         }
 
-        /// Prefabs that need only a load + DisableRigidbody (no NetworkIdentity, no ClientSetup).
-        private static void LoadSimpleItemPrefabs()
-        {
-            BatModelPrefab = Load<GameObject>("bat_model.prefab");
-            DisableRigidbody(BatModelPrefab);
-
-            FreezeModelPrefab = Load<GameObject>("snowball.prefab");
-            DisableRigidbody(FreezeModelPrefab);
-
-            LowGravityModelPrefab = Load<GameObject>("gravity_remote.prefab");
-            DisableRigidbody(LowGravityModelPrefab);
-
-            SniperRiflePrefab = Load<GameObject>("intervention.prefab");
-            DisableRigidbody(SniperRiflePrefab);
-
-            DonutHandheldPrefab = Load<GameObject>("donut_model.prefab");
-            DisableRigidbody(DonutHandheldPrefab);
-
-            JavelinHandheldPrefab = Load<GameObject>("javelin_rocket_launcher.prefab");
-            DisableRigidbody(JavelinHandheldPrefab);
-            JavelinTargetIndicatorPrefab = Load<GameObject>("javelin_target_indicator.prefab");
-            JavelinExplosionVfxPrefab = Load<GameObject>("NukeVerticalExplosionFire.prefab");
-            JavelinTrailVfxPrefab = Load<GameObject>("javelin_trail.prefab");
-
-            TeddyBearPrefab = Load<GameObject>("teddy.prefab");
-            DisableRigidbody(TeddyBearPrefab);
-
-            // DonutLaserZoneRed = Load<GameObject>("laser_zone_red.prefab");
-            ConfettiBlastRainbow = Load<GameObject>("ConfettiBlastRainbow.prefab");
-            // BloodSplatterPrefab = Load<GameObject>("blood_splatter_critical.prefab");
-            BloodSplatterPrefab = Load<GameObject>("blood_explosion_vfx.prefab");
-        }
-
-        private static void LoadAircraftPrefabs()
-        {
-            BomberPrefab = Load<GameObject>("bomber_model.prefab");
-
-            BomberProxyPrefab = Load<GameObject>("bomber_proxy.prefab");
-            EnsureNetworkIdentity(BomberProxyPrefab, 0xB0AA0001u);
-            if (BomberProxyPrefab != null)
-                BomberProxyPrefab.AddComponent<BomberProxyClientSetup>();
-
-            AC130Prefab = Load<GameObject>("ac130_model.prefab");
-            EnsureNetworkIdentity(AC130Prefab, 0xAC130001u);
-            if (AC130Prefab != null)
-                AC130Prefab.AddComponent<AC130ClientSetup>();
-
-            BomberTabletPrefab = Load<GameObject>("stealth_bomber_tablet.prefab");
-            DisableRigidbody(BomberTabletPrefab);
-            MissileTabletPrefab = Load<GameObject>("predator_missile_tablet.prefab");
-            DisableRigidbody(MissileTabletPrefab);
-            Ac130TabletPrefab = Load<GameObject>("ac130_tablet.prefab");
-            DisableRigidbody(Ac130TabletPrefab);
-        }
-
-        private static void LoadDonutAssets()
-        {
-            DonutPrefab = Load<GameObject>("donut_vehicle.prefab");
-            EnsureNetworkIdentity(DonutPrefab, 0xF0000001u);
-            DonutPrefab?.AddComponent<DonutClientSetup>();
-            DisableRigidbody(DonutPrefab);
-        }
-
-        private static void LoadStickyGrenadeAssets()
-        {
-            StickyGrenadePrefab = Load<GameObject>("spike_ball.prefab");
-            DisableRigidbody(StickyGrenadePrefab);
-            EnsureNetworkIdentity(StickyGrenadePrefab, 0x5E47EC01u);
-            StickyGrenadePrefab?.AddComponent<StickyGrenadeClientSetup>();
-        }
-
-        private static void LoadBearAssets()
-        {
-            BearPrefab = Load<GameObject>("bear.prefab");
-            if (BearPrefab != null)
-            {
-                EnsureNetworkIdentity(BearPrefab, 0xBEA00001u);
-                BearPrefab.AddComponent<BearClientSetup>();
-                DisableRigidbody(BearPrefab); // BearBehaviour re-enables in Start()
-            }
-        }
-
-        private static void LoadNukeAssets()
-        {
-            NuclearDetonatorPrefab = Load<GameObject>("nuclear_detonator.prefab");
-            if (NuclearDetonatorPrefab != null)
-                DisableRigidbody(NuclearDetonatorPrefab);
-
-            NukeBombPrefab = Load<GameObject>("nuclear_bomb.prefab");
-            if (NukeBombPrefab != null)
-            {
-                EnsureNetworkIdentity(NukeBombPrefab, 0xF1550001u);
-                // Rigidbody starts kinematic; NukeBombBehaviour.Start() re-enables it.
-                DisableRigidbody(NukeBombPrefab);
-            }
-        }
-
-        /// AudioClips must be loaded by asset name without the file extension.
-        /// Unity compiles audio into its own internal format at bundle-build time,
-        /// so the original .ogg/.wav path is never valid at runtime.
-        private static void LoadAudioAndVfx()
-        {
-            // AC130AboveClip = Load<AudioClip>("ac130_above.ogg");
-            // HomerunAudioClip = Load<AudioClip>("homerun.ogg");
-
-            // Mayday assets — optional until added to the bundle; all usage sites null-check.
-            // MaydayAlarmClip = Load<AudioClip>("missile_locked.ogg");
-            // MaydayImpactClip = Load<AudioClip>("etfx_explosion_nuke.wav");
-            MaydaySmokeTrailPrefab = Load<GameObject>("smoke_prefab.prefab");
-            MaydayFireTrailPrefab = Load<GameObject>("fire_torch_intense.prefab");
-            MaydayExplosionVfxPrefab = Load<GameObject>("NukeVerticalExplosionFire.prefab");
-
-            // Nuke-specific explosion VFX — dedicated prefab preferred, fall back to mayday VFX.
-            NukeExplosionVfxPrefab =
-                Load<GameObject>("nuclear_explosion.prefab") ?? MaydayExplosionVfxPrefab;
-            NukeExplosionClip = MaydayImpactClip;
-
-            WarningParticlePrefab = Load<GameObject>("warning_particle.prefab");
-        }
-
-        private static void LoadBlackHoleGrenadeAssets()
-        {
-            BlackHoleVfxPrefab = Load<GameObject>("black_hole.prefab");
-            if (BlackHoleVfxPrefab != null)
-            {
-                // Strip Mirror network components so the VFX can be instantiated
-                // as a local-only object without a network context.
-                StripNetworkComponents(BlackHoleVfxPrefab);
-                GameObject.DontDestroyOnLoad(BlackHoleVfxPrefab);
-            }
-
-            BlackHoleGrenadePrefab = Load<GameObject>("black_hole_grenade.prefab");
-            if (BlackHoleGrenadePrefab != null)
-            {
-                EnsureNetworkIdentity(BlackHoleGrenadePrefab, 0xB14C0001u);
-                DisableRigidbody(BlackHoleGrenadePrefab);
-                return;
-            }
-
-            // Fallback: build a minimal networked sphere so the item works even
-            // without a dedicated bundle asset.  Artists can replace this later.
-            IssaPluginPlugin.Log.LogWarning(
-                "[Assets] black_hole_grenade.prefab not found — using fallback sphere."
-            );
-            BlackHoleGrenadePrefab = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            BlackHoleGrenadePrefab.name = "BlackHoleGrenade_Fallback";
-            BlackHoleGrenadePrefab.transform.localScale = Vector3.one * 0.4f;
-            var bhRb =
-                BlackHoleGrenadePrefab.GetComponent<Rigidbody>()
-                ?? BlackHoleGrenadePrefab.AddComponent<Rigidbody>();
-            bhRb.isKinematic = true;
-            bhRb.useGravity = false;
-            // Disable the collider so the template sitting at origin doesn't
-            // interfere with in-scene physics.  Spawned instances re-enable it via
-            // BlackHoleGrenadeBehaviour (Rigidbody is already kinematic/no-gravity).
-            var bhCol = BlackHoleGrenadePrefab.GetComponent<SphereCollider>();
-            if (bhCol)
-                bhCol.enabled = false;
-            EnsureNetworkIdentity(BlackHoleGrenadePrefab, 0xB14C0001u);
-            GameObject.DontDestroyOnLoad(BlackHoleGrenadePrefab);
-        }
-
-        private static void LoadDroppedItemPrefab()
-        {
-            DroppedCustomItemPrefab = Load<GameObject>("DroppedCustomItem.prefab");
-            if (DroppedCustomItemPrefab == null)
-                return;
-
-            EnsureNetworkIdentity(DroppedCustomItemPrefab, 0xD20D0001u);
-            DroppedCustomItemPrefab.SetActive(false);
-            // Force kinematic regardless of what the bundle has baked in.
-            DisableRigidbody(DroppedCustomItemPrefab);
-            // Make the pickup collider a trigger so it doesn't block player movement.
-            // Physics.OverlapBoxNonAlloc uses QueryTriggerInteraction.Collide, so
-            // triggers are still detected by PlayerInteractableTargeter.
-            var dropCol = DroppedCustomItemPrefab.GetComponent<SphereCollider>();
-            if (dropCol)
-                dropCol.isTrigger = true;
-            DroppedCustomItemPrefab.AddComponent<Entity>();
-            DroppedCustomItemPrefab.AddComponent<DroppedCustomItem>();
-            GameObject.DontDestroyOnLoad(DroppedCustomItemPrefab);
-        }
-
-        private static void LoadPlaceableWallAssets()
-        {
-            WallHandheldPrefab = Load<GameObject>("brick.prefab");
-            if (WallHandheldPrefab != null)
-            {
-                DisableRigidbody(WallHandheldPrefab);
-            }
-            else
-            {
-                WallHandheldPrefab = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                WallHandheldPrefab.name = "PlaceableWallHandheld_Fallback";
-                WallHandheldPrefab.transform.localScale = new Vector3(0.4f, 0.3f, 0.05f);
-                DisableRigidbody(WallHandheldPrefab);
-                GameObject.DontDestroyOnLoad(WallHandheldPrefab);
-            }
-
-            WallPrefab = Load<GameObject>("wall.prefab");
-            if (WallPrefab != null)
-            {
-                EnsureNetworkIdentity(WallPrefab, 0x4411000Au);
-                DisableRigidbody(WallPrefab);
-            }
-            else
-            {
-                IssaPluginPlugin.Log.LogWarning(
-                    "[Assets] wall.prefab not found — using fallback box."
-                );
-                WallPrefab = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                WallPrefab.name = "PlaceableWall_Fallback";
-                WallPrefab.transform.localScale = new Vector3(4f, 3f, 0.3f);
-                var wallRb = WallPrefab.AddComponent<Rigidbody>();
-                wallRb.isKinematic = true;
-                wallRb.useGravity = false;
-                EnsureNetworkIdentity(WallPrefab, 0x4411000Au);
-                GameObject.DontDestroyOnLoad(WallPrefab);
-            }
-
-            // Build the ghost template from WallPrefab.
-            // Instantiate at load time (before any network session is active) so
-            // DestroyImmediate on Mirror components is safe and has no side-effects.
-            if (WallPrefab == null)
-                return;
-
-            WallGhostPrefab = GameObject.Instantiate(WallPrefab);
-            WallGhostPrefab.name = "PlaceableWall_GhostTemplate";
-            StripNetworkComponents(WallGhostPrefab);
-            // Disable physics — ghost is purely visual.
-            foreach (var rb in WallGhostPrefab.GetComponentsInChildren<Rigidbody>(true))
-            {
-                rb.isKinematic = true;
-                rb.detectCollisions = false;
-            }
-            foreach (var col in WallGhostPrefab.GetComponentsInChildren<Collider>(true))
-                col.enabled = false;
-            WallGhostPrefab.SetActive(false);
-            GameObject.DontDestroyOnLoad(WallGhostPrefab);
-            IssaPluginPlugin.Log.LogInfo("[Assets] WallGhostPrefab created from WallPrefab.");
-        }
-
-        private static void LoadAK47Assets()
-        {
-            AK47Prefab = Load<GameObject>("ak47.prefab");
-            if (AK47Prefab != null)
-                DisableRigidbody(AK47Prefab);
-        }
-
-        private static void LoadHarrierAssets()
-        {
-            HarrierPrefab = Load<GameObject>("harrier.prefab");
-            if (HarrierPrefab != null)
-            {
-                EnsureNetworkIdentity(HarrierPrefab, 0xA7700001u);
-                DisableRigidbody(HarrierPrefab);
-                HarrierPrefab.AddComponent<HarrierClientSetup>();
-            }
-
-            HarrierTabletPrefab = Load<GameObject>("harrier_tablet.prefab");
-            if (HarrierTabletPrefab != null)
-                DisableRigidbody(HarrierTabletPrefab);
-        }
-
-        private static void LoadPositionSwapAssets()
-        {
-            PositionSwapHandheldPrefab = Load<GameObject>("position_swap_handheld.prefab");
-            if (PositionSwapHandheldPrefab != null)
-                DisableRigidbody(PositionSwapHandheldPrefab);
-
-            PositionSwapOrbPrefab = Load<GameObject>("position_swap_orb.prefab");
-            if (PositionSwapOrbPrefab != null)
-                StripNetworkComponents(PositionSwapOrbPrefab);
-
-            PositionSwapSmokePrefab = Load<GameObject>("position_swap_smoke.prefab");
-            if (PositionSwapSmokePrefab != null)
-                StripNetworkComponents(PositionSwapSmokePrefab);
-        }
-
-        private static void LoadPoisonJarAssets()
-        {
-            PoisonJarHandheldPrefab = Load<GameObject>("posion_bottle.prefab");
-            if (PoisonJarHandheldPrefab != null)
-                DisableRigidbody(PoisonJarHandheldPrefab);
-
-            PoisonJarPrefab = Load<GameObject>("posion_bottle.prefab");
-            if (PoisonJarPrefab != null)
-            {
-                EnsureNetworkIdentity(PoisonJarPrefab, 0xD001A501u);
-                DisableRigidbody(PoisonJarPrefab);
-            }
-
-            PoisonSplashPrefab = Load<GameObject>("poison_cloud_vfx.prefab");
-            if (PoisonSplashPrefab != null)
-                StripNetworkComponents(PoisonSplashPrefab);
-        }
-
-        private static void LoadDroneSwarmAssets()
-        {
-            DroneControllerPrefab = Load<GameObject>("drone_swarm_tablet.prefab");
-            if (DroneControllerPrefab != null)
-                DisableRigidbody(DroneControllerPrefab);
-
-            DronePrefab = Load<GameObject>("drone.prefab");
-            if (DronePrefab != null)
-            {
-                EnsureNetworkIdentity(DronePrefab, 0xD40E0001u);
-                // Rigidbody starts kinematic; DroneBehaviour sets it up in Start().
-                DisableRigidbody(DronePrefab);
-            }
-
-            DroneExplosionVfxPrefab = Load<GameObject>("drone_explosion.prefab");
-            if (DroneExplosionVfxPrefab != null)
-                StripNetworkComponents(DroneExplosionVfxPrefab);
-        }
-
-        private static void LoadGravityGunAssets()
-        {
-            ElectricWhipHandheldPrefab = Load<GameObject>("gravity_gun.prefab");
-            DisableRigidbody(ElectricWhipHandheldPrefab);
-
-            /// Local-only VFX parented to the tether target while the session is active.
-            /// Not networked — each client instantiates its own copy.
-            /// Bundle asset name: <c>gravity_tether_vfx.prefab</c>
-            GravityGunTetherVfxPrefab = Load<GameObject>("gravity_gun_vfx.prefab");
-            if (GravityGunTetherVfxPrefab != null)
-                StripNetworkComponents(GravityGunTetherVfxPrefab);
-        }
-
-        private static void LoadRocketTetherAssets()
-        {
-            RocketTetherIcon = LoadSprite("rocket_tether_icon.png");
-            RocketTetherPrefab = Load<GameObject>("player_linker.prefab");
-            if (RocketTetherPrefab != null)
-                DisableRigidbody(RocketTetherPrefab);
-            RocketTetherRocketPrefab = Load<GameObject>("player_linker_rocket.prefab");
-            if (RocketTetherRocketPrefab != null)
-                StripNetworkComponents(RocketTetherRocketPrefab);
-        }
-
-        private static void LoadTeleporterAssets()
-        {
-            // Icon — falls back to the rocket launcher icon if absent (handled by ItemRegistry).
-            // Bundle asset name: teleporter_icon.png
-            // (TeleporterIcon is already loaded in LoadSpritesAndTextures; this method only
-            //  loads the prefabs that are not needed until the item is actually used.)
-
-            // Handheld model shown while the item is equipped.
-            // Bundle asset name: teleporter_handheld.prefab
-            TeleporterHandheldPrefab = Load<GameObject>("teleporter_handheld.prefab");
-            if (TeleporterHandheldPrefab != null)
-                DisableRigidbody(TeleporterHandheldPrefab);
-
-            // Local-only particle VFX spawned at origin and destination on all clients.
-            // Not networked — no NetworkIdentity needed.
-            // Bundle asset name: teleporter_vfx.prefab
-            TeleporterVfxPrefab = PositionSwapSmokePrefab; // Load<GameObject>("teleporter_vfx.prefab");
-            if (TeleporterVfxPrefab != null)
-                StripNetworkComponents(TeleporterVfxPrefab);
-        }
-
-        private static void LoadSuperDonutAssets()
-        {
-            // Optional dedicated assets — falls back to Donut assets at runtime if absent.
-            // Add super_donut_icon.png and super_donut_model.prefab to the bundle to override.
-            SuperDonutIcon = _bundle.LoadAsset<Texture2D>("super_donut_icon.png") is Texture2D tex
-                ? Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f))
-                : null;
-
-            SuperDonutHandheldPrefab = _bundle.LoadAsset<GameObject>("super_donut_model.prefab");
-            if (SuperDonutHandheldPrefab != null)
-                DisableRigidbody(SuperDonutHandheldPrefab);
-        }
-
-        private static void LoadRedBullAssets()
-        {
-            RedBullHandheldPrefab = Load<GameObject>("redbull.prefab");
-            if (RedBullHandheldPrefab != null)
-                DisableRigidbody(RedBullHandheldPrefab);
-
-            RedBullTrailPrefab = Load<GameObject>("red_bull_trail.prefab");
-            if (RedBullTrailPrefab != null)
-                StripNetworkComponents(RedBullTrailPrefab);
-        }
-
-        private static void LoadJetpackAssets()
-        {
-            JetpackIcon = LoadSprite("jetpack_icon.png");
-
-            JetpackHandheldPrefab = Load<GameObject>("jetpack_handheld.prefab");
-            if (JetpackHandheldPrefab != null)
-                DisableRigidbody(JetpackHandheldPrefab);
-
-            // Both prefabs below are local-only (instantiated without a network context),
-            // so Mirror components must be stripped to prevent NullReferenceExceptions —
-            // same pattern as RedBullTrailPrefab and BlackHoleVfxPrefab.
-            JetpackEquippedPrefab = Load<GameObject>("jetpack.prefab");
-            if (JetpackEquippedPrefab != null)
-                StripNetworkComponents(JetpackEquippedPrefab);
-
-            JetpackParticlePrefab = Load<GameObject>("jetpack_particles.prefab");
-            if (JetpackParticlePrefab != null)
-                StripNetworkComponents(JetpackParticlePrefab);
-        }
-
-        private static void LoadFirstPlaceStarAssets()
-        {
-            GoldStarPrefab = Load<GameObject>("gold_star.prefab");
-            if (GoldStarPrefab != null)
-                StripNetworkComponents(GoldStarPrefab);
-        }
-
-        private static void LoadSpinachAssets()
-        {
-            SpinachPrefab = Load<GameObject>("spinach.prefab");
-            if (WallHandheldPrefab != null)
-            {
-                DisableRigidbody(SpinachPrefab);
-            }
-            SpinachTrailPrefab = Load<GameObject>("spinach_trail.prefab");
-            if (SpinachTrailPrefab != null)
-                StripNetworkComponents(SpinachTrailPrefab);
-        }
-
-        private static void LoadFlamethrowerAssets()
-        {
-            FlamethrowerIcon = LoadSprite("flamethrower_icon.png");
-
-            FlamethrowerHandheldPrefab = Load<GameObject>("flamethrower.prefab");
-            if (FlamethrowerHandheldPrefab != null)
-                DisableRigidbody(FlamethrowerHandheldPrefab);
-
-            // The particle prefab is local-only (not networked). A CapsuleCollider
-            // trigger should be baked into the prefab in the Unity project; the
-            // FlamethrowerHitDetector script is added to it at runtime on the
-            // local shooter's machine only.
-            FlamethrowerParticlePrefab = Load<GameObject>("flamethrower_vfx.prefab");
-            if (FlamethrowerParticlePrefab != null)
-                StripNetworkComponents(FlamethrowerParticlePrefab);
-
-            FlamethrowerVictimFirePrefab = Load<GameObject>("flamethrower_victim_fire.prefab");
-            if (FlamethrowerVictimFirePrefab != null)
-                StripNetworkComponents(FlamethrowerVictimFirePrefab);
-        }
-
-        private static void LoadRocketTetherGrenadeAssets()
-        {
-            // Icon — fall back to Rocket Tether icon if no dedicated asset exists.
-            RocketTetherGrenadeIcon =
-                LoadSprite("rocket_tether_grenade_icon.png") ?? RocketTetherIcon;
-
-            // Networked grenade projectile — null if no dedicated asset.
-            // Do NOT fall back to PoisonJarPrefab; it would cause a Mirror
-            // double-registration error (same GameObject, two RegisterPrefab calls).
-            RocketTetherGrenadePrefab = Load<GameObject>("toy_rocket.prefab");
-            if (RocketTetherGrenadePrefab != null)
-            {
-                EnsureNetworkIdentity(RocketTetherGrenadePrefab, 0xE7000001u);
-                DisableRigidbody(RocketTetherGrenadePrefab);
-            }
-
-            RocketTetherGrenadeExplosionVfx = Load<GameObject>(
-                "rocket_tether_grenade_explosion_vfx.prefab"
-            );
-            if (RocketTetherGrenadePrefab != null)
-            {
-                EnsureNetworkIdentity(RocketTetherGrenadePrefab, 0xE7000002u);
-                DisableRigidbody(RocketTetherGrenadePrefab);
-            }
-        }
-
-        /// Ensures a prefab has a NetworkIdentity with a stable assetId so Mirror
-        /// can spawn it on clients. If the prefab has no NetworkIdentity one is added.
-        /// If the baked-in assetId is 0 (bundle built without Mirror's editor tool),
-        /// the stable uint is written via reflection so RegisterPrefab doesn't skip it.
+        /// Loads from the bundle; returns null silently if the asset is absent.
+        private static T LoadOptionalRaw<T>(AssetBundle bundle, string name)
+            where T : Object => bundle.LoadAsset<T>(name);
+
+        /// Loads from the already-open bundle (used in ApplyPostLoadMutations).
+        private static T LoadRaw<T>(string name)
+            where T : Object => _bundle?.LoadAsset<T>(name);
+
+        /// Ensures the prefab has a NetworkIdentity with a stable assetId.
+        /// If no NetworkIdentity exists one is added.  If the baked-in assetId
+        /// is 0 (bundle built without Mirror's editor tool), the stable uint is
+        /// written via reflection so Mirror's RegisterPrefab doesn't skip it.
         private static void EnsureNetworkIdentity(GameObject prefab, uint stableAssetId)
         {
             if (prefab == null)
@@ -907,36 +902,29 @@ namespace IssaPlugin.Items
                 ni = prefab.AddComponent<NetworkIdentity>();
                 assetIdField?.SetValue(ni, stableAssetId);
                 IssaPluginPlugin.Log.LogInfo(
-                    $"[Assets] Added NetworkIdentity to {prefab.name} with assetId={stableAssetId}."
+                    $"[Assets] Added NetworkIdentity to {prefab.name} (assetId={stableAssetId:X8})."
                 );
             }
             else if (ni.assetId == 0)
             {
                 assetIdField?.SetValue(ni, stableAssetId);
                 IssaPluginPlugin.Log.LogInfo(
-                    $"[Assets] {prefab.name} had assetId=0; set stable assetId={stableAssetId}."
+                    $"[Assets] {prefab.name} had assetId=0; set stable assetId={stableAssetId:X8}."
                 );
             }
             else
             {
                 IssaPluginPlugin.Log.LogInfo(
-                    $"[Assets] {prefab.name} already has NetworkIdentity (assetId={ni.assetId})."
+                    $"[Assets] {prefab.name} already has NetworkIdentity (assetId={ni.assetId:X8})."
                 );
             }
 
             GameObject.DontDestroyOnLoad(prefab);
         }
 
-        // Helper that warns on null.
-        private static T Load<T>(string name)
-            where T : UnityEngine.Object
-        {
-            var asset = _bundle.LoadAsset<T>(name);
-            if (asset == null)
-                IssaPluginPlugin.Log.LogError($"[Assets] Missing asset: {name}");
-            return asset;
-        }
-
+        /// Sets a Rigidbody to kinematic/no-gravity so a prefab template sitting
+        /// at the world origin does not participate in physics.
+        /// The relevant behaviour re-enables it in Start() when a real instance spawns.
         private static void DisableRigidbody(GameObject go)
         {
             if (go == null)
@@ -944,16 +932,15 @@ namespace IssaPlugin.Items
             var rb = go.GetComponent<Rigidbody>();
             if (rb == null)
                 return;
-
             rb.isKinematic = true;
             rb.useGravity = false;
         }
 
-        /// Destroys Mirror network tick components from a prefab that will only
-        /// ever be used as a local visual (held item / dropped model).  Without
-        /// this, NetworkTransformReliable and NetworkRigidbodyReliable start
-        /// updating every frame and throw NullReferenceException because the
-        /// prefab instance has no network context.
+        /// Removes Mirror NetworkBehaviour and NetworkIdentity components from a
+        /// prefab that will only ever be used as a local-only visual.
+        /// Without this, NetworkTransformReliable and NetworkRigidbodyReliable start
+        /// updating every frame and throw NullReferenceException because the prefab
+        /// instance has no network context.
         private static void StripNetworkComponents(GameObject go)
         {
             if (go == null)
@@ -962,29 +949,6 @@ namespace IssaPlugin.Items
                 Object.DestroyImmediate(c);
             foreach (var ni in go.GetComponentsInChildren<NetworkIdentity>(true))
                 Object.DestroyImmediate(ni);
-        }
-
-        private static Sprite LoadSprite(string name)
-        {
-            var tex = Load<Texture2D>(name);
-            if (tex == null)
-                return null;
-            return Sprite.Create(
-                tex,
-                new Rect(0, 0, tex.width, tex.height),
-                new Vector2(0.5f, 0.5f)
-            );
-        }
-
-        private static Texture2D LoadTexture2D(string name)
-        {
-            return Load<Texture2D>(name);
-        }
-
-        public static void Unload()
-        {
-            _bundle?.Unload(true);
-            _bundle = null;
         }
     }
 }
