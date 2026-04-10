@@ -6,7 +6,7 @@ For more information as well as the mod's source code, please see [the mod's Git
 
 ## Regarding the **Frozen Fairway Update**
 
-GitHub release v0.0.25 re-enables IssaMod/IssaPlugin up through Hotfix 4 of the **Frozen Fairway Update**. The mod is very under-tested at this point, so there are likely bugs and strange interactions with the new game mechanics. The custom items also do appear in the pause menu, but their spawn weights are not updated properly. This will be addressed in a future update.
+Release v0.0.25 re-enables IssaMod/IssaPlugin up through Hotfix 4 of the **Frozen Fairway Update**. The mod is very under-tested at this point, so there are likely bugs and strange interactions with the new game mechanics. The custom items also do appear in the pause menu, but their spawn weights are not updated properly. This will be addressed in a future update.
 
 ## Items
 
