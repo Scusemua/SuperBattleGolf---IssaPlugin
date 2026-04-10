@@ -180,6 +180,7 @@ All settings take effect immediately without restarting the game.
 ## Known Issues / Notes
 
 - The Donut, AC-130, and Stealth Bomber all appear as valid lock-on targets for the rocket launcher. This is intentional.
+- Hitting a golf ball with a fully-charged baseball bat will make the ball go backwards, as of the new Frozen Fairway update.
 
 ---
 
