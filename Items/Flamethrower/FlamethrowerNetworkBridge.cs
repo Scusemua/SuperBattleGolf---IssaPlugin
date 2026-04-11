@@ -59,7 +59,6 @@ namespace IssaPlugin.Items
         private GameObject _flameParticles; // shown on all clients while this player fires
         private GameObject _victimFireParticles; // shown on all clients while this player burns
         private FlamethrowerHitDetector _hitDetector; // non-null only on the local shooter's instance
-        private Camera _camera;
         private bool _wasAimedIn;
 
         // ================================================================
@@ -289,43 +288,21 @@ namespace IssaPlugin.Items
         private void LateUpdate()
         {
             var localInfo = GameManager.LocalPlayerInfo;
-            bool flameThrowerEquipped =
+            bool flamethrowerEquipped =
                 localInfo?.Inventory != null
                 && localInfo.Inventory.GetEffectivelyEquippedItem(true)
                     == ItemRegistry.FlamethrowerItemType;
 
-            if (!flameThrowerEquipped)
+            if (!flamethrowerEquipped)
                 return;
 
+            // Play the aim sound once on right-click entry.
             bool aimedIn = Mouse.current?.rightButton.isPressed ?? false;
-
-            // Play the aim sound once on scope entry.
             if (!_wasAimedIn && aimedIn)
                 localInfo.PlayerAudio.PlayItemAimForAllClients(ItemType.ElephantGun);
-
             _wasAimedIn = aimedIn;
 
-            // Always align the player model to the camera's horizontal facing so the
-            // flame particles track where the camera is pointing, regardless of whether
-            // the player is firing or has right-click held.
-            CorrectAimRotation();
-        }
-
-        private void CorrectAimRotation()
-        {
-            var li = GameManager.LocalPlayerInfo;
-            if (li?.Movement == null)
-                return;
-            _camera ??= Camera.main;
-            var cam = _camera;
-            if (cam == null)
-                return;
-            Vector3 fwd = cam.transform.forward;
-            fwd.y = 0f;
-            if (fwd.sqrMagnitude < 0.01f)
-                return;
-            li.Movement.transform.rotation =
-                Quaternion.LookRotation(fwd.normalized) * Quaternion.Euler(0f, 65f, 0f);
+            // Rotation correction is handled by GunCrosshairOverlay.LateUpdate.
         }
 
         // ================================================================

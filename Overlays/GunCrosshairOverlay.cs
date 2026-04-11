@@ -5,14 +5,21 @@ using UnityEngine.InputSystem;
 namespace IssaPlugin.Overlays
 {
     /// <summary>
-    /// Draws a circular crosshair while the AK47 is equipped AND the player is aiming
-    /// (right-click held). The circle radius maps the inaccuracy config angle onto
-    /// screen space — bullets land anywhere within the ring.
+    /// Draws a circular crosshair for gun-type items:
+    ///   - AK47: shown while right-click is held; ring radius maps the inaccuracy
+    ///     config angle onto screen space so bullets land within the ring.
+    ///   - Flamethrower: always shown; fixed small ring indicating centre aim.
     ///
-    /// Rendered with GL.QUADS for a fixed-pixel-width ring regardless of circle size.
+    /// Also corrects the player model's horizontal rotation each frame so the
+    /// held weapon tracks the camera:
+    ///   - AK47: corrected while right-click is held.
+    ///   - Flamethrower: corrected always so flame particles track the camera
+    ///     regardless of fire or aim-in state.
+    ///
+    /// Rendered with GL.QUADS for a fixed-pixel-width ring regardless of size.
     /// A black shadow ring is drawn first for visibility against bright backgrounds.
     /// </summary>
-    public class AK47CrosshairOverlay : MonoBehaviour
+    public class GunCrosshairOverlay : MonoBehaviour
     {
         private Material _mat;
         private Camera _camera;
@@ -131,31 +138,36 @@ namespace IssaPlugin.Overlays
 
         private void LateUpdate()
         {
-            // Force the character root to face the camera's aim direction every frame
-            // while scoped. The movement system lerps toward camera facing on its own
-            // (IsAimingItem=true via the base game path), but without IsAimingSwing=true
-            // the lerp is slow enough that the player sees a constant CCW offset for the
-            // first several frames. LateUpdate runs after all Update() calls, so this
-            // wins the frame for rendering and networking without fighting the physics step.
-            // Only show while the AK47 is equipped.
-            if (
-                GameManager.LocalPlayerInfo?.Inventory.GetEffectivelyEquippedItem(true)
-                != ItemRegistry.AK47ItemType
-            )
-            {
+            // Force the character root to face the camera's aim direction every frame.
+            // LateUpdate runs after all Update() calls so this wins the frame for
+            // rendering and networking without fighting the physics step.
+            var li = GameManager.LocalPlayerInfo;
+            if (li?.Inventory == null)
                 return;
-            }
 
-            // Only show while aiming in (right-click held).
             if (Mouse.current == null || !Mouse.current.rightButton.isPressed)
+                return;
+
+            var equipped = li.Inventory.GetEffectivelyEquippedItem(true);
+
+            if (equipped == ItemRegistry.AK47ItemType)
+            {
+                CorrectAimRotation();
+                return;
+            }
+
+            if (equipped != ItemRegistry.FlamethrowerItemType)
             {
                 return;
             }
 
-            CorrectAimRotation();
+            if (Mouse.current.leftButton.isPressed)
+                CorrectAimRotation(0f);
+            else
+                CorrectAimRotation(65f);
         }
 
-        private void CorrectAimRotation()
+        private void CorrectAimRotation(float yDegrees = 0f)
         {
             var li = GameManager.LocalPlayerInfo;
             if (li?.Movement == null)
@@ -169,7 +181,7 @@ namespace IssaPlugin.Overlays
             if (fwd.sqrMagnitude < 0.01f)
                 return;
             li.Movement.transform.rotation =
-                Quaternion.LookRotation(fwd.normalized) * Quaternion.Euler(0f, 5f, 0f);
+                Quaternion.LookRotation(fwd.normalized) * Quaternion.Euler(0f, yDegrees, 0f);
         }
 
         private static void DrawRing(float cx, float cy, float radius, Color color)

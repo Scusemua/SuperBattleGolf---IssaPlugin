@@ -55,7 +55,7 @@ namespace IssaPlugin
             gameObject.AddComponent<SniperScopeOverlay>();
             gameObject.AddComponent<BearOverlay>();
             gameObject.AddComponent<BearHealthBarOverlay>();
-            gameObject.AddComponent<AK47CrosshairOverlay>();
+            gameObject.AddComponent<GunCrosshairOverlay>();
             gameObject.AddComponent<HitNotificationOverlay>();
             gameObject.AddComponent<ItemWarningOverlay>();
             gameObject.AddComponent<PositionSwapOverlay>();
