@@ -459,7 +459,7 @@ namespace IssaPlugin.Items
                 ), // TODO: assign a stable assetId
                 LocalVfxPrefab(
                     p => RocketTetherGrenadeExplosionVfx = p,
-                    "rocket_tether_grenade_explosion.prefab"
+                    "rocket_tether_grenade_explosion_vfx.prefab"
                 ),
                 // ── Spinach ───────────────────────────────────────────────────
                 // TODO: replace asset names with the real bundle names once known.
