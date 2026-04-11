@@ -66,9 +66,29 @@ namespace IssaPlugin.Overlays
             (GlobalConfig.PoolMobility,  "Mob."),
         };
 
+        // Tier groupings — purely a UI concept, no effect on stored config.
+        // Items are bucketed by DefaultPoolWeight. The defaultWeight here
+        // is also the initial value shown in the tier batch-set fields.
+        private static readonly (string label, float defaultWeight)[] TierDefs =
+        {
+            ("Common",    15f),
+            ("Uncommon",  10f),
+            ("Rare",       5f),
+            ("Epic",       3f),
+            ("Legendary",  1f),
+        };
+
+        // [itemIndex] → TierDefs index.  Populated in InitWorkingCopy.
+        private int[] _itemTierIndex;
+
+        // [tierIndex] → whether that tier section is expanded in the scroll view.
+        // Preserved across Open/Close so the user's layout preference sticks.
+        private bool[] _tierExpanded;
+
         // Styles (initialised lazily on first OnGUI call)
         private GUIStyle _styleHeader;
         private GUIStyle _styleItemRow;
+        private GUIStyle _styleTierHeader;
         private GUIStyle _styleIconBox;
         private GUIStyle _styleReadOnly;
         private GUIStyle _styleColHeader;
@@ -144,6 +164,41 @@ namespace IssaPlugin.Overlays
                     _textBuffers[$"{i}_{p}"] = _workingPoolWeights[i, p].ToString("F1");
                 }
             }
+
+            // Compute tier index for each item and seed tier batch-set text buffers.
+            _itemTierIndex = new int[items.Count];
+            for (int i = 0; i < items.Count; i++)
+                _itemTierIndex[i] = GetTierIndex(items[i].DefaultPoolWeight);
+
+            // Preserve expansion state across opens; default to all expanded.
+            if (_tierExpanded == null || _tierExpanded.Length != TierDefs.Length)
+            {
+                _tierExpanded = new bool[TierDefs.Length];
+                for (int t = 0; t < TierDefs.Length; t++)
+                    _tierExpanded[t] = true;
+            }
+
+            // Seed tier batch-set buffers from the first item in each tier (so the
+            // field shows a meaningful starting value rather than the bare default).
+            for (int t = 0; t < TierDefs.Length; t++)
+            {
+                for (int p = 0; p < 6; p++)
+                {
+                    float seed = TierDefs[t].defaultWeight;
+                    for (int i = 0; i < items.Count; i++)
+                        if (_itemTierIndex[i] == t) { seed = _workingPoolWeights[i, p]; break; }
+                    _textBuffers[$"t{t}_{p}"] = seed.ToString("F1");
+                }
+            }
+        }
+
+        /// <summary>Maps a DefaultPoolWeight to a TierDefs index (0 = Common … 4 = Legendary).</summary>
+        private static int GetTierIndex(float defaultWeight)
+        {
+            for (int t = 0; t < TierDefs.Length - 1; t++)
+                if (defaultWeight >= TierDefs[t].defaultWeight)
+                    return t;
+            return TierDefs.Length - 1;
         }
 
         private void ApplyAndSync()
@@ -239,12 +294,25 @@ namespace IssaPlugin.Overlays
             GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.Height(1));
             GUILayout.Space(2);
 
-            // ── Item rows (scrollable) ────────────────────────────────────────
+            // ── Item rows grouped by tier (scrollable) ────────────────────────
             _scrollPos = GUILayout.BeginScrollView(_scrollPos);
 
             var items = ItemRegistry.AllItems;
-            for (int i = 0; i < items.Count; i++)
-                DrawItemRow(i, items[i], isHost);
+            for (int t = 0; t < TierDefs.Length; t++)
+            {
+                // Skip tiers with no items.
+                bool hasTierItems = false;
+                for (int i = 0; i < items.Count; i++)
+                    if (_itemTierIndex[i] == t) { hasTierItems = true; break; }
+                if (!hasTierItems) continue;
+
+                DrawTierHeader(t, items, isHost);
+
+                if (_tierExpanded[t])
+                    for (int i = 0; i < items.Count; i++)
+                        if (_itemTierIndex[i] == t)
+                            DrawItemRow(i, items[i], isHost);
+            }
 
             GUILayout.EndScrollView();
 
@@ -333,6 +401,82 @@ namespace IssaPlugin.Overlays
             GUILayout.EndHorizontal();
         }
 
+        // ── Tier header row ───────────────────────────────────────────────────
+
+        private void DrawTierHeader(int t, System.Collections.Generic.IReadOnlyList<CustomItemDefinition> items, bool isHost)
+        {
+            GUILayout.BeginHorizontal(_styleTierHeader, GUILayout.Height(32));
+
+            // ── Expand/collapse ───────────────────────────────────────────────
+            string arrow = _tierExpanded[t] ? "▼" : "▶";
+            if (GUILayout.Button(arrow, GUILayout.Width(24), GUILayout.Height(26)))
+                _tierExpanded[t] = !_tierExpanded[t];
+
+            GUILayout.Space(4);
+
+            // ── Tier name — matches column widths used in item rows ───────────
+            // Item row: [28 icon][4 sp][128 name] = 160 before "On" column.
+            // Header:   [24 btn][4 sp][128 label] = 156, then 4 sp to reach 160.
+            GUILayout.Label(TierDefs[t].label, _styleHeader, GUILayout.Width(128));
+            GUILayout.Space(4);
+
+            // ── Batch enabled toggle ──────────────────────────────────────────
+            GUI.enabled = isHost;
+            bool allOn = true;
+            for (int i = 0; i < items.Count; i++)
+                if (_itemTierIndex[i] == t && !_workingItemEnabled[i]) { allOn = false; break; }
+
+            bool newAll = GUILayout.Toggle(
+                allOn,
+                new GUIContent("", $"Enable / disable all {TierDefs[t].label} items at once."),
+                GUILayout.Width(20), GUILayout.Height(26));
+            if (isHost && newAll != allOn)
+                for (int i = 0; i < items.Count; i++)
+                    if (_itemTierIndex[i] == t)
+                        _workingItemEnabled[i] = newAll;
+            GUI.enabled = true;
+
+            GUILayout.Space(10);
+
+            // ── Batch pool-weight fields ──────────────────────────────────────
+            // Editing any field immediately updates every item in this tier
+            // for that pool column, and refreshes all their text buffers.
+            foreach (var (p, _) in PoolColumns)
+            {
+                string key = $"t{t}_{p}";
+                if (!_textBuffers.ContainsKey(key))
+                    _textBuffers[key] = TierDefs[t].defaultWeight.ToString("F1");
+
+                if (isHost)
+                {
+                    string prev = _textBuffers[key];
+                    string next = GUILayout.TextField(prev, GUILayout.Width(50));
+                    if (next != prev)
+                    {
+                        _textBuffers[key] = next;
+                        if (float.TryParse(next, out float parsed))
+                        {
+                            float v = Mathf.Clamp(parsed, 0f, 999f);
+                            for (int i = 0; i < items.Count; i++)
+                            {
+                                if (_itemTierIndex[i] != t) continue;
+                                _workingPoolWeights[i, p] = v;
+                                _textBuffers[$"{i}_{p}"] = v.ToString("F1");
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    GUILayout.Label(_textBuffers[key], _styleReadOnly, GUILayout.Width(50));
+                }
+
+                GUILayout.Space(4);
+            }
+
+            GUILayout.EndHorizontal();
+        }
+
         // ── Tooltip rendering ─────────────────────────────────────────────────
 
         private void DrawTooltipInWindow()
@@ -397,6 +541,13 @@ namespace IssaPlugin.Overlays
             {
                 padding = new RectOffset(4, 4, 2, 2),
                 margin  = new RectOffset(0, 0, 1, 1),
+            };
+
+            _styleTierHeader = new GUIStyle(GUI.skin.box)
+            {
+                padding  = new RectOffset(4, 4, 2, 2),
+                margin   = new RectOffset(0, 0, 3, 1),
+                normal   = { background = MakeTex(2, 2, new Color(0.22f, 0.22f, 0.28f, 1f)) },
             };
 
             _styleIconBox = new GUIStyle(GUI.skin.box) { padding = new RectOffset(2, 2, 2, 2) };
