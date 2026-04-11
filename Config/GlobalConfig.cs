@@ -50,24 +50,27 @@ namespace IssaPlugin
             && (_itemWarningEnabledEntries.TryGetValue((int)itemType, out var e) ? e.Value : false);
 
         // ── Pool index constants — match the base game's fixed pool indices exactly ──
-        public const int PoolAhead    = 0;
-        public const int PoolLead     = 1;
-        public const int PoolBehind50  = 2;
+        public const int PoolAhead = 0;
+        public const int PoolLead = 1;
+        public const int PoolBehind50 = 2;
         public const int PoolBehind125 = 3;
         public const int PoolBehind200 = 4;
         public const int PoolMobility = 5;
 
         private static readonly (int pool, string suffix)[] PoolSuffixes =
         {
-            (PoolLead,      "Lead"),
-            (PoolBehind50,  "Behind50"),
+            (PoolLead, "Lead"),
+            (PoolBehind50, "Behind50"),
             (PoolBehind125, "Behind125"),
             (PoolBehind200, "Behind200"),
-            (PoolAhead,     "Ahead"),
-            (PoolMobility,  "Mobility"),
+            (PoolAhead, "Ahead"),
+            (PoolMobility, "Mobility"),
         };
 
-        private readonly Dictionary<(int itemType, int pool), ConfigEntry<float>> _poolWeightEntries = new();
+        private readonly Dictionary<
+            (int itemType, int pool),
+            ConfigEntry<float>
+        > _poolWeightEntries = new();
 
         public float GetItemPoolWeight(ItemType itemType, int poolIndex) =>
             _poolWeightEntries.TryGetValue(((int)itemType, poolIndex), out var e) ? e.Value : 0f;
@@ -181,7 +184,13 @@ namespace IssaPlugin
             Reg(cfg, _itemEnabledEntries, 124, "TeleporterEnabled", "Teleporter");
             Reg(cfg, _itemEnabledEntries, 125, "SpinachEnabled", "Spinach");
             Reg(cfg, _itemEnabledEntries, 126, "FlamethrowerEnabled", "Flamethrower");
-            Reg(cfg, _itemEnabledEntries, 127, "RocketTetherGrenadeEnabled", "Rocket Tether Grenade");
+            Reg(
+                cfg,
+                _itemEnabledEntries,
+                127,
+                "RocketTetherGrenadeEnabled",
+                "Rocket Tether Grenade"
+            );
 
             // ── Warnings ───────────────────────────────────────────────────────
             WarningsEnabled = cfg.Bind(
@@ -250,34 +259,118 @@ namespace IssaPlugin
                     $"Show a warning to all other players when {label} is used."
                 );
 
-            RegWarn(cfg, _itemWarningEnabledEntries, 100, "BaseballBatWarning", "Baseball Bat", false);
+            RegWarn(
+                cfg,
+                _itemWarningEnabledEntries,
+                100,
+                "BaseballBatWarning",
+                "Baseball Bat",
+                false
+            );
             RegWarn(cfg, _itemWarningEnabledEntries, 101, "BomberWarning", "Stealth Bomber", true);
-            RegWarn(cfg, _itemWarningEnabledEntries, 102, "MissileWarning", "Predator Missile", true);
+            RegWarn(
+                cfg,
+                _itemWarningEnabledEntries,
+                102,
+                "MissileWarning",
+                "Predator Missile",
+                true
+            );
             RegWarn(cfg, _itemWarningEnabledEntries, 103, "AC130Warning", "AC-130 Gunship", true);
             RegWarn(cfg, _itemWarningEnabledEntries, 104, "FreezeWarning", "Freeze World", false);
-            RegWarn(cfg, _itemWarningEnabledEntries, 105, "LowGravityWarning", "Low Gravity", false);
-            RegWarn(cfg, _itemWarningEnabledEntries, 106, "SniperRifleWarning", "Sniper Rifle", false);
+            RegWarn(
+                cfg,
+                _itemWarningEnabledEntries,
+                105,
+                "LowGravityWarning",
+                "Low Gravity",
+                false
+            );
+            RegWarn(
+                cfg,
+                _itemWarningEnabledEntries,
+                106,
+                "SniperRifleWarning",
+                "Sniper Rifle",
+                false
+            );
             RegWarn(cfg, _itemWarningEnabledEntries, 107, "DonutWarning", "Donut", true);
             RegWarn(cfg, _itemWarningEnabledEntries, 108, "JavelinWarning", "Javelin", false);
-            RegWarn(cfg, _itemWarningEnabledEntries, 109, "StickyGrenadeWarning", "Sticky Grenade", false);
+            RegWarn(
+                cfg,
+                _itemWarningEnabledEntries,
+                109,
+                "StickyGrenadeWarning",
+                "Sticky Grenade",
+                false
+            );
             RegWarn(cfg, _itemWarningEnabledEntries, 110, "BearWarning", "Bear", true);
             RegWarn(cfg, _itemWarningEnabledEntries, 111, "NukeWarning", "Nuke", true);
-            RegWarn(cfg, _itemWarningEnabledEntries, 112, "BlackHoleGrenadeWarning", "Black Hole Grenade", false);
-            RegWarn(cfg, _itemWarningEnabledEntries, 113, "PlaceableWallWarning", "Placeable Wall", false);
+            RegWarn(
+                cfg,
+                _itemWarningEnabledEntries,
+                112,
+                "BlackHoleGrenadeWarning",
+                "Black Hole Grenade",
+                false
+            );
+            RegWarn(
+                cfg,
+                _itemWarningEnabledEntries,
+                113,
+                "PlaceableWallWarning",
+                "Placeable Wall",
+                false
+            );
             RegWarn(cfg, _itemWarningEnabledEntries, 114, "AK47Warning", "AK-47", false);
             RegWarn(cfg, _itemWarningEnabledEntries, 115, "HarrierWarning", "Harrier Jet", true);
-            RegWarn(cfg, _itemWarningEnabledEntries, 116, "PositionSwapWarning", "Position Swap", false);
+            RegWarn(
+                cfg,
+                _itemWarningEnabledEntries,
+                116,
+                "PositionSwapWarning",
+                "Position Swap",
+                false
+            );
             RegWarn(cfg, _itemWarningEnabledEntries, 117, "PoisonJarWarning", "Poison Jar", false);
             RegWarn(cfg, _itemWarningEnabledEntries, 118, "DroneSwarmWarning", "Drone Swarm", true);
             RegWarn(cfg, _itemWarningEnabledEntries, 119, "RedBullWarning", "Red Bull", false);
             RegWarn(cfg, _itemWarningEnabledEntries, 120, "SuperDonutWarning", "Super Donut", true);
-            RegWarn(cfg, _itemWarningEnabledEntries, 121, "GravityGunWarning", "Gravity Gun", false);
-            RegWarn(cfg, _itemWarningEnabledEntries, 122, "RocketTetherWarning", "Rocket Tether", false);
+            RegWarn(
+                cfg,
+                _itemWarningEnabledEntries,
+                121,
+                "GravityGunWarning",
+                "Gravity Gun",
+                false
+            );
+            RegWarn(
+                cfg,
+                _itemWarningEnabledEntries,
+                122,
+                "RocketTetherWarning",
+                "Rocket Tether",
+                false
+            );
             RegWarn(cfg, _itemWarningEnabledEntries, 123, "JetpackWarning", "Jetpack", false);
             RegWarn(cfg, _itemWarningEnabledEntries, 124, "TeleporterWarning", "Teleporter", false);
             RegWarn(cfg, _itemWarningEnabledEntries, 125, "SpinachWarning", "Spinach", false);
-            RegWarn(cfg, _itemWarningEnabledEntries, 126, "FlamethrowerWarning", "Flamethrower", false);
-            RegWarn(cfg, _itemWarningEnabledEntries, 127, "RocketTetherGrenadeWarning", "Rocket Tether Grenade", false);
+            RegWarn(
+                cfg,
+                _itemWarningEnabledEntries,
+                126,
+                "FlamethrowerWarning",
+                "Flamethrower",
+                false
+            );
+            RegWarn(
+                cfg,
+                _itemWarningEnabledEntries,
+                127,
+                "RocketTetherGrenadeWarning",
+                "Rocket Tether Grenade",
+                false
+            );
 
             // GlobalConfig.BindAllItemPoolWeights binds all per-pool weights centrally.
             BindAllItemPoolWeights(cfg);
@@ -293,8 +386,8 @@ namespace IssaPlugin
                         "ItemBoxSpawns",
                         $"{def.ConfigKeyPrefix}Weight{suffix}",
                         def.DefaultPoolWeight,
-                        $"Spawn weight for {def.DisplayName} in the '{suffix}' pool. " +
-                        $"0 = never spawns in this pool."
+                        $"Spawn weight for {def.DisplayName} in the '{suffix}' pool. "
+                            + $"0 = never spawns in this pool."
                     );
                 }
             }
