@@ -385,7 +385,7 @@ namespace IssaPlugin
                     _poolWeightEntries[((int)def.ItemType, pool)] = cfg.Bind(
                         "ItemBoxSpawns",
                         $"{def.ConfigKeyPrefix}Weight{suffix}",
-                        def.DefaultPoolWeight,
+                        def.GetDefaultPoolWeight(pool),
                         $"Spawn weight for {def.DisplayName} in the '{suffix}' pool. "
                             + $"0 = never spawns in this pool."
                     );
