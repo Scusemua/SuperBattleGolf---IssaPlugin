@@ -12,7 +12,7 @@ namespace IssaPlugin.Items
         public override Sprite Icon => AssetLoader.AC130Icon;
         public override GameObject HeldModelPrefab => AssetLoader.Ac130TabletPrefab;
         public override int MaxUses => (int)ModConfig.AC130.Uses.Value;
-        public override float DefaultPoolWeight => 3f;
+        public override float DefaultPoolWeight => 2f;
         public override Key GiveKey => ModConfig.AC130.GiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)

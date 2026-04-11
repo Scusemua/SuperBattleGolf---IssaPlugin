@@ -457,7 +457,7 @@ namespace IssaPlugin.Overlays
 
             // ── Expand/collapse ───────────────────────────────────────────────
             string arrow = _tierExpanded[t] ? "▼" : "▶";
-            if (GUILayout.Button(arrow, GUILayout.Width(24), GUILayout.Height(26)))
+            if (GUILayout.Button(arrow, GUILayout.Width(28), GUILayout.Height(26)))
                 _tierExpanded[t] = !_tierExpanded[t];
 
             GUILayout.Space(4);
