@@ -30,7 +30,22 @@ namespace IssaPlugin.Items
         // Default spawn weight used as the starting value for all 6 per-pool config entries.
         // Derived from the former tier default weights:
         //   Tier 1 (common) = 15f, Tier 2 = 10f, Tier 3 = 5f, Tier 4 = 3f, Tier 5 (rare) = 1f
+        // Also used by SpawnConfigUI.GetTierIndex for UI tier bucketing — should reflect
+        // the item's general rarity regardless of any per-pool overrides.
         public abstract float DefaultPoolWeight { get; }
+
+        // Per-pool default weight used when a BepInEx config key is first created.
+        // Override to express different spawn rates per pool (e.g. 0f for pools where
+        // this item should never appear by default). The '_' wildcard in overrides MUST
+        // delegate to DefaultPoolWeight so out-of-range pool indices are handled safely:
+        //
+        //   public override float GetDefaultPoolWeight(int poolIndex) => poolIndex switch
+        //   {
+        //       GlobalConfig.PoolLead     => 0f,
+        //       GlobalConfig.PoolMobility => 0f,
+        //       _                         => DefaultPoolWeight,
+        //   };
+        public virtual float GetDefaultPoolWeight(int poolIndex) => DefaultPoolWeight;
 
         // Config key prefix used in GlobalConfig.BindAllItemPoolWeights.
         // Defaults to DisplayName with all non-alphanumeric characters stripped.
