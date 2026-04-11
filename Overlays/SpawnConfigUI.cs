@@ -39,8 +39,8 @@ namespace IssaPlugin.Overlays
         // ── Working copy of the config ─────────────────────────────────────────
         private bool _workingEnabled;
         private float _workingRate;
-        private bool[] _workingItemEnabled;       // [itemIndex] into ItemRegistry.AllItems
-        private float[,] _workingPoolWeights;     // [itemIndex, gamePoolIndex 0-5]
+        private bool[] _workingItemEnabled; // [itemIndex] into ItemRegistry.AllItems
+        private float[,] _workingPoolWeights; // [itemIndex, gamePoolIndex 0-5]
 
         // IMGUI text field buffers — keyed by "{itemIndex}_{gamePoolIndex}" for pool
         // weight fields, and "rate" for the global rate field.
@@ -58,12 +58,12 @@ namespace IssaPlugin.Overlays
         // Matches the base game pause menu order (Lead, Beh50, Beh125, Beh200, Ahead, Mob).
         private static readonly (int pool, string label)[] PoolColumns =
         {
-            (GlobalConfig.PoolLead,      "Lead"),
-            (GlobalConfig.PoolBehind50,  "Beh.50"),
+            (GlobalConfig.PoolLead, "Lead"),
+            (GlobalConfig.PoolBehind50, "Beh.50"),
             (GlobalConfig.PoolBehind125, "Beh.125"),
             (GlobalConfig.PoolBehind200, "Beh.200"),
-            (GlobalConfig.PoolAhead,     "Ahead"),
-            (GlobalConfig.PoolMobility,  "Mob."),
+            (GlobalConfig.PoolAhead, "Ahead"),
+            (GlobalConfig.PoolMobility, "Mob."),
         };
 
         // Tier groupings — purely a UI concept, no effect on stored config.
@@ -71,11 +71,11 @@ namespace IssaPlugin.Overlays
         // is also the initial value shown in the tier batch-set fields.
         private static readonly (string label, float defaultWeight)[] TierDefs =
         {
-            ("Common",    15f),
-            ("Uncommon",  10f),
-            ("Rare",       5f),
-            ("Epic",       3f),
-            ("Legendary",  1f),
+            ("Common", 15f),
+            ("Uncommon", 10f),
+            ("Rare", 5f),
+            ("Epic", 3f),
+            ("Legendary", 1f),
         };
 
         // [itemIndex] → TierDefs index.  Populated in InitWorkingCopy.
@@ -127,8 +127,10 @@ namespace IssaPlugin.Overlays
 
         public void Toggle()
         {
-            if (_visible) Close();
-            else Open();
+            if (_visible)
+                Close();
+            else
+                Open();
         }
 
         public void Open()
@@ -149,7 +151,7 @@ namespace IssaPlugin.Overlays
         private void InitWorkingCopy()
         {
             _workingEnabled = ModConfig.Global.CustomItemSpawnsEnabled.Value;
-            _workingRate    = ModConfig.Global.CustomItemSpawnRate.Value;
+            _workingRate = ModConfig.Global.CustomItemSpawnRate.Value;
             var items = ItemRegistry.AllItems;
             _workingItemEnabled = new bool[items.Count];
             _workingPoolWeights = new float[items.Count, 6];
@@ -186,7 +188,11 @@ namespace IssaPlugin.Overlays
                 {
                     float seed = TierDefs[t].defaultWeight;
                     for (int i = 0; i < items.Count; i++)
-                        if (_itemTierIndex[i] == t) { seed = _workingPoolWeights[i, p]; break; }
+                        if (_itemTierIndex[i] == t)
+                        {
+                            seed = _workingPoolWeights[i, p];
+                            break;
+                        }
                     _textBuffers[$"t{t}_{p}"] = seed.ToString("F1");
                 }
             }
@@ -204,7 +210,7 @@ namespace IssaPlugin.Overlays
         private void ApplyAndSync()
         {
             ModConfig.Global.CustomItemSpawnsEnabled.Value = _workingEnabled;
-            ModConfig.Global.CustomItemSpawnRate.Value     = _workingRate;
+            ModConfig.Global.CustomItemSpawnRate.Value = _workingRate;
             var items = ItemRegistry.AllItems;
             for (int i = 0; i < items.Count; i++)
             {
@@ -260,16 +266,21 @@ namespace IssaPlugin.Overlays
             GUI.enabled = isHost;
             bool newEnabled = GUILayout.Toggle(
                 _workingEnabled,
-                new GUIContent(" Custom items enabled",
-                    "Master switch for all custom items. When off, no custom items will appear in the item pool."),
+                new GUIContent(
+                    " Custom items enabled",
+                    "Master switch for all custom items. When off, no custom items will appear in the item pool."
+                ),
                 GUILayout.Width(200)
             );
-            if (isHost) _workingEnabled = newEnabled;
+            if (isHost)
+                _workingEnabled = newEnabled;
 
             GUILayout.Space(20);
             GUILayout.Label(
-                new GUIContent("Global rate multiplier:",
-                    "Scales the spawn weight of ALL custom items. 1.0 = normal, 0.5 = half as frequent."),
+                new GUIContent(
+                    "Global rate multiplier:",
+                    "Scales the spawn weight of ALL custom items. 1.0 = normal, 0.5 = half as frequent."
+                ),
                 GUILayout.Width(160)
             );
             _workingRate = DrawFloatField("rate", _workingRate, isHost, 0f, 10f, 70);
@@ -283,8 +294,8 @@ namespace IssaPlugin.Overlays
 
             // ── Column header row ─────────────────────────────────────────────
             GUILayout.BeginHorizontal();
-            GUILayout.Label("Item Name",   _styleColHeader, GUILayout.Width(160));
-            GUILayout.Label("On",          _styleColHeader, GUILayout.Width(30));
+            GUILayout.Label("Item Name", _styleColHeader, GUILayout.Width(160));
+            GUILayout.Label("On", _styleColHeader, GUILayout.Width(30));
             GUILayout.Space(4);
             foreach (var (_, label) in PoolColumns)
                 GUILayout.Label(label, _styleColHeader, GUILayout.Width(58));
@@ -303,8 +314,13 @@ namespace IssaPlugin.Overlays
                 // Skip tiers with no items.
                 bool hasTierItems = false;
                 for (int i = 0; i < items.Count; i++)
-                    if (_itemTierIndex[i] == t) { hasTierItems = true; break; }
-                if (!hasTierItems) continue;
+                    if (_itemTierIndex[i] == t)
+                    {
+                        hasTierItems = true;
+                        break;
+                    }
+                if (!hasTierItems)
+                    continue;
 
                 DrawTierHeader(t, items, isHost);
 
@@ -324,21 +340,31 @@ namespace IssaPlugin.Overlays
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
 
-            if (GUILayout.Button(
+            if (
+                GUILayout.Button(
                     new GUIContent("Cancel", "Discard unsaved changes and close."),
-                    GUILayout.Width(100), GUILayout.Height(28)))
+                    GUILayout.Width(100),
+                    GUILayout.Height(28)
+                )
+            )
                 Close();
 
             GUILayout.Space(10);
 
             GUI.enabled = isHost;
             GUI.backgroundColor = isHost ? new Color(0.3f, 0.9f, 0.3f) : Color.white;
-            if (GUILayout.Button(
-                    new GUIContent("✔  Apply & Sync",
+            if (
+                GUILayout.Button(
+                    new GUIContent(
+                        "✔  Apply & Sync",
                         isHost
                             ? "Save changes and broadcast to all clients."
-                            : "Only the host can apply changes."),
-                    GUILayout.Width(140), GUILayout.Height(28)))
+                            : "Only the host can apply changes."
+                    ),
+                    GUILayout.Width(140),
+                    GUILayout.Height(28)
+                )
+            )
             {
                 ApplyAndSync();
                 Close();
@@ -360,18 +386,28 @@ namespace IssaPlugin.Overlays
 
             // Icon
             if (def.Icon != null)
-                GUILayout.Box(new GUIContent(def.Icon.texture, def.DisplayName),
-                    _styleIconBox, GUILayout.Width(28), GUILayout.Height(28));
+                GUILayout.Box(
+                    new GUIContent(def.Icon.texture, def.DisplayName),
+                    _styleIconBox,
+                    GUILayout.Width(28),
+                    GUILayout.Height(28)
+                );
             else
-                GUILayout.Box(new GUIContent("?", def.DisplayName),
-                    _styleIconBox, GUILayout.Width(28), GUILayout.Height(28));
+                GUILayout.Box(
+                    new GUIContent("?", def.DisplayName),
+                    _styleIconBox,
+                    GUILayout.Width(28),
+                    GUILayout.Height(28)
+                );
 
             GUILayout.Space(4);
 
             // Name
             GUILayout.Label(
                 new GUIContent(def.DisplayName, $"ItemType {(int)def.ItemType}"),
-                GUILayout.Width(128), GUILayout.Height(28));
+                GUILayout.Width(128),
+                GUILayout.Height(28)
+            );
 
             GUILayout.Space(4);
 
@@ -379,10 +415,15 @@ namespace IssaPlugin.Overlays
             GUI.enabled = isHost;
             bool newEn = GUILayout.Toggle(
                 _workingItemEnabled[i],
-                new GUIContent("",
-                    $"When off, {def.DisplayName} never spawns regardless of pool weights."),
-                GUILayout.Width(20), GUILayout.Height(28));
-            if (isHost) _workingItemEnabled[i] = newEn;
+                new GUIContent(
+                    "",
+                    $"When off, {def.DisplayName} never spawns regardless of pool weights."
+                ),
+                GUILayout.Width(20),
+                GUILayout.Height(28)
+            );
+            if (isHost)
+                _workingItemEnabled[i] = newEn;
             GUI.enabled = true;
 
             GUILayout.Space(10);
@@ -394,7 +435,10 @@ namespace IssaPlugin.Overlays
                     $"{i}_{p}",
                     _workingPoolWeights[i, p],
                     isHost,
-                    0f, 999f, 50);
+                    0f,
+                    999f,
+                    50
+                );
                 GUILayout.Space(4);
             }
 
@@ -403,7 +447,11 @@ namespace IssaPlugin.Overlays
 
         // ── Tier header row ───────────────────────────────────────────────────
 
-        private void DrawTierHeader(int t, System.Collections.Generic.IReadOnlyList<CustomItemDefinition> items, bool isHost)
+        private void DrawTierHeader(
+            int t,
+            System.Collections.Generic.IReadOnlyList<CustomItemDefinition> items,
+            bool isHost
+        )
         {
             GUILayout.BeginHorizontal(_styleTierHeader, GUILayout.Height(32));
 
@@ -424,12 +472,18 @@ namespace IssaPlugin.Overlays
             GUI.enabled = isHost;
             bool allOn = true;
             for (int i = 0; i < items.Count; i++)
-                if (_itemTierIndex[i] == t && !_workingItemEnabled[i]) { allOn = false; break; }
+                if (_itemTierIndex[i] == t && !_workingItemEnabled[i])
+                {
+                    allOn = false;
+                    break;
+                }
 
             bool newAll = GUILayout.Toggle(
                 allOn,
                 new GUIContent("", $"Enable / disable all {TierDefs[t].label} items at once."),
-                GUILayout.Width(20), GUILayout.Height(26));
+                GUILayout.Width(20),
+                GUILayout.Height(26)
+            );
             if (isHost && newAll != allOn)
                 for (int i = 0; i < items.Count; i++)
                     if (_itemTierIndex[i] == t)
@@ -459,7 +513,8 @@ namespace IssaPlugin.Overlays
                             float v = Mathf.Clamp(parsed, 0f, 999f);
                             for (int i = 0; i < items.Count; i++)
                             {
-                                if (_itemTierIndex[i] != t) continue;
+                                if (_itemTierIndex[i] != t)
+                                    continue;
                                 _workingPoolWeights[i, p] = v;
                                 _textBuffers[$"{i}_{p}"] = v.ToString("F1");
                             }
@@ -496,8 +551,14 @@ namespace IssaPlugin.Overlays
 
         // ── IMGUI field helper ────────────────────────────────────────────────
 
-        private float DrawFloatField(string key, float value, bool editable,
-            float min, float max, int width)
+        private float DrawFloatField(
+            string key,
+            float value,
+            bool editable,
+            float min,
+            float max,
+            int width
+        )
         {
             if (!_textBuffers.ContainsKey(key))
                 _textBuffers[key] = value.ToString("0.##");
@@ -540,14 +601,14 @@ namespace IssaPlugin.Overlays
             _styleItemRow = new GUIStyle(GUI.skin.box)
             {
                 padding = new RectOffset(4, 4, 2, 2),
-                margin  = new RectOffset(0, 0, 1, 1),
+                margin = new RectOffset(0, 0, 1, 1),
             };
 
             _styleTierHeader = new GUIStyle(GUI.skin.box)
             {
-                padding  = new RectOffset(4, 4, 2, 2),
-                margin   = new RectOffset(0, 0, 3, 1),
-                normal   = { background = MakeTex(2, 2, new Color(0.22f, 0.22f, 0.28f, 1f)) },
+                padding = new RectOffset(4, 4, 2, 2),
+                margin = new RectOffset(0, 0, 3, 1),
+                normal = { background = MakeTex(2, 2, new Color(0.22f, 0.22f, 0.28f, 1f)) },
             };
 
             _styleIconBox = new GUIStyle(GUI.skin.box) { padding = new RectOffset(2, 2, 2, 2) };
@@ -560,13 +621,13 @@ namespace IssaPlugin.Overlays
             _styleTooltip = new GUIStyle(GUI.skin.box)
             {
                 wordWrap = true,
-                padding  = new RectOffset(8, 8, 6, 6),
+                padding = new RectOffset(8, 8, 6, 6),
                 fontSize = 12,
                 alignment = TextAnchor.UpperLeft,
                 normal =
                 {
                     background = MakeTex(2, 2, new Color(0.08f, 0.08f, 0.08f, 0.92f)),
-                    textColor  = new Color(0.95f, 0.95f, 0.85f),
+                    textColor = new Color(0.95f, 0.95f, 0.85f),
                 },
             };
 
