@@ -299,28 +299,16 @@ namespace IssaPlugin.Items
 
             bool aimedIn = Mouse.current?.rightButton.isPressed ?? false;
 
-            if (!aimedIn && _wasAimedIn)
-            {
-                var rot = localInfo.Movement?.transform.eulerAngles ?? default;
-                FixLookRotationAfterScope();
-            }
-            else if (aimedIn)
-            {
-                // Play the aim sound once on scope entry.
-                if (!_wasAimedIn)
-                {
-                    var rot = localInfo.Movement?.transform.eulerAngles ?? default;
-                    var camRot = Camera.main?.transform.eulerAngles ?? default;
-                    localInfo.PlayerAudio.PlayItemAimForAllClients(ItemType.ElephantGun);
-                }
-
-                // For some cursed reason, we only need to rotate the flamethrower when aimed-in
-                // and NOT actively shooting...
-                if (Mouse.current != null && !Mouse.current.leftButton.isPressed)
-                    CorrectAimRotation();
-            }
+            // Play the aim sound once on scope entry.
+            if (!_wasAimedIn && aimedIn)
+                localInfo.PlayerAudio.PlayItemAimForAllClients(ItemType.ElephantGun);
 
             _wasAimedIn = aimedIn;
+
+            // Always align the player model to the camera's horizontal facing so the
+            // flame particles track where the camera is pointing, regardless of whether
+            // the player is firing or has right-click held.
+            CorrectAimRotation();
         }
 
         private void CorrectAimRotation()
@@ -338,17 +326,6 @@ namespace IssaPlugin.Items
                 return;
             li.Movement.transform.rotation =
                 Quaternion.LookRotation(fwd.normalized) * Quaternion.Euler(0f, 65f, 0f);
-        }
-
-        private void FixLookRotationAfterScope()
-        {
-            if (Camera.main != null)
-                GameManager
-                    .LocalPlayerInfo
-                    ?.Movement
-                    ?.transform.rotation = Quaternion.LookRotation(
-                        Camera.main.transform.forward.normalized
-                    );
         }
 
         // ================================================================

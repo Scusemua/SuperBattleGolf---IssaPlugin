@@ -50,36 +50,48 @@ namespace IssaPlugin.Overlays
             if (localInfo?.Inventory == null)
                 return;
 
-            // Only show while the AK47 is equipped.
-            if (localInfo.Inventory.GetEffectivelyEquippedItem(true) != ItemRegistry.AK47ItemType)
+            var equipped = localInfo.Inventory.GetEffectivelyEquippedItem(true);
+            bool isAK47 = equipped == ItemRegistry.AK47ItemType;
+            bool isFlamethrower = equipped == ItemRegistry.FlamethrowerItemType;
+
+            if (!isAK47 && !isFlamethrower)
                 return;
 
-            // Only show while aiming in (right-click held).
-            if (Mouse.current == null || !Mouse.current.rightButton.isPressed)
+            float screenRadius;
+
+            if (isAK47)
             {
-                if (_aimingIn)
+                // AK47: only show while aiming in (right-click held).
+                if (Mouse.current == null || !Mouse.current.rightButton.isPressed)
                 {
-                    FixLookRotationAfterScope();
+                    if (_aimingIn)
+                        FixLookRotationAfterScope();
+                    _aimingIn = false;
+                    return;
                 }
-                _aimingIn = false;
-                return;
+
+                _aimingIn = true;
+
+                float inaccuracy = ModConfig.AK47.Inaccuracy.Value;
+                if (inaccuracy <= 0f || _mat == null)
+                    return;
+
+                // Project the inaccuracy half-angle onto screen space using the camera's
+                // vertical FOV so the ring edge matches where bullets can actually land.
+                _camera ??= Camera.main;
+                float vFov = _camera != null ? _camera.fieldOfView : 60f;
+                screenRadius =
+                    Screen.height
+                    / 2f
+                    * Mathf.Tan(inaccuracy * Mathf.Deg2Rad)
+                    / Mathf.Tan(vFov / 2f * Mathf.Deg2Rad);
             }
-
-            _aimingIn = true;
-
-            float inaccuracy = ModConfig.AK47.Inaccuracy.Value;
-            if (inaccuracy <= 0f || _mat == null)
-                return;
-
-            // Project the inaccuracy half-angle onto screen space using the camera's
-            // vertical FOV so the ring edge matches where bullets can actually land.
-            _camera ??= Camera.main;
-            float vFov = _camera != null ? _camera.fieldOfView : 60f;
-            float screenRadius =
-                Screen.height
-                / 2f
-                * Mathf.Tan(inaccuracy * Mathf.Deg2Rad)
-                / Mathf.Tan(vFov / 2f * Mathf.Deg2Rad);
+            else // flamethrower — always show, fixed small radius
+            {
+                if (_mat == null)
+                    return;
+                screenRadius = 15f;
+            }
 
             float cx = Screen.width / 2f;
             float cy = Screen.height / 2f;
@@ -100,7 +112,9 @@ namespace IssaPlugin.Overlays
             DrawRing(cx, cy, screenRadius, new Color(1f, 1f, 1f, 0.9f));
 
             GL.PopMatrix();
-            CorrectAimRotation();
+
+            if (isAK47)
+                CorrectAimRotation();
         }
 
         private void FixLookRotationAfterScope()
