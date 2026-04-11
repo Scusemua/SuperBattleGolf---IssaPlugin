@@ -1,4 +1,4 @@
-using BepInEx.Configuration;
+﻿using BepInEx.Configuration;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin
@@ -14,7 +14,6 @@ namespace IssaPlugin
         public ConfigEntry<float> Bounciness { get; private set; }
         public ConfigEntry<float> CartSidewaysStiffness { get; private set; }
         public ConfigEntry<float> GripRadius { get; private set; }
-        public ConfigEntry<float> SpawnWeight { get; private set; }
 
         public FreezeConfig(ConfigFile cfg, GlobalConfig global)
         {
@@ -57,14 +56,6 @@ namespace IssaPlugin
                 "GripRadius",
                 1.5f,
                 "Distance (metres) from the local player's own ball within which normal traction is restored, allowing them to stop and take a shot."
-            );
-
-            SpawnWeight = global.BindSpawnWeight(
-                cfg,
-                104,
-                "FreezeWorldWeight",
-                8f,
-                "Override spawn weight for the Freeze World item."
             );
         }
     }

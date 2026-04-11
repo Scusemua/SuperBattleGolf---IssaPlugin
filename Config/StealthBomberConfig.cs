@@ -1,4 +1,4 @@
-using BepInEx.Configuration;
+﻿using BepInEx.Configuration;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin
@@ -20,7 +20,6 @@ namespace IssaPlugin
         public ConfigEntry<float> TargetingZoomSpeed { get; private set; }
         public ConfigEntry<float> TargetMoveSpeed { get; private set; }
         public ConfigEntry<float> TargetRotateSpeed { get; private set; }
-        public ConfigEntry<float> SpawnWeight { get; private set; }
         public ConfigEntry<float> ApproachDistance { get; private set; }
         public ConfigEntry<float> HitsToDestroy { get; private set; }
         public ConfigEntry<float> CrashImpactForce { get; private set; }
@@ -135,14 +134,6 @@ namespace IssaPlugin
                 "CrashTorque",
                 1.2f,
                 "Magnitude of the random tumble torque applied to the stealth bomber when shot down."
-            );
-
-            SpawnWeight = global.BindSpawnWeight(
-                cfg,
-                101,
-                "StealthBomberWeight",
-                10f,
-                "Override spawn weight for the Stealth Bomber."
             );
             ExplosionScale = cfg.Bind(
                 "Explosions",

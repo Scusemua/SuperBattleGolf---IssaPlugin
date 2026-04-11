@@ -1,4 +1,4 @@
-using BepInEx.Configuration;
+﻿using BepInEx.Configuration;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin
@@ -9,7 +9,6 @@ namespace IssaPlugin
 
         public ConfigEntry<Key> GiveKey { get; private set; }
         public ConfigEntry<float> Uses { get; private set; }
-        public ConfigEntry<float> SpawnWeight { get; private set; }
         public ConfigEntry<float> FuelPerUse { get; private set; }
         public ConfigEntry<float> ThrustForce { get; private set; }
 
@@ -28,13 +27,6 @@ namespace IssaPlugin
                 "Uses",
                 1f,
                 "Number of fuel canisters per Jetpack pickup. Each canister provides JetpackFuelPerUse seconds of thrust."
-            );
-            SpawnWeight = global.BindSpawnWeight(
-                cfg,
-                123,
-                "JetpackSpawnWeight",
-                10f,
-                "Override spawn weight for the Jetpack."
             );
             FuelPerUse = cfg.Bind(
                 Section,

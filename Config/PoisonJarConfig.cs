@@ -1,4 +1,4 @@
-using BepInEx.Configuration;
+﻿using BepInEx.Configuration;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin
@@ -10,7 +10,6 @@ namespace IssaPlugin
 
         public ConfigEntry<Key> GiveKey { get; private set; }
         public ConfigEntry<float> Uses { get; private set; }
-        public ConfigEntry<float> SpawnWeight { get; private set; }
         public ConfigEntry<float> ThrowSpeed { get; private set; }
         public ConfigEntry<float> LobAngle { get; private set; }
         public ConfigEntry<float> Radius { get; private set; }
@@ -77,14 +76,6 @@ namespace IssaPlugin
                 "Duration",
                 10.0f,
                 "How long (seconds) the poison visual lasts on affected players."
-            );
-
-            SpawnWeight = global.BindSpawnWeight(
-                cfg,
-                117,
-                "PoisonJarSpawnWeight",
-                10f,
-                "Override spawn weight for the Poison Jar."
             );
 
             GhostEnabled = cfg.Bind(

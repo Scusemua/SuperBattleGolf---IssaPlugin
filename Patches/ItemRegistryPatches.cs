@@ -77,130 +77,82 @@ namespace IssaPlugin.Patches
     [HarmonyPatch]
     static class ItemSpawnerResetRuntimeDataPatch
     {
-        // Use the same target as before.
         static MethodBase TargetMethod() =>
             AccessTools.Method(typeof(ItemSpawnerSettings), "ResetRuntimeData");
 
-        private static readonly FieldInfo SpawnChancesField = AccessTools.Field(
-            typeof(ItemPool),
-            "spawnChances"
-        );
-
-        private static readonly FieldInfo TotalWeightField = AccessTools.Field(
-            typeof(ItemPool),
-            "totalSpawnChanceWeight"
-        );
+        private static readonly FieldInfo SpawnChancesField =
+            AccessTools.Field(typeof(ItemPool), "spawnChances");
+        private static readonly FieldInfo TotalWeightField =
+            AccessTools.Field(typeof(ItemPool), "totalSpawnChanceWeight");
 
         static void Postfix(ItemSpawnerSettings __instance)
         {
-            var pools = __instance.ItemPools;
-            int poolCount = pools.Count;
-            float boostFactor = ModConfig.Global.CatchupBoostFactor.Value;
+            // Distinguish the regular spawner (pools 0-4) from the mobility spawner
+            // (pool 5) by the presence of AheadOfBallItemPool. This is a stable
+            // ScriptableObject inspector reference and requires no runtime reflection
+            // on MatchSetupRules.
+            bool isMobility = __instance.AheadOfBallItemPool == null;
 
-            for (int poolIndex = 0; poolIndex < poolCount; poolIndex++)
+            if (isMobility)
             {
-                // Approximate "place" as pool index + 1 (pool 0 = 1st place proxy).
-                int approxPlace = poolIndex + 1;
-                // Approximate distance-behind-leader using the same linear scale as
-                // the catchup multiplier; gives a rough-but-consistent proxy.
-                float approxDist = poolCount > 1 ? (float)poolIndex / (poolCount - 1) * 500f : 0f;
-
-                float t = poolCount > 1 ? (float)poolIndex / (poolCount - 1) : 0f;
-                float multiplier = 1f + boostFactor * t;
-
-                var entries = BuildCustomEntries(approxDist, approxPlace);
-                if (entries.Length > 0)
-                    InjectIntoPool(pools[poolIndex].pool, entries, multiplier);
+                // Pool 5 — mobility item boxes
+                if (__instance.ItemPools.Count > 0)
+                    InjectPool(__instance.ItemPools[0].pool, GlobalConfig.PoolMobility);
             }
-
-            if (__instance.AheadOfBallItemPool != null)
+            else
             {
-                var entries = BuildCustomEntries(0f, 1);
-                if (entries.Length > 0)
-                    InjectIntoPool(__instance.AheadOfBallItemPool, entries, 1f);
+                // Pool 0 — ahead of own ball
+                InjectPool(__instance.AheadOfBallItemPool, GlobalConfig.PoolAhead);
+
+                // Pools 1-4 — distance-based (local index i → game index i+1)
+                for (int i = 0; i < __instance.ItemPools.Count; i++)
+                    InjectPool(__instance.ItemPools[i].pool, i + 1);
             }
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[ItemPool] Injected custom items into {poolCount} pools (gating applied)."
+                $"[ItemPool] Custom items injected into {(isMobility ? "mobility" : "regular")} spawner."
             );
         }
 
-        // ── Entry builder with tier gating ────────────────────────────────────
-
-        private static ItemPool.ItemSpawnChance[] BuildCustomEntries(
-            float approxDist,
-            int approxPlace
-        )
+        private static void InjectPool(ItemPool pool, int gamePoolIndex)
         {
-            if (!ModConfig.Global.CustomItemSpawnsEnabled.Value)
-                return Array.Empty<ItemPool.ItemSpawnChance>();
+            if (pool == null) return;
+            if (!ModConfig.Global.CustomItemSpawnsEnabled.Value) return;
 
             float rate = ModConfig.Global.CustomItemSpawnRate.Value;
-            if (rate <= 0f)
-                return Array.Empty<ItemPool.ItemSpawnChance>();
+            if (rate <= 0f) return;
 
-            var syncer = TierConfigSyncer.Instance;
-
-            var list = new List<ItemPool.ItemSpawnChance>();
+            var toAdd = new List<ItemPool.ItemSpawnChance>();
 
             foreach (var def in ItemRegistry.AllItems)
             {
-                if (!def.Enabled || def.SpawnWeight <= 0f)
-                    continue;
+                if (!def.Enabled) continue;
+                float w = def.GetPoolWeight(gamePoolIndex) * rate;
+                if (w <= 0f) continue;
 
-                // ── Tier-level gating ─────────────────────────────────────────
-                bool tierAllowed =
-                    syncer == null
-                    || syncer.IsTierAllowedForPlayer(
-                        ModConfig.GetItemTier(def.ItemType),
-                        approxDist,
-                        approxPlace
-                    );
-                // || syncer.IsTierAllowedForPlayer(def.Tier, approxDist, approxPlace);
-
-                if (!tierAllowed)
-                    continue;
-
-                list.Add(
-                    new ItemPool.ItemSpawnChance
-                    {
-                        item = def.ItemType,
-                        spawnChanceWeight = def.SpawnWeight * rate,
-                    }
-                );
+                toAdd.Add(new ItemPool.ItemSpawnChance
+                {
+                    item = def.ItemType,
+                    spawnChanceWeight = w,
+                });
+                MatchSetupRulesPatches.EffectiveWeights[(gamePoolIndex, def.ItemType)] = w;
             }
 
-            return list.ToArray();
-        }
+            if (toAdd.Count == 0) return;
 
-        private static void InjectIntoPool(
-            ItemPool pool,
-            ItemPool.ItemSpawnChance[] customEntries,
-            float multiplier
-        )
-        {
-            if (pool == null)
-                return;
-
-            var existing =
-                (ItemPool.ItemSpawnChance[])SpawnChancesField.GetValue(pool)
+            var existing = (ItemPool.ItemSpawnChance[])SpawnChancesField.GetValue(pool)
                 ?? Array.Empty<ItemPool.ItemSpawnChance>();
 
-            var merged = new ItemPool.ItemSpawnChance[existing.Length + customEntries.Length];
-            Array.Copy(existing, 0, merged, 0, existing.Length);
-            for (int i = 0; i < customEntries.Length; i++)
-                merged[existing.Length + i] = new ItemPool.ItemSpawnChance
-                {
-                    item = customEntries[i].item,
-                    spawnChanceWeight = customEntries[i].spawnChanceWeight * multiplier,
-                };
+            var merged = new ItemPool.ItemSpawnChance[existing.Length + toAdd.Count];
+            Array.Copy(existing, merged, existing.Length);
+            for (int i = 0; i < toAdd.Count; i++)
+                merged[existing.Length + i] = toAdd[i];
 
             SpawnChancesField.SetValue(pool, merged);
 
-            float totalWeight = 0f;
-            foreach (var e in merged)
-                totalWeight += e.spawnChanceWeight;
-            TotalWeightField.SetValue(pool, totalWeight);
+            float total = 0f;
+            foreach (var e in merged) total += e.spawnChanceWeight;
+            TotalWeightField.SetValue(pool, total);
         }
     }
 }

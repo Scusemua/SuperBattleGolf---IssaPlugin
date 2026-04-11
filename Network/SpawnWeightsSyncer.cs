@@ -2,28 +2,29 @@ using System.Collections;
 using System.Collections.Generic;
 using IssaPlugin.Items;
 using IssaPlugin.Network;
+using IssaPlugin.Patches;
 using Mirror;
 using UnityEngine;
 
 namespace IssaPlugin
 {
-    /// Runs on the host only. Every <see cref="SyncInterval"/> seconds it:
-    /// 1. Calls ResetRuntimeData() on every loaded ItemSpawnerSettings so the
-    ///    server's item pools pick up any config changes made in-game.
-    /// 2. Broadcasts the current spawn weights to all clients so they can update
-    ///    their local config values before the next scene reload.
+    /// <summary>
+    /// Runs on the host only. Every SyncInterval seconds it:
+    /// 1. Clears EffectiveWeights and rebuilds all ItemSpawnerSettings pools so
+    ///    the server's item pools reflect any config changes made in-game.
+    /// 2. Broadcasts current per-pool spawn weights to all clients so they can
+    ///    update their local _serverPoolWeights before the next level load.
+    /// </summary>
     public class SpawnWeightsSyncer : MonoBehaviour
     {
-        private static Dictionary<int, float> _cachedItemSpawnWeights;
         private const float SyncInterval = 5f;
 
-        // Sentinel: impossible weight value so the first check always triggers a sync.
+        // Sentinel: null ItemPoolWeights forces a sync on the first tick.
         private static SpawnWeightsMessage _lastSent = new SpawnWeightsMessage
         {
-            ItemSpawnWeights = null,
+            ItemPoolWeights = null,
         };
-
-        private static int _lastEnabledHash = 0;
+        private static int _lastEnabledHash;
 
         private IEnumerator Start()
         {
@@ -35,12 +36,15 @@ namespace IssaPlugin
             }
         }
 
-        /// Forces an immediate server pool rebuild and weight broadcast regardless of whether
-        /// weights have changed. Call this after any change that affects Enabled state without
-        /// touching SpawnWeight values (e.g., after a vote result is applied).
+        /// <summary>
+        /// Forces an immediate pool rebuild and weight broadcast regardless of
+        /// whether weights have changed. Call after any change that affects
+        /// Enabled state without touching pool weight values (e.g. vote results).
+        /// VoteManager calls this and continues to work correctly after this refactor.
+        /// </summary>
         internal static void ForceServerSync()
         {
-            _lastSent = new SpawnWeightsMessage { ItemSpawnWeights = null };
+            _lastSent = new SpawnWeightsMessage { ItemPoolWeights = null };
             if (NetworkServer.active)
                 BroadcastWeightsIfChanged();
         }
@@ -49,114 +53,86 @@ namespace IssaPlugin
         {
             // Writers are registered in OnStartClient. Mirror clears them on disconnect, so
             // don't attempt a send in the window between OnStopClient and the next OnStartClient.
-            if (!NetworkClient.active)
-                return;
+            if (!NetworkClient.active) return;
 
-            // Clear any cached server weights so the host always resolves fresh from config,
-            // even if this process previously ran as a client in the same Unity session.
+            // Reset server overrides so the host resolves fresh from config.
             foreach (var item in ItemRegistry.AllItems)
-                item.ResetServerWeight();
+                item.ResetServerWeights();
 
-            if (_cachedItemSpawnWeights == null)
+            // Build the per-pool weight snapshot.
+            var poolWeights = new Dictionary<int, float[]>(ItemRegistry.AllItems.Count);
+            foreach (var def in ItemRegistry.AllItems)
             {
-                _cachedItemSpawnWeights = new Dictionary<int, float>();
-            }
-            else
-            {
-                _cachedItemSpawnWeights.Clear();
-            }
-
-            foreach (CustomItemDefinition item in ItemRegistry.AllItems)
-            {
-                _cachedItemSpawnWeights.Add((int)item.ItemType, item.SpawnWeight);
+                var weights = new float[6];
+                for (int p = 0; p < 6; p++)
+                    weights[p] = def.GetPoolWeight(p);
+                poolWeights[(int)def.ItemType] = weights;
             }
 
             var msg = new SpawnWeightsMessage
             {
                 CustomItemSpawnsEnabled = ModConfig.Global.CustomItemSpawnsEnabled.Value,
-                ItemSpawnWeights = _cachedItemSpawnWeights,
+                ItemPoolWeights = poolWeights,
             };
 
-            // Compute a simple enabled-state fingerprint
             int enabledHash = 0;
-            foreach (var item in ItemRegistry.AllItems)
-                if (item.Enabled)
-                    enabledHash ^= (int)item.ItemType;
+            foreach (var def in ItemRegistry.AllItems)
+                if (def.Enabled) enabledHash ^= (int)def.ItemType;
 
-            if (!ShouldUpdateWeights(msg, enabledHash))
-                return;
+            if (!ShouldBroadcast(msg, enabledHash)) return;
 
             _lastSent = msg;
             _lastEnabledHash = enabledHash;
 
-            // Re-inject custom weights into the live server pools.
+            // Clear stale EffectiveWeights before the full rebuild cycle so that
+            // entries from disabled items do not persist.
+            MatchSetupRulesPatches.EffectiveWeights.Clear();
+
             foreach (var settings in Resources.FindObjectsOfTypeAll<ItemSpawnerSettings>())
                 settings.ResetRuntimeData();
 
             NetworkServer.SendToAll(msg);
-
-            IssaPluginPlugin.Log.LogDebug($"[SpawnWeights] Synced: {msg.ToString()}");
+            IssaPluginPlugin.Log.LogDebug($"[SpawnWeights] Synced: {msg}");
         }
 
-        private static bool ShouldUpdateWeights(SpawnWeightsMessage newMsg, int enabledHash)
+        private static bool ShouldBroadcast(SpawnWeightsMessage newMsg, int enabledHash)
         {
-            // If one or both have null spawn weights, then return true.
-            if (newMsg.ItemSpawnWeights == null || _lastSent.ItemSpawnWeights == null)
+            if (newMsg.ItemPoolWeights == null || _lastSent.ItemPoolWeights == null)
                 return true;
-
-            // The 'enabled' status of at least one item has changed.
             if (enabledHash != _lastEnabledHash)
                 return true;
-
-            if (newMsg.ItemSpawnWeights.Count != _lastSent.ItemSpawnWeights.Count)
-            {
-                IssaPluginPlugin.Log.LogWarning(
-                    $"SpawnWeightsMessages have unequal number of entries: {newMsg.ItemSpawnWeights.Count} vs. {_lastSent.ItemSpawnWeights.Count}"
-                );
-                return true; // Probably shouldn't happen, but let's update to correct.
-            }
-
             if (newMsg.CustomItemSpawnsEnabled != _lastSent.CustomItemSpawnsEnabled)
                 return true;
+            if (newMsg.ItemPoolWeights.Count != _lastSent.ItemPoolWeights.Count)
+                return true;
 
-            foreach (var (itemType, spawnWeight) in newMsg.ItemSpawnWeights)
+            foreach (var (itemTypeId, weights) in newMsg.ItemPoolWeights)
             {
-                if (!_lastSent.ItemSpawnWeights.ContainsKey(itemType))
-                {
-                    // Doesn't have an entry... shouldn't happen, but if it does, they should be updated.
-                    IssaPluginPlugin.Log.LogError(
-                        $"SpawnWeightsMessage is missing entry for item type ${itemType}"
-                    );
+                if (!_lastSent.ItemPoolWeights.TryGetValue(itemTypeId, out var prevWeights))
                     return true;
-                }
-
-                if (spawnWeight != _lastSent.ItemSpawnWeights[itemType])
-                {
-                    return true; // Mismatched spawn weight; need to update.
-                }
+                for (int p = 0; p < 6; p++)
+                    if (weights[p] != prevWeights[p])
+                        return true;
             }
-
-            return false; // They're equal. Don't need to update weights.
+            return false;
         }
 
-        /// Called on each client when a SpawnWeightsMessage arrives from the host.
+        /// <summary>Called on each client when a SpawnWeightsMessage arrives.</summary>
         internal static void HandleSpawnWeights(SpawnWeightsMessage msg)
         {
-            // Skip on the listen-server host; it already has the correct values.
-            if (NetworkServer.active)
-                return;
+            if (NetworkServer.active) return;  // host is authoritative
 
-            // Apply the master kill-switch immediately so BuildCustomEntries uses the
-            // host's value on any subsequent pool rebuild.
             ModConfig.Global.CustomItemSpawnsEnabled.Value = msg.CustomItemSpawnsEnabled;
 
-            foreach (var (itemType, spawnWeight) in msg.ItemSpawnWeights)
+            foreach (var (itemTypeId, weights) in msg.ItemPoolWeights)
             {
-                if (ItemRegistry.CustomItemDefinitionMap.TryGetValue(itemType, out var itemDef))
-                    itemDef.SpawnWeight = spawnWeight;
+                if (!ItemRegistry.CustomItemDefinitionMap.TryGetValue(itemTypeId, out var def))
+                    continue;
+                for (int p = 0; p < weights.Length && p < 6; p++)
+                    def.SetServerPoolWeight(p, weights[p]);
             }
 
-            IssaPluginPlugin.Log.LogDebug($"[SpawnWeights] Received from host: {msg.ToString()}");
+            IssaPluginPlugin.Log.LogDebug($"[SpawnWeights] Received from host: {msg}");
         }
     }
 }

@@ -1,4 +1,4 @@
-using BepInEx.Configuration;
+﻿using BepInEx.Configuration;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin
@@ -9,7 +9,6 @@ namespace IssaPlugin
 
         public ConfigEntry<Key> GiveKey { get; private set; }
         public ConfigEntry<float> Uses { get; private set; }
-        public ConfigEntry<float> SpawnWeight { get; private set; }
         public ConfigEntry<float> ApexHeight { get; private set; }
         public ConfigEntry<float> AscentSpeed { get; private set; }
         public ConfigEntry<float> DiveSpeed { get; private set; }
@@ -69,14 +68,6 @@ namespace IssaPlugin
                 "ExplosionVfxDuration",
                 5f,
                 "Seconds before the Javelin explosion VFX prefab is destroyed on each client."
-            );
-
-            SpawnWeight = global.BindSpawnWeight(
-                cfg,
-                108,
-                "JavelinWeight",
-                12f,
-                "Override spawn weight for the Javelin."
             );
             ExplosionScale = cfg.Bind(
                 "Explosions",

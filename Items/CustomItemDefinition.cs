@@ -25,28 +25,34 @@ namespace IssaPlugin.Items
         // MaxUses reads Configuration.XxxUses.Value at call time (lazy — no static init risk).
         // The cast to int is intentional: BepInEx config values for use-counts are ConfigEntry<float>.
         public abstract int MaxUses { get; }
-        public abstract int Tier { get; }
         public abstract Key GiveKey { get; }
 
-        // Set only on non-host clients by SpawnWeightsSyncer.HandleSpawnWeights.
+        // Default spawn weight used as the starting value for all 6 per-pool config entries.
+        // Derived from the former tier default weights:
+        //   Tier 1 (common) = 15f, Tier 2 = 10f, Tier 3 = 5f, Tier 4 = 3f, Tier 5 (rare) = 1f
+        public abstract float DefaultPoolWeight { get; }
+
+        // Config key prefix used in GlobalConfig.BindAllItemPoolWeights.
+        // Defaults to DisplayName with all non-alphanumeric characters stripped.
+        // Override only if the result would be ambiguous or unsuitable as a config key.
+        public virtual string ConfigKeyPrefix =>
+            System.Text.RegularExpressions.Regex.Replace(DisplayName, @"[^A-Za-z0-9]", "");
+
+        // Set on non-host clients by SpawnWeightsSyncer.HandleSpawnWeights for all 6 pools.
         // Cleared by SpawnWeightsSyncer.BroadcastWeightsIfChanged before each host resolution.
-        // Host always resolves fresh from config (never touches this field).
-        private float? _serverWeight = null;
+        // Host always resolves fresh from config.
+        private readonly float?[] _serverPoolWeights = new float?[6];
 
-        internal void ResetServerWeight() => _serverWeight = null;
+        internal void SetServerPoolWeight(int poolIndex, float weight) =>
+            _serverPoolWeights[poolIndex] = weight;
 
-        public float SpawnWeight
+        internal void ResetServerWeights() => System.Array.Clear(_serverPoolWeights, 0, 6);
+
+        public float GetPoolWeight(int poolIndex)
         {
-            get
-            {
-                if (_serverWeight.HasValue)
-                    return _serverWeight.Value;
-                if (ModConfig.GetItemSpawnWeightOverrideEnabled(ItemType))
-                    return ModConfig.GetItemSpawnWeightOverrideValue(ItemType);
-                return ModConfig.GetTierSpawnWeight(ModConfig.GetItemTier(ItemType));
-                // return ModConfig.GetTierSpawnWeight(Tier);
-            }
-            set { _serverWeight = value; }
+            if ((uint)poolIndex < 6u && _serverPoolWeights[poolIndex].HasValue)
+                return _serverPoolWeights[poolIndex].Value;
+            return ModConfig.GetItemPoolWeight(ItemType, poolIndex);
         }
 
         // When false the item is excluded from the spawn pool entirely (weight is ignored).

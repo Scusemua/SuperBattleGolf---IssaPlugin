@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin.Items
@@ -16,7 +16,7 @@ namespace IssaPlugin.Items
         // rocket-launcher icon as placeholder, which is more appropriate than pistol.
 
         public override int MaxUses => (int)ModConfig.Jetpack.Uses.Value;
-        public override int Tier => 2;
+        public override float DefaultPoolWeight => 10f;
         public override Key GiveKey => ModConfig.Jetpack.GiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)

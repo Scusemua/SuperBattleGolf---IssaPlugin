@@ -1,4 +1,4 @@
-using BepInEx.Configuration;
+﻿using BepInEx.Configuration;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin
@@ -10,7 +10,6 @@ namespace IssaPlugin
         public ConfigEntry<float> PowerMultiplier { get; private set; }
         public ConfigEntry<float> Uses { get; private set; }
         public ConfigEntry<Key> GiveKey { get; private set; }
-        public ConfigEntry<float> SpawnWeight { get; private set; }
 
         public BaseballBatConfig(ConfigFile cfg, GlobalConfig global)
         {
@@ -33,14 +32,6 @@ namespace IssaPlugin
                 "GiveKey",
                 Key.F7,
                 "Key to press to add the baseball bat to your inventory."
-            );
-
-            SpawnWeight = global.BindSpawnWeight(
-                cfg,
-                100,
-                "BaseballBatWeight",
-                15f,
-                "Override spawn weight for the Baseball Bat."
             );
         }
     }

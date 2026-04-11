@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin.Items
@@ -16,7 +16,7 @@ namespace IssaPlugin.Items
         public override bool UseRocketIconFallback => true;
 
         public override int MaxUses => (int)ModConfig.Flamethrower.Uses.Value;
-        public override int Tier => 3;
+        public override float DefaultPoolWeight => 5f;
         public override Key GiveKey => ModConfig.Flamethrower.GiveKey.Value;
 
         // Treat the flamethrower as a two-handed rifle for animator purposes —

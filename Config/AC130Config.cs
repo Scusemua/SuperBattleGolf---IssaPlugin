@@ -1,4 +1,4 @@
-using BepInEx.Configuration;
+﻿using BepInEx.Configuration;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin
@@ -10,7 +10,6 @@ namespace IssaPlugin
 
         public ConfigEntry<float> Uses { get; private set; }
         public ConfigEntry<Key> GiveKey { get; private set; }
-        public ConfigEntry<float> SpawnWeight { get; private set; }
         public ConfigEntry<float> OrbitRadius { get; private set; }
         public ConfigEntry<float> OrbitSpeed { get; private set; }
         public ConfigEntry<float> Altitude { get; private set; }
@@ -312,14 +311,6 @@ namespace IssaPlugin
                 "RocketProximityFuse",
                 4f,
                 "Distance in metres at which a homing rocket detonates near the gunship. Must be less than 5 m so the explosion's overlap sphere (radius 5 m) still reaches the gunship and registers the hit."
-            );
-
-            SpawnWeight = global.BindSpawnWeight(
-                cfg,
-                103,
-                "AC130Weight",
-                5f,
-                "Override spawn weight for the AC-130 Gunship."
             );
             ExplosionScale = cfg.Bind(
                 "Explosions",

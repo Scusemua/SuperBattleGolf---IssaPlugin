@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin.Items
@@ -12,7 +12,7 @@ namespace IssaPlugin.Items
         public override GameObject HeldModelPrefab => AssetLoader.DroneControllerPrefab;
         public override int MaxUses => (int)ModConfig.DroneSwarm.Uses.Value;
 
-        public override int Tier => 5;
+        public override float DefaultPoolWeight => 1f;
 
         public override Key GiveKey => ModConfig.DroneSwarm.GiveKey.Value;
 

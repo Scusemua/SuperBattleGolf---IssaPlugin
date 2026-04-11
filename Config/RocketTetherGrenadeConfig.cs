@@ -1,4 +1,4 @@
-using BepInEx.Configuration;
+﻿using BepInEx.Configuration;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin
@@ -9,7 +9,6 @@ namespace IssaPlugin
 
         public ConfigEntry<Key> GiveKey { get; private set; }
         public ConfigEntry<float> Uses { get; private set; }
-        public ConfigEntry<float> SpawnWeight { get; private set; }
         public ConfigEntry<bool> ExcludeThrower { get; private set; }
 
         // ── Throw arc ─────────────────────────────────────────────────────────
@@ -116,14 +115,6 @@ namespace IssaPlugin
                 "ExplosionRadius",
                 50f,
                 "Radius (units) within which each victim's explosion affects nearby players."
-            );
-
-            SpawnWeight = global.BindSpawnWeight(
-                cfg,
-                127,
-                "RocketTetherGrenadeSpawnWeight",
-                8f,
-                "Override spawn weight for the Rocket Tether Grenade."
             );
         }
     }

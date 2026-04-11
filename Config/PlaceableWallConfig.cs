@@ -1,4 +1,4 @@
-using BepInEx.Configuration;
+﻿using BepInEx.Configuration;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin
@@ -9,7 +9,6 @@ namespace IssaPlugin
 
         public ConfigEntry<Key> GiveKey { get; private set; }
         public ConfigEntry<float> Uses { get; private set; }
-        public ConfigEntry<float> SpawnWeight { get; private set; }
         public ConfigEntry<float> MaxPlacementDistance { get; private set; }
         public ConfigEntry<float> MinHoleDistance { get; private set; }
         public ConfigEntry<float> HealthPoints { get; private set; }
@@ -89,14 +88,6 @@ namespace IssaPlugin
                 "DamageBaseballBat",
                 2f,
                 "Damage dealt to a wall chunk per baseball bat swing."
-            );
-
-            SpawnWeight = global.BindSpawnWeight(
-                cfg,
-                113,
-                "PlaceableWallWeight",
-                15f,
-                "Override spawn weight for the Placeable Wall."
             );
         }
     }

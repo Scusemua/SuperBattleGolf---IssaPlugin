@@ -1,4 +1,4 @@
-using BepInEx.Configuration;
+﻿using BepInEx.Configuration;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin
@@ -9,7 +9,6 @@ namespace IssaPlugin
 
         public ConfigEntry<Key> GiveKey { get; private set; }
         public ConfigEntry<float> Uses { get; private set; }
-        public ConfigEntry<float> SpawnWeight { get; private set; }
         public ConfigEntry<float> ThrowSpeed { get; private set; }
         public ConfigEntry<float> MaxThrowSpeed { get; private set; }
         public ConfigEntry<float> LobAngle { get; private set; }
@@ -112,14 +111,6 @@ namespace IssaPlugin
                 "AffectsGolfBalls",
                 true,
                 "If true, the black hole grenade sucks in and spits out golf balls. Set to false to leave golf balls unaffected."
-            );
-
-            SpawnWeight = global.BindSpawnWeight(
-                cfg,
-                112,
-                "BlackHoleGrenadeWeight",
-                8f,
-                "Override spawn weight for the Black Hole Grenade."
             );
         }
     }

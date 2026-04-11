@@ -1,4 +1,4 @@
-using BepInEx.Configuration;
+﻿using BepInEx.Configuration;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin
@@ -11,7 +11,6 @@ namespace IssaPlugin
         public ConfigEntry<float> Uses { get; private set; }
         public ConfigEntry<float> Duration { get; private set; }
         public ConfigEntry<float> Scale { get; private set; }
-        public ConfigEntry<float> SpawnWeight { get; private set; }
 
         public LowGravityConfig(ConfigFile cfg, GlobalConfig global)
         {
@@ -35,14 +34,6 @@ namespace IssaPlugin
                 "Fraction of normal gravity applied during the effect (e.g. 0.25 = 25%). "
                     + "Affects golf balls (Rigidbody) and player fall/jump height equally, "
                     + "since PlayerMovement reads Physics.gravity directly."
-            );
-
-            SpawnWeight = global.BindSpawnWeight(
-                cfg,
-                105,
-                "LowGravityWeight",
-                8f,
-                "Override spawn weight for the Low Gravity item."
             );
         }
     }

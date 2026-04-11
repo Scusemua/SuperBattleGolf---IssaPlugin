@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin.Items
@@ -21,7 +21,7 @@ namespace IssaPlugin.Items
         public override GameObject HeldModelPrefab => AssetLoader.RocketTetherGrenadePrefab;
 
         public override int MaxUses => (int)ModConfig.RocketTetherGrenade.Uses.Value;
-        public override int Tier => 3;
+        public override float DefaultPoolWeight => 5f;
         public override Key GiveKey => ModConfig.RocketTetherGrenade.GiveKey.Value;
 
         public override void OnEquip(PlayerInventory inventory)

@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin.Items
@@ -20,7 +20,7 @@ namespace IssaPlugin.Items
         public override GameObject HeldModelPrefab => AssetLoader.PoisonJarHandheldPrefab;
 
         public override int MaxUses => (int)ModConfig.PoisonJar.Uses.Value;
-        public override int Tier => 2;
+        public override float DefaultPoolWeight => 10f;
         public override Key GiveKey => ModConfig.PoisonJar.GiveKey.Value;
 
         public override void OnEquip(PlayerInventory inventory)

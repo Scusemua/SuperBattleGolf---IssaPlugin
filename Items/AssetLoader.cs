@@ -448,7 +448,7 @@ namespace IssaPlugin.Items
                 // TODO: replace asset names and assetId with the real values once known.
                 SpriteAsset(p => RocketTetherIcon = p, "rocket_tether_icon.png"),
                 HandheldPrefab(p => RocketTetherPrefab = p, "rocket_tether_handheld.prefab"),
-                LocalVfxPrefab(p => RocketTetherRocketPrefab = p, "rocket_tether_rocket.prefab"),
+                LocalVfxPrefab(p => RocketTetherRocketPrefab = p, "player_linker_rocket.prefab"),
                 // ── Rocket Tether Grenade ─────────────────────────────────────
                 // TODO: replace asset names and assetId with the real values once known.
                 SpriteAsset(p => RocketTetherGrenadeIcon = p, "rocket_tether_grenade_icon.png"),
@@ -782,6 +782,12 @@ namespace IssaPlugin.Items
                 {
                     StripNetworkComponents(go);
                     GameObject.DontDestroyOnLoad(go);
+                }
+                else
+                {
+                    IssaPluginPlugin.Log.LogWarning(
+                        $"[AssetLoader] LocalVfxPrefab not found in bundle: '{_name}'"
+                    );
                 }
                 _set(go);
             }

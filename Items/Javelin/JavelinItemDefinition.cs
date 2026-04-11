@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin.Items
@@ -11,7 +11,7 @@ namespace IssaPlugin.Items
         public override Sprite Icon => AssetLoader.JavelinIcon;
         public override GameObject HeldModelPrefab => AssetLoader.JavelinHandheldPrefab;
         public override int MaxUses => (int)ModConfig.Javelin.Uses.Value;
-        public override int Tier => 2;
+        public override float DefaultPoolWeight => 10f;
         public override Key GiveKey => ModConfig.Javelin.GiveKey.Value;
         public override ItemType AnimatorItemType => ItemType.RocketLauncher;
         public override ItemType AnimatorChangedItemType => ItemType.RocketLauncher;

@@ -1,4 +1,4 @@
-using Mirror;
+﻿using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -12,7 +12,7 @@ namespace IssaPlugin.Items
         public override Sprite Icon => AssetLoader.NukeIcon;
         public override GameObject HeldModelPrefab => AssetLoader.NuclearDetonatorPrefab;
         public override int MaxUses => (int)ModConfig.Nuke.Uses.Value;
-        public override int Tier => 3;
+        public override float DefaultPoolWeight => 5f;
         public override Key GiveKey => ModConfig.Nuke.GiveKey.Value;
         public override ItemType AnimatorItemType => ItemType.RocketLauncher;
         public override ItemType AnimatorChangedItemType => ItemType.RocketLauncher;

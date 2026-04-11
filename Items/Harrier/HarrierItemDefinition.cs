@@ -1,4 +1,4 @@
-using System.Runtime;
+﻿using System.Runtime;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -13,7 +13,7 @@ namespace IssaPlugin.Items
         public override GameObject HeldModelPrefab => AssetLoader.HarrierTabletPrefab;
         public override int MaxUses => (int)ModConfig.Harrier.Uses.Value;
 
-        public override int Tier => 3;
+        public override float DefaultPoolWeight => 5f;
 
         public override Key GiveKey => ModConfig.Harrier.GiveKey.Value;
 

@@ -1,4 +1,4 @@
-using BepInEx.Configuration;
+﻿using BepInEx.Configuration;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin
@@ -9,7 +9,6 @@ namespace IssaPlugin
 
         public ConfigEntry<Key> GiveKey { get; private set; }
         public ConfigEntry<float> Uses { get; private set; }
-        public ConfigEntry<float> SpawnWeight { get; private set; }
         public ConfigEntry<float> FireRate { get; private set; }
         public ConfigEntry<float> Inaccuracy { get; private set; }
         public ConfigEntry<float> MaxAimingDistance { get; private set; }
@@ -59,14 +58,6 @@ namespace IssaPlugin
                 "ScreenShakeIntensity",
                 0.25f,
                 "Intensity of the screen shake when firing the AK47. 0 disables it. Higher values shake more."
-            );
-
-            SpawnWeight = global.BindSpawnWeight(
-                cfg,
-                114,
-                "AK47Weight",
-                12f,
-                "Override spawn weight for the AK-47."
             );
         }
     }

@@ -1,4 +1,4 @@
-using BepInEx.Configuration;
+﻿using BepInEx.Configuration;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin
@@ -9,7 +9,6 @@ namespace IssaPlugin
 
         public ConfigEntry<Key> GiveKey { get; private set; }
         public ConfigEntry<float> Uses { get; private set; }
-        public ConfigEntry<float> SpawnWeight { get; private set; }
         public ConfigEntry<float> Count { get; private set; }
         public ConfigEntry<float> SpawnRadius { get; private set; }
         public ConfigEntry<float> SessionDuration { get; private set; }
@@ -266,14 +265,6 @@ namespace IssaPlugin
                 "AttackFinishedPlayers",
                 false,
                 "If true, bears will target players who have already holed out. If false, bears ignore them."
-            );
-
-            SpawnWeight = global.BindSpawnWeight(
-                cfg,
-                110,
-                "BearWeight",
-                6f,
-                "Override spawn weight for the Bear item."
             );
         }
     }

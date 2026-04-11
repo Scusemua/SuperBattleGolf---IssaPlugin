@@ -1,4 +1,4 @@
-using Mirror;
+﻿using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -12,7 +12,7 @@ namespace IssaPlugin.Items
         public override Sprite Icon => AssetLoader.PositionSwapIcon;
         public override GameObject HeldModelPrefab => AssetLoader.PositionSwapHandheldPrefab;
         public override int MaxUses => (int)ModConfig.PositionSwap.Uses.Value;
-        public override int Tier => 1;
+        public override float DefaultPoolWeight => 15f;
         public override Key GiveKey => ModConfig.PositionSwap.GiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)

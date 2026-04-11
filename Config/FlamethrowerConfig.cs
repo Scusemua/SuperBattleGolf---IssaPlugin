@@ -1,4 +1,4 @@
-using BepInEx.Configuration;
+﻿using BepInEx.Configuration;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin
@@ -11,8 +11,6 @@ namespace IssaPlugin
 
         /// <summary>Number of fuel canisters per Flamethrower pickup.</summary>
         public ConfigEntry<float> Uses { get; private set; }
-
-        public ConfigEntry<float> SpawnWeight { get; private set; }
 
         /// <summary>Seconds of fire provided by each fuel canister.</summary>
         public ConfigEntry<float> FuelPerUse { get; private set; }
@@ -44,14 +42,6 @@ namespace IssaPlugin
                 "Uses",
                 1f,
                 "Number of fuel canisters per Flamethrower pickup. Each canister provides FuelPerUse seconds of fire."
-            );
-
-            SpawnWeight = global.BindSpawnWeight(
-                cfg,
-                126,
-                "FlamethrowerSpawnWeight",
-                10f,
-                "Override spawn weight for the Flamethrower."
             );
 
             FuelPerUse = cfg.Bind(

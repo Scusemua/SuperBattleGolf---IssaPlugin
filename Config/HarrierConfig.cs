@@ -1,4 +1,4 @@
-using BepInEx.Configuration;
+﻿using BepInEx.Configuration;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin
@@ -9,7 +9,6 @@ namespace IssaPlugin
 
         public ConfigEntry<Key> GiveKey { get; private set; }
         public ConfigEntry<float> Uses { get; private set; }
-        public ConfigEntry<float> SpawnWeight { get; private set; }
         public ConfigEntry<float> Altitude { get; private set; }
         public ConfigEntry<float> Duration { get; private set; }
         public ConfigEntry<float> FireInterval { get; private set; }
@@ -103,14 +102,6 @@ namespace IssaPlugin
                 "CrashExplosionScale",
                 3f,
                 "Scale multiplier for the explosion spawned when the Harrier crashes into the ground."
-            );
-
-            SpawnWeight = global.BindSpawnWeight(
-                cfg,
-                115,
-                "HarrierJetWeight",
-                8f,
-                "Override spawn weight for the Harrier Jet."
             );
         }
     }

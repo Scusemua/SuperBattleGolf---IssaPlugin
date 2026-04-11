@@ -6,6 +6,54 @@ using IssaPlugin.Items;
 namespace IssaPlugin.Patches
 {
     /// <summary>
+    /// Extends MatchSetupRules' weight queries to include custom items, whose weights
+    /// are stored separately (cannot be added to spawnChanceWeights without crashing
+    /// SpawnChanceUpdated's itemOrderLookup array access on custom ItemType values).
+    ///
+    /// EffectiveWeights is populated by ItemSpawnerResetRuntimeDataPatch and cleared
+    /// before each full rebuild cycle (via ClearEffectiveWeightsPatch and
+    /// SpawnWeightsSyncer.BroadcastWeightsIfChanged).
+    /// </summary>
+    // [HarmonyPatch] with no arguments on the outer class is required for PatchAll
+    // to discover the method-level [HarmonyPatch] target attributes on each method.
+    // Without it, all three patches are silently skipped by harmony.PatchAll(assembly).
+    [HarmonyPatch]
+    public static class MatchSetupRulesPatches
+    {
+        // (game pool index, ItemType) → effective weight injected into that pool.
+        internal static readonly Dictionary<(int, ItemType), float> EffectiveWeights = new();
+
+        // ── GetWeight ──────────────────────────────────────────────────────────
+        [HarmonyPatch(typeof(MatchSetupRules), nameof(MatchSetupRules.GetWeight))]
+        [HarmonyPostfix]
+        static void GetWeightPatch(int poolIndex, ItemType itemType, ref float __result)
+        {
+            if (!ItemRegistry.IsCustomItem(itemType)) return;
+            if (EffectiveWeights.TryGetValue((poolIndex, itemType), out float w))
+                __result = w;
+        }
+
+        // ── GetItemPoolTotalWeight ─────────────────────────────────────────────
+        [HarmonyPatch(typeof(MatchSetupRules), nameof(MatchSetupRules.GetItemPoolTotalWeight))]
+        [HarmonyPostfix]
+        static void GetItemPoolTotalWeightPatch(int index, ref float __result)
+        {
+            foreach (var kv in EffectiveWeights)
+                if (kv.Key.Item1 == index)
+                    __result += kv.Value;
+        }
+
+        // ── ResetSpawnChances — clear before full rebuild ──────────────────────
+        // MatchSetupRules.ResetSpawnChances() calls ResetRuntimeData on both
+        // spawners. Clear EffectiveWeights first so stale entries from disabled
+        // items do not persist into the next cycle.
+        [HarmonyPatch(typeof(MatchSetupRules), "ResetSpawnChances")]
+        [HarmonyPrefix]
+        static void ClearEffectiveWeightsPatch() => EffectiveWeights.Clear();
+    }
+
+
+    /// <summary>
     /// Prevents IndexOutOfRangeException in MatchSetupRules when custom items are present
     /// in item pools. The game's itemOrderLookup only covers vanilla ItemType values
     /// (Coffee=1 through OrbitalLaser=10). Our custom items start at 100, so any lookup

@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin.Items
@@ -13,7 +13,7 @@ namespace IssaPlugin.Items
         public override GameObject HeldModelPrefab => AssetLoader.WallHandheldPrefab;
 
         public override int MaxUses => (int)ModConfig.PlaceableWall.Uses.Value;
-        public override int Tier => 1;
+        public override float DefaultPoolWeight => 15f;
         public override Key GiveKey => ModConfig.PlaceableWall.GiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)

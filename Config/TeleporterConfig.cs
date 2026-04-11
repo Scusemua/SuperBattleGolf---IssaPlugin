@@ -1,4 +1,4 @@
-using BepInEx.Configuration;
+﻿using BepInEx.Configuration;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin
@@ -9,7 +9,6 @@ namespace IssaPlugin
 
         public ConfigEntry<Key> GiveKey { get; private set; }
         public ConfigEntry<float> Uses { get; private set; }
-        public ConfigEntry<float> SpawnWeight { get; private set; }
         public ConfigEntry<float> TargetMoveSpeed { get; private set; }
         public ConfigEntry<float> MarkerRadius { get; private set; }
 
@@ -22,13 +21,6 @@ namespace IssaPlugin
                 "Hotkey to give yourself a Teleporter (debug/testing). Key.None = disabled."
             );
             Uses = cfg.Bind(Section, "Uses", 1f, "Number of uses per Teleporter pickup.");
-            SpawnWeight = global.BindSpawnWeight(
-                cfg,
-                124,
-                "TeleporterSpawnWeight",
-                10f,
-                "Override spawn weight for the Teleporter."
-            );
             TargetMoveSpeed = cfg.Bind(
                 Section,
                 "TargetMoveSpeed",

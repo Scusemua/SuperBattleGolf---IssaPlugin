@@ -1,4 +1,4 @@
-using Mirror;
+﻿using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -12,7 +12,7 @@ namespace IssaPlugin.Items
         public override Sprite Icon => AssetLoader.BearIcon;
         public override GameObject HeldModelPrefab => AssetLoader.TeddyBearPrefab;
         public override int MaxUses => (int)ModConfig.Bear.Uses.Value;
-        public override int Tier => 4;
+        public override float DefaultPoolWeight => 3f;
         public override Key GiveKey => ModConfig.Bear.GiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)

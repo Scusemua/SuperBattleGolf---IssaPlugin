@@ -1,4 +1,4 @@
-using Mirror;
+﻿using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -13,7 +13,7 @@ namespace IssaPlugin.Items
         public override GameObject HeldModelPrefab =>
             AssetLoader.SuperDonutHandheldPrefab ?? AssetLoader.DonutHandheldPrefab;
         public override int MaxUses => (int)ModConfig.SuperDonut.Uses.Value;
-        public override int Tier => 5;
+        public override float DefaultPoolWeight => 1f;
         public override Key GiveKey => ModConfig.SuperDonut.GiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)

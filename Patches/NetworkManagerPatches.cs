@@ -1510,14 +1510,6 @@ namespace IssaPlugin.Patches
                 );
             }
 
-            // Register custom reader/writer for TierConfigMessage.
-            Writer<TierConfigMessage>.write = TierConfigMessageSerialization.WriteTierConfigMessage;
-            Reader<TierConfigMessage>.read = TierConfigMessageSerialization.ReadTierConfigMessage;
-            NetworkClient.RegisterHandler<TierConfigMessage>(
-                msg => TierConfigSyncer.Instance?.OnClientReceivedTierConfig(msg),
-                false
-            );
-
             // ── Rocket Tether (lock-on item specific) ────────────────────────────
             Writer<RocketTetherLockOnMessage>.write =
                 RocketTetherLockOnMessageSerialization.WriteRocketTetherLockOnMessage;
@@ -1737,10 +1729,6 @@ namespace IssaPlugin.Patches
             // Resets the change-detection sentinel and immediately broadcasts
             // current spawn weights + rebuilds server item pools.
             SpawnWeightsSyncer.ForceServerSync();
-
-            // Rebuilds SpawnConfigSnapshot from current config and broadcasts
-            // tiers + per-item overrides.
-            TierConfigSyncer.Instance?.ForceBroadcast();
 
             // Broadcasts all BepInEx config entries so the client's local
             // ConfigEntry<T> values (FuelPerUse, BurnDuration, etc.) reflect

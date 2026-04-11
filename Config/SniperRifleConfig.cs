@@ -1,4 +1,4 @@
-using BepInEx.Configuration;
+﻿using BepInEx.Configuration;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin
@@ -9,7 +9,6 @@ namespace IssaPlugin
 
         public ConfigEntry<Key> GiveKey { get; private set; }
         public ConfigEntry<float> Uses { get; private set; }
-        public ConfigEntry<float> SpawnWeight { get; private set; }
         public ConfigEntry<float> MaxAimingDistance { get; private set; }
         public ConfigEntry<float> MaxShotDistance { get; private set; }
         public ConfigEntry<float> ScopedInaccuracy { get; private set; }
@@ -96,14 +95,6 @@ namespace IssaPlugin
                 "ScreenShakeIntensity",
                 0.65f,
                 "Intensity of the screen shake when firing the Sniper Rifle. 0 disables it. Higher values shake more."
-            );
-
-            SpawnWeight = global.BindSpawnWeight(
-                cfg,
-                106,
-                "SniperRifleWeight",
-                10f,
-                "Override spawn weight for the Sniper Rifle."
             );
         }
     }

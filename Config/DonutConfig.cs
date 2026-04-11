@@ -1,4 +1,4 @@
-using BepInEx.Configuration;
+﻿using BepInEx.Configuration;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin
@@ -9,7 +9,6 @@ namespace IssaPlugin
 
         public ConfigEntry<Key> GiveKey { get; private set; }
         public ConfigEntry<float> Uses { get; private set; }
-        public ConfigEntry<float> SpawnWeight { get; private set; }
         public ConfigEntry<float> Speed { get; private set; }
         public ConfigEntry<float> Altitude { get; private set; }
         public ConfigEntry<float> TerrainFollowSpeed { get; private set; }
@@ -131,14 +130,6 @@ namespace IssaPlugin
                 "CrashExplosionScale",
                 4.0f,
                 "Explosion scale multiplier for when a Donut crashes. Affects blast radius, knockback, and VFX size."
-            );
-
-            SpawnWeight = global.BindSpawnWeight(
-                cfg,
-                107,
-                "DonutWeight",
-                5f,
-                "Override spawn weight for the Donut."
             );
         }
     }

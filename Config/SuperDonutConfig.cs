@@ -1,4 +1,4 @@
-using BepInEx.Configuration;
+﻿using BepInEx.Configuration;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin
@@ -9,7 +9,6 @@ namespace IssaPlugin
 
         public ConfigEntry<Key> GiveKey { get; private set; }
         public ConfigEntry<float> Uses { get; private set; }
-        public ConfigEntry<float> SpawnWeight { get; private set; }
 
         public SuperDonutConfig(ConfigFile cfg, GlobalConfig global)
         {
@@ -20,14 +19,6 @@ namespace IssaPlugin
                 "Hotkey to give yourself a Super Donut (debug/testing)."
             );
             Uses = cfg.Bind(Section, "Uses", 1f, "Number of Super Donut uses per pickup.");
-
-            SpawnWeight = global.BindSpawnWeight(
-                cfg,
-                120,
-                "SuperDonutSpawnWeight",
-                3f,
-                "Override spawn weight for the Super Donut. Keep low — fires at every other player at once."
-            );
         }
     }
 }

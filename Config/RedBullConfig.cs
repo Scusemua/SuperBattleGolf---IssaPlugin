@@ -1,4 +1,4 @@
-using BepInEx.Configuration;
+﻿using BepInEx.Configuration;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin
@@ -9,7 +9,6 @@ namespace IssaPlugin
 
         public ConfigEntry<Key> GiveKey { get; private set; }
         public ConfigEntry<float> Uses { get; private set; }
-        public ConfigEntry<float> SpawnWeight { get; private set; }
         public ConfigEntry<float> Duration { get; private set; }
         public ConfigEntry<float> ExtraSpeedMultiplier { get; private set; }
         public ConfigEntry<float> JumpBonus { get; private set; }
@@ -47,14 +46,6 @@ namespace IssaPlugin
                 "DispenserChance",
                 0.25f,
                 "Probability (0–1) that the coffee dispenser gives a Red Bull instead of a coffee. 0 = never, 1 = always."
-            );
-
-            SpawnWeight = global.BindSpawnWeight(
-                cfg,
-                119,
-                "RedBullSpawnWeight",
-                10f,
-                "Override spawn weight for Red Bull."
             );
         }
     }

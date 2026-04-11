@@ -1,4 +1,4 @@
-using BepInEx.Configuration;
+﻿using BepInEx.Configuration;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin
@@ -9,7 +9,6 @@ namespace IssaPlugin
 
         public ConfigEntry<Key> GiveKey { get; private set; }
         public ConfigEntry<float> Uses { get; private set; }
-        public ConfigEntry<float> SpawnWeight { get; private set; }
         public ConfigEntry<float> ThrowSpeed { get; private set; }
         public ConfigEntry<float> MaxThrowSpeed { get; private set; }
         public ConfigEntry<float> LobAngle { get; private set; }
@@ -62,14 +61,6 @@ namespace IssaPlugin
                 "StickRadius",
                 0.55f,
                 "Radius of the overlap sphere used to detect stick targets each FixedUpdate."
-            );
-
-            SpawnWeight = global.BindSpawnWeight(
-                cfg,
-                109,
-                "StickyGrenadeWeight",
-                12f,
-                "Override spawn weight for the Sticky Grenade."
             );
             ExplosionScale = cfg.Bind(
                 "Explosions",

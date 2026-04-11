@@ -1,4 +1,4 @@
-using BepInEx.Configuration;
+﻿using BepInEx.Configuration;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin
@@ -13,7 +13,6 @@ namespace IssaPlugin
         public ConfigEntry<float> Timeout { get; private set; }
         public ConfigEntry<float> Uses { get; private set; }
         public ConfigEntry<Key> GiveKey { get; private set; }
-        public ConfigEntry<float> SpawnWeight { get; private set; }
         public ConfigEntry<float> ExplosionScale { get; private set; }
 
         public PredatorMissileConfig(ConfigFile cfg, GlobalConfig global)
@@ -48,14 +47,6 @@ namespace IssaPlugin
                 "GiveKey",
                 Key.F9,
                 "Key to press to add the predator missile to your inventory."
-            );
-
-            SpawnWeight = global.BindSpawnWeight(
-                cfg,
-                102,
-                "PredatorMissileWeight",
-                10f,
-                "Override spawn weight for the Predator Missile."
             );
             ExplosionScale = cfg.Bind(
                 "Explosions",

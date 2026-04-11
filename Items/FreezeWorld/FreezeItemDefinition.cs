@@ -1,4 +1,4 @@
-using Mirror;
+﻿using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -12,7 +12,7 @@ namespace IssaPlugin.Items
         public override Sprite Icon => AssetLoader.FreezeIcon;
         public override GameObject HeldModelPrefab => AssetLoader.FreezeModelPrefab;
         public override int MaxUses => (int)ModConfig.Freeze.Uses.Value;
-        public override int Tier => 1;
+        public override float DefaultPoolWeight => 15f;
         public override Key GiveKey => ModConfig.Freeze.GiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)

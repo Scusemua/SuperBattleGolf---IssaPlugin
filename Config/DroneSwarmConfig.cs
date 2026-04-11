@@ -1,4 +1,4 @@
-using BepInEx.Configuration;
+﻿using BepInEx.Configuration;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin
@@ -9,7 +9,6 @@ namespace IssaPlugin
 
         public ConfigEntry<Key> GiveKey { get; private set; }
         public ConfigEntry<float> Uses { get; private set; }
-        public ConfigEntry<float> SpawnWeight { get; private set; }
         public ConfigEntry<float> BaseDroneCount { get; private set; }
         public ConfigEntry<float> PerPlayerScalingFactor { get; private set; }
         public ConfigEntry<float> Altitude { get; private set; }
@@ -141,14 +140,6 @@ namespace IssaPlugin
                 "MaxSessionDuration",
                 60f,
                 "Safety cap (seconds) after which any remaining drones are force-destroyed."
-            );
-
-            SpawnWeight = global.BindSpawnWeight(
-                cfg,
-                118,
-                "DroneSwarmSpawnWeight",
-                3.5f,
-                "Override spawn weight for the Drone Swarm."
             );
         }
     }

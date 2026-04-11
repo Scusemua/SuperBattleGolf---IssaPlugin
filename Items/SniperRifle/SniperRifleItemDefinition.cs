@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin.Items
@@ -13,7 +13,7 @@ namespace IssaPlugin.Items
         public override GameObject HeldModelPrefab => AssetLoader.SniperRiflePrefab;
         public override bool UseRocketIconFallback => false; // uses pistol fallback
         public override int MaxUses => (int)ModConfig.SniperRifle.Uses.Value;
-        public override int Tier => 2;
+        public override float DefaultPoolWeight => 10f;
         public override Key GiveKey => ModConfig.SniperRifle.GiveKey.Value;
         public override EquipmentType EquipmentType => EquipmentType.ElephantGun;
         public override ItemType AnimatorItemType => ItemType.ElephantGun;

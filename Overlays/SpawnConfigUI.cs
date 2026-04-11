@@ -7,27 +7,20 @@
 //
 // ── Host vs client ────────────────────────────────────────────────────────────
 //   Host  → full editing controls. "Apply" persists to BepInEx cfg + broadcasts.
-//   Client → read-only display of the most recent snapshot received from the host.
+//   Client → read-only display of the most recently received values.
 //
 // ── Layout overview ───────────────────────────────────────────────────────────
-//   ┌─ Spawn Config ────────────────────────────────────────────────────────────┐
-//   │  [×] Close  ──  [ ] Custom items enabled  ─  Global rate: [___] ─ Catchup: [___]  │
-//   ├─── Tier tabs: [Tier 1] [Tier 2] [Tier 3] ─────────────────────────────────┤
-//   │  Selected tier panel:                                                       │
-//   │    [ ] Tier enabled                                                         │
-//   │    Spawn weight: [____]                                                     │
-//   │    Min dist behind leader: [____] units  (0 = disabled)                    │
-//   │    Min place to trigger: [____]           (0 = disabled)                   │
-//   │  ─ Items in this tier ───────────────────────────────────────────────────  │
-//   │    [Icon] Item Name  [ ] Enabled  Override weight: [ ] [____]  [Move▼]    │
-//   │    ...                                                                      │
-//   ├───────────────────────────────────────────────────────────────────────────┤
-//   │  [Cancel]  [Apply & Sync]                                                  │
-//   └───────────────────────────────────────────────────────────────────────────┘
+//   ┌─ Item Spawn Config ──────────────────────────────────────────────────────┐
+//   │  [×]  [ ] Custom items enabled   Global rate: [0.50]                     │
+//   │  ──────────────────────────────────────────────────────────────────────  │
+//   │  Item Name          On   Lead  Beh.50  Beh.125  Beh.200  Ahead  Mob.    │
+//   │  Baseball Bat       [✓]  [15]  [15]    [15]     [15]     [15]   [15]    │
+//   │  ...                                                                      │
+//   │  ──────────────────────────────────────────────────────────────────────  │
+//   │  [Cancel]   [Apply & Sync]                                                │
+//   └──────────────────────────────────────────────────────────────────────────┘
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using IssaPlugin.Items;
 using Mirror;
 using UnityEngine;
@@ -44,40 +37,43 @@ namespace IssaPlugin.Overlays
         private bool _visible;
 
         // ── Working copy of the config ─────────────────────────────────────────
-        // The host edits this working copy; "Apply" commits it.
-        // Clients display the TierConfigSyncer.CurrentSnapshot in read-only mode.
-        private SpawnConfigSnapshot _working;
+        private bool _workingEnabled;
+        private float _workingRate;
+        private bool[] _workingItemEnabled;       // [itemIndex] into ItemRegistry.AllItems
+        private float[,] _workingPoolWeights;     // [itemIndex, gamePoolIndex 0-5]
+
+        // IMGUI text field buffers — keyed by "{itemIndex}_{gamePoolIndex}" for pool
+        // weight fields, and "rate" for the global rate field.
+        // Required because IMGUI TextField resets cursor position on every frame
+        // without a per-field string buffer.
+        private readonly Dictionary<string, string> _textBuffers = new();
 
         // ── UI state ──────────────────────────────────────────────────────────
-        private int _selectedTier = 1;
-        private Vector2 _tierItemScrollPos;
-        private Vector2 _windowScrollPos;
-
-        // String buffers for text fields (IMGUI text-field limitation workaround)
-        private Dictionary<string, string> _textBuffers = new Dictionary<string, string>();
+        private Vector2 _scrollPos;
 
         // Window rect — draggable
-        private Rect _windowRect = new Rect(80, 60, 1280, 720);
+        private Rect _windowRect = new Rect(40, 40, 1360, 740);
+
+        // Column display order: (gamePoolIndex, header label)
+        // Matches the base game pause menu order (Lead, Beh50, Beh125, Beh200, Ahead, Mob).
+        private static readonly (int pool, string label)[] PoolColumns =
+        {
+            (GlobalConfig.PoolLead,      "Lead"),
+            (GlobalConfig.PoolBehind50,  "Beh.50"),
+            (GlobalConfig.PoolBehind125, "Beh.125"),
+            (GlobalConfig.PoolBehind200, "Beh.200"),
+            (GlobalConfig.PoolAhead,     "Ahead"),
+            (GlobalConfig.PoolMobility,  "Mob."),
+        };
 
         // Styles (initialised lazily on first OnGUI call)
         private GUIStyle _styleHeader;
-        private GUIStyle _styleTierTabActive;
-        private GUIStyle _styleTierTabInactive;
         private GUIStyle _styleItemRow;
         private GUIStyle _styleIconBox;
         private GUIStyle _styleReadOnly;
+        private GUIStyle _styleColHeader;
         private GUIStyle _styleTooltip;
         private bool _stylesInitialised;
-
-        // Tier name labels
-        private static readonly Dictionary<int, string> TierLabels = new Dictionary<int, string>
-        {
-            { 1, "Tier 1 — Common" },
-            { 2, "Tier 2 — Standard" },
-            { 3, "Tier 3 — Rare / Powerful" },
-            { 4, "Tier 4 — Very Rare" },
-            { 5, "Tier 5 — Ultra Rare" },
-        };
 
         // ── Unity lifecycle ───────────────────────────────────────────────────
 
@@ -103,7 +99,6 @@ namespace IssaPlugin.Overlays
             if (keyboard == null)
                 return;
 
-            // Toggle on configured hotkey (default M)
             if (keyboard[ModConfig.Global.SpawnConfigUIKey.Value].wasPressedThisFrame)
                 Toggle();
         }
@@ -112,35 +107,14 @@ namespace IssaPlugin.Overlays
 
         public void Toggle()
         {
-            if (_visible)
-                Close();
-            else
-                Open();
+            if (_visible) Close();
+            else Open();
         }
 
         public void Open()
         {
-            if (ModConfig.Global.NumTiers == null)
-            {
-                IssaPluginPlugin.Log.LogWarning(
-                    "[SpawnConfigUI] Cannot open — Configuration not initialised."
-                );
-                return;
-            }
-
             _visible = true;
-            // Always re-build the working copy from the current authoritative snapshot
-            // so edits always start from the latest state.
-            var authoritativeSnap =
-                TierConfigSyncer.Instance?.CurrentSnapshot
-                ?? SpawnConfigSnapshot.FromConfiguration();
-
-            _working = authoritativeSnap.DeepCopy();
-
-            // Ensure all tiers in the working copy are known.
-            _selectedTier = _working.TierSettings.Keys.OrderBy(t => t).FirstOrDefault();
-            _textBuffers.Clear();
-
+            InitWorkingCopy();
             IssaPluginPlugin.Log.LogInfo("[SpawnConfigUI] Opened.");
         }
 
@@ -150,11 +124,51 @@ namespace IssaPlugin.Overlays
             IssaPluginPlugin.Log.LogInfo("[SpawnConfigUI] Closed.");
         }
 
+        // ── Working copy ──────────────────────────────────────────────────────
+
+        private void InitWorkingCopy()
+        {
+            _workingEnabled = ModConfig.Global.CustomItemSpawnsEnabled.Value;
+            _workingRate    = ModConfig.Global.CustomItemSpawnRate.Value;
+            var items = ItemRegistry.AllItems;
+            _workingItemEnabled = new bool[items.Count];
+            _workingPoolWeights = new float[items.Count, 6];
+            _textBuffers.Clear();
+            _textBuffers["rate"] = _workingRate.ToString("F2");
+            for (int i = 0; i < items.Count; i++)
+            {
+                _workingItemEnabled[i] = items[i].Enabled;
+                for (int p = 0; p < 6; p++)
+                {
+                    _workingPoolWeights[i, p] = ModConfig.GetItemPoolWeight(items[i].ItemType, p);
+                    _textBuffers[$"{i}_{p}"] = _workingPoolWeights[i, p].ToString("F1");
+                }
+            }
+        }
+
+        private void ApplyAndSync()
+        {
+            ModConfig.Global.CustomItemSpawnsEnabled.Value = _workingEnabled;
+            ModConfig.Global.CustomItemSpawnRate.Value     = _workingRate;
+            var items = ItemRegistry.AllItems;
+            for (int i = 0; i < items.Count; i++)
+            {
+                ModConfig.SetItemEnabled(items[i].ItemType, _workingItemEnabled[i]);
+                for (int p = 0; p < 6; p++)
+                    ModConfig.SetItemPoolWeight(items[i].ItemType, p, _workingPoolWeights[i, p]);
+            }
+            SpawnWeightsSyncer.ForceServerSync();
+            // Immediately push all ConfigEntry values (including the new per-pool weights and
+            // CustomItemSpawnRate) to clients so they don't need to wait for the next
+            // 5-second ItemConfigSyncer tick before their local config reflects the change.
+            ItemConfigSyncer.Broadcast();
+        }
+
         // ── Rendering ─────────────────────────────────────────────────────────
 
         private void OnGUI()
         {
-            if (!_visible || _working == null)
+            if (!_visible || _workingItemEnabled == null)
                 return;
 
             if (!_stylesInitialised)
@@ -170,32 +184,14 @@ namespace IssaPlugin.Overlays
         private void DrawWindow(int id)
         {
             bool isHost = NetworkServer.active;
-            var snap = _working; // editing copy (host) or display copy (client)
 
             // ── Window header ─────────────────────────────────────────────────
             GUILayout.BeginHorizontal();
-            GUILayout.Label(
-                new GUIContent(
-                    "⚙  Spawn Config",
-                    "Configure which custom items spawn and how often. Changes take effect when the host clicks Apply & Sync."
-                ),
-                _styleHeader
-            );
+            GUILayout.Label("⚙  Item Spawn Config", _styleHeader);
             GUILayout.FlexibleSpace();
             if (!isHost)
-                GUILayout.Label(
-                    new GUIContent(
-                        "  ⚠ Read-only (host controls config)",
-                        "Only the host can edit spawn settings. Your view updates automatically when the host applies changes."
-                    ),
-                    _styleReadOnly
-                );
-            if (
-                GUILayout.Button(
-                    new GUIContent("✕ Close", "Close this panel. Unsaved changes will be lost."),
-                    GUILayout.Width(80)
-                )
-            )
+                GUILayout.Label("  ⚠ Read-only (host controls config)", _styleReadOnly);
+            if (GUILayout.Button("✕ Close", GUILayout.Width(80)))
                 Close();
             GUILayout.EndHorizontal();
 
@@ -206,553 +202,158 @@ namespace IssaPlugin.Overlays
             // ── Global toggles row ────────────────────────────────────────────
             GUILayout.BeginHorizontal();
 
-            bool customEnabled = snap.CustomItemSpawnsEnabled;
-            bool newCustomEnabled = GUILayout.Toggle(
-                customEnabled,
-                new GUIContent(
-                    " Custom items enabled",
-                    "Master switch for all custom items. When off, no custom items will appear in the item pool regardless of other settings."
-                ),
+            GUI.enabled = isHost;
+            bool newEnabled = GUILayout.Toggle(
+                _workingEnabled,
+                new GUIContent(" Custom items enabled",
+                    "Master switch for all custom items. When off, no custom items will appear in the item pool."),
                 GUILayout.Width(200)
             );
-            if (isHost && newCustomEnabled != customEnabled)
-                snap.CustomItemSpawnsEnabled = newCustomEnabled;
+            if (isHost) _workingEnabled = newEnabled;
 
             GUILayout.Space(20);
             GUILayout.Label(
-                new GUIContent(
-                    "Global rate multiplier:",
-                    "Scales the spawn rate of ALL custom items up or down. 1.0 = normal rate. 2.0 = twice as often. 0.5 = half as often."
-                ),
-                GUILayout.Width(150)
+                new GUIContent("Global rate multiplier:",
+                    "Scales the spawn weight of ALL custom items. 1.0 = normal, 0.5 = half as frequent."),
+                GUILayout.Width(160)
             );
-            snap.GlobalSpawnRateMultiplier = DrawFloatField(
-                "globalRate",
-                snap.GlobalSpawnRateMultiplier,
-                isHost,
-                0f,
-                10f,
-                80
-            );
+            _workingRate = DrawFloatField("rate", _workingRate, isHost, 0f, 10f, 70);
 
-            GUILayout.Space(20);
-            GUILayout.Label(
-                new GUIContent(
-                    "Catchup boost:",
-                    "Extra spawn-rate multiplier applied only to players who are behind the leader. Helps losing players get powerful items more often. 1.0 = no boost."
-                ),
-                GUILayout.Width(110)
-            );
-            snap.CatchupBoostFactor = DrawFloatField(
-                "catchup",
-                snap.CatchupBoostFactor,
-                isHost,
-                0f,
-                5f,
-                60
-            );
-
-            GUILayout.Space(20);
-            GUILayout.Label(
-                new GUIContent(
-                    "Tiers:",
-                    "The number of item tiers. Each tier has its own spawn weight and gating rules. Items in higher tiers are typically rarer or more powerful."
-                ),
-                GUILayout.Width(42)
-            );
-            int currentNumTiers = _working.TierSettings.Count;
-
-            // "−" button: remove the highest tier (only if it has no items assigned to it)
-            int _topTier = currentNumTiers > 1 ? _working.TierSettings.Keys.Max() : 0;
-            bool _topTierHasItems =
-                _topTier > 0 && _working.ItemOverrides.Values.Any(o => o.AssignedTier == _topTier);
-            GUI.enabled = isHost && currentNumTiers > 1 && !_topTierHasItems;
-            string removeTierTip = _topTierHasItems
-                ? "Cannot remove this tier — move all its items to another tier first."
-                : "Remove the highest-numbered tier.";
-            if (
-                GUILayout.Button(
-                    new GUIContent("−", removeTierTip),
-                    GUILayout.Width(24),
-                    GUILayout.Height(22)
-                )
-            )
-            {
-                _working.TierSettings.Remove(_topTier);
-                if (_selectedTier == _topTier)
-                    _selectedTier = _topTier - 1;
-                _textBuffers.Clear(); // reset field buffers after structural change
-            }
             GUI.enabled = true;
-
-            GUILayout.Label(currentNumTiers.ToString(), GUILayout.Width(20), GUILayout.Height(22));
-
-            // "+" button: add a new tier above the current highest
-            GUI.enabled = isHost && currentNumTiers < ModConfig.MaxTiers;
-            if (
-                GUILayout.Button(
-                    new GUIContent(
-                        "+",
-                        $"Add a new tier above the current highest. Maximum {ModConfig.MaxTiers} tiers."
-                    ),
-                    GUILayout.Width(24),
-                    GUILayout.Height(22)
-                )
-            )
-            {
-                int newTier = _working.TierSettings.Keys.Max() + 1;
-                // Default weight: half the current highest tier's weight, minimum 1.
-                float prevWeight = _working.TierSettings[newTier - 1].SpawnWeight;
-                _working.TierSettings[newTier] = new TierSettings(
-                    newTier,
-                    Mathf.Max(1f, prevWeight * 0.5f)
-                );
-                _selectedTier = newTier;
-                _textBuffers.Clear();
-            }
-            GUI.enabled = true;
-
             GUILayout.EndHorizontal();
 
             GUILayout.Space(8);
-
-            // ── Tier tab bar ──────────────────────────────────────────────────
-            var sortedTiers = snap.TierSettings.Keys.OrderBy(t => t).ToList();
-
-            GUILayout.BeginHorizontal();
-            foreach (int tier in sortedTiers)
-            {
-                bool active = tier == _selectedTier;
-                GUIStyle tabStyle = active ? _styleTierTabActive : _styleTierTabInactive;
-                string label = TierLabels.TryGetValue(tier, out var tl) ? tl : $"Tier {tier}";
-
-                // Show a small indicator if tier is disabled
-                if (!snap.TierSettings[tier].TierEnabled)
-                    label = "⊘ " + label;
-
-                if (GUILayout.Button(label, tabStyle, GUILayout.Height(28)))
-                    _selectedTier = tier;
-            }
-            GUILayout.EndHorizontal();
-
+            GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.Height(1));
             GUILayout.Space(4);
 
-            // ── Main scroll area ──────────────────────────────────────────────
-            _windowScrollPos = GUILayout.BeginScrollView(_windowScrollPos);
+            // ── Column header row ─────────────────────────────────────────────
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Item Name",   _styleColHeader, GUILayout.Width(160));
+            GUILayout.Label("On",          _styleColHeader, GUILayout.Width(30));
+            GUILayout.Space(4);
+            foreach (var (_, label) in PoolColumns)
+                GUILayout.Label(label, _styleColHeader, GUILayout.Width(58));
+            GUILayout.EndHorizontal();
 
-            if (snap.TierSettings.TryGetValue(_selectedTier, out var tierSettings))
-                DrawTierPanel(tierSettings, snap, isHost, sortedTiers);
+            GUILayout.Space(2);
+            GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.Height(1));
+            GUILayout.Space(2);
+
+            // ── Item rows (scrollable) ────────────────────────────────────────
+            _scrollPos = GUILayout.BeginScrollView(_scrollPos);
+
+            var items = ItemRegistry.AllItems;
+            for (int i = 0; i < items.Count; i++)
+                DrawItemRow(i, items[i], isHost);
 
             GUILayout.EndScrollView();
 
-            // ── Bottom action bar (host only) ─────────────────────────────────
-            if (isHost)
+            // ── Bottom action bar ─────────────────────────────────────────────
+            GUILayout.Space(4);
+            GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.Height(1));
+            GUILayout.Space(4);
+
+            GUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+
+            if (GUILayout.Button(
+                    new GUIContent("Cancel", "Discard unsaved changes and close."),
+                    GUILayout.Width(100), GUILayout.Height(28)))
+                Close();
+
+            GUILayout.Space(10);
+
+            GUI.enabled = isHost;
+            GUI.backgroundColor = isHost ? new Color(0.3f, 0.9f, 0.3f) : Color.white;
+            if (GUILayout.Button(
+                    new GUIContent("✔  Apply & Sync",
+                        isHost
+                            ? "Save changes and broadcast to all clients."
+                            : "Only the host can apply changes."),
+                    GUILayout.Width(140), GUILayout.Height(28)))
             {
-                GUILayout.Space(4);
-                GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.Height(1));
-                GUILayout.Space(4);
-
-                GUILayout.BeginHorizontal();
-                GUILayout.FlexibleSpace();
-
-                if (
-                    GUILayout.Button(
-                        new GUIContent(
-                            "Cancel",
-                            "Discard all unsaved changes and close the panel."
-                        ),
-                        GUILayout.Width(100),
-                        GUILayout.Height(28)
-                    )
-                )
-                    Close();
-
-                GUILayout.Space(10);
-
-                GUI.backgroundColor = new Color(0.3f, 0.9f, 0.3f);
-                if (
-                    GUILayout.Button(
-                        new GUIContent(
-                            "✔  Apply & Sync",
-                            "Save changes to the config file and broadcast the new settings to all connected clients immediately."
-                        ),
-                        GUILayout.Width(140),
-                        GUILayout.Height(28)
-                    )
-                )
-                    ApplyAndClose();
-                GUI.backgroundColor = Color.white;
-
-                GUILayout.EndHorizontal();
+                ApplyAndSync();
+                Close();
             }
+            GUI.backgroundColor = Color.white;
+            GUI.enabled = true;
 
-            // Make window draggable by any non-control area.
+            GUILayout.EndHorizontal();
+
             GUI.DragWindow();
-
-            // Render tooltip inside the window pass so it is clipped correctly.
             DrawTooltipInWindow();
-        }
-
-        // ── Tier panel ────────────────────────────────────────────────────────
-
-        private void DrawTierPanel(
-            TierSettings ts,
-            SpawnConfigSnapshot snap,
-            bool isHost,
-            List<int> allTiers
-        )
-        {
-            // ── Tier-level controls ───────────────────────────────────────────
-            GUILayout.BeginVertical(GUI.skin.box);
-            GUILayout.Space(4);
-
-            GUILayout.BeginHorizontal();
-            bool newTierEnabled = GUILayout.Toggle(
-                ts.TierEnabled,
-                new GUIContent(
-                    " Tier enabled",
-                    "When disabled, no items from this tier will spawn. The tier still exists and can be re-enabled later."
-                ),
-                GUILayout.Width(140)
-            );
-            if (isHost)
-                ts.TierEnabled = newTierEnabled;
-            GUILayout.EndHorizontal();
-
-            GUILayout.Space(4);
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Label(
-                new GUIContent(
-                    "Spawn weight:",
-                    "How likely items from this tier are to spawn relative to other tiers. Higher weight = spawns more often. All enabled tier weights are summed and each tier's chance is its share of that total."
-                ),
-                GUILayout.Width(130)
-            );
-            ts.SpawnWeight = DrawFloatField(
-                $"tier{ts.Tier}weight",
-                ts.SpawnWeight,
-                isHost,
-                0f,
-                100f,
-                80
-            );
-            GUILayout.Space(20);
-            GUILayout.Label(
-                new GUIContent(
-                    "(relative to other tier weights)",
-                    "Example: Tier 1 weight 70, Tier 2 weight 30 → Tier 1 spawns 70% of the time, Tier 2 spawns 30%."
-                ),
-                GUILayout.Width(240)
-            );
-            GUILayout.EndHorizontal();
-
-            GUILayout.Space(4);
-
-            // ── Distance gating ───────────────────────────────────────────────
-            GUILayout.BeginHorizontal();
-            GUILayout.Label(
-                new GUIContent(
-                    "Min distance behind leader:",
-                    "A player must be at least this many units behind the current leader to receive items from this tier. Set to 0 to disable the gate (anyone can get this tier)."
-                ),
-                GUILayout.Width(200)
-            );
-            ts.MinDistanceBehindLeader = DrawFloatField(
-                $"tier{ts.Tier}dist",
-                ts.MinDistanceBehindLeader,
-                isHost,
-                0f,
-                10000f,
-                80
-            );
-            GUILayout.Space(8);
-            GUILayout.Label(
-                new GUIContent(
-                    "units  (0 = no gate)",
-                    "Set to 0 to allow any player to receive items from this tier regardless of their distance from the leader."
-                ),
-                GUILayout.Width(150)
-            );
-            GUILayout.EndHorizontal();
-
-            GUILayout.Space(4);
-
-            // ── Place gating ──────────────────────────────────────────────────
-            GUILayout.BeginHorizontal();
-            GUILayout.Label(
-                new GUIContent(
-                    "Min place to trigger:",
-                    "A player must be in this place or worse to receive items from this tier. E.g. 3 means only 3rd place, 4th place, etc. Set to 0 to disable — any place can receive this tier."
-                ),
-                GUILayout.Width(200)
-            );
-            ts.MinPlaceTrigger = DrawIntField(
-                $"tier{ts.Tier}place",
-                ts.MinPlaceTrigger,
-                isHost,
-                0,
-                32,
-                50
-            );
-            GUILayout.Space(8);
-            GUILayout.Label(
-                new GUIContent(
-                    "  (e.g. 3 = only 3rd place or worse; 0 = no gate)",
-                    "Both distance and place gates must be satisfied for a player to receive items from this tier. Either gate can be independently disabled by setting it to 0."
-                ),
-                GUILayout.Width(340)
-            );
-            GUILayout.EndHorizontal();
-
-            GUILayout.Space(6);
-            GUILayout.EndVertical();
-
-            GUILayout.Space(8);
-
-            // ── Items in this tier ────────────────────────────────────────────
-            GUILayout.Label($"  Items in Tier {ts.Tier}:", _styleHeader);
-            GUILayout.Space(4);
-
-            var itemsInTier = ItemRegistry
-                .AllItems.Where(def => GetEffectiveTier(def, snap) == ts.Tier)
-                .OrderBy(def => def.DisplayName)
-                .ToList();
-
-            if (itemsInTier.Count == 0)
-            {
-                GUILayout.Label("    (no items assigned to this tier)", _styleReadOnly);
-            }
-            else
-            {
-                _tierItemScrollPos = GUILayout.BeginScrollView(
-                    _tierItemScrollPos,
-                    false,
-                    true,
-                    GUILayout.Height(Mathf.Min(itemsInTier.Count * 52 + 16, 320))
-                );
-
-                foreach (var def in itemsInTier)
-                    DrawItemRow(def, snap, isHost, allTiers);
-
-                GUILayout.EndScrollView();
-            }
         }
 
         // ── Item row ──────────────────────────────────────────────────────────
 
-        private void DrawItemRow(
-            CustomItemDefinition def,
-            SpawnConfigSnapshot snap,
-            bool isHost,
-            List<int> allTiers
-        )
+        private void DrawItemRow(int i, CustomItemDefinition def, bool isHost)
         {
-            int id = (int)def.ItemType;
-            if (!snap.ItemOverrides.TryGetValue(id, out var ov))
-                return;
+            GUILayout.BeginHorizontal(_styleItemRow, GUILayout.Height(36));
 
-            GUILayout.BeginHorizontal(_styleItemRow, GUILayout.Height(48));
-
-            // ── Icon ──────────────────────────────────────────────────────────
+            // Icon
             if (def.Icon != null)
-            {
-                Texture2D tex = def.Icon.texture;
-                GUILayout.Box(
-                    new GUIContent(tex, def.DisplayName),
-                    _styleIconBox,
-                    GUILayout.Width(40),
-                    GUILayout.Height(40)
-                );
-            }
+                GUILayout.Box(new GUIContent(def.Icon.texture, def.DisplayName),
+                    _styleIconBox, GUILayout.Width(28), GUILayout.Height(28));
             else
-            {
-                GUILayout.Box(
-                    new GUIContent("?", def.DisplayName),
-                    _styleIconBox,
-                    GUILayout.Width(40),
-                    GUILayout.Height(40)
-                );
-            }
+                GUILayout.Box(new GUIContent("?", def.DisplayName),
+                    _styleIconBox, GUILayout.Width(28), GUILayout.Height(28));
 
-            GUILayout.Space(6);
+            GUILayout.Space(4);
 
-            // ── Name ─────────────────────────────────────────────────────────
+            // Name
             GUILayout.Label(
-                new GUIContent(def.DisplayName, $"Item type ID: {id}"),
-                GUILayout.Width(160),
-                GUILayout.Height(40)
-            );
+                new GUIContent(def.DisplayName, $"ItemType {(int)def.ItemType}"),
+                GUILayout.Width(128), GUILayout.Height(28));
 
-            GUILayout.Space(8);
+            GUILayout.Space(4);
 
-            // ── Enabled toggle ────────────────────────────────────────────────
-            bool newEnabled = GUILayout.Toggle(
-                ov.Enabled,
-                new GUIContent(
-                    " Enabled",
-                    $"When disabled, {def.DisplayName} will never spawn regardless of weight settings."
-                ),
-                GUILayout.Width(90),
-                GUILayout.Height(40)
-            );
-            if (isHost)
-                ov.Enabled = newEnabled;
-
-            GUILayout.Space(10);
-
-            // ── Spawn weight override ─────────────────────────────────────────
-            bool newOvEnabled = GUILayout.Toggle(
-                ov.SpawnWeightOverrideEnabled,
-                new GUIContent(
-                    " Override weight:",
-                    $"Give {def.DisplayName} its own spawn weight instead of inheriting the tier's weight. Useful for making one item rarer or more common than others in the same tier."
-                ),
-                GUILayout.Width(145),
-                GUILayout.Height(40)
-            );
-            if (isHost)
-                ov.SpawnWeightOverrideEnabled = newOvEnabled;
-
-            GUI.enabled = isHost && ov.SpawnWeightOverrideEnabled;
-            float newWeight = DrawFloatField(
-                $"item{id}weight",
-                ov.SpawnWeightOverride,
-                isHost && ov.SpawnWeightOverrideEnabled,
-                0f,
-                100f,
-                60
-            );
-            if (isHost)
-                ov.SpawnWeightOverride = newWeight;
+            // Enabled toggle
+            GUI.enabled = isHost;
+            bool newEn = GUILayout.Toggle(
+                _workingItemEnabled[i],
+                new GUIContent("",
+                    $"When off, {def.DisplayName} never spawns regardless of pool weights."),
+                GUILayout.Width(20), GUILayout.Height(28));
+            if (isHost) _workingItemEnabled[i] = newEn;
             GUI.enabled = true;
 
             GUILayout.Space(10);
 
-            // ── Effective weight display ──────────────────────────────────────
-            float effectiveWeight = ov.SpawnWeightOverrideEnabled
-                ? ov.SpawnWeightOverride
-                : (
-                    snap.TierSettings.TryGetValue(GetEffectiveTier(def, snap), out var tierS)
-                        ? tierS.SpawnWeight
-                        : 0f
-                );
-            string effTip = ov.SpawnWeightOverrideEnabled
-                ? "This item's spawn weight comes from its individual override."
-                : "This item inherits its spawn weight from the tier. Enable 'Override weight' to set a custom value.";
-            GUILayout.Label(
-                new GUIContent($"Eff: {effectiveWeight:0.#}", effTip),
-                GUILayout.Width(60),
-                GUILayout.Height(40)
-            );
-
-            GUILayout.FlexibleSpace();
-
-            // ── Move to tier dropdown ─────────────────────────────────────────
-            if (isHost && allTiers.Count > 1)
+            // Pool weight fields in display order
+            foreach (var (p, _) in PoolColumns)
             {
-                GUILayout.Label(
-                    new GUIContent(
-                        "Move →",
-                        "Reassign this item to a different tier. Its per-item weight override will be cleared so it inherits the new tier's weight."
-                    ),
-                    GUILayout.Width(48),
-                    GUILayout.Height(40)
-                );
-                foreach (int targetTier in allTiers)
-                {
-                    if (targetTier == GetEffectiveTier(def, snap))
-                        continue;
-                    string tierLabel = TierLabels.TryGetValue(targetTier, out var tl)
-                        ? $"T{targetTier}"
-                        : $"T{targetTier}";
-                    string moveTip = TierLabels.TryGetValue(targetTier, out var fullTl)
-                        ? $"Move {def.DisplayName} to {fullTl}."
-                        : $"Move {def.DisplayName} to Tier {targetTier}.";
-                    if (
-                        GUILayout.Button(
-                            new GUIContent(tierLabel, moveTip),
-                            GUILayout.Width(32),
-                            GUILayout.Height(28)
-                        )
-                    )
-                        MoveItemToTier(def, targetTier);
-                }
+                _workingPoolWeights[i, p] = DrawFloatField(
+                    $"{i}_{p}",
+                    _workingPoolWeights[i, p],
+                    isHost,
+                    0f, 999f, 50);
+                GUILayout.Space(4);
             }
 
             GUILayout.EndHorizontal();
-            GUILayout.Space(2);
         }
 
         // ── Tooltip rendering ─────────────────────────────────────────────────
 
-        // Called at the very end of DrawWindow so the box floats above all controls.
-        // GUI.tooltip is automatically populated by Unity IMGUI when the mouse hovers
-        // over any control that was given a GUIContent with a non-empty tooltip string.
         private void DrawTooltipInWindow()
         {
             string tip = GUI.tooltip;
             if (string.IsNullOrEmpty(tip))
                 return;
 
-            // Mouse position is relative to the window's client area in DrawWindow.
             Vector2 mouse = Event.current.mousePosition;
-
-            // Measure how large the tooltip box needs to be.
             float maxWidth = 320f;
             GUIContent content = new GUIContent(tip);
             float height = _styleTooltip.CalcHeight(content, maxWidth) + 10f;
-
-            // Position the box just below and to the right of the cursor,
-            // nudging left/up if it would overflow the window edges.
             float x = Mathf.Min(mouse.x + 14f, _windowRect.width - maxWidth - 8f);
             float y = Mathf.Min(mouse.y + 18f, _windowRect.height - height - 8f);
-
             GUI.Box(new Rect(x, y, maxWidth, height), tip, _styleTooltip);
         }
 
-        // ── Helpers ───────────────────────────────────────────────────────────
+        // ── IMGUI field helper ────────────────────────────────────────────────
 
-        /// Returns the tier that should currently be associated with this item
-        /// (checks if _working has a runtime re-assignment, then falls back to def.Tier).
-        private int GetEffectiveTier(CustomItemDefinition def, SpawnConfigSnapshot snap)
-        {
-            int id = (int)def.ItemType;
-            if (snap.ItemOverrides.TryGetValue(id, out var ov))
-                return ov.AssignedTier;
-            return def.Tier;
-        }
-
-        private void MoveItemToTier(CustomItemDefinition def, int newTier)
-        {
-            int id = (int)def.ItemType;
-            if (_working.ItemOverrides.TryGetValue(id, out var ov))
-            {
-                ov.AssignedTier = newTier;
-                // Clear any per-item weight override so the item inherits its new tier's weight.
-                ov.SpawnWeightOverrideEnabled = false;
-            }
-            IssaPluginPlugin.Log.LogInfo(
-                $"[SpawnConfigUI] Moved {def.DisplayName} to Tier {newTier} (pending apply)."
-            );
-        }
-
-        private void ApplyAndClose()
-        {
-            TierConfigSyncer.Instance?.ApplyAndBroadcast(_working);
-            Close();
-        }
-
-        // ── IMGUI field helpers ───────────────────────────────────────────────
-
-        private float DrawFloatField(
-            string key,
-            float value,
-            bool editable,
-            float min,
-            float max,
-            int width
-        )
+        private float DrawFloatField(string key, float value, bool editable,
+            float min, float max, int width)
         {
             if (!_textBuffers.ContainsKey(key))
                 _textBuffers[key] = value.ToString("0.##");
@@ -775,29 +376,6 @@ namespace IssaPlugin.Overlays
             return value;
         }
 
-        private int DrawIntField(string key, int value, bool editable, int min, int max, int width)
-        {
-            if (!_textBuffers.ContainsKey(key))
-                _textBuffers[key] = value.ToString();
-
-            if (editable)
-            {
-                string newText = GUILayout.TextField(_textBuffers[key], GUILayout.Width(width));
-                if (newText != _textBuffers[key])
-                {
-                    _textBuffers[key] = newText;
-                    if (int.TryParse(newText, out int parsed))
-                        value = Mathf.Clamp(parsed, min, max);
-                }
-            }
-            else
-            {
-                GUILayout.Label(value.ToString(), _styleReadOnly, GUILayout.Width(width));
-            }
-
-            return value;
-        }
-
         // ── Style init ────────────────────────────────────────────────────────
 
         private void InitStyles()
@@ -808,18 +386,17 @@ namespace IssaPlugin.Overlays
                 fontStyle = FontStyle.Bold,
             };
 
-            _styleTierTabActive = new GUIStyle(GUI.skin.button)
+            _styleColHeader = new GUIStyle(GUI.skin.label)
             {
                 fontStyle = FontStyle.Bold,
-                normal = { background = MakeTex(2, 2, new Color(0.25f, 0.55f, 0.95f, 1f)) },
+                fontSize = 11,
+                alignment = TextAnchor.MiddleCenter,
             };
-
-            _styleTierTabInactive = new GUIStyle(GUI.skin.button) { fontStyle = FontStyle.Normal };
 
             _styleItemRow = new GUIStyle(GUI.skin.box)
             {
-                padding = new RectOffset(6, 6, 4, 4),
-                margin = new RectOffset(0, 0, 2, 2),
+                padding = new RectOffset(4, 4, 2, 2),
+                margin  = new RectOffset(0, 0, 1, 1),
             };
 
             _styleIconBox = new GUIStyle(GUI.skin.box) { padding = new RectOffset(2, 2, 2, 2) };
@@ -832,13 +409,13 @@ namespace IssaPlugin.Overlays
             _styleTooltip = new GUIStyle(GUI.skin.box)
             {
                 wordWrap = true,
-                padding = new RectOffset(8, 8, 6, 6),
+                padding  = new RectOffset(8, 8, 6, 6),
                 fontSize = 12,
                 alignment = TextAnchor.UpperLeft,
                 normal =
                 {
                     background = MakeTex(2, 2, new Color(0.08f, 0.08f, 0.08f, 0.92f)),
-                    textColor = new Color(0.95f, 0.95f, 0.85f),
+                    textColor  = new Color(0.95f, 0.95f, 0.85f),
                 },
             };
 

@@ -1,4 +1,4 @@
-using BepInEx.Configuration;
+﻿using BepInEx.Configuration;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin
@@ -9,7 +9,6 @@ namespace IssaPlugin
 
         public ConfigEntry<Key> GiveKey { get; private set; }
         public ConfigEntry<float> Uses { get; private set; }
-        public ConfigEntry<float> SpawnWeight { get; private set; }
         public ConfigEntry<float> DropHeight { get; private set; }
         public ConfigEntry<float> DropSpeed { get; private set; }
         public ConfigEntry<float> ExplosionScale { get; private set; }
@@ -76,14 +75,6 @@ namespace IssaPlugin
                 "ExcludeThrower",
                 true,
                 "If true, the sky blast does not apply force to the player who activated the nuke."
-            );
-
-            SpawnWeight = global.BindSpawnWeight(
-                cfg,
-                111,
-                "NukeWeight",
-                5f,
-                "Override spawn weight for the Nuke."
             );
             ExplosionScale = cfg.Bind(
                 "Explosions",

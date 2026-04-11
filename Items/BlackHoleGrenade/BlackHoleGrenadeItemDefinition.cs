@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin.Items
@@ -12,7 +12,7 @@ namespace IssaPlugin.Items
         public override Sprite Icon => AssetLoader.BlackHoleGrenadeIcon;
         public override GameObject HeldModelPrefab => AssetLoader.BlackHoleGrenadePrefab;
         public override int MaxUses => (int)ModConfig.BlackHoleGrenade.Uses.Value;
-        public override int Tier => 3;
+        public override float DefaultPoolWeight => 5f;
         public override Key GiveKey => ModConfig.BlackHoleGrenade.GiveKey.Value;
 
         public override void OnEquip(PlayerInventory inventory)

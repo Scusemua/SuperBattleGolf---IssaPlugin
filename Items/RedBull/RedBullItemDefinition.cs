@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using HarmonyLib;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -16,7 +16,7 @@ namespace IssaPlugin.Items
         public override GameObject HeldModelPrefab => AssetLoader.RedBullHandheldPrefab;
 
         public override int MaxUses => (int)ModConfig.RedBull.Uses.Value;
-        public override int Tier => 1;
+        public override float DefaultPoolWeight => 15f;
         public override Key GiveKey => ModConfig.RedBull.GiveKey.Value;
 
         // PlayerMovement.AddSpeedBoost(float duration) — private, so we need reflection.

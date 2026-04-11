@@ -1,4 +1,4 @@
-using BepInEx.Configuration;
+﻿using BepInEx.Configuration;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin
@@ -9,7 +9,6 @@ namespace IssaPlugin
 
         public ConfigEntry<Key> GiveKey { get; private set; }
         public ConfigEntry<float> Uses { get; private set; }
-        public ConfigEntry<float> SpawnWeight { get; private set; }
         public ConfigEntry<float> LockOnRange { get; private set; }
         public ConfigEntry<float> LockOnConeAngleDeg { get; private set; }
         public ConfigEntry<float> TetherRadius { get; private set; }
@@ -68,14 +67,6 @@ namespace IssaPlugin
                 "InputSendInterval",
                 0.05f,
                 "Interval (seconds) between aim-tick messages sent to the server (~20 Hz)."
-            );
-
-            SpawnWeight = global.BindSpawnWeight(
-                cfg,
-                121,
-                "GravityGunSpawnWeight",
-                10f,
-                "Override spawn weight for the Gravity Gun."
             );
         }
     }
