@@ -40,6 +40,7 @@ namespace IssaPlugin.Items
                 preview.TargetItemType = ItemRegistry.RocketTetherGrenadeItemType;
                 preview.ThrowSpeed = () => ModConfig.RocketTetherGrenade.ThrowSpeed.Value;
                 preview.LobAngle = () => ModConfig.RocketTetherGrenade.LobAngle.Value;
+                preview.RingRadius = () => ModConfig.RocketTetherGrenade.BlastRadius.Value;
             }
         }
 

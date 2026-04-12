@@ -20,7 +20,6 @@ namespace IssaPlugin.Items
         private const float ArcTimeStep = 0.08f; // seconds per simulation step (~3.2 s total)
 
         private const int RingSegments = 32;
-        private const float RingRadius = 0.55f; // matches StickyGrenadeStickRadius default
         private const float RingSurfaceOffset = 0.06f; // lift off surface to avoid z-fighting
 
         // Configurable fields — set immediately after AddComponent to override defaults.
@@ -29,6 +28,7 @@ namespace IssaPlugin.Items
         public ItemType TargetItemType;
         public Func<float> ThrowSpeed;
         public Func<float> LobAngle;
+        public Func<float> RingRadius; // world-space radius of the landing indicator ring
 
         private LineRenderer _line;
         private LineRenderer _ring;
@@ -44,6 +44,7 @@ namespace IssaPlugin.Items
             TargetItemType = ItemRegistry.StickyGrenadeItemType;
             ThrowSpeed = () => ModConfig.StickyGrenade.ThrowSpeed.Value;
             LobAngle = () => ModConfig.StickyGrenade.LobAngle.Value;
+            RingRadius = () => 0.55f; // matches StickyGrenadeStickRadius default
 
             _line = gameObject.AddComponent<LineRenderer>();
             _line.useWorldSpace = true;
@@ -173,12 +174,13 @@ namespace IssaPlugin.Items
             axisA.Normalize();
             Vector3 axisB = Vector3.Cross(axisA, normal).normalized;
 
+            float radius = RingRadius();
             Vector3 origin = center + normal * RingSurfaceOffset;
             for (int i = 0; i < RingSegments; i++)
             {
                 float angle = i * Mathf.PI * 2f / RingSegments;
                 _ringPositions[i] =
-                    origin + (axisA * Mathf.Cos(angle) + axisB * Mathf.Sin(angle)) * RingRadius;
+                    origin + (axisA * Mathf.Cos(angle) + axisB * Mathf.Sin(angle)) * radius;
             }
 
             _ring.SetPositions(_ringPositions);
