@@ -72,6 +72,7 @@ namespace IssaPlugin.Items
         public static Sprite DroneSwarmIcon { get; private set; }
         public static Sprite ElectricGravityGunIcon { get; private set; }
         public static Sprite RedBullIcon { get; private set; }
+        public static Sprite WindStormIcon { get; private set; }
 
         /// Falls back to DonutIcon at runtime if the asset is absent from the bundle.
         public static Sprite SuperDonutIcon { get; private set; }
@@ -96,6 +97,7 @@ namespace IssaPlugin.Items
         public static GameObject DroneControllerPrefab { get; private set; }
         public static GameObject ElectricWhipHandheldPrefab { get; private set; }
         public static GameObject RedBullHandheldPrefab { get; private set; }
+        public static GameObject WindStormModelPrefab { get; private set; }
 
         /// Falls back to DonutHandheldPrefab at runtime if the asset is absent.
         public static GameObject SuperDonutHandheldPrefab { get; private set; }
@@ -295,6 +297,7 @@ namespace IssaPlugin.Items
                 SpriteAsset(p => DroneSwarmIcon = p, "drone_swarm_icon.png"),
                 SpriteAsset(p => ElectricGravityGunIcon = p, "gravity_gun_icon.png"),
                 SpriteAsset(p => RedBullIcon = p, "redbull_icon.png"),
+                SpriteAsset(p => WindStormIcon = p, "wind_storm_icon.png", optional: true),
                 SpriteAsset(p => SuperDonutIcon = p, "super_donut_icon.png", optional: true),
                 // ── Textures ──────────────────────────────────────────────────
                 Texture(p => SniperScopeTexture = p, "sniper_scope.png"),
@@ -323,6 +326,7 @@ namespace IssaPlugin.Items
                 HandheldPrefab(p => DroneControllerPrefab = p, "drone_swarm_tablet.prefab"),
                 HandheldPrefab(p => ElectricWhipHandheldPrefab = p, "gravity_gun.prefab"),
                 HandheldPrefab(p => RedBullHandheldPrefab = p, "redbull.prefab"),
+                HandheldPrefab(p => WindStormModelPrefab = p, "wind_storm_model.prefab", optional: true),
                 HandheldPrefab(
                     p => SuperDonutHandheldPrefab = p,
                     "super_donut_model.prefab",

@@ -1604,6 +1604,22 @@ namespace IssaPlugin.Patches
                 TeleporterVfxMessageSerialization.ReadTeleporterVfxMessage;
             NetworkClient.RegisterHandler<TeleporterVfxMessage>(TeleporterNetworkBridge.HandleVfx);
 
+            // ── Wind Storm Messages ───────────────────────────────────────────────
+            Writer<WindStormActivateMessage>.write = WindStormMessageSerialization.WriteActivate;
+            Reader<WindStormActivateMessage>.read = WindStormMessageSerialization.ReadActivate;
+            Writer<WindStormBeginMessage>.write = WindStormMessageSerialization.WriteBegin;
+            Reader<WindStormBeginMessage>.read = WindStormMessageSerialization.ReadBegin;
+            Writer<WindStormEndMessage>.write = WindStormMessageSerialization.WriteEnd;
+            Reader<WindStormEndMessage>.read = WindStormMessageSerialization.ReadEnd;
+            NetworkClient.RegisterHandler<WindStormBeginMessage>(
+                WindStormNetworkBridge.HandleBegin
+            );
+            NetworkClient.RegisterHandler<WindStormEndMessage>(WindStormNetworkBridge.HandleEnd);
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<WindStormActivateMessage>(
+                    (conn, msg) => GetBridge<WindStormNetworkBridge>(conn)?.ServerActivate()
+                );
+
             // ── Scaled explosion VFX (Server → All Clients) ──────────────────────
             Writer<ScaledExplosionVfxMessage>.write =
                 ScaledExplosionVfxMessageSerialization.WriteScaledExplosionVfxMessage;
