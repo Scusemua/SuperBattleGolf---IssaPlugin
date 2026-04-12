@@ -31,6 +31,9 @@ namespace IssaPlugin.Items
         /// Read by WindStormPatches every physics frame — keep it a HashSet for O(1) lookup.
         public static readonly HashSet<uint> WindImmuneNetIds = new HashSet<uint>();
 
+        /// True while a wind storm session is active on this client or server.
+        public static bool IsSessionActive => _globalSessionActive;
+
         // ================================================================
         //  Server activation (called from NetworkManagerPatches handler)
         // ================================================================
@@ -66,7 +69,9 @@ namespace IssaPlugin.Items
             // Save current wind state so we can restore it when the storm ends.
             _savedWindSpeed = WindManager.CurrentWindSpeed;
             if (SingletonNetworkBehaviour<WindManager>.HasInstance)
-                _savedWindAngle = SingletonNetworkBehaviour<WindManager>.Instance.NetworkcurrentWindAngle;
+                _savedWindAngle = SingletonNetworkBehaviour<WindManager>
+                    .Instance
+                    .NetworkcurrentWindAngle;
 
             int stormSpeed = (int)ModConfig.WindStorm.StormSpeed.Value;
             int stormAngle = Random.Range(0, 360);

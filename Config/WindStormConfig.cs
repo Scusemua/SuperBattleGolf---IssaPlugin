@@ -24,6 +24,14 @@ namespace IssaPlugin
         /// E.g. 45 means the angle changes by a random amount in [-45, +45] each tick.
         public ConfigEntry<float> DirectionChangeRange { get; private set; }
 
+        /// When true, the storm wind force is also applied to player bodies (not just golf balls).
+        public ConfigEntry<bool> AffectPlayers { get; private set; }
+
+        /// Scales the wind acceleration applied to players each physics frame.
+        /// Units: fraction of WindManager.Wind applied as AddForce(Acceleration).
+        /// 0.1 is a noticeable nudge; 0.5 is strong enough to interfere with aiming.
+        public ConfigEntry<float> PlayerWindFactor { get; private set; }
+
         public WindStormConfig(ConfigFile cfg, GlobalConfig global)
         {
             GiveKey = cfg.Bind(
@@ -67,6 +75,20 @@ namespace IssaPlugin
                 45f,
                 "Maximum degrees the wind direction can shift each interval (random walk). "
                     + "E.g. 45 means the angle changes by a random amount in [-45, +45] per tick."
+            );
+            AffectPlayers = cfg.Bind(
+                Section,
+                "AffectPlayers",
+                true,
+                "When true, storm wind is applied as a force to knocked-out player bodies. "
+                    + "Set false to limit the effect to golf balls only."
+            );
+            PlayerWindFactor = cfg.Bind(
+                Section,
+                "PlayerWindFactor",
+                0.15f,
+                "Strength of wind applied to players as a fraction of the storm wind vector. "
+                    + "0.1 is a noticeable nudge; 0.5 noticeably impedes movement."
             );
         }
     }
