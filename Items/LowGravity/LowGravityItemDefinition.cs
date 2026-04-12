@@ -1,4 +1,4 @@
-﻿using Mirror;
+using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -13,6 +13,13 @@ namespace IssaPlugin.Items
         public override GameObject HeldModelPrefab => AssetLoader.LowGravityModelPrefab;
         public override int MaxUses => (int)ModConfig.LowGravity.Uses.Value;
         public override float DefaultPoolWeight => 5f;
+
+        public override float GetDefaultPoolWeight(int poolIndex) => poolIndex switch
+        {
+            GlobalConfig.PoolLead  => 1f,
+            GlobalConfig.PoolAhead => 1f,
+            _                      => DefaultPoolWeight,
+        };
         public override Key GiveKey => ModConfig.LowGravity.GiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)

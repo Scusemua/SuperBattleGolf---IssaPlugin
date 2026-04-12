@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin.Items
@@ -13,6 +13,15 @@ namespace IssaPlugin.Items
         public override int MaxUses => (int)ModConfig.DroneSwarm.Uses.Value;
 
         public override float DefaultPoolWeight => 1f;
+
+        public override float GetDefaultPoolWeight(int poolIndex) => poolIndex switch
+        {
+            GlobalConfig.PoolLead      => 0f,
+            GlobalConfig.PoolAhead     => 0f,
+            GlobalConfig.PoolBehind50  => 0.5f,
+            GlobalConfig.PoolBehind200 => 2f,
+            _                          => DefaultPoolWeight,
+        };
 
         public override Key GiveKey => ModConfig.DroneSwarm.GiveKey.Value;
 

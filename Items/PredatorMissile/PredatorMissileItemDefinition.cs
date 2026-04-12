@@ -1,4 +1,4 @@
-﻿using Mirror;
+using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -13,6 +13,13 @@ namespace IssaPlugin.Items
         public override GameObject HeldModelPrefab => AssetLoader.MissileTabletPrefab;
         public override int MaxUses => (int)ModConfig.PredatorMissile.Uses.Value;
         public override float DefaultPoolWeight => 10f;
+
+        public override float GetDefaultPoolWeight(int poolIndex) => poolIndex switch
+        {
+            GlobalConfig.PoolLead  => 5f,
+            GlobalConfig.PoolAhead => 5f,
+            _                      => DefaultPoolWeight,
+        };
         public override Key GiveKey => ModConfig.PredatorMissile.GiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)

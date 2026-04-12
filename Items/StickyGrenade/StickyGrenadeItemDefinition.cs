@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin.Items
@@ -13,6 +13,13 @@ namespace IssaPlugin.Items
         public override GameObject HeldModelPrefab => AssetLoader.StickyGrenadePrefab;
         public override int MaxUses => (int)ModConfig.StickyGrenade.Uses.Value;
         public override float DefaultPoolWeight => 10f;
+
+        public override float GetDefaultPoolWeight(int poolIndex) => poolIndex switch
+        {
+            GlobalConfig.PoolLead  => 5f,
+            GlobalConfig.PoolAhead => 5f,
+            _                      => DefaultPoolWeight,
+        };
         public override Key GiveKey => ModConfig.StickyGrenade.GiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)

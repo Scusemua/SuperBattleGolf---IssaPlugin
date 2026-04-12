@@ -1,4 +1,4 @@
-﻿using IssaPlugin.Overlays;
+using IssaPlugin.Overlays;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -23,6 +23,13 @@ namespace IssaPlugin.Items
         public override int MaxUses => (int)ModConfig.RocketTether.Uses.Value;
 
         public override float DefaultPoolWeight => 10f;
+
+        public override float GetDefaultPoolWeight(int poolIndex) => poolIndex switch
+        {
+            GlobalConfig.PoolLead  => 5f,
+            GlobalConfig.PoolAhead => 5f,
+            _                      => DefaultPoolWeight,
+        };
 
         public override Key GiveKey => ModConfig.RocketTether.GiveKey.Value;
 

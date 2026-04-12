@@ -1,4 +1,4 @@
-﻿using IssaPlugin.Overlays;
+using IssaPlugin.Overlays;
 using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -25,6 +25,13 @@ namespace IssaPlugin.Items
         public override int MaxUses => (int)ModConfig.GravityGun.Uses.Value;
 
         public override float DefaultPoolWeight => 5f;
+
+        public override float GetDefaultPoolWeight(int poolIndex) => poolIndex switch
+        {
+            GlobalConfig.PoolLead  => 1f,
+            GlobalConfig.PoolAhead => 1f,
+            _                      => DefaultPoolWeight,
+        };
 
         public override Key GiveKey => ModConfig.GravityGun.GiveKey.Value;
 

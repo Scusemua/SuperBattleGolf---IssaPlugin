@@ -1,4 +1,4 @@
-﻿using Mirror;
+using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -13,6 +13,16 @@ namespace IssaPlugin.Items
         public override GameObject HeldModelPrefab => AssetLoader.Ac130TabletPrefab;
         public override int MaxUses => (int)ModConfig.AC130.Uses.Value;
         public override float DefaultPoolWeight => 3f;
+
+        public override float GetDefaultPoolWeight(int poolIndex) => poolIndex switch
+        {
+            GlobalConfig.PoolLead      => 0f,
+            GlobalConfig.PoolAhead     => 0f,
+            GlobalConfig.PoolBehind50  => 1f,
+            GlobalConfig.PoolBehind125 => 2f,
+            GlobalConfig.PoolMobility  => 2f,
+            _                          => DefaultPoolWeight,
+        };
         public override Key GiveKey => ModConfig.AC130.GiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)

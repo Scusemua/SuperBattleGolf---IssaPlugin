@@ -162,7 +162,7 @@ namespace IssaPlugin.Overlays
             }
 
             if (Mouse.current.leftButton.isPressed)
-                CorrectAimRotation(0f);
+                CorrectAimRotation(5f);
             else
                 CorrectAimRotation(65f);
         }
