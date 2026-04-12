@@ -84,7 +84,7 @@ namespace IssaPlugin.Items
                     StormSpeed = stormSpeed,
                 }
             );
-            _timeoutCoroutine = StartCoroutine(ServerTimeoutRoutine(duration));
+            _timeoutCoroutine = StartCoroutine(ServerStormRoutine(duration, stormAngle));
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[WindStorm] Session started: speed={stormSpeed}, angle={stormAngle}, duration={duration}s."
@@ -116,9 +116,30 @@ namespace IssaPlugin.Items
         //  Server internals
         // ================================================================
 
-        private IEnumerator ServerTimeoutRoutine(float duration)
+        private IEnumerator ServerStormRoutine(float duration, int initialAngle)
         {
-            yield return new WaitForSeconds(duration);
+            float elapsed = 0f;
+            float interval = ModConfig.WindStorm.DirectionChangeInterval.Value;
+            int range = (int)ModConfig.WindStorm.DirectionChangeRange.Value;
+            int angle = initialAngle;
+
+            while (elapsed < duration)
+            {
+                // Clamp the last wait so we don't overshoot the duration.
+                float waitTime = Mathf.Min(interval, duration - elapsed);
+                yield return new WaitForSeconds(waitTime);
+                elapsed += waitTime;
+
+                if (!_globalSessionActive)
+                    yield break;
+
+                // Shift the direction unless this was just the final timing-alignment wait.
+                if (elapsed < duration && SingletonNetworkBehaviour<WindManager>.HasInstance)
+                {
+                    angle = (angle + Random.Range(-range, range + 1) + 360) % 360;
+                    SingletonNetworkBehaviour<WindManager>.Instance.NetworkcurrentWindAngle = angle;
+                }
+            }
 
             if (SingletonNetworkBehaviour<WindManager>.HasInstance)
                 SingletonNetworkBehaviour<WindManager>.Instance.NetworkcurrentWindSpeed =
@@ -128,7 +149,7 @@ namespace IssaPlugin.Items
             _globalSessionActive = false;
             _activeInstance = null;
             _timeoutCoroutine = null;
-            IssaPluginPlugin.Log.LogInfo("[WindStorm] Session ended, wind speed restored.");
+            IssaPluginPlugin.Log.LogInfo("[WindStorm] Session ended, wind restored.");
         }
 
         // ================================================================

@@ -17,6 +17,13 @@ namespace IssaPlugin
         public ConfigEntry<float> StormSpeed { get; private set; }
         public ConfigEntry<bool> ExcludeActivator { get; private set; }
 
+        /// How often (seconds) the wind direction shifts during the storm.
+        public ConfigEntry<float> DirectionChangeInterval { get; private set; }
+
+        /// Maximum degrees the direction can shift each interval (random walk step).
+        /// E.g. 45 means the angle changes by a random amount in [-45, +45] each tick.
+        public ConfigEntry<float> DirectionChangeRange { get; private set; }
+
         public WindStormConfig(ConfigFile cfg, GlobalConfig global)
         {
             GiveKey = cfg.Bind(
@@ -46,6 +53,20 @@ namespace IssaPlugin
                 "When true, the player who activates the storm is immune — their ball is "
                     + "unaffected by the storm wind. When false, everyone including the "
                     + "activator is hit by the storm."
+            );
+            DirectionChangeInterval = cfg.Bind(
+                Section,
+                "DirectionChangeInterval",
+                2f,
+                "Seconds between each wind direction shift during the storm. "
+                    + "Smaller values produce more turbulent, rapidly-changing gusts."
+            );
+            DirectionChangeRange = cfg.Bind(
+                Section,
+                "DirectionChangeRange",
+                45f,
+                "Maximum degrees the wind direction can shift each interval (random walk). "
+                    + "E.g. 45 means the angle changes by a random amount in [-45, +45] per tick."
             );
         }
     }
