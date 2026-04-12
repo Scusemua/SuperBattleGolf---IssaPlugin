@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using IssaPlugin.Overlays;
 using Mirror;
 using UnityEngine;
 
@@ -69,8 +70,10 @@ namespace IssaPlugin.Items
 
             if (SingletonNetworkBehaviour<WindManager>.HasInstance)
             {
-                SingletonNetworkBehaviour<WindManager>.Instance.NetworkcurrentWindSpeed = stormSpeed;
-                SingletonNetworkBehaviour<WindManager>.Instance.NetworkcurrentWindAngle = stormAngle;
+                SingletonNetworkBehaviour<WindManager>.Instance.NetworkcurrentWindSpeed =
+                    stormSpeed;
+                SingletonNetworkBehaviour<WindManager>.Instance.NetworkcurrentWindAngle =
+                    stormAngle;
             }
 
             float duration = ModConfig.WindStorm.Duration.Value;
@@ -99,7 +102,7 @@ namespace IssaPlugin.Items
         {
             if (msg.ActivatorNetId != 0u)
                 WindImmuneNetIds.Add(msg.ActivatorNetId);
-            // TODO: trigger storm VFX / audio / overlay once assets are available
+            WindStormOverlay.Instance?.SetActive(true, msg.Duration);
             IssaPluginPlugin.Log.LogInfo(
                 $"[WindStorm] Storm began: speed={msg.StormSpeed}, immune netId={msg.ActivatorNetId}."
             );
@@ -108,7 +111,7 @@ namespace IssaPlugin.Items
         public static void HandleEnd(WindStormEndMessage msg)
         {
             WindImmuneNetIds.Clear();
-            // TODO: end storm VFX / audio / overlay
+            WindStormOverlay.Instance?.SetActive(false);
             IssaPluginPlugin.Log.LogInfo("[WindStorm] Storm ended.");
         }
 

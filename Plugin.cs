@@ -52,6 +52,7 @@ namespace IssaPlugin
             gameObject.AddComponent<FreezePhysicsHandler>();
             gameObject.AddComponent<LowGravityOverlay>();
             gameObject.AddComponent<LowGravityHandler>();
+            gameObject.AddComponent<WindStormOverlay>();
             gameObject.AddComponent<SniperScopeOverlay>();
             gameObject.AddComponent<BearOverlay>();
             gameObject.AddComponent<BearHealthBarOverlay>();

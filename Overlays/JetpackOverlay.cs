@@ -73,7 +73,10 @@ namespace IssaPlugin.Overlays
             float barX = EffectBarLayout.GetBarX();
 
             // Stack above any active world-effect bars so they never overlap.
-            int slot = (FreezeItem.IsFrozen ? 1 : 0) + (LowGravityItem.IsActive ? 1 : 0);
+            int slot =
+                (FreezeItem.IsFrozen ? 1 : 0)
+                + (LowGravityItem.IsActive ? 1 : 0)
+                + (WindStormOverlay.IsActive ? 1 : 0);
             float barY = EffectBarLayout.GetBarY(slot);
 
             // Background rounded track (full width)
