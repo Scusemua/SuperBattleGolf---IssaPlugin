@@ -94,6 +94,9 @@ Unleash a continuous stream of fire in front of you. Enemies caught in the flame
 ### 🚀💣 Rocket Tether Grenade
 Throw a toy rocket at the ground, causing a small spark. Anybody within range will be tethered to a rocket - like the rocket tether item, but somehow even more chaotic.
 
+### 💨 Wind Storm
+Create a wind storm with extremely high speed winds and dynamically-changing directions. These winds will blow away players and golf balls alike!
+
 ---
 
 ## Installation
