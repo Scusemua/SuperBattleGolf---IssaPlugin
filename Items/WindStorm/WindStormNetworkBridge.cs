@@ -62,24 +62,16 @@ namespace IssaPlugin.Items
             _activeInstance = this;
 
             // Save current speed so we can restore it when the storm ends.
-            // The angle is intentionally left unchanged — wind direction stays the same
-            // and only the speed is cranked up. Randomising the angle causes the
-            // drag-based wind effect to land in an unpredictable direction relative to
-            // the ball's flight path, often making the storm feel weaker than it is.
             _savedWindSpeed = WindManager.CurrentWindSpeed;
 
             int stormSpeed = (int)ModConfig.WindStorm.StormSpeed.Value;
-            int currentAngle =
-                WindManager.CurrentWindDirection != UnityEngine.Vector3.zero
-                    ? (int)
-                        UnityEngine
-                            .Quaternion.LookRotation(WindManager.CurrentWindDirection)
-                            .eulerAngles.y
-                    : 0;
+            int stormAngle = Random.Range(0, 360);
 
             if (SingletonNetworkBehaviour<WindManager>.HasInstance)
-                SingletonNetworkBehaviour<WindManager>.Instance.NetworkcurrentWindSpeed =
-                    stormSpeed;
+            {
+                SingletonNetworkBehaviour<WindManager>.Instance.NetworkcurrentWindSpeed = stormSpeed;
+                SingletonNetworkBehaviour<WindManager>.Instance.NetworkcurrentWindAngle = stormAngle;
+            }
 
             float duration = ModConfig.WindStorm.Duration.Value;
             NetworkServer.SendToAll(
@@ -95,7 +87,7 @@ namespace IssaPlugin.Items
             _timeoutCoroutine = StartCoroutine(ServerTimeoutRoutine(duration));
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[WindStorm] Session started: speed={stormSpeed}, angle={currentAngle}, duration={duration}s."
+                $"[WindStorm] Session started: speed={stormSpeed}, angle={stormAngle}, duration={duration}s."
             );
         }
 
