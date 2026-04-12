@@ -207,6 +207,32 @@ namespace IssaPlugin.Overlays
             return TierDefs.Length - 1;
         }
 
+        private void ResetToDefaults()
+        {
+            _workingEnabled = true;
+            _workingRate    = 0.5f;
+            var items = ItemRegistry.AllItems;
+            _textBuffers["rate"] = _workingRate.ToString("F2");
+            for (int i = 0; i < items.Count; i++)
+            {
+                _workingItemEnabled[i] = true;
+                for (int p = 0; p < 6; p++)
+                {
+                    _workingPoolWeights[i, p] = items[i].GetDefaultPoolWeight(p);
+                    _textBuffers[$"{i}_{p}"] = _workingPoolWeights[i, p].ToString("F1");
+                }
+            }
+            // Re-seed tier batch-set buffers from the new per-item values.
+            for (int t = 0; t < TierDefs.Length; t++)
+                for (int p = 0; p < 6; p++)
+                {
+                    float seed = TierDefs[t].defaultWeight;
+                    for (int i = 0; i < items.Count; i++)
+                        if (_itemTierIndex[i] == t) { seed = _workingPoolWeights[i, p]; break; }
+                    _textBuffers[$"t{t}_{p}"] = seed.ToString("F1");
+                }
+        }
+
         private void ApplyAndSync()
         {
             ModConfig.Global.CustomItemSpawnsEnabled.Value = _workingEnabled;
@@ -348,6 +374,25 @@ namespace IssaPlugin.Overlays
                 )
             )
                 Close();
+
+            GUILayout.Space(10);
+
+            GUI.enabled = isHost;
+            GUI.backgroundColor = isHost ? new Color(0.9f, 0.6f, 0.2f) : Color.white;
+            if (
+                GUILayout.Button(
+                    new GUIContent(
+                        "↺  Reset to Defaults",
+                        isHost
+                            ? "Reset all weights, enabled flags, and global rate to their coded defaults. Does not save until you click Apply & Sync."
+                            : "Only the host can reset values."
+                    ),
+                    GUILayout.Width(160),
+                    GUILayout.Height(28)
+                )
+            )
+                ResetToDefaults();
+            GUI.backgroundColor = Color.white;
 
             GUILayout.Space(10);
 
