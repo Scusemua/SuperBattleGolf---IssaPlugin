@@ -25,6 +25,7 @@ namespace IssaPlugin.Items
         private static Coroutine _timeoutCoroutine;
         private static WindStormNetworkBridge _activeInstance;
         private static int _savedWindSpeed;
+        private static int _savedWindAngle;
 
         // ── Client: netIds of players whose balls are immune to wind ──────────
         /// Read by WindStormPatches every physics frame — keep it a HashSet for O(1) lookup.
@@ -62,8 +63,10 @@ namespace IssaPlugin.Items
             _globalSessionActive = true;
             _activeInstance = this;
 
-            // Save current speed so we can restore it when the storm ends.
+            // Save current wind state so we can restore it when the storm ends.
             _savedWindSpeed = WindManager.CurrentWindSpeed;
+            if (SingletonNetworkBehaviour<WindManager>.HasInstance)
+                _savedWindAngle = SingletonNetworkBehaviour<WindManager>.Instance.NetworkcurrentWindAngle;
 
             int stormSpeed = (int)ModConfig.WindStorm.StormSpeed.Value;
             int stormAngle = Random.Range(0, 360);
@@ -145,8 +148,12 @@ namespace IssaPlugin.Items
             }
 
             if (SingletonNetworkBehaviour<WindManager>.HasInstance)
+            {
                 SingletonNetworkBehaviour<WindManager>.Instance.NetworkcurrentWindSpeed =
                     _savedWindSpeed;
+                SingletonNetworkBehaviour<WindManager>.Instance.NetworkcurrentWindAngle =
+                    _savedWindAngle;
+            }
 
             NetworkServer.SendToAll(new WindStormEndMessage());
             _globalSessionActive = false;
@@ -169,8 +176,12 @@ namespace IssaPlugin.Items
             _activeInstance = null;
 
             if (SingletonNetworkBehaviour<WindManager>.HasInstance)
+            {
                 SingletonNetworkBehaviour<WindManager>.Instance.NetworkcurrentWindSpeed =
                     _savedWindSpeed;
+                SingletonNetworkBehaviour<WindManager>.Instance.NetworkcurrentWindAngle =
+                    _savedWindAngle;
+            }
 
             NetworkServer.SendToAll(new WindStormEndMessage());
             _globalSessionActive = false;
@@ -190,6 +201,7 @@ namespace IssaPlugin.Items
             _timeoutCoroutine = null;
             _activeInstance = null;
             _globalSessionActive = false;
+            NetworkServer.SendToAll(new WindStormEndMessage());
             IssaPluginPlugin.Log.LogInfo("[WindStorm] Session ended on server stop.");
         }
     }
