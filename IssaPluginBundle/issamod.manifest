@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 2146017214
+CRC: 2919378817
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: ea059c1c05e136b853b683aca45e0fad
+    Hash: 6b59cd851a2bc91c14daf23f2f0f1203
   TypeTreeHash:
     serializedVersion: 2
     Hash: 82d52513d6b19822b87b688cdb5147d6
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 4ac37125fcdb8d58a440840491c2399c
+    Hash: d91c62d73e93a03efeebc7f6f5235496
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -83,9 +83,11 @@ Assets:
 - Assets/Assets/ConfettiBlastRainbow.prefab
 - Assets/Assets/warning_particle.prefab
 - Assets/Assets/donut_icon.png
+- Assets/Assets/weather_remote.prefab
 - Assets/Assets/teleporter_handheld.prefab
 - Assets/Assets/bear.prefab
 - Assets/Assets/super_donut_icon.png
+- Assets/Assets/wind_storm_icon.png
 - Assets/Assets/bat_icon.png
 - Assets/Assets/spinach.prefab
 - Assets/Assets/donut_icon_v2.png

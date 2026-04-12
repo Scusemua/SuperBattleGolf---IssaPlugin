@@ -61,25 +61,33 @@ namespace IssaPlugin.Items
             _globalSessionActive = true;
             _activeInstance = this;
 
-            // Save current wind speed so we can restore it when the storm ends.
+            // Save current speed so we can restore it when the storm ends.
+            // The angle is intentionally left unchanged — wind direction stays the same
+            // and only the speed is cranked up. Randomising the angle causes the
+            // drag-based wind effect to land in an unpredictable direction relative to
+            // the ball's flight path, often making the storm feel weaker than it is.
             _savedWindSpeed = WindManager.CurrentWindSpeed;
 
             int stormSpeed = (int)ModConfig.WindStorm.StormSpeed.Value;
-            int stormAngle = Random.Range(0, 360);
+            int currentAngle =
+                WindManager.CurrentWindDirection != UnityEngine.Vector3.zero
+                    ? (int)
+                        UnityEngine
+                            .Quaternion.LookRotation(WindManager.CurrentWindDirection)
+                            .eulerAngles.y
+                    : 0;
 
             if (SingletonNetworkBehaviour<WindManager>.HasInstance)
-            {
                 SingletonNetworkBehaviour<WindManager>.Instance.NetworkcurrentWindSpeed =
                     stormSpeed;
-                SingletonNetworkBehaviour<WindManager>.Instance.NetworkcurrentWindAngle =
-                    stormAngle;
-            }
 
             float duration = ModConfig.WindStorm.Duration.Value;
             NetworkServer.SendToAll(
                 new WindStormBeginMessage
                 {
-                    ActivatorNetId = netId,
+                    // Send 0 when ExcludeActivator is off so HandleBegin never adds
+                    // anyone to WindImmuneNetIds and the storm hits everyone equally.
+                    ActivatorNetId = ModConfig.WindStorm.ExcludeActivator.Value ? netId : 0u,
                     Duration = duration,
                     StormSpeed = stormSpeed,
                 }
@@ -87,7 +95,7 @@ namespace IssaPlugin.Items
             _timeoutCoroutine = StartCoroutine(ServerTimeoutRoutine(duration));
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[WindStorm] Session started: speed={stormSpeed}, angle={stormAngle}, duration={duration}s."
+                $"[WindStorm] Session started: speed={stormSpeed}, angle={currentAngle}, duration={duration}s."
             );
         }
 
@@ -97,7 +105,8 @@ namespace IssaPlugin.Items
 
         public static void HandleBegin(WindStormBeginMessage msg)
         {
-            WindImmuneNetIds.Add(msg.ActivatorNetId);
+            if (msg.ActivatorNetId != 0u)
+                WindImmuneNetIds.Add(msg.ActivatorNetId);
             // TODO: trigger storm VFX / audio / overlay once assets are available
             IssaPluginPlugin.Log.LogInfo(
                 $"[WindStorm] Storm began: speed={msg.StormSpeed}, immune netId={msg.ActivatorNetId}."

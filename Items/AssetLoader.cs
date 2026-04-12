@@ -326,7 +326,11 @@ namespace IssaPlugin.Items
                 HandheldPrefab(p => DroneControllerPrefab = p, "drone_swarm_tablet.prefab"),
                 HandheldPrefab(p => ElectricWhipHandheldPrefab = p, "gravity_gun.prefab"),
                 HandheldPrefab(p => RedBullHandheldPrefab = p, "redbull.prefab"),
-                HandheldPrefab(p => WindStormModelPrefab = p, "wind_storm_model.prefab", optional: true),
+                HandheldPrefab(
+                    p => WindStormModelPrefab = p,
+                    "weather_remote.prefab",
+                    optional: true
+                ),
                 HandheldPrefab(
                     p => SuperDonutHandheldPrefab = p,
                     "super_donut_model.prefab",
@@ -427,12 +431,12 @@ namespace IssaPlugin.Items
                 Audio(p => MaydayAlarmClip = p, "missile_locked"),
                 Audio(p => MaydayImpactClip = p, "etfx_explosion_nuke"),
                 // ── Impact VFX ────────────────────────────────────────────────
-                LocalVfxPrefab(p => ImpactVfxPrefab = p, "impact_vfx.prefab"),
+                LocalVfxPrefab(p => ImpactVfxPrefab = p, "NukeVerticalExplosionFire.prefab"),
                 // ── Teleporter ────────────────────────────────────────────────
                 // TODO: replace asset names with the real bundle names once known.
                 SpriteAsset(p => TeleporterIcon = p, "teleporter_icon.png"),
                 HandheldPrefab(p => TeleporterHandheldPrefab = p, "teleporter_handheld.prefab"),
-                LocalVfxPrefab(p => TeleporterVfxPrefab = p, "teleporter_vfx.prefab"),
+                LocalVfxPrefab(p => TeleporterVfxPrefab = p, "position_swap_smoke.prefab"),
                 // ── Flamethrower ──────────────────────────────────────────────
                 // TODO: replace asset names with the real bundle names once known.
                 SpriteAsset(p => FlamethrowerIcon = p, "flamethrower_icon.png"),
@@ -446,7 +450,7 @@ namespace IssaPlugin.Items
                 // TODO: replace asset names with the real bundle names once known.
                 SpriteAsset(p => JetpackIcon = p, "jetpack_icon.png"),
                 HandheldPrefab(p => JetpackHandheldPrefab = p, "jetpack_handheld.prefab"),
-                LocalVfxPrefab(p => JetpackParticlePrefab = p, "jetpack_particle.prefab"),
+                LocalVfxPrefab(p => JetpackParticlePrefab = p, "jetpack_particles.prefab"),
                 NetworkedPrefab(p => JetpackEquippedPrefab = p, "jetpack.prefab", 0x00000000u), // TODO: assign a stable assetId
                 // ── Rocket Tether ─────────────────────────────────────────────
                 // TODO: replace asset names and assetId with the real values once known.

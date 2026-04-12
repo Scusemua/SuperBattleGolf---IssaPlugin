@@ -15,6 +15,7 @@ namespace IssaPlugin
         /// The base game's "High" preset maxes out at 99 km/h, so anything above that
         /// is genuinely stormy.  Default of 150 is roughly 1.5× hurricane-force.
         public ConfigEntry<float> StormSpeed { get; private set; }
+        public ConfigEntry<bool> ExcludeActivator { get; private set; }
 
         public WindStormConfig(ConfigFile cfg, GlobalConfig global)
         {
@@ -36,8 +37,15 @@ namespace IssaPlugin
                 "StormSpeed",
                 150f,
                 "Wind speed (km/h) applied during the storm. "
-                    + "The base game High preset maxes out at 99 km/h. "
-                    + "The activating player's ball is unaffected by the storm wind."
+                    + "The base game High preset maxes out at 99 km/h."
+            );
+            ExcludeActivator = cfg.Bind(
+                Section,
+                "ExcludeActivator",
+                true,
+                "When true, the player who activates the storm is immune — their ball is "
+                    + "unaffected by the storm wind. When false, everyone including the "
+                    + "activator is hit by the storm."
             );
         }
     }
