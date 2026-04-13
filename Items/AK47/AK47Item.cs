@@ -129,19 +129,18 @@ namespace IssaPlugin.Items
 
             if (!parsed)
             {
+                IssaPluginPlugin.Log.LogInfo(
+                    $"[AK47] Primary raycast miss — dir={ray.direction:F2}, isServer={Mirror.NetworkServer.active}"
+                );
                 if (Time.time - _lastVfxTime >= VfxMinInterval)
                 {
                     _lastVfxTime = Time.time;
+                    IssaPluginPlugin.Log.LogInfo("[AK47] VFX not rate-limited — sending Command (UserCode patch will handle aircraft check).");
                     VfxManager.PlayElephantGunMissForAllClients(inventory, ray.direction);
-                    // The server-side UserCode patch on PlayElephantGunMissForAllClients
-                    // handles the aircraft check for this bullet — no direct call needed.
                 }
                 else
                 {
-                    // VFX Command was rate-limited and won't be sent, so the UserCode patch
-                    // won't fire on the server for this bullet. Handle the aircraft check
-                    // directly: server calls OnHit immediately, non-host client sends a
-                    // message so the server processes every bullet regardless of VFX rate.
+                    IssaPluginPlugin.Log.LogInfo("[AK47] VFX rate-limited — calling TryHitAircraftAlongRay directly.");
                     AircraftFirearmHitHelper.TryHitAircraftAlongRay(barrelEnd, dir);
                 }
                 return;

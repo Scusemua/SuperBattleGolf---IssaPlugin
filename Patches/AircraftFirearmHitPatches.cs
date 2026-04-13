@@ -46,6 +46,7 @@ namespace IssaPlugin.Patches
             if (shootingPlayer == null)
                 return;
 
+            IssaPluginPlugin.Log.LogInfo("[AircraftHit] ElephantGun/Sniper UserCode patch fired on server — calling HitAircraftDirectly.");
             AircraftFirearmHitHelper.HitAircraftDirectly(
                 shootingPlayer.GetElephantGunBarrelEndPosition(),
                 direction
@@ -134,6 +135,9 @@ namespace IssaPlugin.Patches
                 QueryTriggerInteraction.Collide
             );
 
+            IssaPluginPlugin.Log.LogInfo(
+                $"[AircraftHit] HitAircraftDirectly — origin={origin:F1}, dir={direction:F2}, hits={hits.Length}"
+            );
             ProcessHitsOnServer(hits);
         }
 
@@ -157,6 +161,9 @@ namespace IssaPlugin.Patches
                 QueryTriggerInteraction.Collide
             );
 
+            IssaPluginPlugin.Log.LogInfo(
+                $"[AircraftHit] TryHitAircraftAlongRay — isServer={NetworkServer.active}, hits={hits.Length}"
+            );
             if (NetworkServer.active)
                 ProcessHitsOnServer(hits);
             else
@@ -171,6 +178,9 @@ namespace IssaPlugin.Patches
 
             foreach (var hit in hits)
             {
+                IssaPluginPlugin.Log.LogInfo(
+                    $"[AircraftHit] Checking hit: collider={hit.collider?.name}, go={hit.collider?.gameObject?.name}, layer={hit.collider?.gameObject?.layer}"
+                );
                 if (!hitAC130)
                 {
                     var ac130 = hit.collider.GetComponentInParent<AC130HitReceiver>();
