@@ -20,6 +20,9 @@ namespace IssaPlugin.Overlays
         private const float ButtonH = 28f;
         private const float ButtonGap = 4f;
 
+        // ── Scroll state ─────────────────────────────────────────────────────────
+        private Vector2 _scrollPos;
+
         // ── Styles / textures (lazy-initialised once) ────────────────────────────
         private bool _stylesReady;
         private GUIStyle _panelStyle,
@@ -42,15 +45,11 @@ namespace IssaPlugin.Overlays
             EnsureStyles();
 
             int itemCount = ItemRegistry.AllItems.Count;
-            float panelH =
-                HeaderH
-                + TipH
-                + TimerH
-                + Padding
-                + RowHeight * itemCount
-                + Padding
-                + SubmitH
-                + Padding;
+            float fixedH = HeaderH + TipH + TimerH + Padding + Padding + SubmitH + Padding;
+            float itemsH = RowHeight * itemCount;
+            float maxScrollH = Screen.height * 0.9f - fixedH;
+            float scrollH = Mathf.Min(itemsH, maxScrollH);
+            float panelH = fixedH + scrollH;
 
             float px = (Screen.width - PanelWidth) * 0.5f;
             float py = (Screen.height - panelH) * 0.5f;
@@ -87,19 +86,29 @@ namespace IssaPlugin.Overlays
             );
             cy += TimerH + Padding;
 
-            // ── Item rows ────────────────────────────────────────────────────────
+            // ── Item rows (scrollable) ───────────────────────────────────────────
             float labelW = PanelWidth - Padding * 2f - ButtonW * 2f - ButtonGap - 8f;
-            float btnBaseX = px + Padding + labelW + 8f;
+            // Reserve space for the scrollbar when content overflows.
+            float scrollBarW = scrollH < itemsH ? 16f : 0f;
 
+            var scrollViewRect = new Rect(px, cy, PanelWidth, scrollH);
+            var contentRect = new Rect(0, 0, PanelWidth - scrollBarW, itemsH);
+            _scrollPos = GUI.BeginScrollView(scrollViewRect, _scrollPos, contentRect);
+
+            float rowCy = 0f;
             foreach (var item in ItemRegistry.AllItems)
             {
                 int key = (int)item.ItemType;
                 bool votedYes = VoteManager.LocalVotes.TryGetValue(key, out bool v) && v;
 
-                float btnY = cy + (RowHeight - ButtonH) * 0.5f;
+                float btnY = rowCy + (RowHeight - ButtonH) * 0.5f;
+                // Label X is relative to the scroll view content origin.
+                float labelX = Padding;
+                // Button X is relative to the scroll view content origin.
+                float rowBtnBaseX = Padding + labelW + 8f;
 
                 GUI.Label(
-                    new Rect(px + Padding, cy, labelW, RowHeight),
+                    new Rect(labelX, rowCy, labelW, RowHeight),
                     item.DisplayName,
                     _itemStyle
                 );
@@ -108,7 +117,7 @@ namespace IssaPlugin.Overlays
                 {
                     if (
                         GUI.Button(
-                            new Rect(btnBaseX, btnY, ButtonW, ButtonH),
+                            new Rect(rowBtnBaseX, btnY, ButtonW, ButtonH),
                             "YES",
                             votedYes ? _yesOn : _yesOff
                         )
@@ -117,7 +126,7 @@ namespace IssaPlugin.Overlays
 
                     if (
                         GUI.Button(
-                            new Rect(btnBaseX + ButtonW + ButtonGap, btnY, ButtonW, ButtonH),
+                            new Rect(rowBtnBaseX + ButtonW + ButtonGap, btnY, ButtonW, ButtonH),
                             "NO",
                             !votedYes ? _noOn : _noOff
                         )
@@ -128,21 +137,22 @@ namespace IssaPlugin.Overlays
                 {
                     // Non-interactive display after submission
                     GUI.Label(
-                        new Rect(btnBaseX, btnY, ButtonW, ButtonH),
+                        new Rect(rowBtnBaseX, btnY, ButtonW, ButtonH),
                         "YES",
                         votedYes ? _yesOn : _yesOff
                     );
                     GUI.Label(
-                        new Rect(btnBaseX + ButtonW + ButtonGap, btnY, ButtonW, ButtonH),
+                        new Rect(rowBtnBaseX + ButtonW + ButtonGap, btnY, ButtonW, ButtonH),
                         "NO",
                         !votedYes ? _noOn : _noOff
                     );
                 }
 
-                cy += RowHeight;
+                rowCy += RowHeight;
             }
 
-            cy += Padding;
+            GUI.EndScrollView();
+            cy += scrollH + Padding;
 
             // ── Submit button ────────────────────────────────────────────────────
             if (!submitted)
