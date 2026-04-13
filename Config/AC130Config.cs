@@ -50,6 +50,7 @@ namespace IssaPlugin
         public ConfigEntry<float> MaydayExplosionDuration { get; private set; }
         public ConfigEntry<float> MaydayRollTurnRate { get; private set; }
         public ConfigEntry<float> HitsToMayday { get; private set; }
+        public ConfigEntry<bool> FirearmsCanHit { get; private set; }
         public ConfigEntry<float> RocketProximityFuse { get; private set; }
         public ConfigEntry<bool> ApplyCoffeeBoostAfterwards { get; private set; }
         public ConfigEntry<float> ExplosionScale { get; private set; }
@@ -304,7 +305,13 @@ namespace IssaPlugin
                 MaydaySection,
                 "HitsToMayday",
                 1f,
-                "Number of rocket hits required to force the gunship into mayday. Only counts hits during an active session. Set to 0 to disable."
+                "Number of hits required to force the gunship into mayday. Only counts hits during an active session. Set to 0 to disable."
+            );
+            FirearmsCanHit = cfg.Bind(
+                MaydaySection,
+                "FirearmsCanHit",
+                true,
+                "If true, firearms (sniper rifle, elephant gun, dueling pistol, AK-47) can contribute hits toward forcing the gunship into mayday."
             );
             RocketProximityFuse = cfg.Bind(
                 MaydaySection,

@@ -22,6 +22,7 @@ namespace IssaPlugin
         public ConfigEntry<float> TargetRotateSpeed { get; private set; }
         public ConfigEntry<float> ApproachDistance { get; private set; }
         public ConfigEntry<float> HitsToDestroy { get; private set; }
+        public ConfigEntry<bool> FirearmsCanHit { get; private set; }
         public ConfigEntry<float> CrashImpactForce { get; private set; }
         public ConfigEntry<float> CrashDownwardForce { get; private set; }
         public ConfigEntry<float> CrashTorque { get; private set; }
@@ -115,7 +116,13 @@ namespace IssaPlugin
                 Section,
                 "HitsToDestroy",
                 1f,
-                "Rocket hits required to shoot down the bomber and cancel its run. Set to 0 to make it invincible."
+                "Hits required to shoot down the bomber and cancel its run. Set to 0 to make it invincible."
+            );
+            FirearmsCanHit = cfg.Bind(
+                Section,
+                "FirearmsCanHit",
+                true,
+                "If true, firearms (sniper rifle, elephant gun, dueling pistol, AK-47) can contribute hits toward shooting down the stealth bomber."
             );
             CrashImpactForce = cfg.Bind(
                 Section,

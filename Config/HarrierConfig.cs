@@ -20,6 +20,7 @@ namespace IssaPlugin
         public ConfigEntry<float> RocketJitter { get; private set; }
         public ConfigEntry<bool> FriendlyFire { get; private set; }
         public ConfigEntry<float> HitsToDestroy { get; private set; }
+        public ConfigEntry<bool> FirearmsCanHit { get; private set; }
         public ConfigEntry<float> CrashExplosionScale { get; private set; }
 
         public HarrierConfig(ConfigFile cfg, GlobalConfig global)
@@ -95,7 +96,13 @@ namespace IssaPlugin
                 Section,
                 "HitsToDestroy",
                 3f,
-                "Number of direct rocket hits required to shoot down the Harrier. Set to 0 to make it invincible."
+                "Number of direct hits required to shoot down the Harrier. Set to 0 to make it invincible."
+            );
+            FirearmsCanHit = cfg.Bind(
+                Section,
+                "FirearmsCanHit",
+                true,
+                "If true, firearms (sniper rifle, elephant gun, dueling pistol, AK-47) can contribute hits toward shooting down the Harrier."
             );
             CrashExplosionScale = cfg.Bind(
                 Section,

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Reflection;
+using IssaPlugin.Patches;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -128,6 +129,9 @@ namespace IssaPlugin.Items
 
             if (!parsed)
             {
+                // Aircraft check runs for every bullet — not rate-limited like the VFX call,
+                // so each shot registers independently against the aircraft hit counter.
+                AircraftFirearmHitHelper.TryHitAircraftAlongRay(barrelEnd, dir);
                 if (Time.time - _lastVfxTime >= VfxMinInterval)
                 {
                     _lastVfxTime = Time.time;
