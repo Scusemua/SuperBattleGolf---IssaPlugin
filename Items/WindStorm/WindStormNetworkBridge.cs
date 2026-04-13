@@ -108,6 +108,7 @@ namespace IssaPlugin.Items
 
         public static void HandleBegin(WindStormBeginMessage msg)
         {
+            _globalSessionActive = true;
             if (msg.ActivatorNetId != 0u)
                 WindImmuneNetIds.Add(msg.ActivatorNetId);
             WindStormOverlay.Instance?.SetActive(true, msg.Duration);
@@ -118,6 +119,7 @@ namespace IssaPlugin.Items
 
         public static void HandleEnd(WindStormEndMessage msg)
         {
+            _globalSessionActive = false;
             WindImmuneNetIds.Clear();
             WindStormOverlay.Instance?.SetActive(false);
             IssaPluginPlugin.Log.LogInfo("[WindStorm] Storm ended.");
