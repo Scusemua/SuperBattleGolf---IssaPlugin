@@ -70,6 +70,7 @@ namespace IssaPlugin.Items
         public static Sprite PositionSwapIcon { get; private set; }
         public static Sprite PoisonJarIcon { get; private set; }
         public static Sprite DroneSwarmIcon { get; private set; }
+        public static Sprite HunterDroneIcon { get; private set; }
         public static Sprite ElectricGravityGunIcon { get; private set; }
         public static Sprite RedBullIcon { get; private set; }
         public static Sprite WindStormIcon { get; private set; }
@@ -95,6 +96,7 @@ namespace IssaPlugin.Items
         public static GameObject PositionSwapHandheldPrefab { get; private set; }
         public static GameObject PoisonJarHandheldPrefab { get; private set; }
         public static GameObject DroneControllerPrefab { get; private set; }
+        public static GameObject HunterDroneHandheldPrefab { get; private set; }
         public static GameObject ElectricWhipHandheldPrefab { get; private set; }
         public static GameObject RedBullHandheldPrefab { get; private set; }
         public static GameObject WindStormModelPrefab { get; private set; }
@@ -120,6 +122,9 @@ namespace IssaPlugin.Items
         public static GameObject HarrierPrefab { get; private set; }
         public static GameObject PoisonJarPrefab { get; private set; }
         public static GameObject DronePrefab { get; private set; }
+
+        /// Networked hunter drone projectile. Null until hunter_drone.prefab is added to the bundle.
+        public static GameObject HunterDronePrefab { get; private set; }
 
         /// Networked droppable-item prefab; carries NetworkIdentity, NetworkTransform,
         /// Rigidbody (kinematic), SphereCollider (trigger), Entity, and DroppedCustomItem.
@@ -295,6 +300,7 @@ namespace IssaPlugin.Items
                 SpriteAsset(p => PositionSwapIcon = p, "position_swap_icon.png"),
                 SpriteAsset(p => PoisonJarIcon = p, "poison_bottle_icon.png"),
                 SpriteAsset(p => DroneSwarmIcon = p, "drone_swarm_icon.png"),
+                SpriteAsset(p => HunterDroneIcon = p, "hunter_drone_icon.png", optional: true),
                 SpriteAsset(p => ElectricGravityGunIcon = p, "gravity_gun_icon.png"),
                 SpriteAsset(p => RedBullIcon = p, "redbull_icon.png"),
                 SpriteAsset(p => WindStormIcon = p, "wind_storm_icon.png", optional: true),
@@ -324,6 +330,11 @@ namespace IssaPlugin.Items
                 ),
                 HandheldPrefab(p => PoisonJarHandheldPrefab = p, "posion_bottle.prefab"),
                 HandheldPrefab(p => DroneControllerPrefab = p, "drone_swarm_tablet.prefab"),
+                HandheldPrefab(
+                    p => HunterDroneHandheldPrefab = p,
+                    "hunter_drone_handheld.prefab",
+                    optional: true
+                ),
                 HandheldPrefab(p => ElectricWhipHandheldPrefab = p, "gravity_gun.prefab"),
                 HandheldPrefab(p => RedBullHandheldPrefab = p, "redbull.prefab"),
                 HandheldPrefab(
@@ -394,6 +405,12 @@ namespace IssaPlugin.Items
                 ),
                 NetworkedPrefab(p => PoisonJarPrefab = p, "posion_bottle.prefab", 0xD001A501u),
                 NetworkedPrefab(p => DronePrefab = p, "drone.prefab", 0xD40E0001u),
+                NetworkedPrefab(
+                    p => HunterDronePrefab = p,
+                    "hunter_drone.prefab",
+                    0xD40E0002u,
+                    optional: true
+                ),
                 NetworkedPrefab(
                     p => BlackHoleGrenadePrefab = p,
                     "black_hole_grenade.prefab",

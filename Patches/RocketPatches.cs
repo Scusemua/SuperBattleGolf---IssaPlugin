@@ -89,6 +89,10 @@ namespace IssaPlugin.Patches
                         harrierHitReceiver.OnHit?.Invoke();
                     }
                 }
+
+                // Hunter Drone: a single rocket impact destroys the drone.
+                var hunterDroneBehaviour = hit.GetComponentInParent<HunterDroneBehaviour>();
+                hunterDroneBehaviour?.ShootDown();
             }
 
             // Notify the Harrier summoner when their rocket hits a player.

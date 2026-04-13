@@ -68,6 +68,8 @@ namespace IssaPlugin.Patches
                 __instance.gameObject.AddComponent<RocketTetherGrenadeNetworkBridge>();
             if (!__instance.GetComponent<WindStormNetworkBridge>())
                 __instance.gameObject.AddComponent<WindStormNetworkBridge>();
+            if (!__instance.GetComponent<HunterDroneNetworkBridge>())
+                __instance.gameObject.AddComponent<HunterDroneNetworkBridge>();
 
             IssaPluginPlugin.Log.LogDebug(
                 "[Network] Bridge components injected onto player object."

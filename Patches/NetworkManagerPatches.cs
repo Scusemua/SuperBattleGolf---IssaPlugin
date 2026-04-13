@@ -1620,6 +1620,35 @@ namespace IssaPlugin.Patches
                     (conn, msg) => GetBridge<WindStormNetworkBridge>(conn)?.ServerActivate()
                 );
 
+            // ── Hunter Drone ──────────────────────────────────────────────────────
+            Writer<HunterDroneLaunchMessage>.write =
+                HunterDroneLaunchMessageSerialization.WriteHunterDroneLaunchMessage;
+            Reader<HunterDroneLaunchMessage>.read =
+                HunterDroneLaunchMessageSerialization.ReadHunterDroneLaunchMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<HunterDroneLaunchMessage>(
+                    (conn, msg) => GetBridge<HunterDroneNetworkBridge>(conn)?.ServerLaunchDrone()
+                );
+
+            Writer<HunterDroneShotMessage>.write =
+                HunterDroneShotMessageSerialization.WriteHunterDroneShotMessage;
+            Reader<HunterDroneShotMessage>.read =
+                HunterDroneShotMessageSerialization.ReadHunterDroneShotMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<HunterDroneShotMessage>(
+                    (conn, msg) =>
+                        GetBridge<HunterDroneNetworkBridge>(conn)
+                            ?.ServerHandleDroneShot(msg.DroneNetId)
+                );
+
+            Writer<HunterDroneExplodedMessage>.write =
+                HunterDroneExplodedMessageSerialization.WriteHunterDroneExplodedMessage;
+            Reader<HunterDroneExplodedMessage>.read =
+                HunterDroneExplodedMessageSerialization.ReadHunterDroneExplodedMessage;
+            NetworkClient.RegisterHandler<HunterDroneExplodedMessage>(
+                HunterDroneNetworkBridge.HandleDroneExploded
+            );
+
             // ── Scaled explosion VFX (Server → All Clients) ──────────────────────
             Writer<ScaledExplosionVfxMessage>.write =
                 ScaledExplosionVfxMessageSerialization.WriteScaledExplosionVfxMessage;
@@ -1671,6 +1700,9 @@ namespace IssaPlugin.Patches
             // Null-safe: RocketTetherGrenadePrefab is null when no dedicated asset exists.
             if (AssetLoader.RocketTetherGrenadePrefab != null)
                 RegisterPrefab(AssetLoader.RocketTetherGrenadePrefab);
+            // Null-safe: HunterDronePrefab is null until hunter_drone.prefab is added to the bundle.
+            if (AssetLoader.HunterDronePrefab != null)
+                RegisterPrefab(AssetLoader.HunterDronePrefab);
         }
 
         private static void RegisterPrefab(GameObject prefab)

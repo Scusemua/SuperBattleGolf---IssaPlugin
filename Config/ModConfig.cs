@@ -39,6 +39,7 @@ namespace IssaPlugin
         public static FlamethrowerConfig Flamethrower { get; private set; }
         public static RocketTetherGrenadeConfig RocketTetherGrenade { get; private set; }
         public static WindStormConfig WindStorm { get; private set; }
+        public static HunterDroneConfig HunterDrone { get; private set; }
 
         public static void Initialize(ConfigFile cfg)
         {
@@ -74,6 +75,7 @@ namespace IssaPlugin
             Flamethrower = new FlamethrowerConfig(cfg, Global);
             RocketTetherGrenade = new RocketTetherGrenadeConfig(cfg, Global);
             WindStorm = new WindStormConfig(cfg, Global);
+            HunterDrone = new HunterDroneConfig(cfg, Global);
         }
 
         // ── Pass-through helper methods (from GlobalConfig) ───────────────────
