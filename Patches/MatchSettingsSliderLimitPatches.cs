@@ -12,21 +12,26 @@ namespace IssaPlugin.Patches
     static class MatchSettingsSliderLimitPatches
     {
         // Speed / power sliders store multipliers (1.0 = 100%). 1000% → 10.0.
-        private const float SpeedMaxMultiplier = 10f;
+        private const float SpeedMaxMultiplier = 25f;
+
         // Countdown slider is in seconds. 5 minutes → 300 s.
-        private const float CountdownMaxSeconds = 300f;
+        private const float CountdownMaxSeconds = 500f;
 
         // SliderOption.slider is a private UnityEngine.UI.Slider field. We read minValue
         // through reflection so we don't need to add UnityEngine.UI.dll as a reference.
-        private static readonly FieldInfo SliderField =
-            typeof(SliderOption).GetField("slider", BindingFlags.NonPublic | BindingFlags.Instance);
-        private static readonly PropertyInfo MinValueProp =
-            SliderField?.FieldType.GetProperty("minValue");
+        private static readonly FieldInfo SliderField = typeof(SliderOption).GetField(
+            "slider",
+            BindingFlags.NonPublic | BindingFlags.Instance
+        );
+        private static readonly PropertyInfo MinValueProp = SliderField?.FieldType.GetProperty(
+            "minValue"
+        );
 
         private static float GetMin(SliderOption opt)
         {
             var slider = SliderField?.GetValue(opt);
-            if (slider == null || MinValueProp == null) return 0f;
+            if (slider == null || MinValueProp == null)
+                return 0f;
             return (float)MinValueProp.GetValue(slider);
         }
 
