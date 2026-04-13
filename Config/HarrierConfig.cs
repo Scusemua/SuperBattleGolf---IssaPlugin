@@ -34,7 +34,7 @@ namespace IssaPlugin
             Altitude = cfg.Bind(
                 Section,
                 "Altitude",
-                80f,
+                175f,
                 "Height above the map centre the Harrier hovers at while attacking."
             );
             Duration = cfg.Bind(

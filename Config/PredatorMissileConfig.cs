@@ -26,7 +26,7 @@ namespace IssaPlugin
             FallSpeed = cfg.Bind(
                 Section,
                 "FallSpeed",
-                85f,
+                50f,
                 "Downward speed of the missile in units per second."
             );
             SteerSpeed = cfg.Bind(

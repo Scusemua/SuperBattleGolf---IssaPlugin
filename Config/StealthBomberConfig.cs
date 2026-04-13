@@ -50,7 +50,7 @@ namespace IssaPlugin
             RocketInterval = cfg.Bind(
                 Section,
                 "RocketInterval",
-                0.15f,
+                0.75f,
                 "Seconds between each rocket drop during a bombing run."
             );
             Spread = cfg.Bind(

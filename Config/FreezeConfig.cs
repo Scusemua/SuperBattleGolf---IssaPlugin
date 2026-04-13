@@ -33,7 +33,7 @@ namespace IssaPlugin
             Friction = cfg.Bind(
                 Section,
                 "Friction",
-                0.02f,
+                0.05f,
                 "Surface friction applied to all physics contacts during a freeze (0 = frictionless)."
             );
             Bounciness = cfg.Bind(

@@ -85,7 +85,7 @@ namespace IssaPlugin
             Duration = cfg.Bind(
                 Section,
                 "Duration",
-                40f,
+                20f,
                 "How many seconds the AC130 remains active before leaving."
             );
             CameraPitch = cfg.Bind(

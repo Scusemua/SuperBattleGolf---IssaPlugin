@@ -43,6 +43,12 @@ namespace IssaPlugin.Patches
                 return false; // block custom items while knocked over / recovering
             }
 
+            if (FreezeItem.IsFrozen)
+            {
+                __result = false;
+                return false; // block custom items while the world is frozen
+            }
+
             shouldEatInput = def.ShouldEatInputOnUse;
             __result = def.UseResult;
             IssaPluginPlugin.Log.LogDebug(

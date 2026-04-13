@@ -29,7 +29,7 @@ namespace IssaPlugin
                 Key.Numpad1,
                 "Debug key to add the Sniper Rifle to your inventory."
             );
-            Uses = cfg.Bind(Section, "Uses", 1f, "Number of shots per Sniper Rifle pickup.");
+            Uses = cfg.Bind(Section, "Uses", 5f, "Number of shots per Sniper Rifle pickup.");
             MaxAimingDistance = cfg.Bind(
                 Section,
                 "MaxAimingDistance",
