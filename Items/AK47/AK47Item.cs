@@ -129,13 +129,20 @@ namespace IssaPlugin.Items
 
             if (!parsed)
             {
-                // Aircraft check runs for every bullet — not rate-limited like the VFX call,
-                // so each shot registers independently against the aircraft hit counter.
-                AircraftFirearmHitHelper.TryHitAircraftAlongRay(barrelEnd, dir);
                 if (Time.time - _lastVfxTime >= VfxMinInterval)
                 {
                     _lastVfxTime = Time.time;
                     VfxManager.PlayElephantGunMissForAllClients(inventory, ray.direction);
+                    // The server-side UserCode patch on PlayElephantGunMissForAllClients
+                    // handles the aircraft check for this bullet — no direct call needed.
+                }
+                else
+                {
+                    // VFX Command was rate-limited and won't be sent, so the UserCode patch
+                    // won't fire on the server for this bullet. Handle the aircraft check
+                    // directly: server calls OnHit immediately, non-host client sends a
+                    // message so the server processes every bullet regardless of VFX rate.
+                    AircraftFirearmHitHelper.TryHitAircraftAlongRay(barrelEnd, dir);
                 }
                 return;
             }

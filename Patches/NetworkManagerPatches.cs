@@ -1435,6 +1435,18 @@ namespace IssaPlugin.Patches
                 );
             }
 
+            // ── Aircraft firearm hits (Client → Server) ───────────────────────────
+            // Sent by non-host clients for rate-limited AK-47 bullets that bypass
+            // the VFX Command path and therefore don't trigger the UserCode patch.
+            Writer<AircraftFirearmHitMessage>.write =
+                AircraftFirearmHitMessageSerialization.WriteAircraftFirearmHitMessage;
+            Reader<AircraftFirearmHitMessage>.read =
+                AircraftFirearmHitMessageSerialization.ReadAircraftFirearmHitMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<AircraftFirearmHitMessage>(
+                    AircraftFirearmHitHelper.ServerHandleHit
+                );
+
             // ── Hotkey item-giving (Client → Server) ─────────────────────────────
             Writer<GiveItemRequestMessage>.write =
                 GiveItemRequestMessageSerialization.WriteGiveItemRequestMessage;
