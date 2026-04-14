@@ -401,7 +401,7 @@ namespace IssaPlugin.Items
                 NetworkedPrefab(p => DronePrefab = p, "drone.prefab", 0xD40E0001u),
                 NetworkedPrefab(
                     p => HunterDronePrefab = p,
-                    "drone.prefab",
+                    "hunter_drone.prefab",
                     0xD40E0002u,
                     optional: true
                 ),

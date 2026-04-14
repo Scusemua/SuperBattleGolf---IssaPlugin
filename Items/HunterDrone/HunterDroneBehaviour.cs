@@ -116,6 +116,15 @@ namespace IssaPlugin.Items
             HitCount = 0;
             OnHit += HandleHit;
 
+            var particles = gameObject.GetComponentsInChildren<ParticleSystem>(
+                includeInactive: true
+            );
+            foreach (var ps in particles)
+            {
+                ps.gameObject.SetActive(true);
+                ps.Play();
+            }
+
             // Select initial target immediately so the drone starts homing on spawn.
             TrySelectTarget();
         }
@@ -208,11 +217,6 @@ namespace IssaPlugin.Items
             else if (_hasFallbackAimPoint)
             {
                 dir = _fallbackAimPoint - transform.position;
-                if (_armed && dir.magnitude < ArrivalRadius)
-                {
-                    Detonate();
-                    return;
-                }
             }
             else
             {
