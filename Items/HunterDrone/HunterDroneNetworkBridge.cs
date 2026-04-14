@@ -50,7 +50,7 @@ namespace IssaPlugin.Items
         /// <summary>
         /// Called on the server when the client sends HunterDroneLaunchMessage.
         /// </summary>
-        public void ServerLaunchDrone()
+        public void ServerLaunchDrone(Vector3 aimPoint)
         {
             if (!isServer)
                 return;
@@ -66,9 +66,7 @@ namespace IssaPlugin.Items
             var inventory = GetComponent<PlayerInventory>();
             if (inventory == null)
             {
-                IssaPluginPlugin.Log.LogError(
-                    "[HunterDrone] No PlayerInventory on bridge object."
-                );
+                IssaPluginPlugin.Log.LogError("[HunterDrone] No PlayerInventory on bridge object.");
                 return;
             }
 
@@ -97,7 +95,7 @@ namespace IssaPlugin.Items
                 senderNetId: netId
             );
 
-            SpawnDrone(inventory.PlayerInfo);
+            SpawnDrone(inventory.PlayerInfo, aimPoint);
         }
 
         /// <summary>
@@ -125,7 +123,7 @@ namespace IssaPlugin.Items
 
         // ── Server internals ──────────────────────────────────────────────────
 
-        private void SpawnDrone(PlayerInfo summoner)
+        private void SpawnDrone(PlayerInfo summoner, Vector3 aimPoint)
         {
             // Spawn slightly above and in front of the player so the drone doesn't
             // immediately collide with the thrower.
@@ -135,8 +133,7 @@ namespace IssaPlugin.Items
                 forward = Vector3.forward;
             forward.Normalize();
 
-            Vector3 spawnPos =
-                summoner.transform.position + forward * 1.5f + Vector3.up * 2.0f;
+            Vector3 spawnPos = summoner.transform.position + forward * 1.5f + Vector3.up * 2.0f;
 
             var droneGo = Object.Instantiate(
                 AssetLoader.HunterDronePrefab,
@@ -149,7 +146,11 @@ namespace IssaPlugin.Items
             // propagate layer changes automatically.
             SetLayerRecursive(droneGo, GameManager.LayerSettings.HittablesLayer);
 
-            var itemUseId = new ItemUseId(summoner.PlayerId.Guid, NextUseIndex(), ItemType.RocketLauncher);
+            var itemUseId = new ItemUseId(
+                summoner.PlayerId.Guid,
+                NextUseIndex(),
+                ItemType.RocketLauncher
+            );
 
             var behaviour = droneGo.AddComponent<HunterDroneBehaviour>();
             behaviour.LaunchSpeed = ModConfig.HunterDrone.LaunchSpeed.Value;
@@ -162,6 +163,7 @@ namespace IssaPlugin.Items
             behaviour.FriendlyFire = ModConfig.HunterDrone.FriendlyFire.Value;
             behaviour.AttackFinishedPlayers = ModConfig.HunterDrone.AttackFinishedPlayers.Value;
             behaviour.ArmDelay = ModConfig.HunterDrone.ArmDelay.Value;
+            behaviour.SetFallbackAimPoint(aimPoint);
 
             NetworkServer.Spawn(droneGo);
 

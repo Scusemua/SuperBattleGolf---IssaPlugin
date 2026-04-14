@@ -30,7 +30,7 @@ namespace IssaPlugin
             LaunchSpeed = cfg.Bind(
                 Section,
                 "LaunchSpeed",
-                35f,
+                90f,
                 "Initial flight speed of the drone in metres per second."
             );
             Acceleration = cfg.Bind(
@@ -62,7 +62,7 @@ namespace IssaPlugin
             ArmDelay = cfg.Bind(
                 Section,
                 "ArmDelay",
-                0.4f,
+                0.2f,
                 "Seconds after launch before the drone starts checking for collision. "
                     + "Prevents the drone from detonating on the thrower immediately after "
                     + "being thrown."

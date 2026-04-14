@@ -56,6 +56,9 @@ namespace IssaPlugin.Items
         /// so the drone can clear the thrower's body before arming.
         public float ArmDelay = 0.4f;
 
+        private Vector3 _fallbackAimPoint;
+        private bool _hasFallbackAimPoint;
+
         // ----------------------------------------------------------------
         //  Internal state
         // ----------------------------------------------------------------
@@ -89,6 +92,12 @@ namespace IssaPlugin.Items
         // ----------------------------------------------------------------
         //  Unity lifecycle
         // ----------------------------------------------------------------
+
+        public void SetFallbackAimPoint(Vector3 worldPoint)
+        {
+            _fallbackAimPoint = worldPoint;
+            _hasFallbackAimPoint = true;
+        }
 
         private void Start()
         {
@@ -142,9 +151,6 @@ namespace IssaPlugin.Items
                     TrySelectTarget();
                     _retryTimer = NoTargetRetryInterval;
                 }
-
-                if (_targetTransform == null)
-                    return; // nothing to home towards yet — hover in place
             }
 
             UpdateHoming();
@@ -194,10 +200,28 @@ namespace IssaPlugin.Items
             // Accelerate.
             _currentSpeed += Acceleration * Time.fixedDeltaTime;
 
-            Vector3 toTarget = _homingTarget - transform.position;
-            Vector3 step = toTarget.normalized * _currentSpeed * Time.fixedDeltaTime;
+            Vector3 dir;
+            if (_homingActive && _targetTransform != null)
+            {
+                dir = _homingTarget - transform.position;
+            }
+            else if (_hasFallbackAimPoint)
+            {
+                dir = _fallbackAimPoint - transform.position;
+                if (_armed && dir.magnitude < ArrivalRadius)
+                {
+                    Detonate();
+                    return;
+                }
+            }
+            else
+            {
+                dir = transform.forward;
+            }
+
+            Vector3 step = dir.normalized * _currentSpeed * Time.fixedDeltaTime;
             if (step.magnitude > distToTarget)
-                step = toTarget;
+                step = dir;
 
             RotateTowardStep(step);
             _rb.MovePosition(transform.position + step);

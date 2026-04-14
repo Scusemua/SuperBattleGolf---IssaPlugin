@@ -6,18 +6,23 @@ namespace IssaPlugin.Items
     // ── Client → Server ──────────────────────────────────────────────────────
 
     /// <summary>Sent when the local player activates the Hunter Drone item.</summary>
-    public struct HunterDroneLaunchMessage : NetworkMessage { }
+    public struct HunterDroneLaunchMessage : NetworkMessage
+    {
+        public Vector3 AimPoint;
+    }
 
     public static class HunterDroneLaunchMessageSerialization
     {
         public static void WriteHunterDroneLaunchMessage(
             NetworkWriter writer,
             HunterDroneLaunchMessage msg
-        ) { }
+        )
+        {
+            writer.WriteVector3(msg.AimPoint);
+        }
 
-        public static HunterDroneLaunchMessage ReadHunterDroneLaunchMessage(
-            NetworkReader reader
-        ) => new HunterDroneLaunchMessage();
+        public static HunterDroneLaunchMessage ReadHunterDroneLaunchMessage(NetworkReader reader) =>
+            new HunterDroneLaunchMessage { AimPoint = reader.ReadVector3() };
     }
 
     /// <summary>

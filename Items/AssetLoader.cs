@@ -96,7 +96,6 @@ namespace IssaPlugin.Items
         public static GameObject PositionSwapHandheldPrefab { get; private set; }
         public static GameObject PoisonJarHandheldPrefab { get; private set; }
         public static GameObject DroneControllerPrefab { get; private set; }
-        public static GameObject HunterDroneHandheldPrefab { get; private set; }
         public static GameObject ElectricWhipHandheldPrefab { get; private set; }
         public static GameObject RedBullHandheldPrefab { get; private set; }
         public static GameObject WindStormModelPrefab { get; private set; }
@@ -330,11 +329,6 @@ namespace IssaPlugin.Items
                 ),
                 HandheldPrefab(p => PoisonJarHandheldPrefab = p, "posion_bottle.prefab"),
                 HandheldPrefab(p => DroneControllerPrefab = p, "drone_swarm_tablet.prefab"),
-                HandheldPrefab(
-                    p => HunterDroneHandheldPrefab = p,
-                    "hunter_drone_handheld.prefab",
-                    optional: true
-                ),
                 HandheldPrefab(p => ElectricWhipHandheldPrefab = p, "gravity_gun.prefab"),
                 HandheldPrefab(p => RedBullHandheldPrefab = p, "redbull.prefab"),
                 HandheldPrefab(
@@ -407,7 +401,7 @@ namespace IssaPlugin.Items
                 NetworkedPrefab(p => DronePrefab = p, "drone.prefab", 0xD40E0001u),
                 NetworkedPrefab(
                     p => HunterDronePrefab = p,
-                    "hunter_drone.prefab",
+                    "drone.prefab",
                     0xD40E0002u,
                     optional: true
                 ),

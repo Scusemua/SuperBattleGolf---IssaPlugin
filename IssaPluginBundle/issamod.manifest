@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 2919378817
+CRC: 1479373555
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 6b59cd851a2bc91c14daf23f2f0f1203
+    Hash: 13626d067f0aec84de03fb00fa384771
   TypeTreeHash:
     serializedVersion: 2
     Hash: 82d52513d6b19822b87b688cdb5147d6
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: d91c62d73e93a03efeebc7f6f5235496
+    Hash: 69bfadda90de26356440c19b8544c6e6
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -83,6 +83,7 @@ Assets:
 - Assets/Assets/ConfettiBlastRainbow.prefab
 - Assets/Assets/warning_particle.prefab
 - Assets/Assets/donut_icon.png
+- Assets/Assets/hunter_drone_icon.png
 - Assets/Assets/weather_remote.prefab
 - Assets/Assets/teleporter_handheld.prefab
 - Assets/Assets/bear.prefab
@@ -137,6 +138,7 @@ Assets:
 - Assets/Assets/flamethrower_vfx.prefab
 - Assets/Assets/harrier_tablet.prefab
 - Assets/Assets/wall_icon.png
+- Assets/Assets/hunter_drone.prefab
 - Assets/Assets/jetpack_icon.png
 - Assets/Assets/black_hole.prefab
 - Assets/Assets/sniper_rifle_icon.png
