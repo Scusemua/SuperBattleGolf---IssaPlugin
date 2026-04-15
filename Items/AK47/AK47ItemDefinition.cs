@@ -15,12 +15,14 @@ namespace IssaPlugin.Items
         public override int MaxUses => (int)ModConfig.AK47.Uses.Value;
         public override float DefaultPoolWeight => 5f;
 
-        public override float GetDefaultPoolWeight(int poolIndex) => poolIndex switch
-        {
-            GlobalConfig.PoolLead  => 1f,
-            GlobalConfig.PoolAhead => 1f,
-            _                      => DefaultPoolWeight,
-        };
+        public override float GetDefaultPoolWeight(int poolIndex) =>
+            poolIndex switch
+            {
+                GlobalConfig.PoolLead => 1f,
+                GlobalConfig.PoolAhead => 1f,
+                _ => DefaultPoolWeight,
+            };
+
         public override Key GiveKey => ModConfig.AK47.GiveKey.Value;
         public override EquipmentType EquipmentType => EquipmentType.ElephantGun;
         public override ItemType AnimatorItemType => ItemType.ElephantGun;

@@ -210,7 +210,7 @@ namespace IssaPlugin.Overlays
         private void ResetToDefaults()
         {
             _workingEnabled = true;
-            _workingRate    = 0.5f;
+            _workingRate = 0.5f;
             var items = ItemRegistry.AllItems;
             _textBuffers["rate"] = _workingRate.ToString("F2");
             for (int i = 0; i < items.Count; i++)
@@ -224,13 +224,17 @@ namespace IssaPlugin.Overlays
             }
             // Re-seed tier batch-set buffers from the new per-item values.
             for (int t = 0; t < TierDefs.Length; t++)
-                for (int p = 0; p < 6; p++)
-                {
-                    float seed = TierDefs[t].defaultWeight;
-                    for (int i = 0; i < items.Count; i++)
-                        if (_itemTierIndex[i] == t) { seed = _workingPoolWeights[i, p]; break; }
-                    _textBuffers[$"t{t}_{p}"] = seed.ToString("F1");
-                }
+            for (int p = 0; p < 6; p++)
+            {
+                float seed = TierDefs[t].defaultWeight;
+                for (int i = 0; i < items.Count; i++)
+                    if (_itemTierIndex[i] == t)
+                    {
+                        seed = _workingPoolWeights[i, p];
+                        break;
+                    }
+                _textBuffers[$"t{t}_{p}"] = seed.ToString("F1");
+            }
         }
 
         private void ApplyAndSync()
