@@ -8,7 +8,7 @@ namespace IssaPlugin
         private const string Section = "HunterDrone";
 
         public ConfigEntry<Key> GiveKey { get; private set; }
-        public ConfigEntry<int> Uses { get; private set; }
+        public ConfigEntry<float> Uses { get; private set; }
         public ConfigEntry<float> LaunchSpeed { get; private set; }
         public ConfigEntry<float> Acceleration { get; private set; }
         public ConfigEntry<float> HomingStopDistance { get; private set; }
@@ -19,7 +19,7 @@ namespace IssaPlugin
         public ConfigEntry<bool> AttackFinishedPlayers { get; private set; }
         public ConfigEntry<float> MaxFlightDistance { get; private set; }
         public ConfigEntry<float> MaxSpeed { get; private set; }
-        public ConfigEntry<int> MaxActiveDrones { get; private set; }
+        public ConfigEntry<float> MaxActiveDrones { get; private set; }
 
         public HunterDroneConfig(ConfigFile cfg, GlobalConfig global)
         {
@@ -29,7 +29,7 @@ namespace IssaPlugin
                 Key.NumpadPlus,
                 "Debug key to add the Hunter Drone item to your inventory."
             );
-            Uses = cfg.Bind(Section, "Uses", 1, "Number of uses per Hunter Drone pickup.");
+            Uses = cfg.Bind(Section, "Uses", 1f, "Number of uses per Hunter Drone pickup.");
             LaunchSpeed = cfg.Bind(
                 Section,
                 "LaunchSpeed",
@@ -99,9 +99,8 @@ namespace IssaPlugin
             MaxActiveDrones = cfg.Bind(
                 Section,
                 "MaxActiveDrones",
-                1,
-                "Maximum number of hunter drones a single player may have in flight at once. "
-                    + "Set to 1 for the original one-at-a-time behaviour."
+                5f,
+                "Maximum number of hunter drones a single player may have in flight at once."
             );
         }
     }

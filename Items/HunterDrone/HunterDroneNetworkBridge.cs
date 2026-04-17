@@ -78,7 +78,7 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            int maxActive = ModConfig.HunterDrone.MaxActiveDrones.Value;
+            int maxActive = (int)ModConfig.HunterDrone.MaxActiveDrones.Value;
             if (_activeDrones.Count >= maxActive)
             {
                 IssaPluginPlugin.Log.LogInfo(

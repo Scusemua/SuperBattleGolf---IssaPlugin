@@ -16,7 +16,7 @@ namespace IssaPlugin.Items
         public override GameObject HeldModelPrefab =>
             AssetLoader.HunterDroneHandheldPrefab ?? AssetLoader.DroneControllerPrefab;
 
-        public override int MaxUses => ModConfig.HunterDrone.Uses.Value;
+        public override int MaxUses => (int)ModConfig.HunterDrone.Uses.Value;
 
         public override float DefaultPoolWeight => 5f;
 
