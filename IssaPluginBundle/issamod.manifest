@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 741106883
+CRC: 2977413982
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: e4450a2e0e4620cd3ea806245596c5b8
+    Hash: b41e8835c1e176285e3d293e40c38076
   TypeTreeHash:
     serializedVersion: 2
     Hash: 82d52513d6b19822b87b688cdb5147d6
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: de72b1b5fe1479f959ee14e2b126a307
+    Hash: 0dda6fa03eaf344b685ca93c774d0574
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -123,6 +123,7 @@ Assets:
 - Assets/Assets/nuke_icon.png
 - Assets/Assets/fire_torch_intense.prefab
 - Assets/Assets/nuclear_explosion.prefab
+- Assets/Assets/hunter_drone.prefab
 - Assets/Assets/teddy.prefab
 - Assets/Assets/donut_model.prefab
 - Assets/Assets/spinach_powerup_vfx.prefab
@@ -138,7 +139,7 @@ Assets:
 - Assets/Assets/flamethrower_vfx.prefab
 - Assets/Assets/harrier_tablet.prefab
 - Assets/Assets/wall_icon.png
-- Assets/Assets/hunter_drone.prefab
+- Assets/Assets/hunter_drone_handheld.prefab
 - Assets/Assets/jetpack_icon.png
 - Assets/Assets/black_hole.prefab
 - Assets/Assets/sniper_rifle_icon.png
