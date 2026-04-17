@@ -35,7 +35,7 @@ namespace IssaPlugin.Items
         public override void OnUse(PlayerInventory inventory)
         {
             Vector3 aimPoint;
-            if (Mouse.current != null)
+            if (Mouse.current != null && Mouse.current.rightButton.isPressed)
             {
                 Vector2 mousePos = Mouse.current.position.ReadValue();
                 Ray aimRay = Camera.main.ScreenPointToRay(mousePos);
