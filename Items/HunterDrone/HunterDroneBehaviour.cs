@@ -201,10 +201,7 @@ namespace IssaPlugin.Items
             }
 
             // Accelerate regardless of whether we have a target, capped at MaxSpeed.
-            _currentSpeed = Mathf.Min(
-                _currentSpeed + Acceleration * Time.fixedDeltaTime,
-                MaxSpeed
-            );
+            _currentSpeed = Mathf.Min(_currentSpeed + Acceleration * Time.fixedDeltaTime, MaxSpeed);
 
             Vector3 step;
 
