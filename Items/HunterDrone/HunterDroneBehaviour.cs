@@ -35,7 +35,7 @@ namespace IssaPlugin.Items
         public float HomingStopDistance = 10f;
 
         /// Detonation trigger radius in metres.
-        public float ArrivalRadius = 2.5f;
+        public float ArrivalRadius = 0.5f;
 
         /// Multiplier passed to ExplosionScaler for the impact blast.
         public float ExplosionScale = 1.2f;
