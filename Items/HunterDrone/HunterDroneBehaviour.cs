@@ -78,6 +78,9 @@ namespace IssaPlugin.Items
         /// Maximum distance (metres) the drone may travel before self-detonating.
         public float MaxFlightDistance = 500f;
 
+        /// Maximum flight speed in metres/second. Caps acceleration-driven growth.
+        public float MaxSpeed = 300f;
+
         private float _distanceTraveled;
 
         // How long to wait before retrying target selection when no valid targets exist.
@@ -185,8 +188,27 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            // Accelerate regardless of whether we have a target.
-            _currentSpeed += Acceleration * Time.fixedDeltaTime;
+            // Accelerate regardless of whether we have a target, capped at MaxSpeed.
+            _currentSpeed = Mathf.Min(
+                _currentSpeed + Acceleration * Time.fixedDeltaTime,
+                MaxSpeed
+            );
+
+            // Re-validate the locked target every frame so config flags like
+            // AttackFinishedPlayers are respected even after lock-on.
+            if (_targetTransform != null)
+            {
+                var player = _targetTransform.GetComponent<PlayerInfo>();
+                if (!IsValidTarget(player))
+                {
+                    IssaPluginPlugin.Log.LogInfo(
+                        "[HunterDrone] Locked target is no longer valid — re-selecting."
+                    );
+                    _targetTransform = null;
+                    _homingActive = false;
+                    _retryTimer = 0f; // retry next frame
+                }
+            }
 
             Vector3 step;
 

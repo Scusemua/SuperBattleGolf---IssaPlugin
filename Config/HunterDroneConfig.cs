@@ -18,6 +18,7 @@ namespace IssaPlugin
         public ConfigEntry<bool> FriendlyFire { get; private set; }
         public ConfigEntry<bool> AttackFinishedPlayers { get; private set; }
         public ConfigEntry<float> MaxFlightDistance { get; private set; }
+        public ConfigEntry<float> MaxSpeed { get; private set; }
 
         public HunterDroneConfig(ConfigFile cfg, GlobalConfig global)
         {
@@ -86,6 +87,13 @@ namespace IssaPlugin
                 500f,
                 "Maximum distance in metres the drone may travel before self-detonating. "
                     + "Acts as a safety valve when no target exists or the drone misses."
+            );
+            MaxSpeed = cfg.Bind(
+                Section,
+                "MaxSpeed",
+                300f,
+                "Maximum flight speed in metres per second. Caps the speed gained through "
+                    + "Acceleration so the drone cannot tunnel through targets at extreme velocity."
             );
         }
     }

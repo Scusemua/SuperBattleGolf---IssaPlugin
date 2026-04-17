@@ -14,7 +14,7 @@ namespace IssaPlugin.Items
 
         // Falls back to DroneControllerPrefab if hunter_drone_handheld.prefab is missing.
         public override GameObject HeldModelPrefab =>
-            AssetLoader.HunterDronePrefab ?? AssetLoader.DroneControllerPrefab;
+            AssetLoader.HunterDroneHandheldPrefab ?? AssetLoader.DroneControllerPrefab;
 
         public override int MaxUses => (int)ModConfig.HunterDrone.Uses.Value;
 

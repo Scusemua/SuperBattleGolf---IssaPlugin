@@ -164,6 +164,7 @@ namespace IssaPlugin.Items
             behaviour.ThrowerInfo = summoner;
             behaviour.ItemUseId = itemUseId;
             behaviour.MaxFlightDistance = ModConfig.HunterDrone.MaxFlightDistance.Value;
+            behaviour.MaxSpeed = ModConfig.HunterDrone.MaxSpeed.Value;
             behaviour.FriendlyFire = ModConfig.HunterDrone.FriendlyFire.Value;
             behaviour.AttackFinishedPlayers = ModConfig.HunterDrone.AttackFinishedPlayers.Value;
             behaviour.ArmDelay = ModConfig.HunterDrone.ArmDelay.Value;

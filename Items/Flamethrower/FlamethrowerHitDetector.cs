@@ -36,6 +36,36 @@ namespace IssaPlugin.Items
             if (_bridge == null)
                 return;
 
+            // ── Hunter Drone: one flame touch destroys it ─────────────────────
+            // Rate-limited with BurnRequestInterval to avoid spamming the server
+            // every FixedUpdate; the server's ShootDown() is idempotent either way.
+            var droneBehaviour = other.GetComponentInParent<HunterDroneBehaviour>();
+            if (droneBehaviour != null)
+            {
+                var ni = droneBehaviour.GetComponent<NetworkIdentity>();
+                if (ni != null)
+                {
+                    uint droneNetId = ni.netId;
+                    float droneNow = Time.time;
+                    float droneInterval = ModConfig.Flamethrower.BurnRequestInterval.Value;
+                    if (
+                        !_lastSendTime.TryGetValue(droneNetId, out float droneLast)
+                        || droneNow - droneLast >= droneInterval
+                    )
+                    {
+                        _lastSendTime[droneNetId] = droneNow;
+                        if (NetworkServer.active)
+                            droneBehaviour.ShootDown();
+                        else
+                            _bridge.connectionToServer?.Send(
+                                new HunterDroneShotMessage { DroneNetId = droneNetId }
+                            );
+                    }
+                }
+                return;
+            }
+
+            // ── Player burn ───────────────────────────────────────────────────
             // Walk up the hierarchy looking for a PlayerMovement (players are
             // typically hierarchical: collider child → player root with components).
             var movement = other.GetComponentInParent<PlayerMovement>();

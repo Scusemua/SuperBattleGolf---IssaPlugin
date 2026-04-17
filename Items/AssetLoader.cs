@@ -122,6 +122,10 @@ namespace IssaPlugin.Items
         public static GameObject PoisonJarPrefab { get; private set; }
         public static GameObject DronePrefab { get; private set; }
 
+        /// Handheld hunter drone model shown in the player's hand before use.
+        /// Null until hunter_drone_handheld.prefab is added to the bundle.
+        public static GameObject HunterDroneHandheldPrefab { get; private set; }
+
         /// Networked hunter drone projectile. Null until hunter_drone.prefab is added to the bundle.
         public static GameObject HunterDronePrefab { get; private set; }
 
@@ -300,6 +304,11 @@ namespace IssaPlugin.Items
                 SpriteAsset(p => PoisonJarIcon = p, "poison_bottle_icon.png"),
                 SpriteAsset(p => DroneSwarmIcon = p, "drone_swarm_icon.png"),
                 SpriteAsset(p => HunterDroneIcon = p, "hunter_drone_icon.png", optional: true),
+                HandheldPrefab(
+                    p => HunterDroneHandheldPrefab = p,
+                    "hunter_drone_handheld.prefab",
+                    optional: true
+                ),
                 SpriteAsset(p => ElectricGravityGunIcon = p, "gravity_gun_icon.png"),
                 SpriteAsset(p => RedBullIcon = p, "redbull_icon.png"),
                 SpriteAsset(p => WindStormIcon = p, "wind_storm_icon.png", optional: true),
