@@ -17,7 +17,7 @@ namespace IssaPlugin
 
         // ── Area-of-effect on landing ─────────────────────────────────────────
         public ConfigEntry<float> BlastRadius { get; private set; }
-        public ConfigEntry<int> MaxVictims { get; private set; }
+        public ConfigEntry<float> MaxVictims { get; private set; }
 
         // ── Per-victim tether (independently tunable from the single-target item) ──
         public ConfigEntry<float> TetherDuration { get; private set; }
@@ -65,7 +65,7 @@ namespace IssaPlugin
             MaxVictims = cfg.Bind(
                 Section,
                 "MaxVictims",
-                4,
+                4f,
                 "Maximum number of players that can be simultaneously tethered by one grenade."
             );
             ExcludeThrower = cfg.Bind(

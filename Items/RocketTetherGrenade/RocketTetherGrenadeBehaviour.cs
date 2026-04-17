@@ -101,7 +101,7 @@ namespace IssaPlugin.Items
             }
 
             float blastRadius = ModConfig.RocketTetherGrenade.BlastRadius.Value;
-            int maxVictims = ModConfig.RocketTetherGrenade.MaxVictims.Value;
+            int maxVictims = (int)ModConfig.RocketTetherGrenade.MaxVictims.Value;
 
             var victims = new List<PlayerInfo>(maxVictims);
 
