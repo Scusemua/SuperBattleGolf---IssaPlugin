@@ -65,7 +65,7 @@ namespace IssaPlugin
             ArmDelay = cfg.Bind(
                 Section,
                 "ArmDelay",
-                0.2f,
+                0.0f,
                 "Seconds after launch before the drone starts checking for collision. "
                     + "Prevents the drone from detonating on the thrower immediately after "
                     + "being thrown."
