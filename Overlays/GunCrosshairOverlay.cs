@@ -9,10 +9,13 @@ namespace IssaPlugin.Overlays
     ///   - AK47: shown while right-click is held; ring radius maps the inaccuracy
     ///     config angle onto screen space so bullets land within the ring.
     ///   - Flamethrower: always shown; fixed small ring indicating centre aim.
+    ///   - Hunter Drone: shown while right-click is held; fixed small ring indicating
+    ///     the target point where the drone will be sent.
     ///
     /// Also corrects the player model's horizontal rotation each frame so the
     /// held weapon tracks the camera:
     ///   - AK47: corrected while right-click is held.
+    ///   - Hunter Drone: corrected while right-click is held.
     ///   - Flamethrower: corrected always so flame particles track the camera
     ///     regardless of fire or aim-in state.
     ///
@@ -60,8 +63,9 @@ namespace IssaPlugin.Overlays
             var equipped = localInfo.Inventory.GetEffectivelyEquippedItem(true);
             bool isAK47 = equipped == ItemRegistry.AK47ItemType;
             bool isFlamethrower = equipped == ItemRegistry.FlamethrowerItemType;
+            bool isHunterDrone = equipped == ItemRegistry.HunterDroneItemType;
 
-            if (!isAK47 && !isFlamethrower)
+            if (!isAK47 && !isFlamethrower && !isHunterDrone)
                 return;
 
             float screenRadius;
@@ -93,6 +97,16 @@ namespace IssaPlugin.Overlays
                     * Mathf.Tan(inaccuracy * Mathf.Deg2Rad)
                     / Mathf.Tan(vFov / 2f * Mathf.Deg2Rad);
             }
+            else if (isHunterDrone)
+            {
+                // Hunter Drone: only show while aiming in (right-click held).
+                if (Mouse.current == null || !Mouse.current.rightButton.isPressed)
+                    return;
+
+                if (_mat == null)
+                    return;
+                screenRadius = 20f;
+            }
             else // flamethrower — always show, fixed small radius
             {
                 if (_mat == null)
@@ -120,7 +134,7 @@ namespace IssaPlugin.Overlays
 
             GL.PopMatrix();
 
-            if (isAK47)
+            if (isAK47 || isHunterDrone)
                 CorrectAimRotation();
         }
 
@@ -150,7 +164,7 @@ namespace IssaPlugin.Overlays
 
             var equipped = li.Inventory.GetEffectivelyEquippedItem(true);
 
-            if (equipped == ItemRegistry.AK47ItemType)
+            if (equipped == ItemRegistry.AK47ItemType || equipped == ItemRegistry.HunterDroneItemType)
             {
                 CorrectAimRotation();
                 return;
