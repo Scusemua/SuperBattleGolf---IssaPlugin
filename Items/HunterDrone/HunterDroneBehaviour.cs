@@ -75,9 +75,10 @@ namespace IssaPlugin.Items
         private bool _exploded;
         private bool _shotDown;
 
-        // Safety: force-detonate if flight lasts longer than this.
-        private const float FlightTimeout = 30f;
-        private float _timeoutTimer;
+        /// Maximum distance (metres) the drone may travel before self-detonating.
+        public float MaxFlightDistance = 500f;
+
+        private float _distanceTraveled;
 
         // How long to wait before retrying target selection when no valid targets exist.
         private const float NoTargetRetryInterval = 0.5f;
@@ -120,7 +121,6 @@ namespace IssaPlugin.Items
 
             _currentSpeed = LaunchSpeed;
             _armTimer = ArmDelay;
-            _timeoutTimer = FlightTimeout;
             _retryTimer = NoTargetRetryInterval;
 
             // CustomHittable fields (hit once = destroyed).
@@ -145,14 +145,6 @@ namespace IssaPlugin.Items
         {
             if (!NetworkServer.active || _exploded)
                 return;
-
-            _timeoutTimer -= Time.fixedDeltaTime;
-            if (_timeoutTimer <= 0f)
-            {
-                IssaPluginPlugin.Log.LogInfo("[HunterDrone] Flight timed out — detonating.");
-                Detonate();
-                return;
-            }
 
             // Arm delay: suppress collision detection briefly so the drone clears
             // the thrower before it starts checking for detonation triggers.
@@ -230,6 +222,16 @@ namespace IssaPlugin.Items
                 // No arrival check — only the collision sphere triggers detonation.
                 Vector3 flyDir = _hasLaunchDirection ? _launchDirection : transform.forward;
                 step = flyDir * _currentSpeed * Time.fixedDeltaTime;
+            }
+
+            _distanceTraveled += step.magnitude;
+            if (_distanceTraveled >= MaxFlightDistance)
+            {
+                IssaPluginPlugin.Log.LogInfo(
+                    $"[HunterDrone] Max flight distance ({MaxFlightDistance:F0} m) reached — detonating."
+                );
+                Detonate();
+                return;
             }
 
             RotateTowardStep(step);

@@ -110,7 +110,10 @@ namespace IssaPlugin.Items
             if (!NetworkServer.active)
                 return;
 
-            if (!NetworkServer.spawned.TryGetValue(droneNetId, out var identity) || identity == null)
+            if (
+                !NetworkServer.spawned.TryGetValue(droneNetId, out var identity)
+                || identity == null
+            )
             {
                 IssaPluginPlugin.Log.LogWarning(
                     $"[HunterDrone] Shot report for netId {droneNetId} — not found in spawned."
@@ -160,6 +163,7 @@ namespace IssaPlugin.Items
             behaviour.ExplosionScale = ModConfig.HunterDrone.ExplosionScale.Value;
             behaviour.ThrowerInfo = summoner;
             behaviour.ItemUseId = itemUseId;
+            behaviour.MaxFlightDistance = ModConfig.HunterDrone.MaxFlightDistance.Value;
             behaviour.FriendlyFire = ModConfig.HunterDrone.FriendlyFire.Value;
             behaviour.AttackFinishedPlayers = ModConfig.HunterDrone.AttackFinishedPlayers.Value;
             behaviour.ArmDelay = ModConfig.HunterDrone.ArmDelay.Value;
