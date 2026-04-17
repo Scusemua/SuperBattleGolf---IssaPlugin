@@ -54,15 +54,6 @@ namespace IssaPlugin.Items
             if (!isServer)
                 return;
 
-            int maxActive = ModConfig.HunterDrone.MaxActiveDrones.Value;
-            if (_activeDrones.Count >= maxActive)
-            {
-                IssaPluginPlugin.Log.LogWarning(
-                    $"[HunterDrone] Already at the limit of {maxActive} active drone(s) — ignoring."
-                );
-                return;
-            }
-
             var inventory = GetComponent<PlayerInventory>();
             if (inventory == null)
             {
@@ -83,6 +74,15 @@ namespace IssaPlugin.Items
                 IssaPluginPlugin.Log.LogError(
                     "[HunterDrone] HunterDronePrefab not loaded — rebuild the asset bundle "
                         + "to include hunter_drone.prefab."
+                );
+                return;
+            }
+
+            int maxActive = ModConfig.HunterDrone.MaxActiveDrones.Value;
+            if (_activeDrones.Count >= maxActive)
+            {
+                IssaPluginPlugin.Log.LogInfo(
+                    $"[HunterDrone] Already at the limit of {maxActive} active drone(s) — ignoring."
                 );
                 return;
             }

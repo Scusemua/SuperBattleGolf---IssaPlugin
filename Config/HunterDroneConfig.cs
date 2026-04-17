@@ -8,7 +8,7 @@ namespace IssaPlugin
         private const string Section = "HunterDrone";
 
         public ConfigEntry<Key> GiveKey { get; private set; }
-        public ConfigEntry<float> Uses { get; private set; }
+        public ConfigEntry<int> Uses { get; private set; }
         public ConfigEntry<float> LaunchSpeed { get; private set; }
         public ConfigEntry<float> Acceleration { get; private set; }
         public ConfigEntry<float> HomingStopDistance { get; private set; }
@@ -29,7 +29,7 @@ namespace IssaPlugin
                 Key.NumpadPlus,
                 "Debug key to add the Hunter Drone item to your inventory."
             );
-            Uses = cfg.Bind(Section, "Uses", 1f, "Number of uses per Hunter Drone pickup.");
+            Uses = cfg.Bind(Section, "Uses", 1, "Number of uses per Hunter Drone pickup.");
             LaunchSpeed = cfg.Bind(
                 Section,
                 "LaunchSpeed",

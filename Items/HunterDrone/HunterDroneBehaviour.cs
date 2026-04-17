@@ -56,6 +56,12 @@ namespace IssaPlugin.Items
         /// so the drone can clear the thrower's body before arming.
         public float ArmDelay = 0.4f;
 
+        /// Maximum distance (metres) the drone may travel before self-detonating.
+        public float MaxFlightDistance = 500f;
+
+        /// Maximum flight speed in metres/second. Caps acceleration-driven growth.
+        public float MaxSpeed = 300f;
+
         // Direction the drone should fly when no target exists, computed once at launch
         // from the player's aim point so the drone travels toward where they pointed.
         private Vector3 _launchDirection;
@@ -73,14 +79,6 @@ namespace IssaPlugin.Items
         private bool _armed;
         private float _armTimer;
         private bool _exploded;
-        private bool _shotDown;
-
-        /// Maximum distance (metres) the drone may travel before self-detonating.
-        public float MaxFlightDistance = 500f;
-
-        /// Maximum flight speed in metres/second. Caps acceleration-driven growth.
-        public float MaxSpeed = 300f;
-
         private float _distanceTraveled;
 
         // How long to wait before retrying target selection when no valid targets exist.
@@ -126,9 +124,7 @@ namespace IssaPlugin.Items
             _armTimer = ArmDelay;
             _retryTimer = NoTargetRetryInterval;
 
-            // CustomHittable fields (hit once = destroyed).
-            HitsRequired = 1;
-            HitCount = 0;
+            // Invoke HandleHit on any hit — the drone is destroyed in one hit.
             OnHit += HandleHit;
 
             var particles = gameObject.GetComponentsInChildren<ParticleSystem>(
@@ -156,6 +152,22 @@ namespace IssaPlugin.Items
                 _armTimer -= Time.fixedDeltaTime;
                 if (_armTimer <= 0f)
                     _armed = true;
+            }
+
+            // Re-validate the locked target every frame so AttackFinishedPlayers and
+            // similar config flags are respected even after lock-on.
+            if (_targetTransform != null)
+            {
+                var player = _targetTransform.GetComponent<PlayerInfo>();
+                if (!IsValidTarget(player))
+                {
+                    IssaPluginPlugin.Log.LogInfo(
+                        "[HunterDrone] Locked target is no longer valid — re-selecting."
+                    );
+                    _targetTransform = null;
+                    _homingActive = false;
+                    _retryTimer = 0f;
+                }
             }
 
             // Retry target selection if we don't have one yet.
@@ -193,22 +205,6 @@ namespace IssaPlugin.Items
                 _currentSpeed + Acceleration * Time.fixedDeltaTime,
                 MaxSpeed
             );
-
-            // Re-validate the locked target every frame so config flags like
-            // AttackFinishedPlayers are respected even after lock-on.
-            if (_targetTransform != null)
-            {
-                var player = _targetTransform.GetComponent<PlayerInfo>();
-                if (!IsValidTarget(player))
-                {
-                    IssaPluginPlugin.Log.LogInfo(
-                        "[HunterDrone] Locked target is no longer valid — re-selecting."
-                    );
-                    _targetTransform = null;
-                    _homingActive = false;
-                    _retryTimer = 0f; // retry next frame
-                }
-            }
 
             Vector3 step;
 
@@ -278,10 +274,11 @@ namespace IssaPlugin.Items
             );
             for (int i = 0; i < n; i++)
             {
-                if (_collisionBuffer[i] == null)
-                    continue;
                 // Skip any collider that is part of this drone's own hierarchy.
                 if (_collisionBuffer[i].transform.IsChildOf(transform))
+                    continue;
+                // Skip other hunter drones — drone-on-drone contact is not a detonation trigger.
+                if (_collisionBuffer[i].GetComponentInParent<HunterDroneBehaviour>() != null)
                     continue;
                 return true;
             }
@@ -339,11 +336,7 @@ namespace IssaPlugin.Items
             if (player == null || !player.gameObject.activeInHierarchy)
                 return false;
 
-            if (
-                !FriendlyFire
-                && ThrowerInfo != null
-                && player.PlayerId.Guid == ThrowerInfo.PlayerId.Guid
-            )
+            if (!FriendlyFire && player.PlayerId.Guid == ThrowerInfo.PlayerId.Guid)
                 return false;
 
             if (
@@ -361,20 +354,10 @@ namespace IssaPlugin.Items
 
         private void HandleHit()
         {
-            if (!NetworkServer.active || _exploded || _shotDown)
+            if (!NetworkServer.active || _exploded)
                 return;
-            if (HitsRequired <= 0)
-                return;
-            if (HitCount >= HitsRequired)
-                return;
-
-            HitCount++;
-            if (HitCount >= HitsRequired)
-            {
-                _shotDown = true;
-                IssaPluginPlugin.Log.LogInfo("[HunterDrone] Shot down — detonating in place.");
-                Detonate();
-            }
+            IssaPluginPlugin.Log.LogInfo("[HunterDrone] Shot down — detonating in place.");
+            Detonate();
         }
 
         /// <summary>
@@ -385,7 +368,7 @@ namespace IssaPlugin.Items
         /// </summary>
         public void ShootDown()
         {
-            if (!NetworkServer.active || _exploded || _shotDown)
+            if (!NetworkServer.active || _exploded)
                 return;
             OnHit?.Invoke();
         }
@@ -445,9 +428,6 @@ namespace IssaPlugin.Items
 
         private static Quaternion DirectionToRotation(Vector3 direction)
         {
-            if (direction.sqrMagnitude < 0.001f)
-                return Quaternion.identity;
-
             Vector3 up =
                 Mathf.Abs(Vector3.Dot(direction, Vector3.up)) > 0.99f
                     ? Vector3.forward
