@@ -1627,7 +1627,8 @@ namespace IssaPlugin.Patches
                 HunterDroneLaunchMessageSerialization.ReadHunterDroneLaunchMessage;
             if (NetworkServer.active)
                 NetworkServer.RegisterHandler<HunterDroneLaunchMessage>(
-                    (conn, msg) => GetBridge<HunterDroneNetworkBridge>(conn)?.ServerLaunchDrone(msg.AimPoint)
+                    (conn, msg) =>
+                        GetBridge<HunterDroneNetworkBridge>(conn)?.ServerLaunchDrone(msg.AimPoint)
                 );
 
             Writer<HunterDroneShotMessage>.write =
