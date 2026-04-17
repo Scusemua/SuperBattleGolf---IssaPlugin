@@ -56,8 +56,10 @@ namespace IssaPlugin.Items
         /// so the drone can clear the thrower's body before arming.
         public float ArmDelay = 0.4f;
 
-        private Vector3 _fallbackAimPoint;
-        private bool _hasFallbackAimPoint;
+        // Direction the drone should fly when no target exists, computed once at launch
+        // from the player's aim point so the drone travels toward where they pointed.
+        private Vector3 _launchDirection;
+        private bool _hasLaunchDirection;
 
         // ----------------------------------------------------------------
         //  Internal state
@@ -86,8 +88,11 @@ namespace IssaPlugin.Items
             BindingFlags.NonPublic | BindingFlags.Instance
         );
 
-        // Reused across target-selection calls to avoid heap allocation.
-        private static readonly List<(Transform t, float sqDist)> _candidateScratch = new();
+        // Per-instance scratch list for target selection (not static — multiple drones may exist).
+        private readonly List<(Transform t, float sqDist)> _candidateScratch = new();
+
+        // Per-instance buffer for the self-filtered collision check.
+        private readonly Collider[] _collisionBuffer = new Collider[8];
 
         // ----------------------------------------------------------------
         //  Unity lifecycle
@@ -95,8 +100,14 @@ namespace IssaPlugin.Items
 
         public void SetFallbackAimPoint(Vector3 worldPoint)
         {
-            _fallbackAimPoint = worldPoint;
-            _hasFallbackAimPoint = true;
+            // Store as a unit vector computed from spawn position to aim point so the
+            // direction stays stable — it doesn't flip when the drone flies past the point.
+            Vector3 dir = worldPoint - transform.position;
+            if (dir.sqrMagnitude > 0.001f)
+            {
+                _launchDirection = dir.normalized;
+                _hasLaunchDirection = true;
+            }
         }
 
         private void Start()
@@ -110,6 +121,7 @@ namespace IssaPlugin.Items
             _currentSpeed = LaunchSpeed;
             _armTimer = ArmDelay;
             _timeoutTimer = FlightTimeout;
+            _retryTimer = NoTargetRetryInterval;
 
             // CustomHittable fields (hit once = destroyed).
             HitsRequired = 1;
@@ -171,64 +183,85 @@ namespace IssaPlugin.Items
 
         private void UpdateHoming()
         {
-            // Collision check (armed only).
-            if (
-                _armed
-                && Physics.CheckSphere(
-                    transform.position,
-                    ArrivalRadius,
-                    GameManager.LayerSettings.RocketHittablesMask,
-                    QueryTriggerInteraction.Ignore
-                )
-            )
+            // Collision check (armed only). Uses a self-filtering helper so the
+            // drone's own colliders — placed on HittablesLayer for bullet detection —
+            // do not trigger a false detonation every frame.
+            if (_armed && DetectExternalCollision())
             {
                 IssaPluginPlugin.Log.LogInfo("[HunterDrone] Collision detected — detonating.");
                 Detonate();
                 return;
             }
 
-            // Update aim point while actively tracking.
-            if (_homingActive && _targetTransform != null)
-            {
-                float dist = Vector3.Distance(transform.position, _targetTransform.position);
-                bool stopHoming = HomingStopDistance > 0f && dist <= HomingStopDistance;
-                if (!stopHoming)
-                    _homingTarget = _targetTransform.position;
-                else
-                    _homingActive = false;
-            }
-
-            // Arrival check before moving to avoid silent overshoot.
-            float distToTarget = Vector3.Distance(transform.position, _homingTarget);
-            if (distToTarget < ArrivalRadius)
-            {
-                Detonate();
-                return;
-            }
-
-            // Accelerate.
+            // Accelerate regardless of whether we have a target.
             _currentSpeed += Acceleration * Time.fixedDeltaTime;
 
-            Vector3 dir;
-            if (_homingActive && _targetTransform != null)
+            Vector3 step;
+
+            if (_targetTransform != null)
             {
-                dir = _homingTarget - transform.position;
-            }
-            else if (_hasFallbackAimPoint)
-            {
-                dir = _fallbackAimPoint - transform.position;
+                // Update aim point while actively tracking.
+                if (_homingActive)
+                {
+                    float dist = Vector3.Distance(transform.position, _targetTransform.position);
+                    if (HomingStopDistance > 0f && dist <= HomingStopDistance)
+                        _homingActive = false;
+                    else
+                        _homingTarget = _targetTransform.position;
+                }
+
+                // Arrival check — only meaningful when we have a real target to home toward.
+                Vector3 toTarget = _homingTarget - transform.position;
+                float distToTarget = toTarget.magnitude;
+                if (distToTarget < ArrivalRadius)
+                {
+                    Detonate();
+                    return;
+                }
+
+                // Don't overshoot the aim point.
+                float stepDist = Mathf.Min(_currentSpeed * Time.fixedDeltaTime, distToTarget);
+                step = toTarget.normalized * stepDist;
             }
             else
             {
-                dir = transform.forward;
+                // No target: fly in the player's aim direction (set at throw time) if available,
+                // otherwise fall back to the drone's current facing direction.
+                // No arrival check — only the collision sphere triggers detonation.
+                Vector3 flyDir = _hasLaunchDirection ? _launchDirection : transform.forward;
+                step = flyDir * _currentSpeed * Time.fixedDeltaTime;
             }
-
-            Vector3 step = dir.normalized * _currentSpeed * Time.fixedDeltaTime;
-            if (step.magnitude > distToTarget)
-                step = dir;
 
             RotateTowardStep(step);
             _rb.MovePosition(transform.position + step);
+        }
+
+        /// <summary>
+        /// Returns true if any collider within <see cref="ArrivalRadius"/> is an external object
+        /// (i.e. not a collider belonging to this drone's own hierarchy).
+        /// Using OverlapSphereNonAlloc + self-exclusion instead of CheckSphere prevents the drone
+        /// from detecting its own physics colliders (which are on HittablesLayer, a layer included
+        /// in RocketHittablesMask).
+        /// </summary>
+        private bool DetectExternalCollision()
+        {
+            int n = Physics.OverlapSphereNonAlloc(
+                transform.position,
+                ArrivalRadius,
+                _collisionBuffer,
+                GameManager.LayerSettings.RocketHittablesMask,
+                QueryTriggerInteraction.Ignore
+            );
+            for (int i = 0; i < n; i++)
+            {
+                if (_collisionBuffer[i] == null)
+                    continue;
+                // Skip any collider that is part of this drone's own hierarchy.
+                if (_collisionBuffer[i].transform.IsChildOf(transform))
+                    continue;
+                return true;
+            }
+            return false;
         }
 
         // ----------------------------------------------------------------

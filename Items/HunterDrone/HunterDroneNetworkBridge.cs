@@ -99,26 +99,26 @@ namespace IssaPlugin.Items
         }
 
         /// <summary>
-        /// Called on the server when a client reports that a bullet hit this player's drone.
-        /// <paramref name="reportedDroneNetId"/> must match the active drone's netId.
+        /// Global server handler for <see cref="HunterDroneShotMessage"/>.
+        /// Looks up the drone directly in <c>NetworkServer.spawned</c> so it works
+        /// regardless of which player fired the shot — routing via the shooter's own
+        /// bridge would always fail because that bridge has no active drone of its own.
+        /// Registered in NetworkManagerPatches without a per-connection bridge lookup.
         /// </summary>
-        public void ServerHandleDroneShot(uint reportedDroneNetId)
+        public static void ServerHandleDroneShot(uint droneNetId)
         {
-            if (!isServer || !_serverSessionActive || _activeDroneGo == null)
+            if (!NetworkServer.active)
                 return;
 
-            var ni = _activeDroneGo.GetComponent<NetworkIdentity>();
-            if (ni == null || ni.netId != reportedDroneNetId)
+            if (!NetworkServer.spawned.TryGetValue(droneNetId, out var identity) || identity == null)
             {
                 IssaPluginPlugin.Log.LogWarning(
-                    $"[HunterDrone] Received shot report for unknown drone netId "
-                        + $"{reportedDroneNetId} (active is {ni?.netId})."
+                    $"[HunterDrone] Shot report for netId {droneNetId} — not found in spawned."
                 );
                 return;
             }
 
-            var behaviour = _activeDroneGo.GetComponent<HunterDroneBehaviour>();
-            behaviour?.ShootDown();
+            identity.GetComponent<HunterDroneBehaviour>()?.ShootDown();
         }
 
         // ── Server internals ──────────────────────────────────────────────────

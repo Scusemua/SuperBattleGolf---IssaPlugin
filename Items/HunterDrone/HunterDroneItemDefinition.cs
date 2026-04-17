@@ -47,7 +47,7 @@ namespace IssaPlugin.Items
             }
             else
             {
-                aimPoint = inventory.transform.forward;
+                aimPoint = inventory.transform.position + inventory.transform.forward * 200f;
             }
 
             inventory.connectionToServer?.Send(
