@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using System.Threading;
 using IssaPlugin.Network;
 using Mirror;
@@ -18,15 +19,13 @@ namespace IssaPlugin.Items
     ///   Sends HunterDroneLaunchMessage when the player activates the item.
     ///   Hosts static handlers for server-broadcast messages (VFX).
     ///
-    /// Only one drone per player may be active at a time.
+    /// Up to MaxActiveDrones drones per player may be active simultaneously.
     /// </summary>
     public class HunterDroneNetworkBridge : NetworkBridgeBase
     {
         // ── Server state ──────────────────────────────────────────────────────
 
-        private GameObject _activeDroneGo;
-        private bool _serverSessionActive;
-        private Coroutine _watchCoroutine;
+        private readonly List<GameObject> _activeDrones = new();
 
         private static int _useIndex;
 
@@ -36,7 +35,7 @@ namespace IssaPlugin.Items
 
         public override void OnStopServer()
         {
-            if (_serverSessionActive)
+            if (_activeDrones.Count > 0)
             {
                 IssaPluginPlugin.Log.LogInfo(
                     "[HunterDrone] Player disconnected during active session — cleaning up."
@@ -55,10 +54,11 @@ namespace IssaPlugin.Items
             if (!isServer)
                 return;
 
-            if (_serverSessionActive)
+            int maxActive = ModConfig.HunterDrone.MaxActiveDrones.Value;
+            if (_activeDrones.Count >= maxActive)
             {
                 IssaPluginPlugin.Log.LogWarning(
-                    "[HunterDrone] A drone is already active for this player — ignoring."
+                    $"[HunterDrone] Already at the limit of {maxActive} active drone(s) — ignoring."
                 );
                 return;
             }
@@ -172,9 +172,8 @@ namespace IssaPlugin.Items
 
             NetworkServer.Spawn(droneGo);
 
-            _activeDroneGo = droneGo;
-            _serverSessionActive = true;
-            _watchCoroutine = StartCoroutine(WatchDrone(droneGo));
+            _activeDrones.Add(droneGo);
+            StartCoroutine(WatchDrone(droneGo));
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[HunterDrone] Spawned drone for "
@@ -187,21 +186,20 @@ namespace IssaPlugin.Items
             while (droneGo != null)
                 yield return null;
 
-            _activeDroneGo = null;
-            _watchCoroutine = null;
-
-            if (_serverSessionActive)
-            {
-                _serverSessionActive = false;
-                IssaPluginPlugin.Log.LogInfo("[HunterDrone] Drone destroyed — session ended.");
-            }
+            // RemoveAll(null) is used instead of Remove(droneGo) because Unity's equality
+            // operator on a destroyed object (fake-null) can match other destroyed objects,
+            // making Remove unreliable when multiple drones die in the same frame.
+            _activeDrones.RemoveAll(go => go == null);
+            IssaPluginPlugin.Log.LogInfo(
+                $"[HunterDrone] Drone destroyed — {_activeDrones.Count} still active."
+            );
         }
 
         // ── Hole / server cleanup ─────────────────────────────────────────────
 
         public override void ServerHoleCleanup()
         {
-            if (_serverSessionActive)
+            if (_activeDrones.Count > 0)
                 ForceServerCleanup();
         }
 
@@ -209,19 +207,17 @@ namespace IssaPlugin.Items
 
         private void ForceServerCleanup()
         {
-            if (_watchCoroutine != null)
+            // Stop all WatchDrone coroutines first so none of them fire RemoveAll
+            // after we clear the list below.
+            StopAllCoroutines();
+
+            foreach (var drone in _activeDrones)
             {
-                StopCoroutine(_watchCoroutine);
-                _watchCoroutine = null;
+                if (drone != null)
+                    NetworkServer.Destroy(drone);
             }
 
-            if (_activeDroneGo != null)
-            {
-                NetworkServer.Destroy(_activeDroneGo);
-                _activeDroneGo = null;
-            }
-
-            _serverSessionActive = false;
+            _activeDrones.Clear();
         }
 
         // ── Helpers ───────────────────────────────────────────────────────────

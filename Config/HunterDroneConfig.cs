@@ -19,6 +19,7 @@ namespace IssaPlugin
         public ConfigEntry<bool> AttackFinishedPlayers { get; private set; }
         public ConfigEntry<float> MaxFlightDistance { get; private set; }
         public ConfigEntry<float> MaxSpeed { get; private set; }
+        public ConfigEntry<int> MaxActiveDrones { get; private set; }
 
         public HunterDroneConfig(ConfigFile cfg, GlobalConfig global)
         {
@@ -94,6 +95,13 @@ namespace IssaPlugin
                 300f,
                 "Maximum flight speed in metres per second. Caps the speed gained through "
                     + "Acceleration so the drone cannot tunnel through targets at extreme velocity."
+            );
+            MaxActiveDrones = cfg.Bind(
+                Section,
+                "MaxActiveDrones",
+                1,
+                "Maximum number of hunter drones a single player may have in flight at once. "
+                    + "Set to 1 for the original one-at-a-time behaviour."
             );
         }
     }
