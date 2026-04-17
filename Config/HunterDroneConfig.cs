@@ -53,7 +53,7 @@ namespace IssaPlugin
             ArrivalRadius = cfg.Bind(
                 Section,
                 "ArrivalRadius",
-                2.5f,
+                0.5f,
                 "Distance from the aim point (metres) at which the drone detonates."
             );
             ExplosionScale = cfg.Bind(
