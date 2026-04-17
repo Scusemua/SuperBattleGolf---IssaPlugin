@@ -35,7 +35,11 @@ namespace IssaPlugin.Items
         public override void OnUse(PlayerInventory inventory)
         {
             Vector3 aimPoint;
-            if (Mouse.current != null && Mouse.current.rightButton.isPressed)
+            if (Mouse.current == null)
+            {
+                aimPoint = inventory.transform.position + inventory.transform.forward * 200f;
+            }
+            else if (Mouse.current.rightButton.isPressed)
             {
                 Vector2 mousePos = Mouse.current.position.ReadValue();
                 Ray aimRay = Camera.main.ScreenPointToRay(mousePos);
@@ -47,7 +51,8 @@ namespace IssaPlugin.Items
             }
             else
             {
-                aimPoint = inventory.transform.position + inventory.transform.forward * 200f;
+                // Player has to be right-clicking to use.
+                return;
             }
 
             inventory.connectionToServer?.Send(
