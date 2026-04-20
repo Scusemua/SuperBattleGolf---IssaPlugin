@@ -63,7 +63,9 @@ namespace IssaPlugin.Items
             float duration = ModConfig.Freeze.Duration.Value;
 
             // [ClientRpc] is not IL-weaved in plugin DLLs — use NetworkMessage instead.
-            NetworkServer.SendToAll(new FreezeBeginMessage { Duration = duration });
+            NetworkServer.SendToAll(
+                new FreezeBeginMessage { Duration = duration, ActivatorNetId = netId }
+            );
             _timeoutCoroutine = StartCoroutine(ServerTimeoutRoutine(duration));
 
             IssaPluginPlugin.Log.LogInfo($"[Freeze] Server freeze started for {duration}s.");
@@ -92,10 +94,21 @@ namespace IssaPlugin.Items
             RenderSettings.fogDensity = 0.04f;
             RenderSettings.ambientLight = new Color(0.5f, 0.65f, 0.9f);
 
-            FreezeItem.IsFrozen = true;
-            FreezeOverlay.Instance?.SetFrozen(true, msg.Duration);
+            bool isActivator =
+                NetworkClient.localPlayer != null
+                && NetworkClient.localPlayer.netId == msg.ActivatorNetId;
+            bool exempt = isActivator && !ModConfig.Freeze.AffectsUser.Value;
 
-            IssaPluginPlugin.Log.LogInfo("[Freeze] Client freeze started.");
+            if (!exempt)
+                FreezeItem.IsFrozen = true;
+
+            FreezeOverlay.Instance?.SetFrozen(!exempt, msg.Duration);
+
+            IssaPluginPlugin.Log.LogInfo(
+                exempt
+                    ? "[Freeze] Client freeze started (local player exempt as activator)."
+                    : "[Freeze] Client freeze started."
+            );
         }
 
         public static void HandleFreezeEnd(FreezeEndMessage msg)

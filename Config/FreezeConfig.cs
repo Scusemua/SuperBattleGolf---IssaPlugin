@@ -14,6 +14,7 @@ namespace IssaPlugin
         public ConfigEntry<float> Bounciness { get; private set; }
         public ConfigEntry<float> CartSidewaysStiffness { get; private set; }
         public ConfigEntry<float> GripRadius { get; private set; }
+        public ConfigEntry<bool> AffectsUser { get; private set; }
 
         public FreezeConfig(ConfigFile cfg, GlobalConfig global)
         {
@@ -56,6 +57,12 @@ namespace IssaPlugin
                 "GripRadius",
                 1.5f,
                 "Distance (metres) from the local player's own ball within which normal traction is restored, allowing them to stop and take a shot."
+            );
+            AffectsUser = cfg.Bind(
+                Section,
+                "AffectsUser",
+                false,
+                "Whether the player who activates Freeze World is themselves affected by its ice physics and movement restrictions. Defaults to false (activator is immune)."
             );
         }
     }

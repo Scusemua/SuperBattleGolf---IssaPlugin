@@ -6,10 +6,11 @@ namespace IssaPlugin.Items
     public struct FreezeBeginMessage : NetworkMessage
     {
         public float Duration;
+        public uint ActivatorNetId;
 
         public override string ToString()
         {
-            return $"FreezeBeginMessage[Duration={Duration}]";
+            return $"FreezeBeginMessage[Duration={Duration}, ActivatorNetId={ActivatorNetId}]";
         }
     }
 
@@ -20,11 +21,16 @@ namespace IssaPlugin.Items
         public static void WriteFreezeBeginMessage(NetworkWriter writer, FreezeBeginMessage msg)
         {
             writer.WriteFloat(msg.Duration);
+            writer.WriteUInt(msg.ActivatorNetId);
         }
 
         public static FreezeBeginMessage ReadFreezeBeginMessage(NetworkReader reader)
         {
-            return new FreezeBeginMessage { Duration = reader.ReadFloat() };
+            return new FreezeBeginMessage
+            {
+                Duration = reader.ReadFloat(),
+                ActivatorNetId = reader.ReadUInt(),
+            };
         }
     }
 
