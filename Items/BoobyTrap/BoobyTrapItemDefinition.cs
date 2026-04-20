@@ -13,7 +13,7 @@ namespace IssaPlugin.Items
         public override Sprite Icon => AssetLoader.BoobyTrapIcon;
         public override GameObject HeldModelPrefab => AssetLoader.BoobyTrapHandheldPrefab;
         public override int MaxUses => (int)ModConfig.BoobyTrap.Uses.Value;
-        public override float DefaultPoolWeight => ModConfig.BoobyTrap.SpawnWeight.Value;
+        public override float DefaultPoolWeight => 8f;
         public override Key GiveKey => ModConfig.BoobyTrap.GiveKey.Value;
 
         // Use the melee animator slot so the held model is displayed in-hand

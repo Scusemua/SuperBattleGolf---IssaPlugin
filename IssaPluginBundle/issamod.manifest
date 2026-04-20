@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 2364274536
+CRC: 1445626803
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: e95448a7e2d2116e70e8216036ec13bd
+    Hash: cf2304e0b3e97dc9a2eef28d0694ebbf
   TypeTreeHash:
     serializedVersion: 2
     Hash: 82d52513d6b19822b87b688cdb5147d6
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: e1b00c7606c3f850e7a30873a7e10a91
+    Hash: 06eef887a6e96313ef080facc2e8cd2d
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -135,7 +135,9 @@ Assets:
 - Assets/Assets/red_bull_trail.prefab
 - Assets/Assets/ak47.prefab
 - Assets/Assets/poison_bottle_icon.png
+- Assets/Assets/booby_trap_icon.png
 - Assets/Assets/position_swap_icon.png
+- Assets/Assets/booby_trap_vfx.prefab
 - Assets/Assets/flamethrower_vfx.prefab
 - Assets/Assets/harrier_tablet.prefab
 - Assets/Assets/wall_icon.png
@@ -153,6 +155,7 @@ Assets:
 - Assets/Assets/sniper_scope.png
 - Assets/Assets/nuclear_bomb.prefab
 - Assets/Assets/posion_bottle.prefab
+- Assets/Assets/booby_trap_handheld.prefab
 - Assets/Assets/ac130_icon.png
 - Assets/Assets/black_hole_grenade.prefab
 - Assets/Assets/poison_cloud_vfx.prefab
