@@ -87,12 +87,26 @@ namespace IssaPlugin.Patches
     [HarmonyPatch]
     static class BoobyTrapGolfCartPatch
     {
+        // Dictionary<PlayerInfo, int> — passenger → seat index.
+        private static readonly FieldInfo PassengerIndicesField =
+            AccessTools.Field(typeof(GolfCartInfo), "passengerIndices");
+
         static MethodBase TargetMethod() =>
             AccessTools.Method(typeof(GolfCartInfo), "ServerTryAssignPassengerToSeat");
 
         static bool Prefix(GolfCartInfo __instance, PlayerInfo passenger, ref bool __result)
         {
             if (!NetworkServer.active)
+                return true;
+
+            // ServerTryAssignPassengerToSeat is also called for seat changes within the
+            // cart (CmdTryChangeLocalPlayerSeat).  Only trigger the trap on first entry —
+            // skip if the passenger is already aboard.
+            if (
+                PassengerIndicesField?.GetValue(__instance)
+                    is System.Collections.IDictionary passengerIndices
+                && passengerIndices.Contains(passenger)
+            )
                 return true;
 
             uint playerNetId = passenger.netId;
