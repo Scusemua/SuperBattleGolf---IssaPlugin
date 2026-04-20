@@ -198,7 +198,8 @@ namespace IssaPlugin.Overlays
                 Quaternion.LookRotation(fwd.normalized) * Quaternion.Euler(0f, yDegrees, 0f);
         }
 
-        private static void DrawRing(float cx, float cy, float radius, Color color)
+         
+          static void DrawRing(float cx, float cy, float radius, Color color)
         {
             float outerR = radius + LineWidth / 2f;
             float innerR = Mathf.Max(0f, radius - LineWidth / 2f);

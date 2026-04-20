@@ -25,6 +25,10 @@ namespace IssaPlugin.Items
         public ItemType ItemType;
         public int RemainingUses;
 
+        /// When true, the first player to pick up this item and use it will trigger
+        /// a booby-trap explosion instead.  Synced to clients in the spawn message.
+        public bool IsBoobyTrapped;
+
         public Entity AsEntity { get; private set; }
         public bool IsInteractionEnabled => true;
 
@@ -49,6 +53,7 @@ namespace IssaPlugin.Items
             {
                 writer.WriteInt((int)ItemType);
                 writer.WriteInt(RemainingUses);
+                writer.WriteBool(IsBoobyTrapped);
             }
             else
             {
@@ -64,6 +69,7 @@ namespace IssaPlugin.Items
             {
                 ItemType = (ItemType)reader.ReadInt();
                 RemainingUses = reader.ReadInt();
+                IsBoobyTrapped = reader.ReadBool();
             }
             else
             {
@@ -135,11 +141,17 @@ namespace IssaPlugin.Items
         /// Called by the server handler registered in NetworkManagerPatches.
         public void ServerPickup(PlayerInventory player)
         {
-            if (!player.HasSpaceForItem(out _))
+            if (!player.HasSpaceForItem(out int slot))
                 return;
 
             if (!player.ServerTryAddItem(ItemType, RemainingUses))
                 return;
+
+            if (IsBoobyTrapped)
+            {
+                uint playerNetId = player.GetComponent<NetworkIdentity>().netId;
+                BoobyTrapNetworkBridge.ServerMarkSlotAsTrapped(playerNetId, slot);
+            }
 
             NetworkServer.Destroy(gameObject);
         }

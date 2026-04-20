@@ -71,6 +71,7 @@ namespace IssaPlugin.Items
         public static Sprite PoisonJarIcon { get; private set; }
         public static Sprite DroneSwarmIcon { get; private set; }
         public static Sprite HunterDroneIcon { get; private set; }
+        public static Sprite BoobyTrapIcon { get; private set; }
         public static Sprite ElectricGravityGunIcon { get; private set; }
         public static Sprite RedBullIcon { get; private set; }
         public static Sprite WindStormIcon { get; private set; }
@@ -128,6 +129,14 @@ namespace IssaPlugin.Items
 
         /// Networked hunter drone projectile. Null until hunter_drone.prefab is added to the bundle.
         public static GameObject HunterDronePrefab { get; private set; }
+
+        /// Handheld booby trap model shown in the player's hand while equipped.
+        /// Null until booby_trap_handheld.prefab is added to the bundle.
+        public static GameObject BoobyTrapHandheldPrefab { get; private set; }
+
+        /// Local-only VFX spawned on a trapped object (visible only to the trapper).
+        /// Null until booby_trap_vfx.prefab is added to the bundle.
+        public static GameObject BoobyTrapVfxPrefab { get; private set; }
 
         /// Networked droppable-item prefab; carries NetworkIdentity, NetworkTransform,
         /// Rigidbody (kinematic), SphereCollider (trigger), Entity, and DroppedCustomItem.
@@ -309,6 +318,13 @@ namespace IssaPlugin.Items
                     "hunter_drone_handheld.prefab",
                     optional: true
                 ),
+                SpriteAsset(p => BoobyTrapIcon = p, "booby_trap_icon.png", optional: true),
+                HandheldPrefab(
+                    p => BoobyTrapHandheldPrefab = p,
+                    "booby_trap_handheld.prefab",
+                    optional: true
+                ),
+                LocalVfxPrefab(p => BoobyTrapVfxPrefab = p, "booby_trap_vfx.prefab"),
                 SpriteAsset(p => ElectricGravityGunIcon = p, "gravity_gun_icon.png"),
                 SpriteAsset(p => RedBullIcon = p, "redbull_icon.png"),
                 SpriteAsset(p => WindStormIcon = p, "wind_storm_icon.png", optional: true),

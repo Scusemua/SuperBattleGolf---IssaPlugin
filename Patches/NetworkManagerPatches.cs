@@ -1648,6 +1648,65 @@ namespace IssaPlugin.Patches
                 HunterDroneNetworkBridge.HandleDroneExploded
             );
 
+            // ── Booby Trap ───────────────────────────────────────────────────────
+
+            // BoobyTrapPlaceMessage (Client → Server)
+            Writer<BoobyTrapPlaceMessage>.write =
+                BoobyTrapPlaceMessageSerialization.WriteBoobyTrapPlaceMessage;
+            Reader<BoobyTrapPlaceMessage>.read =
+                BoobyTrapPlaceMessageSerialization.ReadBoobyTrapPlaceMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<BoobyTrapPlaceMessage>(
+                    BoobyTrapNetworkBridge.ServerHandlePlaceMessage
+                );
+
+            // BoobyTrapDropItemMessage (Client → Server)
+            Writer<BoobyTrapDropItemMessage>.write =
+                BoobyTrapDropItemMessageSerialization.WriteBoobyTrapDropItemMessage;
+            Reader<BoobyTrapDropItemMessage>.read =
+                BoobyTrapDropItemMessageSerialization.ReadBoobyTrapDropItemMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<BoobyTrapDropItemMessage>(
+                    BoobyTrapNetworkBridge.ServerHandleDropItemMessage
+                );
+
+            // BoobyTrapInventoryTriggeredMessage (Client → Server)
+            Writer<BoobyTrapInventoryTriggeredMessage>.write =
+                BoobyTrapInventoryTriggeredMessageSerialization.WriteBoobyTrapInventoryTriggeredMessage;
+            Reader<BoobyTrapInventoryTriggeredMessage>.read =
+                BoobyTrapInventoryTriggeredMessageSerialization.ReadBoobyTrapInventoryTriggeredMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<BoobyTrapInventoryTriggeredMessage>(
+                    BoobyTrapNetworkBridge.ServerHandleInventoryTriggered
+                );
+
+            // BoobyTrapPlacedMessage (Server → Trapper Client only)
+            Writer<BoobyTrapPlacedMessage>.write =
+                BoobyTrapPlacedMessageSerialization.WriteBoobyTrapPlacedMessage;
+            Reader<BoobyTrapPlacedMessage>.read =
+                BoobyTrapPlacedMessageSerialization.ReadBoobyTrapPlacedMessage;
+            NetworkClient.RegisterHandler<BoobyTrapPlacedMessage>(
+                BoobyTrapNetworkBridge.HandleBoobyTrapPlaced
+            );
+
+            // BoobyTrapSlotMarkedMessage (Server → Victim Client only)
+            Writer<BoobyTrapSlotMarkedMessage>.write =
+                BoobyTrapSlotMarkedMessageSerialization.WriteBoobyTrapSlotMarkedMessage;
+            Reader<BoobyTrapSlotMarkedMessage>.read =
+                BoobyTrapSlotMarkedMessageSerialization.ReadBoobyTrapSlotMarkedMessage;
+            NetworkClient.RegisterHandler<BoobyTrapSlotMarkedMessage>(
+                BoobyTrapNetworkBridge.HandleSlotMarked
+            );
+
+            // BoobyTrapExplosionMessage (Server → All Clients)
+            Writer<BoobyTrapExplosionMessage>.write =
+                BoobyTrapExplosionMessageSerialization.WriteBoobyTrapExplosionMessage;
+            Reader<BoobyTrapExplosionMessage>.read =
+                BoobyTrapExplosionMessageSerialization.ReadBoobyTrapExplosionMessage;
+            NetworkClient.RegisterHandler<BoobyTrapExplosionMessage>(
+                BoobyTrapNetworkBridge.HandleBoobyTrapExplosion
+            );
+
             // ── Scaled explosion VFX (Server → All Clients) ──────────────────────
             Writer<ScaledExplosionVfxMessage>.write =
                 ScaledExplosionVfxMessageSerialization.WriteScaledExplosionVfxMessage;
