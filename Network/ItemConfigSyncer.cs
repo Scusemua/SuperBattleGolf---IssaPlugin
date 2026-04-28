@@ -64,6 +64,38 @@ namespace IssaPlugin
         }
 
         /// <summary>
+        /// Sends the host's full config to a single newly-joined client only.
+        /// Use this instead of Broadcast() during OnServerReady so existing clients
+        /// are not hit with a SendToAll that could disconnect them if their transport
+        /// connection is momentarily stale.
+        /// </summary>
+        internal static void BroadcastToConnection(NetworkConnectionToClient conn)
+        {
+            if (!NetworkServer.active || !NetworkClient.active)
+                return;
+
+            var cfg = IssaPluginPlugin.Instance.Config;
+            var keys = new List<string>(cfg.Count);
+            var values = new List<string>(cfg.Count);
+
+            foreach (KeyValuePair<ConfigDefinition, ConfigEntryBase> kv in cfg)
+            {
+                if (kv.Value.SettingType == typeof(Key))
+                    continue;
+                keys.Add($"{kv.Key.Section}::{kv.Key.Key}");
+                values.Add(kv.Value.GetSerializedValue() ?? string.Empty);
+            }
+
+            conn.Send(
+                new ItemConfigSyncMessage { Keys = keys.ToArray(), Values = values.ToArray() }
+            );
+
+            IssaPluginPlugin.Log.LogDebug(
+                $"[ItemConfigSyncer] Sent {keys.Count} config entries to joining client conn={conn.connectionId}."
+            );
+        }
+
+        /// <summary>
         /// Called on each client when an ItemConfigSyncMessage arrives from the host.
         /// Applies each entry to the local BepInEx ConfigFile via SetSerializedValue.
         /// </summary>

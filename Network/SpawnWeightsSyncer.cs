@@ -49,6 +49,50 @@ namespace IssaPlugin
                 BroadcastWeightsIfChanged();
         }
 
+        /// <summary>
+        /// Rebuilds server item pools and sends the current spawn weights to a
+        /// single newly-joined client only. Does NOT broadcast to all clients —
+        /// that avoids triggering Mirror's disconnect logic for any other client
+        /// whose Steam transport connection happens to be momentarily stale.
+        /// The _lastSent sentinel is reset so the next periodic tick will
+        /// broadcast the authoritative state to all clients within 5 seconds.
+        /// </summary>
+        internal static void SyncToConnection(NetworkConnectionToClient conn)
+        {
+            if (!NetworkServer.active || !NetworkClient.active) return;
+
+            foreach (var item in ItemRegistry.AllItems)
+                item.ResetServerWeights();
+
+            var poolWeights = new Dictionary<int, float[]>(ItemRegistry.AllItems.Count);
+            foreach (var def in ItemRegistry.AllItems)
+            {
+                var weights = new float[6];
+                for (int p = 0; p < 6; p++)
+                    weights[p] = def.GetPoolWeight(p);
+                poolWeights[(int)def.ItemType] = weights;
+            }
+
+            var msg = new SpawnWeightsMessage
+            {
+                CustomItemSpawnsEnabled = ModConfig.Global.CustomItemSpawnsEnabled.Value,
+                ItemPoolWeights = poolWeights,
+            };
+
+            MatchSetupRulesPatches.EffectiveWeights.Clear();
+            foreach (var settings in Resources.FindObjectsOfTypeAll<ItemSpawnerSettings>())
+                settings.ResetRuntimeData();
+
+            // Force next periodic tick to SendToAll so the rest of the clients
+            // also receive the freshly-rebuilt weights within 5 seconds.
+            _lastSent = new SpawnWeightsMessage { ItemPoolWeights = null };
+
+            conn.Send(msg);
+            IssaPluginPlugin.Log.LogDebug(
+                $"[SpawnWeights] Synced to joining client conn={conn.connectionId}."
+            );
+        }
+
         private static void BroadcastWeightsIfChanged()
         {
             // Writers are registered in OnStartClient. Mirror clears them on disconnect, so

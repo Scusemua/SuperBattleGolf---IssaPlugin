@@ -1773,14 +1773,12 @@ namespace IssaPlugin.Patches
             if (connection == NetworkServer.localConnection)
                 return;
 
-            // Resets the change-detection sentinel and immediately broadcasts
-            // current spawn weights + rebuilds server item pools.
-            SpawnWeightsSyncer.ForceServerSync();
-
-            // Broadcasts all BepInEx config entries so the client's local
-            // ConfigEntry<T> values (FuelPerUse, BurnDuration, etc.) reflect
-            // the host's settings before the player can interact with any item.
-            ItemConfigSyncer.Broadcast();
+            // Send only to the newly-joined client — NOT SendToAll.
+            // SendToAll on every join can disconnect existing clients whose Steam
+            // transport connection happens to be momentarily stale at that instant.
+            // The periodic 5-second sync will update all clients within one tick.
+            SpawnWeightsSyncer.SyncToConnection(connection);
+            ItemConfigSyncer.BroadcastToConnection(connection);
         }
     }
 }
