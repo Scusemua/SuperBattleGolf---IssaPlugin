@@ -23,6 +23,7 @@ namespace IssaPlugin
         public ConfigEntry<bool> ExcludeThrower { get; private set; }
         public ConfigEntry<float> BonusGolfCartForceMultiplier { get; private set; }
         public ConfigEntry<bool> AffectsGolfBalls { get; private set; }
+        public ConfigEntry<bool> ElectroShieldPreventsEffect { get; private set; }
 
         public BlackHoleGrenadeConfig(ConfigFile cfg, GlobalConfig global)
         {
@@ -111,6 +112,12 @@ namespace IssaPlugin
                 "AffectsGolfBalls",
                 true,
                 "If true, the black hole grenade sucks in and spits out golf balls. Set to false to leave golf balls unaffected."
+            );
+            ElectroShieldPreventsEffect = cfg.Bind(
+                Section,
+                "ElectroShieldPreventsEffect",
+                true,
+                "If true, a player with an active electro shield is immune to the black hole's suction pull and spit ejection."
             );
         }
     }

@@ -230,6 +230,16 @@ namespace IssaPlugin.Items
                 return;
             }
 
+            // Electro shield blocks the spit ejection.
+            if (
+                ModConfig.BlackHoleGrenade.ElectroShieldPreventsEffect.Value
+                && localInfo.IsElectromagnetShieldActive
+            )
+            {
+                PlaySpitVfx(msg.BlackHolePosition);
+                return;
+            }
+
             // Only apply spit if the local player is within range.
             float dist = Vector3.Distance(localInfo.transform.position, msg.BlackHolePosition);
             if (dist > msg.SpitRadius)
@@ -318,6 +328,17 @@ namespace IssaPlugin.Items
                     yield break;
 
                 var rb = localInfo.GetComponentInParent<Rigidbody>();
+
+                // Electro shield blocks all suction and knockdown for the shielded player.
+                if (
+                    ModConfig.BlackHoleGrenade.ElectroShieldPreventsEffect.Value
+                    && localInfo.IsElectromagnetShieldActive
+                )
+                {
+                    elapsed += Time.fixedDeltaTime;
+                    yield return new WaitForFixedUpdate();
+                    continue;
+                }
 
                 Vector3 playerPos = rb != null ? rb.position : localInfo.transform.position;
                 Vector3 toCenter = blackHolePos - playerPos;
