@@ -29,6 +29,7 @@ namespace IssaPlugin.Items
         private float _serverSessionStartTime;
 
         // Positions computed once at session start and reused by ServerHoleCleanup.
+        private Vector3 _serverUfoSpawnPos;
         private Vector3 _serverHoverPos;
         private Vector3 _serverExplosionPos;
         private float _serverApproachDuration;
@@ -121,7 +122,8 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            if (targetIdentity == GetComponent<NetworkIdentity>())
+            bool isSoloPlay = NetworkServer.connections.Count <= 1;
+            if (!isSoloPlay && targetIdentity == GetComponent<NetworkIdentity>())
             {
                 IssaPluginPlugin.Log.LogWarning("[UfoAbduction] Server: self-targeting rejected.");
                 GlobalSessionLock<UfoAbductionNetworkBridge>.Release();
@@ -172,6 +174,7 @@ namespace IssaPlugin.Items
             _wielderConn = conn;
             _targetInfo = targetInfo;
             _serverSessionStartTime = Time.time;
+            _serverUfoSpawnPos = ufoSpawnPos;
             _serverHoverPos = hoverPos;
             _serverExplosionPos = explosionPos;
             _serverApproachDuration = approachDuration;
@@ -200,6 +203,8 @@ namespace IssaPlugin.Items
                     NaturalLength = ModConfig.UfoAbduction.NaturalLength.Value,
                     ExplosionForce = ModConfig.UfoAbduction.ExplosionForce.Value,
                     ExplosionRadius = ModConfig.UfoAbduction.ExplosionRadius.Value,
+                    HoverHeight = hoverHeight,
+                    AscentHeight = ascentExtra,
                 }
             );
 
@@ -311,19 +316,30 @@ namespace IssaPlugin.Items
         {
             if (_serverSessionActive)
             {
-                // Use the stored positions from session start so the explosion position
-                // matches what was already broadcast to clients in UfoAbductionBeginMessage.
+                // Compute where the UFO currently is using the same three-phase
+                // interpolation that clients use in GetUfoPosition(), so the explosion
+                // VFX appears at the UFO's actual position even during hole cleanup.
                 float elapsed = Time.time - _serverSessionStartTime;
-                float ascentElapsed = elapsed - _serverApproachDuration - _serverAbductionDuration;
                 Vector3 explosionPos;
-                if (ascentElapsed > 0f && _serverAscentDuration > 0f)
+                if (elapsed < _serverApproachDuration)
                 {
-                    float t = Mathf.Clamp01(ascentElapsed / _serverAscentDuration);
-                    explosionPos = Vector3.Lerp(_serverHoverPos, _serverExplosionPos, t);
+                    float t = _serverApproachDuration > 0f
+                        ? Mathf.Clamp01(elapsed / _serverApproachDuration)
+                        : 1f;
+                    explosionPos = Vector3.Lerp(_serverUfoSpawnPos, _serverHoverPos, t);
                 }
                 else
                 {
-                    explosionPos = _serverHoverPos;
+                    float ascentElapsed = elapsed - _serverApproachDuration - _serverAbductionDuration;
+                    if (ascentElapsed > 0f && _serverAscentDuration > 0f)
+                    {
+                        float t = Mathf.Clamp01(ascentElapsed / _serverAscentDuration);
+                        explosionPos = Vector3.Lerp(_serverHoverPos, _serverExplosionPos, t);
+                    }
+                    else
+                    {
+                        explosionPos = _serverHoverPos;
+                    }
                 }
 
                 ServerEndSession(

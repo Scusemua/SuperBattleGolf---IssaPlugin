@@ -67,6 +67,13 @@ namespace IssaPlugin.Items
 
         public float ExplosionForce;
         public float ExplosionRadius;
+
+        /// Vertical distance from victim to hover point; used by clients to
+        /// recompute HoverPos against the victim's live position at approach end.
+        public float HoverHeight;
+
+        /// Additional vertical distance from hover point to explosion point.
+        public float AscentHeight;
     }
 
     public static class UfoAbductionBeginMessageSerialization
@@ -89,6 +96,8 @@ namespace IssaPlugin.Items
             writer.WriteFloat(msg.NaturalLength);
             writer.WriteFloat(msg.ExplosionForce);
             writer.WriteFloat(msg.ExplosionRadius);
+            writer.WriteFloat(msg.HoverHeight);
+            writer.WriteFloat(msg.AscentHeight);
         }
 
         public static UfoAbductionBeginMessage ReadUfoAbductionBeginMessage(NetworkReader reader) =>
@@ -107,6 +116,8 @@ namespace IssaPlugin.Items
                 NaturalLength = reader.ReadFloat(),
                 ExplosionForce = reader.ReadFloat(),
                 ExplosionRadius = reader.ReadFloat(),
+                HoverHeight = reader.ReadFloat(),
+                AscentHeight = reader.ReadFloat(),
             };
     }
 

@@ -130,6 +130,29 @@ namespace IssaPlugin.Overlays
                 }
             }
 
+            // In solo play (no remote players), allow the local player to self-target.
+            if (bestTransform == null && (remotePlayers == null || remotePlayers.Count == 0))
+            {
+                var localInfo = GameManager.LocalPlayerInfo;
+                if (localInfo != null)
+                {
+                    var nid = localInfo.GetComponent<NetworkIdentity>();
+                    if (nid != null)
+                    {
+                        Vector3 toTarget = localInfo.transform.position - camPos;
+                        if (toTarget.sqrMagnitude <= rangeSq)
+                        {
+                            float dot = Vector3.Dot(camFwd, toTarget.normalized);
+                            if (dot >= cosHalf)
+                            {
+                                bestTransform = localInfo.transform;
+                                bestIdentity = nid;
+                            }
+                        }
+                    }
+                }
+            }
+
             if (bestTransform == null)
                 return;
 
