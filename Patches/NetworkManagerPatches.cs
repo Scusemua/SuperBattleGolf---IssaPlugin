@@ -1620,6 +1620,45 @@ namespace IssaPlugin.Patches
                     (conn, msg) => GetBridge<WindStormNetworkBridge>(conn)?.ServerActivate()
                 );
 
+            // ── UFO Abduction ─────────────────────────────────────────────────────
+
+            // Client → Server
+            Writer<UfoAbductionLockOnMessage>.write =
+                UfoAbductionLockOnMessageSerialization.WriteUfoAbductionLockOnMessage;
+            Reader<UfoAbductionLockOnMessage>.read =
+                UfoAbductionLockOnMessageSerialization.ReadUfoAbductionLockOnMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<UfoAbductionLockOnMessage>(
+                    (conn, msg) =>
+                        GetBridge<UfoAbductionNetworkBridge>(conn)?.ServerHandleLockOn(conn, msg)
+                );
+
+            // Server → Wielder only
+            Writer<UfoAbductionBusyMessage>.write =
+                UfoAbductionBusyMessageSerialization.WriteUfoAbductionBusyMessage;
+            Reader<UfoAbductionBusyMessage>.read =
+                UfoAbductionBusyMessageSerialization.ReadUfoAbductionBusyMessage;
+            NetworkClient.RegisterHandler<UfoAbductionBusyMessage>(
+                UfoAbductionNetworkBridge.HandleBusy
+            );
+
+            // Server → All Clients
+            Writer<UfoAbductionBeginMessage>.write =
+                UfoAbductionBeginMessageSerialization.WriteUfoAbductionBeginMessage;
+            Reader<UfoAbductionBeginMessage>.read =
+                UfoAbductionBeginMessageSerialization.ReadUfoAbductionBeginMessage;
+            NetworkClient.RegisterHandler<UfoAbductionBeginMessage>(
+                UfoAbductionClientLogic.HandleBegin
+            );
+
+            Writer<UfoAbductionEndMessage>.write =
+                UfoAbductionEndMessageSerialization.WriteUfoAbductionEndMessage;
+            Reader<UfoAbductionEndMessage>.read =
+                UfoAbductionEndMessageSerialization.ReadUfoAbductionEndMessage;
+            NetworkClient.RegisterHandler<UfoAbductionEndMessage>(
+                UfoAbductionClientLogic.HandleEnd
+            );
+
             // ── Hunter Drone ──────────────────────────────────────────────────────
             Writer<HunterDroneLaunchMessage>.write =
                 HunterDroneLaunchMessageSerialization.WriteHunterDroneLaunchMessage;
