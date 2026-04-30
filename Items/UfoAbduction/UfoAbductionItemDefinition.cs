@@ -15,9 +15,9 @@ namespace IssaPlugin.Items
 
         public override bool UseRocketIconFallback => true;
 
-        public override EquipmentType EquipmentType => EquipmentType.ElephantGun;
-        public override ItemType AnimatorItemType => ItemType.ElephantGun;
-        public override ItemType AnimatorChangedItemType => ItemType.ElephantGun;
+        public override EquipmentType EquipmentType => EquipmentType.OrbitalLaser;
+        public override ItemType AnimatorItemType => ItemType.OrbitalLaser;
+        public override ItemType AnimatorChangedItemType => ItemType.OrbitalLaser;
 
         public override int MaxUses => (int)ModConfig.UfoAbduction.Uses.Value;
 
