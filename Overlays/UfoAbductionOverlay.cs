@@ -18,6 +18,7 @@ namespace IssaPlugin.Overlays
         private GUIStyle _labelStyle;
         private GUIStyle _timerStyle;
         private GUIStyle _instructionStyle;
+        private GUIStyle _pipLabelStyle;
 
         // ── Cached state ──────────────────────────────────────────────────────
         private float _sw;
@@ -177,16 +178,21 @@ namespace IssaPlugin.Overlays
             if (localInfo == null || localInfo.Inventory == null)
                 return;
 
+            if (_sw <= 0f || _sh <= 0f)
+                return;
+
+            EnsureStyles();
+
+            // PiP is shown to every client whenever any abduction session is active
+            var pipTex = UfoAbductionClientLogic.GetActivePipTexture();
+            if (pipTex != null && pipTex.IsCreated())
+                DrawPipView(pipTex);
+
             bool equipped =
                 localInfo.Inventory.GetEffectivelyEquippedItem(true)
                 == ItemRegistry.UfoAbductionItemType;
             if (!equipped && !_victimSessionActive && !_wielderSessionActive)
                 return;
-
-            if (_sw <= 0f || _sh <= 0f)
-                return;
-
-            EnsureStyles();
 
             if (_victimSessionActive)
                 DrawActiveHUD();
@@ -196,6 +202,29 @@ namespace IssaPlugin.Overlays
                 DrawBusyMessage();
             else if (_hasTarget)
                 DrawLockOnReticle();
+        }
+
+        // ── Picture-in-picture ────────────────────────────────────────────────
+
+        private void DrawPipView(RenderTexture tex)
+        {
+            const float pipW = 320f;
+            const float pipH = 180f;
+            const float margin = 16f;
+            const float labelH = 22f;
+
+            float x = _sw - pipW - margin;
+            float y = margin;
+
+            // Green border
+            GUI.color = new Color(0.3f, 1f, 0.5f, 0.85f);
+            GUI.DrawTexture(new Rect(x - 2f, y - 2f, pipW + 4f, pipH + 4f), Texture2D.whiteTexture);
+            GUI.color = Color.white;
+
+            GUI.DrawTexture(new Rect(x, y, pipW, pipH), tex, ScaleMode.StretchToFill, false);
+
+            _pipLabelStyle.normal.textColor = new Color(0.3f, 1f, 0.5f, 0.9f);
+            GUI.Label(new Rect(x, y + pipH + 3f, pipW, labelH), "ABDUCTION IN PROGRESS", _pipLabelStyle);
         }
 
         // ── Wielder HUD (fired the item) ──────────────────────────────────────
@@ -374,6 +403,17 @@ namespace IssaPlugin.Overlays
                     fontStyle = FontStyle.Bold,
                 };
                 _instructionStyle.normal.textColor = Color.white;
+            }
+
+            if (_pipLabelStyle == null)
+            {
+                _pipLabelStyle = new GUIStyle(GUI.skin.label)
+                {
+                    alignment = TextAnchor.UpperCenter,
+                    fontSize = 13,
+                    fontStyle = FontStyle.Bold,
+                };
+                _pipLabelStyle.normal.textColor = new Color(0.3f, 1f, 0.5f, 0.9f);
             }
         }
     }

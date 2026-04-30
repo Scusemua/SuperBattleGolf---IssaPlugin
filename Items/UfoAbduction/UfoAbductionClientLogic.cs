@@ -50,6 +50,10 @@ namespace IssaPlugin.Items
         public GameObject UfoVfxInstance;
         public LineRenderer BeamLine;
 
+        // Picture-in-picture — all clients
+        public Camera PipCamera;
+        public RenderTexture PipRenderTexture;
+
         // Physics coroutine — non-null only on the victim's own client
         public Coroutine ForceCoroutine;
         public PlayerMovement ForceMovement;
@@ -160,6 +164,7 @@ namespace IssaPlugin.Items
                     state.UfoVfxInstance.transform.position = ufoPos;
 
                 UpdateBeamLine(kvp.Key, state, ufoPos, elapsed);
+                UpdatePipCamera(kvp.Key, state, ufoPos, elapsed);
             }
         }
 
@@ -214,6 +219,7 @@ namespace IssaPlugin.Items
             }
 
             state.BeamLine = CreateBeamLine();
+            CreatePipCamera(state);
 
             s_sessions[msg.VictimNetId] = state;
 
@@ -292,15 +298,31 @@ namespace IssaPlugin.Items
 
                 if (rb != null)
                 {
+                    // The beam disabled gravity on the victim; restore it now so the
+                    // explosion force resolves under normal physics immediately.
+                    if (localNetId == victimNetId)
+                        rb.useGravity = true;
+
                     float dist = Vector3.Distance(rb.position, explosionPos);
                     if (dist < explosionRadius)
+                    {
                         rb.AddExplosionForce(
                             explosionForce,
                             explosionPos,
                             explosionRadius,
-                            0.5f,
+                            0f,
                             ForceMode.VelocityChange
                         );
+
+                        // Prevent the victim from being blasted further upward —
+                        // they're already high in the air and should fall back down.
+                        if (localNetId == victimNetId)
+                        {
+                            Vector3 vel = rb.linearVelocity;
+                            if (vel.y > 0f) vel.y = 0f;
+                            rb.linearVelocity = vel;
+                        }
+                    }
                 }
             }
 
@@ -339,58 +361,190 @@ namespace IssaPlugin.Items
 
             if (state.UfoVfxInstance != null)
                 Object.Destroy(state.UfoVfxInstance);
+
+            if (state.PipCamera != null)
+                Object.Destroy(state.PipCamera.gameObject);
+            if (state.PipRenderTexture != null)
+            {
+                state.PipRenderTexture.Release();
+                Object.Destroy(state.PipRenderTexture);
+            }
         }
 
-        // ── Spring force coroutine (victim's client only) ─────────────────────
+        // ── Position-lock coroutine (victim's client only) ────────────────────
+        //
+        //  During abduction: victim is suspended at NaturalLength below the UFO.
+        //  During ascent:    offset lerps from NaturalLength → 0 so they get
+        //                    sucked into the ship as it climbs.
 
         private static IEnumerator ForceCoroutine(uint victimNetId)
         {
+            var localInfo = GameManager.LocalPlayerInfo;
+            if (localInfo == null)
+                yield break;
+
+            Rigidbody lastRb = null;
+            bool knockoutApplied = false;
+
             while (s_sessions.ContainsKey(victimNetId))
             {
-                var localInfo = GameManager.LocalPlayerInfo;
-                if (localInfo == null)
-                    yield break;
-
                 if (!s_sessions.TryGetValue(victimNetId, out var state))
                     yield break;
 
-                float sessionElapsed = Time.time - state.StartTime;
+                var seat = localInfo.ActiveGolfCartSeat;
+                Rigidbody rb =
+                    seat.IsValid() && seat.golfCart != null
+                        ? seat.golfCart.AsEntity.Rigidbody
+                        : localInfo.GetComponentInParent<Rigidbody>();
 
-                // Only apply force during abduction and ascent phases
-                if (sessionElapsed >= state.ApproachDuration)
+                // Restore gravity if we switched rigidbodies (entered/exited cart)
+                if (lastRb != null && lastRb != rb)
+                    lastRb.useGravity = true;
+                lastRb = rb;
+
+                if (rb != null)
                 {
-                    Vector3 targetPos = state.GetUfoPosition(sessionElapsed);
+                    float sessionElapsed = Time.time - state.StartTime;
 
-                    var seat = localInfo.ActiveGolfCartSeat;
-                    Rigidbody rb =
-                        seat.IsValid() && seat.golfCart != null
-                            ? seat.golfCart.AsEntity.Rigidbody
-                            : localInfo.GetComponentInParent<Rigidbody>();
-
-                    if (rb != null)
+                    if (sessionElapsed >= state.ApproachDuration)
                     {
-                        Vector3 toTarget = targetPos - rb.position;
-                        float dist = toTarget.magnitude;
-
-                        if (dist > state.NaturalLength && dist > 0.05f)
+                        // Knock the victim over exactly once when the beam first engages
+                        if (!knockoutApplied)
                         {
-                            Vector3 dir = toTarget / dist;
-                            float stretch = dist - state.NaturalLength;
-                            float targetSpeed = stretch * state.SpringForce;
-                            float currentComp = Vector3.Dot(rb.linearVelocity, dir);
-                            float deficit = Mathf.Min(
-                                targetSpeed - currentComp,
-                                state.MaxPullSpeed
-                            );
-
-                            if (deficit > 0f)
-                                rb.AddForce(dir * deficit, ForceMode.VelocityChange);
+                            knockoutApplied = true;
+                            ApplyAbductionKnockout(localInfo, state);
                         }
+
+                        Vector3 targetPos = ComputeVictimTargetPos(state, sessionElapsed);
+                        rb.useGravity = false;
+                        rb.angularVelocity = Vector3.zero;
+                        LockToPosition(rb, targetPos, state.MaxPullSpeed);
                     }
                 }
 
                 yield return new WaitForFixedUpdate();
             }
+
+            // Restore physics when session ends
+            if (lastRb != null)
+                lastRb.useGravity = true;
+        }
+
+        private static void ApplyAbductionKnockout(PlayerInfo localInfo, UfoAbductionSessionState state)
+        {
+            var wielderTransform = GetTransformByNetId(state.WielderNetId);
+            var wielderInfo = wielderTransform?.GetComponentInParent<PlayerInfo>();
+            if (wielderInfo == null)
+                return;
+
+            var useId = new ItemUseId(
+                wielderInfo.PlayerId.Guid,
+                UfoAbductionItem.NextUseIndex(),
+                ItemType.RocketLauncher
+            );
+            bool _;
+            localInfo.Movement.TryKnockOut(
+                wielderInfo,
+                KnockoutType.Rocket,
+                false,
+                localInfo.Movement.transform.InverseTransformPoint(wielderInfo.transform.position),
+                Vector3.Distance(localInfo.transform.position, wielderInfo.transform.position),
+                Vector3.zero,
+                true,
+                useId,
+                false,
+                true,
+                out _
+            );
+        }
+
+        // Returns the world position the victim should occupy at a given session elapsed time.
+        private static Vector3 ComputeVictimTargetPos(UfoAbductionSessionState state, float elapsed)
+        {
+            Vector3 ufoPos = state.GetUfoPosition(elapsed);
+            float abductionElapsed = elapsed - state.ApproachDuration;
+
+            if (abductionElapsed < state.AbductionDuration)
+            {
+                // Suspended in the beam directly below the UFO
+                return ufoPos - Vector3.up * state.NaturalLength;
+            }
+
+            // Sucked into the ship: offset shrinks from NaturalLength → 0 over ascent
+            float ascentT = state.AscentDuration > 0f
+                ? Mathf.Clamp01((abductionElapsed - state.AbductionDuration) / state.AscentDuration)
+                : 1f;
+            float offset = Mathf.Lerp(state.NaturalLength, 0f, ascentT);
+            return ufoPos - Vector3.up * offset;
+        }
+
+        // Directly warps the rigidbody position toward targetPos (bypasses the
+        // velocity pipeline so PlayerMovement's grounding logic can't fight us).
+        private static void LockToPosition(Rigidbody rb, Vector3 targetPos, float maxSpeed)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.position = Vector3.MoveTowards(rb.position, targetPos, maxSpeed * Time.fixedDeltaTime);
+        }
+
+        // ── PiP camera helpers ────────────────────────────────────────────────
+
+        private static void CreatePipCamera(UfoAbductionSessionState state)
+        {
+            state.PipRenderTexture = new RenderTexture(320, 180, 16);
+            state.PipRenderTexture.Create();
+
+            var camGo = new GameObject("UfoAbductionPiP");
+            Object.DontDestroyOnLoad(camGo);
+
+            var cam = camGo.AddComponent<Camera>();
+            cam.targetTexture = state.PipRenderTexture;
+            cam.fieldOfView = 55f;
+            cam.nearClipPlane = 0.3f;
+            cam.farClipPlane = 500f;
+            cam.allowHDR = false;
+            cam.allowMSAA = false;
+            // depth -20 so it renders before the main camera without conflicting
+            cam.depth = -20f;
+            state.PipCamera = cam;
+        }
+
+        private static void UpdatePipCamera(
+            uint victimNetId,
+            UfoAbductionSessionState state,
+            Vector3 ufoPos,
+            float elapsed
+        )
+        {
+            if (state.PipCamera == null)
+                return;
+
+            Transform victimT = GetTransformByNetId(victimNetId);
+            Vector3 victimPos = victimT != null ? victimT.position : ufoPos - Vector3.up * state.HoverHeight;
+
+            // Focus on the midpoint so both victim and UFO stay in-frame
+            Vector3 focusPoint = Vector3.Lerp(victimPos, ufoPos, 0.5f);
+
+            // Pull the camera back proportionally to the UFO-victim separation so the
+            // full approach arc is always framed (during hover this naturally zooms in)
+            float separation = Vector3.Distance(victimPos, ufoPos);
+            float camDist = Mathf.Max(separation * 0.7f, 12f);
+
+            float orbitAngle = elapsed * 20f;
+            Vector3 camOffset = Quaternion.Euler(20f, orbitAngle, 0f) * new Vector3(0f, 0f, -camDist);
+            state.PipCamera.transform.position = focusPoint + camOffset;
+            state.PipCamera.transform.LookAt(focusPoint);
+        }
+
+        /// Returns the RenderTexture for any currently active abduction session, or null.
+        internal static RenderTexture GetActivePipTexture()
+        {
+            foreach (var kvp in s_sessions)
+            {
+                var tex = kvp.Value.PipRenderTexture;
+                if (tex != null && tex.IsCreated())
+                    return tex;
+            }
+            return null;
         }
 
         // ── VFX helpers ───────────────────────────────────────────────────────
