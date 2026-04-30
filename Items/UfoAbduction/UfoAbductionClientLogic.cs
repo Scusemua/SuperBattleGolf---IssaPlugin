@@ -71,7 +71,17 @@ namespace IssaPlugin.Items
             float ascentElapsed = abductionElapsed - AbductionDuration;
             float ascentT =
                 AscentDuration > 0f ? Mathf.Clamp01(ascentElapsed / AscentDuration) : 1f;
-            return Vector3.Lerp(HoverPos, ExplosionPos, ascentT);
+            Vector3 basePos = Vector3.Lerp(HoverPos, ExplosionPos, ascentT);
+
+            // Erratic horizontal drift during ascent.  Sine envelope peaks at mid-ascent
+            // and returns to zero at the end so the explosion happens at ExplosionPos.
+            float envelope = Mathf.Sin(ascentT * Mathf.PI);
+            float amplitude = ModConfig.UfoAbduction.AscentDriftAmplitude.Value * envelope;
+            float freq = ModConfig.UfoAbduction.AscentDriftFrequency.Value;
+            float seed = StartTime * 0.13f;
+            float nx = (Mathf.PerlinNoise(ascentElapsed * freq + seed, 17.3f) * 2f - 1f) * amplitude;
+            float nz = (Mathf.PerlinNoise(53.7f, ascentElapsed * freq + seed) * 2f - 1f) * amplitude;
+            return basePos + new Vector3(nx, 0f, nz);
         }
     }
 

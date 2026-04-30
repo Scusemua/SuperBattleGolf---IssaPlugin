@@ -30,6 +30,10 @@ namespace IssaPlugin
         public ConfigEntry<float> ExplosionForce { get; private set; }
         public ConfigEntry<float> ExplosionRadius { get; private set; }
 
+        // Erratic ascent movement
+        public ConfigEntry<float> AscentDriftAmplitude { get; private set; }
+        public ConfigEntry<float> AscentDriftFrequency { get; private set; }
+
         public UfoAbductionConfig(ConfigFile cfg, GlobalConfig global)
         {
             GiveKey = cfg.Bind(
@@ -110,6 +114,18 @@ namespace IssaPlugin
                 "ExplosionRadius",
                 60f,
                 "Radius (units) within which the explosion affects nearby players."
+            );
+            AscentDriftAmplitude = cfg.Bind(
+                Section,
+                "AscentDriftAmplitude",
+                20f,
+                "Peak horizontal drift (units) of the UFO during ascent. 0 = straight up."
+            );
+            AscentDriftFrequency = cfg.Bind(
+                Section,
+                "AscentDriftFrequency",
+                0.6f,
+                "How rapidly the UFO changes direction during ascent. Higher = more twitchy."
             );
         }
     }
