@@ -30,7 +30,7 @@ namespace IssaPlugin.Items
         public uint WielderNetId;
         public Vector3 UfoSpawnPos;
         public Vector3 HoverPos;
-        public Vector3 DropoffPos;  // UFO Phase 3 endpoint; absolute, never recomputed
+        public Vector3 DropoffPos; // UFO Phase 3 endpoint; absolute, never recomputed
         public float ApproachDuration;
         public float AbductionDuration;
         public float TransitDuration;
@@ -69,9 +69,8 @@ namespace IssaPlugin.Items
 
             // Transit phase: smooth 3D lerp from HoverPos to DropoffPos (no drift).
             float transitElapsed = abductionElapsed - AbductionDuration;
-            float transitT = TransitDuration > 0f
-                ? Mathf.Clamp01(transitElapsed / TransitDuration)
-                : 1f;
+            float transitT =
+                TransitDuration > 0f ? Mathf.Clamp01(transitElapsed / TransitDuration) : 1f;
             return Vector3.Lerp(HoverPos, DropoffPos, transitT);
         }
     }
@@ -132,12 +131,14 @@ namespace IssaPlugin.Items
                     // Track the victim's live position during approach so the UFO
                     // always arrives directly above them regardless of movement.
                     Transform victimT = GetTransformByNetId(kvp.Key);
-                    Vector3 approachTarget = victimT != null
-                        ? victimT.position + Vector3.up * state.HoverHeight
-                        : state.HoverPos;
-                    float t = state.ApproachDuration > 0f
-                        ? Mathf.Clamp01(elapsed / state.ApproachDuration)
-                        : 1f;
+                    Vector3 approachTarget =
+                        victimT != null
+                            ? victimT.position + Vector3.up * state.HoverHeight
+                            : state.HoverPos;
+                    float t =
+                        state.ApproachDuration > 0f
+                            ? Mathf.Clamp01(elapsed / state.ApproachDuration)
+                            : 1f;
                     ufoPos = Vector3.Lerp(state.UfoSpawnPos, approachTarget, t);
                 }
                 else
@@ -181,18 +182,18 @@ namespace IssaPlugin.Items
 
             var state = new UfoAbductionSessionState
             {
-                WielderNetId      = msg.WielderNetId,
-                UfoSpawnPos       = msg.UfoSpawnPos,
-                HoverPos          = msg.HoverPos,
-                DropoffPos        = msg.DropoffPos,
-                ApproachDuration  = msg.ApproachDuration,
+                WielderNetId = msg.WielderNetId,
+                UfoSpawnPos = msg.UfoSpawnPos,
+                HoverPos = msg.HoverPos,
+                DropoffPos = msg.DropoffPos,
+                ApproachDuration = msg.ApproachDuration,
                 AbductionDuration = msg.AbductionDuration,
-                TransitDuration   = msg.TransitDuration,
-                StartTime         = Time.time,
-                SpringForce       = msg.SpringForce,
-                MaxPullSpeed      = msg.MaxPullSpeed,
-                NaturalLength     = msg.NaturalLength,
-                HoverHeight       = msg.HoverHeight,
+                TransitDuration = msg.TransitDuration,
+                StartTime = Time.time,
+                SpringForce = msg.SpringForce,
+                MaxPullSpeed = msg.MaxPullSpeed,
+                NaturalLength = msg.NaturalLength,
+                HoverHeight = msg.HoverHeight,
             };
 
             if (AssetLoader.UfoAbductionUfoPrefab != null)
@@ -275,7 +276,8 @@ namespace IssaPlugin.Items
                         if (localNetId == victimNetId)
                         {
                             Vector3 vel = rb.linearVelocity;
-                            if (vel.y > 0f) vel.y = 0f;
+                            if (vel.y > 0f)
+                                vel.y = 0f;
                             rb.linearVelocity = vel;
                         }
                     }
@@ -383,7 +385,10 @@ namespace IssaPlugin.Items
                 lastRb.useGravity = true;
         }
 
-        private static void ApplyAbductionKnockout(PlayerInfo localInfo, UfoAbductionSessionState state)
+        private static void ApplyAbductionKnockout(
+            PlayerInfo localInfo,
+            UfoAbductionSessionState state
+        )
         {
             var wielderTransform = GetTransformByNetId(state.WielderNetId);
             var wielderInfo = wielderTransform?.GetComponentInParent<PlayerInfo>();
@@ -420,9 +425,12 @@ namespace IssaPlugin.Items
                 return ufoPos - Vector3.up * state.NaturalLength;
 
             // Sucked into the ship: offset shrinks from NaturalLength → 0 over transit
-            float transitT = state.TransitDuration > 0f
-                ? Mathf.Clamp01((abductionElapsed - state.AbductionDuration) / state.TransitDuration)
-                : 1f;
+            float transitT =
+                state.TransitDuration > 0f
+                    ? Mathf.Clamp01(
+                        (abductionElapsed - state.AbductionDuration) / state.TransitDuration
+                    )
+                    : 1f;
             float offset = Mathf.Lerp(state.NaturalLength, 0f, transitT);
             return ufoPos - Vector3.up * offset;
         }
@@ -430,7 +438,11 @@ namespace IssaPlugin.Items
         private static void LockToPosition(Rigidbody rb, Vector3 targetPos, float maxSpeed)
         {
             rb.linearVelocity = Vector3.zero;
-            rb.position = Vector3.MoveTowards(rb.position, targetPos, maxSpeed * Time.fixedDeltaTime);
+            rb.position = Vector3.MoveTowards(
+                rb.position,
+                targetPos,
+                maxSpeed * Time.fixedDeltaTime
+            );
         }
 
         // ── PiP camera helpers ────────────────────────────────────────────────
@@ -465,16 +477,16 @@ namespace IssaPlugin.Items
                 return;
 
             Transform victimT = GetTransformByNetId(victimNetId);
-            Vector3 victimPos = victimT != null
-                ? victimT.position
-                : ufoPos - Vector3.up * state.HoverHeight;
+            Vector3 victimPos =
+                victimT != null ? victimT.position : ufoPos - Vector3.up * state.HoverHeight;
 
             Vector3 focusPoint = Vector3.Lerp(victimPos, ufoPos, 0.5f);
             float separation = Vector3.Distance(victimPos, ufoPos);
             float camDist = Mathf.Max(separation * 0.7f, 12f);
 
             float orbitAngle = elapsed * 20f;
-            Vector3 camOffset = Quaternion.Euler(20f, orbitAngle, 0f) * new Vector3(0f, 0f, -camDist);
+            Vector3 camOffset =
+                Quaternion.Euler(20f, orbitAngle, 0f) * new Vector3(0f, 0f, -camDist);
             state.PipCamera.transform.position = focusPoint + camOffset;
             state.PipCamera.transform.LookAt(focusPoint);
         }

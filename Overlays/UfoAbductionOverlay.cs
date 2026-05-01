@@ -72,8 +72,11 @@ namespace IssaPlugin.Overlays
         // ── Public state mutators (called from UfoAbductionNetworkBridge) ─────
 
         public void ShowBeingTargeted() => _beingTargeted = true;
+
         public void ClearBeingTargeted() => _beingTargeted = false;
+
         public void ShowAborted() => _abortedUntil = Time.time + 2.5f;
+
         public void ShowBusy() => _busyUntil = Time.time + 2.5f;
 
         // ── Unity lifecycle ───────────────────────────────────────────────────
@@ -266,7 +269,11 @@ namespace IssaPlugin.Overlays
             GUI.DrawTexture(new Rect(x, y, pipW, pipH), tex, ScaleMode.StretchToFill, false);
 
             _pipLabelStyle.normal.textColor = new Color(0.3f, 1f, 0.5f, 0.9f);
-            GUI.Label(new Rect(x, y + pipH + 3f, pipW, labelH), "ABDUCTION IN PROGRESS", _pipLabelStyle);
+            GUI.Label(
+                new Rect(x, y + pipH + 3f, pipW, labelH),
+                "ABDUCTION IN PROGRESS",
+                _pipLabelStyle
+            );
         }
 
         // ── Drop-zone targeting overlay (full-screen, wielder only) ──────────
@@ -322,7 +329,11 @@ namespace IssaPlugin.Overlays
                 _targetingCornerStyle
             );
             GUI.Label(new Rect(16, 34, 300, 24), "SYS: ARMED", _targetingCornerStyle);
-            GUI.Label(new Rect(16, 56, 300, 24), "MODE: ABDUCTION TARGETING", _targetingCornerStyle);
+            GUI.Label(
+                new Rect(16, 56, 300, 24),
+                "MODE: ABDUCTION TARGETING",
+                _targetingCornerStyle
+            );
 
             // Bottom instruction bar
             GUI.DrawTexture(new Rect(0, _sh - 80, _sw, 80), _targetingBgTex);
@@ -642,7 +653,12 @@ namespace IssaPlugin.Overlays
             for (int i = 0; i < pixels.Length; i++)
             {
                 float v = UnityEngine.Random.value;
-                pixels[i] = new Color(v * 0.3f, v, v * 0.4f, UnityEngine.Random.Range(0.01f, 0.06f));
+                pixels[i] = new Color(
+                    v * 0.3f,
+                    v,
+                    v * 0.4f,
+                    UnityEngine.Random.Range(0.01f, 0.06f)
+                );
             }
             _targetingNoiseTex.SetPixels(pixels);
             _targetingNoiseTex.Apply();
