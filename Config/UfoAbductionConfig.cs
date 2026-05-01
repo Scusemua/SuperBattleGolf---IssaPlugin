@@ -90,7 +90,7 @@ namespace IssaPlugin
             SpringForce = cfg.Bind(
                 Section,
                 "SpringForce",
-                1f,
+                75f,
                 "Spring stiffness pulling the victim toward the UFO."
             );
             MaxPullSpeed = cfg.Bind(
@@ -102,7 +102,7 @@ namespace IssaPlugin
             NaturalLength = cfg.Bind(
                 Section,
                 "NaturalLength",
-                35f,
+                10f,
                 "Distance below the UFO at which no pull force is applied."
             );
             ExplosionForce = cfg.Bind(
