@@ -46,7 +46,7 @@ namespace IssaPlugin
             LockOnRange = cfg.Bind(
                 Section,
                 "LockOnRange",
-                60f,
+                20f,
                 "Maximum targeting distance (units)."
             );
             LockOnConeAngleDeg = cfg.Bind(
@@ -58,19 +58,19 @@ namespace IssaPlugin
             ApproachDuration = cfg.Bind(
                 Section,
                 "ApproachDuration",
-                2f,
+                10f,
                 "Seconds for UFO to fly over the target before beginning abduction."
             );
             AbductionDuration = cfg.Bind(
                 Section,
                 "AbductionDuration",
-                5f,
+                3.5f,
                 "Seconds the UFO hovers and beams the victim upward."
             );
             AscentDuration = cfg.Bind(
                 Section,
                 "AscentDuration",
-                2.5f,
+                5f,
                 "Seconds for UFO to fly up into the black hole."
             );
             HoverHeight = cfg.Bind(
@@ -82,31 +82,31 @@ namespace IssaPlugin
             AscentExtraHeight = cfg.Bind(
                 Section,
                 "AscentExtraHeight",
-                100f,
+                200f,
                 "Additional height (units) the UFO climbs above the hover position before exploding."
             );
             SpringForce = cfg.Bind(
                 Section,
                 "SpringForce",
-                4f,
+                1f,
                 "Spring stiffness pulling the victim toward the UFO."
             );
             MaxPullSpeed = cfg.Bind(
                 Section,
                 "MaxPullSpeed",
-                25f,
+                40f,
                 "Maximum velocity change (m/s) applied to the victim per physics tick."
             );
             NaturalLength = cfg.Bind(
                 Section,
                 "NaturalLength",
-                3f,
+                35f,
                 "Distance below the UFO at which no pull force is applied."
             );
             ExplosionForce = cfg.Bind(
                 Section,
                 "ExplosionForce",
-                120f,
+                200f,
                 "Peak velocity change (m/s) applied at the explosion centre."
             );
             ExplosionRadius = cfg.Bind(
@@ -124,7 +124,7 @@ namespace IssaPlugin
             AscentDriftFrequency = cfg.Bind(
                 Section,
                 "AscentDriftFrequency",
-                0.6f,
+                1f,
                 "How rapidly the UFO changes direction during ascent. Higher = more twitchy."
             );
         }
