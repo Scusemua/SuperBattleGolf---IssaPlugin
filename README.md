@@ -2,13 +2,9 @@
 
 <img src="icon.png" width="256" height="256" />
 
-Adds **27 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
+Adds **28 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
 
 To download and/or install the mod, please check out the GitHub releases or the mod's [ThunderStore page](https://thunderstore.io/c/super-battle-golf/p/TeamScusemua/IssaMod/).
-
-## Regarding the **Frozen Fairway Update**
-
-GitHub release v0.0.25 re-enables IssaMod/IssaPlugin up through Hotfix 4 of the **Frozen Fairway Update**. The mod is very under-tested at this point, so there are likely bugs and strange interactions with the new game mechanics. The custom items also do appear in the pause menu, but their spawn weights are not updated properly. This will be addressed in a future update.
 
 ## Items
 
@@ -99,6 +95,9 @@ Throw a toy rocket at the ground, causing a small spark. Anybody within range wi
 ### 💨 Wind Storm
 Create a wind storm with extremely high speed winds and dynamically-changing directions. These winds will blow away players and golf balls alike!
 
+### 🛸 UFO Abduction
+Aim at another player and fire. A flying saucer swoops in from off-map and locks on. When it arrives, a tractor beam engages — the victim gets knocked off their feet and hauled upward, suspended helplessly in the beam while the UFO hovers. After a few seconds the ship begins its escape, dragging the victim up with it in an erratic, spiraling climb before they're finally pulled inside and the whole thing detonates at altitude. A picture-in-picture camera appears on every player's screen for the full duration so nobody misses a second of it.
+
 ---
 
 ## Installation
@@ -185,6 +184,20 @@ All settings take effect immediately without restarting the game.
 
 - The Donut, AC-130, and Stealth Bomber all appear as valid lock-on targets for the rocket launcher. This is intentional.
 - Hitting a golf ball with a fully-charged baseball bat will make the ball go backwards, as of the new Frozen Fairway update.
+
+## Bug Reports
+
+Found a bug? Please file a report on the [GitHub Issues page](https://github.com/Scusemua/SuperBattleGolf---IssaPlugin/issues) — it's the best way to make sure it gets tracked and fixed.
+
+**How to file an issue (if you haven't used GitHub before):**
+
+1. Click the link above to open the Issues page.
+2. Click **New issue** in the top-right corner.
+3. Give your issue a short, descriptive title (e.g. *"UFO Abduction crashes the game when used on a cart player"*).
+4. In the description box, include as much detail as you can: what happened, what you expected to happen, how to reproduce it, and any error messages from the BepInEx console or log file (`BepInEx/LogOutput.log`).
+5. Click **Submit new issue**.
+
+Not sure how to fill in the form? GitHub has a [step-by-step guide](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/creating-an-issue) that walks through the whole process.
 
 ---
 
