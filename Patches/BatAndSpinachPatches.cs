@@ -34,7 +34,8 @@ namespace IssaPlugin.Patches
             {
                 yield return null;
                 elapsed += Time.deltaTime;
-                if (rb == null) yield break;
+                if (rb == null)
+                    yield break;
             }
             RecentHit = false;
             TotalMultiplier = 1f;
@@ -42,13 +43,21 @@ namespace IssaPlugin.Patches
 
         private static IEnumerator TemporarilyDisableCollisions(Rigidbody rb)
         {
-            if (rb == null) yield break;
+            if (rb == null)
+                yield break;
             rb.detectCollisions = false;
             yield return new WaitForSeconds(0.1f);
-            if (rb != null) rb.detectCollisions = true;
+            if (rb != null)
+                rb.detectCollisions = true;
         }
 
-        static void Prefix(Hittable __instance, PlayerGolfer hitter, float power, Vector3 worldDirection, bool isPutt)
+        static void Prefix(
+            Hittable __instance,
+            PlayerGolfer hitter,
+            float power,
+            Vector3 worldDirection,
+            bool isPutt
+        )
         {
             BatActive = false;
             _pendingMultiplier = 1f;
@@ -63,18 +72,26 @@ namespace IssaPlugin.Patches
             )
                 return;
 
+            bool isGolfBall = __instance.AsEntity.IsGolfBall;
+
             float extraPower = 1.0f;
             if (inv.GetEffectivelyEquippedItem(true) == ItemRegistry.BaseballBatItemType)
             {
                 BatActive = true;
-                extraPower = ModConfig.BaseballBat.PowerMultiplier.Value - 1f;
+                float batMultiplier = isGolfBall
+                    ? ModConfig.BaseballBat.GolfBallPowerMultiplier.Value
+                    : ModConfig.BaseballBat.PowerMultiplier.Value;
+                extraPower = batMultiplier - 1f;
                 if (extraPower <= 0f)
                     extraPower = 1.0f;
             }
 
             if (SpinachBehaviour.IsActive)
             {
-                float spinachExtra = ModConfig.Spinach.PowerMultiplier.Value - 1f;
+                float spinachMultiplier = isGolfBall
+                    ? ModConfig.Spinach.GolfBallPowerMultiplier.Value
+                    : ModConfig.Spinach.PowerMultiplier.Value;
+                float spinachExtra = spinachMultiplier - 1f;
                 if (spinachExtra <= 0f)
                     spinachExtra = 1.0f;
 
@@ -105,7 +122,10 @@ namespace IssaPlugin.Patches
         {
             // Always restore MaxPowerSwingHitSpeed, even if we bail early
             if (_pendingMultiplier > 1f && __instance.SwingSettings != null)
-                MaxPowerSwingHitSpeedField.SetValue(__instance.SwingSettings, _originalMaxPowerSwingHitSpeed);
+                MaxPowerSwingHitSpeedField.SetValue(
+                    __instance.SwingSettings,
+                    _originalMaxPowerSwingHitSpeed
+                );
 
             if (_pendingMultiplier <= 1f)
                 return;
@@ -131,7 +151,16 @@ namespace IssaPlugin.Patches
         static MethodBase TargetMethod() =>
             AccessTools.Method(typeof(Hittable), "HitWithSwingProjectile");
 
-        static void Prefix(Hittable __instance, Vector3 localHitPosition, Vector3 worldHitDirection, float normalizedHitSpeed, Hittable hitter, bool wasHoming, bool wasSwungByRocketDriver, PlayerGolfer responsiblePlayer)
+        static void Prefix(
+            Hittable __instance,
+            Vector3 localHitPosition,
+            Vector3 worldHitDirection,
+            float normalizedHitSpeed,
+            Hittable hitter,
+            bool wasHoming,
+            bool wasSwungByRocketDriver,
+            PlayerGolfer responsiblePlayer
+        )
         {
             if (!HitWithGolfSwingInternalPatch.RecentHit)
                 return;
@@ -155,10 +184,14 @@ namespace IssaPlugin.Patches
     [HarmonyPatch]
     static class ApplyAirDampingStablePatch
     {
-        static MethodBase TargetMethod() =>
-            AccessTools.Method(typeof(Hittable), "ApplyAirDamping");
+        static MethodBase TargetMethod() => AccessTools.Method(typeof(Hittable), "ApplyAirDamping");
 
-        static bool Prefix(Hittable __instance, float linearAirDragFactor, float rocketDriverSwingLinearAirDragFactor, bool shouldApplyWind)
+        static bool Prefix(
+            Hittable __instance,
+            float linearAirDragFactor,
+            float rocketDriverSwingLinearAirDragFactor,
+            bool shouldApplyWind
+        )
         {
             if (!HitWithGolfSwingInternalPatch.RecentHit)
                 return true;
