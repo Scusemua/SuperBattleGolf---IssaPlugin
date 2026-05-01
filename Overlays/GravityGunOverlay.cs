@@ -395,9 +395,17 @@ namespace IssaPlugin.Overlays
 
             GUI.color = Color.white;
 
-            // "LOCK ON" label just below the reticle.
+            // "LOCK ON" label just below the reticle, with target name if available.
             _labelStyle.normal.textColor = col;
-            GUI.Label(new Rect(cx - 70f, cy + outer + 4f, 140f, 38f), "LOCK ON", _labelStyle);
+            string lockOnLabel = "LOCK ON";
+            if (BestTargetIdentity != null)
+            {
+                var pi = BestTargetIdentity.GetComponentInParent<PlayerInfo>();
+                string targetName = pi?.PlayerId?.PlayerName;
+                if (!string.IsNullOrEmpty(targetName))
+                    lockOnLabel = "LOCK ON\n" + targetName;
+            }
+            GUI.Label(new Rect(cx - 200f, cy + outer + 4f, 400f, 76f), lockOnLabel, _labelStyle);
         }
 
         // ── Helpers ───────────────────────────────────────────────────────────
@@ -478,6 +486,7 @@ namespace IssaPlugin.Overlays
                     alignment = TextAnchor.MiddleCenter,
                     fontSize = 28,
                     fontStyle = FontStyle.Bold,
+                    wordWrap = false,
                 };
                 _labelStyle.normal.textColor = new Color(0.2f, 0.85f, 1f, 0.85f);
             }

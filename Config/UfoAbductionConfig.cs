@@ -46,7 +46,7 @@ namespace IssaPlugin
             LockOnRange = cfg.Bind(
                 Section,
                 "LockOnRange",
-                20f,
+                100f,
                 "Maximum targeting distance (units)."
             );
             LockOnConeAngleDeg = cfg.Bind(
@@ -64,7 +64,7 @@ namespace IssaPlugin
             AbductionDuration = cfg.Bind(
                 Section,
                 "AbductionDuration",
-                3.5f,
+                3f,
                 "Seconds the UFO hovers and beams the victim upward."
             );
             AscentDuration = cfg.Bind(
@@ -94,7 +94,7 @@ namespace IssaPlugin
             MaxPullSpeed = cfg.Bind(
                 Section,
                 "MaxPullSpeed",
-                40f,
+                15f,
                 "Maximum velocity change (m/s) applied to the victim per physics tick."
             );
             NaturalLength = cfg.Bind(
