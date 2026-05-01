@@ -41,16 +41,6 @@ namespace IssaPlugin.Patches
             TotalMultiplier = 1f;
         }
 
-        private static IEnumerator TemporarilyDisableCollisions(Rigidbody rb)
-        {
-            if (rb == null)
-                yield break;
-            rb.detectCollisions = false;
-            yield return new WaitForSeconds(0.1f);
-            if (rb != null)
-                rb.detectCollisions = true;
-        }
-
         static void Prefix(
             Hittable __instance,
             PlayerGolfer hitter,
@@ -118,7 +108,7 @@ namespace IssaPlugin.Patches
             );
         }
 
-        static void Postfix(Hittable __instance)
+        static void Postfix(Hittable __instance, PlayerGolfer hitter)
         {
             // Always restore MaxPowerSwingHitSpeed, even if we bail early
             if (_pendingMultiplier > 1f && __instance.SwingSettings != null)
@@ -141,7 +131,25 @@ namespace IssaPlugin.Patches
             );
 
             IssaPluginPlugin.Instance.StartCoroutine(TrackVelocityAfterHit(rb));
-            IssaPluginPlugin.Instance.StartCoroutine(TemporarilyDisableCollisions(rb));
+
+            // OnFinishedSwinging handles decrement for player hits; golf ball hits don't trigger it.
+            if (
+                BatActive
+                && __instance.AsEntity.IsGolfBall
+                && hitter != null
+                && hitter.isLocalPlayer
+            )
+            {
+                var inventory = hitter.PlayerInfo.Inventory;
+                int slotIndex = inventory.EquippedItemIndex;
+                if (slotIndex >= 0)
+                {
+                    IssaPluginPlugin.Log.LogInfo(
+                        $"[HitWithGolfSwingInternalPatch PostFix] ConsumeItemAtSlot called!"
+                    );
+                    ItemHelper.ConsumeItemAtSlot(inventory, slotIndex);
+                }
+            }
         }
     }
 
@@ -238,7 +246,11 @@ namespace IssaPlugin.Patches
             if (slotIndex < 0)
                 return;
 
-            ItemHelper.DecrementAndRemove(inventory, slotIndex);
+            IssaPluginPlugin.Log.LogInfo(
+                $"[OnFinishedSwingingPatch PostFix] ConsumeItemAtSlot called!"
+            );
+
+            ItemHelper.ConsumeItemAtSlot(inventory, slotIndex);
         }
     }
 }

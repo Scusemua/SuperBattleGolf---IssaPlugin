@@ -54,6 +54,7 @@ namespace IssaPlugin.Items
             RemoveMethod?.Invoke(inventory, new object[] { slotIndex });
         }
 
+
         private static readonly MethodInfo SetItemUseMethod = typeof(PlayerInventory).GetMethod(
             "SetCurrentItemUse",
             BindingFlags.NonPublic | BindingFlags.Instance
