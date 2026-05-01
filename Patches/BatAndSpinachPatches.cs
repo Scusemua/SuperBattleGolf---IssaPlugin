@@ -6,6 +6,7 @@ using System.Text;
 using HarmonyLib;
 using IssaPlugin.Items;
 using UnityEngine;
+using UnityEngine.Scripting;
 
 namespace IssaPlugin.Patches
 {
@@ -13,6 +14,7 @@ namespace IssaPlugin.Patches
     static class HitWithGolfSwingInternalPatch
     {
         internal static bool BatActive;
+        internal static bool RecentHit;
         private static Vector3 _velocityBefore;
         private static Vector3 _angularVelocityBefore;
 
@@ -25,6 +27,32 @@ namespace IssaPlugin.Patches
         static MethodBase TargetMethod() =>
             AccessTools.Method(typeof(Hittable), "HitWithGolfSwingInternal");
 
+        private static IEnumerator TemporarilyDisableCollisions(Rigidbody rb)
+        {
+            if (rb == null) yield break;
+            rb.detectCollisions = false;
+            yield return new WaitForSeconds(0.1f);
+            if (rb != null) rb.detectCollisions = true;
+        }
+
+        private static IEnumerator TrackVelocityAfterHit(Rigidbody rb)
+        {
+            float elapsed = 0f;
+            const float duration = 0.5f;
+            int frame = 0;
+            while (elapsed < duration)
+            {
+                yield return null;
+                elapsed += Time.deltaTime;
+                frame++;
+                if (rb == null) yield break;
+                IssaPluginPlugin.Log.LogInfo(
+                    $"[BatSpinachPatch Track] frame={frame} t={elapsed:F3}s vel={rb.linearVelocity} (mag={rb.linearVelocity.magnitude:F2})"
+                );
+            }
+            RecentHit = false;
+        }
+
         public static string PropertyList(this object obj)
         {
             var props = obj.GetType().GetProperties();
@@ -36,7 +64,7 @@ namespace IssaPlugin.Patches
             return sb.ToString();
         }
 
-        static void Prefix(Hittable __instance, PlayerGolfer hitter)
+        static void Prefix(Hittable __instance, PlayerGolfer hitter, float power, Vector3 worldDirection, bool isPutt)
         {
             BatActive = false;
             if (hitter == null)
@@ -64,17 +92,26 @@ namespace IssaPlugin.Patches
                 if (extraPowerFromSpinach <= 0f)
                     extraPowerFromSpinach = 1.0f;
 
-                IssaPluginPlugin.Log.LogInfo(
-                    $"[BatSpinachPatch] Extra power from spinach: {extraPowerFromSpinach}"
-                );
-
                 extraPower *= extraPowerFromSpinach;
             }
+
+            float gameSwingPowerMultiplier = MatchSetupRules.GetValue(MatchSetupRules.Rule.SwingPower);
+
+            IssaPluginPlugin.Log.LogInfo(
+                $"[BatSpinachPatch Prefix] batActive={BatActive}, spinachActive={SpinachBehaviour.IsActive}, power={power}, isPutt={isPutt}, worldDir={worldDirection}, gameSwingPower={gameSwingPowerMultiplier}, extraPower={extraPower}"
+            );
 
             if (__instance.AsEntity.HasRigidbody)
             {
                 _velocityBefore = __instance.AsEntity.Rigidbody.linearVelocity;
                 _angularVelocityBefore = __instance.AsEntity.Rigidbody.angularVelocity;
+                IssaPluginPlugin.Log.LogInfo(
+                    $"[BatSpinachPatch Prefix] velocityBefore={_velocityBefore} (magnitude={_velocityBefore.magnitude})"
+                );
+            }
+            else
+            {
+                IssaPluginPlugin.Log.LogWarning("[BatSpinachPatch Prefix] No rigidbody on hittable — _velocityBefore NOT updated");
             }
         }
 
@@ -117,45 +154,92 @@ namespace IssaPlugin.Patches
 
             var rb = __instance.AsEntity.Rigidbody;
 
+            var swingDelta = rb.linearVelocity - _velocityBefore;
+            var additionalLinearVelocity = swingDelta * extraPower;
+            var additionalAngularVelocity = (rb.angularVelocity - _angularVelocityBefore) * extraPower;
+
             IssaPluginPlugin.Log.LogInfo(
-                $"[BatSpinachPatch] rb.linearVelocity={rb.linearVelocity} (magnitude={rb.linearVelocity.magnitude}), velocityBefore={_velocityBefore} (magnitude={_velocityBefore.magnitude})"
+                $"[BatSpinachPatch Postfix] extraPower={extraPower}"
             );
-
             IssaPluginPlugin.Log.LogInfo(
-                $"[BatSpinachPatch] rb.angularVelocity={rb.angularVelocity} (magnitude={rb.linearVelocity.magnitude}), velocityBefore={_angularVelocityBefore} (magnitude={_angularVelocityBefore.magnitude})"
+                $"[BatSpinachPatch Postfix] velocityBefore={_velocityBefore} (mag={_velocityBefore.magnitude:F2})"
             );
-
-            var swingSettings = __instance.SwingSettings;
             IssaPluginPlugin.Log.LogInfo(
-                $"[BatSpinachpatch] SwingSettings: {PropertyList(swingSettings)}"
+                $"[BatSpinachPatch Postfix] velocityAfterBaseGame={rb.linearVelocity} (mag={rb.linearVelocity.magnitude:F2})"
             );
-
-            var additionalLinearVelocity = (rb.linearVelocity - _velocityBefore) * extraPower;
-            var additionalAngularVelocity =
-                (rb.angularVelocity - _angularVelocityBefore) * extraPower;
-
             IssaPluginPlugin.Log.LogInfo(
-                $"[BatSpinachPatch] Additional linear velocity: {additionalLinearVelocity} (magnitude={additionalLinearVelocity.magnitude}). Additional angular velocity: {additionalAngularVelocity} (magnitude={additionalAngularVelocity.magnitude})."
+                $"[BatSpinachPatch Postfix] swingDelta={swingDelta} (mag={swingDelta.magnitude:F2})"
+            );
+            IssaPluginPlugin.Log.LogInfo(
+                $"[BatSpinachPatch Postfix] additionalLinearVelocity={additionalLinearVelocity} (mag={additionalLinearVelocity.magnitude:F2})"
             );
 
             rb.linearVelocity += additionalLinearVelocity;
             rb.angularVelocity += additionalAngularVelocity;
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[BatSpinachPatch] Velocity set to: {rb.linearVelocity.magnitude}"
+                $"[BatSpinachPatch Postfix] FINAL linearVelocity={rb.linearVelocity} (mag={rb.linearVelocity.magnitude:F2})"
             );
+
+            RecentHit = true;
+            IssaPluginPlugin.Instance.StartCoroutine(TrackVelocityAfterHit(rb));
+            IssaPluginPlugin.Instance.StartCoroutine(TemporarilyDisableCollisions(rb));
         }
     }
 
     [HarmonyPatch]
-    static class BecomeSwingProjectilePatch
+    static class HitWithSwingProjectilePatch
     {
         static MethodBase TargetMethod() =>
-            AccessTools.Method(typeof(Hittable), "BecomeSwingProjectile");
+            AccessTools.Method(typeof(Hittable), "HitWithSwingProjectile");
 
-        static bool Prefix()
+        static void Prefix(Hittable __instance, Vector3 localHitPosition, Vector3 worldHitDirection, float normalizedHitSpeed, Hittable hitter, bool wasHoming, bool wasSwungByRocketDriver, PlayerGolfer responsiblePlayer)
         {
-            return !HitWithGolfSwingInternalPatch.BatActive || !SpinachBehaviour.IsActive;
+            if (!HitWithGolfSwingInternalPatch.RecentHit)
+                return;
+
+            var rb = __instance.AsEntity.HasRigidbody ? __instance.AsEntity.Rigidbody : null;
+            IssaPluginPlugin.Log.LogInfo(
+                $"[SwingProjectileHit] worldHitDir={worldHitDirection} normalizedHitSpeed={normalizedHitSpeed:F3} currentVel={rb?.linearVelocity.ToString() ?? "no rb"} hitter={hitter?.name ?? "null"} responsible={responsiblePlayer?.name ?? "null"}"
+            );
+        }
+    }
+
+    /// <summary>
+    /// Replaces the explicit-Euler quadratic air drag with implicit Euler immediately after a
+    /// bat/spinach hit. The stock formula  v *= (1 - k·v²·dt)  goes unstable when k·v²·dt > 1,
+    /// reversing the ball's direction. The implicit form  v /= (1 + k·v²·dt)  is unconditionally
+    /// stable: the damping coefficient stays in [0, 1) for any speed.
+    /// </summary>
+    [HarmonyPatch]
+    static class ApplyAirDampingStablePatch
+    {
+        static MethodBase TargetMethod() =>
+            AccessTools.Method(typeof(Hittable), "ApplyAirDamping");
+
+        static bool Prefix(Hittable __instance, float linearAirDragFactor, float rocketDriverSwingLinearAirDragFactor, bool shouldApplyWind)
+        {
+            if (!HitWithGolfSwingInternalPatch.RecentHit)
+                return true;
+            if (!__instance.AsEntity.IsGolfBall || !__instance.AsEntity.HasRigidbody)
+                return true;
+
+            var rb = __instance.AsEntity.Rigidbody;
+            Vector3 vel = rb.linearVelocity;
+            float sqrMag = vel.sqrMagnitude;
+            float k = linearAirDragFactor;
+            float dt = Time.fixedDeltaTime;
+
+            // Implicit Euler: coefficient = k·v²·dt / (1 + k·v²·dt), always in [0, 1)
+            float num = k * sqrMag * dt;
+            float d = num / (1f + num);
+
+            IssaPluginPlugin.Log.LogInfo(
+                $"[AirDampStable] vel={vel.magnitude:F1} k={k:F6} d_explicit={k * sqrMag * dt:F3} d_stable={d:F3}"
+            );
+
+            rb.linearVelocity -= vel * d;
+            return false;
         }
     }
 
