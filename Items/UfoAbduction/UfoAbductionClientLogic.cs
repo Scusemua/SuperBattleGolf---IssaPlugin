@@ -10,14 +10,16 @@ namespace IssaPlugin.Items
     //  Client-side session state and physics for all active UFO abductions.
     //
     //  Phasing (driven by elapsed time since StartTime):
-    //    Approach  [0, ApproachDuration)            — UFO tracks victim's live position and flies
-    //                                                 to directly above them; no victim force.
+    //    Approach  [0, ApproachDuration)                 — UFO tracks victim's live position and
+    //                                                      flies to directly above them; no force.
     //    Abduction [ApproachDuration, +AbductionDuration) — UFO hovers at locked HoverPos;
-    //                                                 victim pulled toward it.
-    //    Ascent    [+AbductionDuration, totalDuration)    — UFO ascends to ExplosionPos; victim dragged.
+    //                                                      victim pulled toward it.
+    //    Transit   [+AbductionDuration, totalDuration)    — UFO lerps HoverPos → DropoffPos;
+    //                                                      victim sucked in.
     //
-    //  HoverPos and ExplosionPos start as server-provided estimates; UpdateAll() locks them
-    //  to the victim's actual position the first frame after approach ends.
+    //  HoverPos starts as a server-provided estimate; UpdateAll() locks it to the victim's
+    //  actual position the first frame after approach ends.
+    //  DropoffPos is absolute (wielder-selected) and is never overwritten.
     //
     //  Only the victim's own client runs ForceCoroutine. All clients animate the
     //  UFO VFX and beam using UpdateAll(), called once per frame.
@@ -28,22 +30,21 @@ namespace IssaPlugin.Items
         public uint WielderNetId;
         public Vector3 UfoSpawnPos;
         public Vector3 HoverPos;
-        public Vector3 ExplosionPos;
+        public Vector3 DropoffPos;  // UFO Phase 3 endpoint; absolute, never recomputed
         public float ApproachDuration;
         public float AbductionDuration;
-        public float AscentDuration;
+        public float TransitDuration;
         public float StartTime;
         public float SpringForce;
         public float MaxPullSpeed;
         public float NaturalLength;
 
-        // Raw height offsets used to recompute HoverPos/ExplosionPos against the
-        // victim's actual position once the approach phase completes.
+        // Vertical distance from victim to hover point; used to recompute HoverPos
+        // against the victim's actual position once the approach phase completes.
         public float HoverHeight;
-        public float AscentHeight;
 
-        // Set to true the first frame after approach ends; locks in HoverPos and
-        // ExplosionPos against the victim's real position at that moment.
+        // Set to true the first frame after approach ends; locks in HoverPos against
+        // the victim's real position at that moment.
         public bool HoverLocked;
 
         // VFX — all clients
@@ -58,30 +59,20 @@ namespace IssaPlugin.Items
         public Coroutine ForceCoroutine;
         public PlayerMovement ForceMovement;
 
-        public float TotalDuration => ApproachDuration + AbductionDuration + AscentDuration;
+        public float TotalDuration => ApproachDuration + AbductionDuration + TransitDuration;
 
-        // Used for abduction and ascent phases only (HoverPos/ExplosionPos are locked
-        // in by UpdateAll at the approach→abduction transition).
         public Vector3 GetUfoPosition(float elapsed)
         {
             float abductionElapsed = elapsed - ApproachDuration;
             if (abductionElapsed < AbductionDuration)
                 return HoverPos;
 
-            float ascentElapsed = abductionElapsed - AbductionDuration;
-            float ascentT =
-                AscentDuration > 0f ? Mathf.Clamp01(ascentElapsed / AscentDuration) : 1f;
-            Vector3 basePos = Vector3.Lerp(HoverPos, ExplosionPos, ascentT);
-
-            // Erratic horizontal drift during ascent.  Sine envelope peaks at mid-ascent
-            // and returns to zero at the end so the explosion happens at ExplosionPos.
-            float envelope = Mathf.Sin(ascentT * Mathf.PI);
-            float amplitude = ModConfig.UfoAbduction.AscentDriftAmplitude.Value * envelope;
-            float freq = ModConfig.UfoAbduction.AscentDriftFrequency.Value;
-            float seed = StartTime * 0.13f;
-            float nx = (Mathf.PerlinNoise(ascentElapsed * freq + seed, 17.3f) * 2f - 1f) * amplitude;
-            float nz = (Mathf.PerlinNoise(53.7f, ascentElapsed * freq + seed) * 2f - 1f) * amplitude;
-            return basePos + new Vector3(nx, 0f, nz);
+            // Transit phase: smooth 3D lerp from HoverPos to DropoffPos (no drift).
+            float transitElapsed = abductionElapsed - AbductionDuration;
+            float transitT = TransitDuration > 0f
+                ? Mathf.Clamp01(transitElapsed / TransitDuration)
+                : 1f;
+            return Vector3.Lerp(HoverPos, DropoffPos, transitT);
         }
     }
 
@@ -107,8 +98,6 @@ namespace IssaPlugin.Items
         internal static bool TryGetSession(uint victimNetId, out UfoAbductionSessionState state) =>
             s_sessions.TryGetValue(victimNetId, out state);
 
-        /// Returns the first active session where the local player is the wielder.
-        /// Used by the overlay to show the wielder confirmation state after firing.
         internal static bool TryGetSessionForWielder(
             uint wielderNetId,
             out UfoAbductionSessionState state
@@ -126,7 +115,6 @@ namespace IssaPlugin.Items
             return false;
         }
 
-        /// Called every frame from the local player's UfoAbductionNetworkBridge.Update().
         public static void UpdateAll()
         {
             if (s_sessions.Count == 0)
@@ -154,17 +142,14 @@ namespace IssaPlugin.Items
                 }
                 else
                 {
-                    // Lock HoverPos and ExplosionPos to the victim's actual position
-                    // at the moment approach ends, then hold those values for the
-                    // abduction and ascent phases.
+                    // Lock HoverPos to the victim's actual position at the moment
+                    // approach ends; keep it fixed for abduction and transit phases.
+                    // DropoffPos is absolute (from BeginMessage) and is never changed.
                     if (!state.HoverLocked)
                     {
                         Transform victimT = GetTransformByNetId(kvp.Key);
                         if (victimT != null)
-                        {
                             state.HoverPos = victimT.position + Vector3.up * state.HoverHeight;
-                            state.ExplosionPos = state.HoverPos + Vector3.up * state.AscentHeight;
-                        }
                         state.HoverLocked = true;
                     }
                     ufoPos = state.GetUfoPosition(elapsed);
@@ -178,7 +163,6 @@ namespace IssaPlugin.Items
             }
         }
 
-        /// Immediately destroys all VFX and stops all coroutines (hole transition cleanup).
         public static void ClearAll()
         {
             foreach (var kvp in s_sessions.ToArray())
@@ -197,22 +181,20 @@ namespace IssaPlugin.Items
 
             var state = new UfoAbductionSessionState
             {
-                WielderNetId = msg.WielderNetId,
-                UfoSpawnPos = msg.UfoSpawnPos,
-                HoverPos = msg.HoverPos,
-                ExplosionPos = msg.ExplosionPos,
-                ApproachDuration = msg.ApproachDuration,
+                WielderNetId      = msg.WielderNetId,
+                UfoSpawnPos       = msg.UfoSpawnPos,
+                HoverPos          = msg.HoverPos,
+                DropoffPos        = msg.DropoffPos,
+                ApproachDuration  = msg.ApproachDuration,
                 AbductionDuration = msg.AbductionDuration,
-                AscentDuration = msg.AscentDuration,
-                StartTime = Time.time,
-                SpringForce = msg.SpringForce,
-                MaxPullSpeed = msg.MaxPullSpeed,
-                NaturalLength = msg.NaturalLength,
-                HoverHeight = msg.HoverHeight,
-                AscentHeight = msg.AscentHeight,
+                TransitDuration   = msg.TransitDuration,
+                StartTime         = Time.time,
+                SpringForce       = msg.SpringForce,
+                MaxPullSpeed      = msg.MaxPullSpeed,
+                NaturalLength     = msg.NaturalLength,
+                HoverHeight       = msg.HoverHeight,
             };
 
-            // UFO VFX (null-safe — prefab may not exist yet)
             if (AssetLoader.UfoAbductionUfoPrefab != null)
             {
                 state.UfoVfxInstance = Object.Instantiate(
@@ -233,7 +215,6 @@ namespace IssaPlugin.Items
 
             s_sessions[msg.VictimNetId] = state;
 
-            // Spring coroutine runs only on the victim's own client
             uint localNetId = localInfo.GetComponent<NetworkIdentity>()?.netId ?? 0u;
             if (localNetId == msg.VictimNetId)
             {
@@ -265,40 +246,6 @@ namespace IssaPlugin.Items
                 s_sessions.TryGetValue(victimNetId, out var state);
                 uint localNetId = localInfo.GetComponent<NetworkIdentity>()?.netId ?? 0u;
 
-                // Knockout on victim's client only
-                if (state != null && localNetId == victimNetId)
-                {
-                    var wielderTransform = GetTransformByNetId(state.WielderNetId);
-                    var wielderInfo = wielderTransform?.GetComponentInParent<PlayerInfo>();
-                    if (wielderInfo != null)
-                    {
-                        var useId = new ItemUseId(
-                            wielderInfo.PlayerId.Guid,
-                            UfoAbductionItem.NextUseIndex(),
-                            ItemType.RocketLauncher
-                        );
-                        bool _;
-                        localInfo.Movement.TryKnockOut(
-                            wielderInfo,
-                            KnockoutType.Rocket,
-                            false,
-                            localInfo.Movement.transform.InverseTransformPoint(
-                                wielderInfo.transform.position
-                            ),
-                            Vector3.Distance(
-                                localInfo.transform.position,
-                                wielderInfo.transform.position
-                            ),
-                            Vector3.zero,
-                            true,
-                            useId,
-                            false,
-                            true,
-                            out _
-                        );
-                    }
-                }
-
                 // Explosion force on all nearby players (applied on their own client)
                 var seat = localInfo.ActiveGolfCartSeat;
                 Rigidbody rb =
@@ -308,8 +255,7 @@ namespace IssaPlugin.Items
 
                 if (rb != null)
                 {
-                    // The beam disabled gravity on the victim; restore it now so the
-                    // explosion force resolves under normal physics immediately.
+                    // The beam disabled gravity on the victim; restore it now.
                     if (localNetId == victimNetId)
                         rb.useGravity = true;
 
@@ -324,8 +270,8 @@ namespace IssaPlugin.Items
                             ForceMode.VelocityChange
                         );
 
-                        // Prevent the victim from being blasted further upward —
-                        // they're already high in the air and should fall back down.
+                        // Victim is above the explosion (dropped from DropHeight); cap upward
+                        // velocity so they fall back down rather than being blasted further up.
                         if (localNetId == victimNetId)
                         {
                             Vector3 vel = rb.linearVelocity;
@@ -384,8 +330,8 @@ namespace IssaPlugin.Items
         // ── Position-lock coroutine (victim's client only) ────────────────────
         //
         //  During abduction: victim is suspended at NaturalLength below the UFO.
-        //  During ascent:    offset lerps from NaturalLength → 0 so they get
-        //                    sucked into the ship as it climbs.
+        //  During transit:   offset lerps from NaturalLength → 0 so they get
+        //                    sucked into the ship as it flies to the destination.
 
         private static IEnumerator ForceCoroutine(uint victimNetId)
         {
@@ -407,7 +353,6 @@ namespace IssaPlugin.Items
                         ? seat.golfCart.AsEntity.Rigidbody
                         : localInfo.GetComponentInParent<Rigidbody>();
 
-                // Restore gravity if we switched rigidbodies (entered/exited cart)
                 if (lastRb != null && lastRb != rb)
                     lastRb.useGravity = true;
                 lastRb = rb;
@@ -418,7 +363,6 @@ namespace IssaPlugin.Items
 
                     if (sessionElapsed >= state.ApproachDuration)
                     {
-                        // Knock the victim over exactly once when the beam first engages
                         if (!knockoutApplied)
                         {
                             knockoutApplied = true;
@@ -435,7 +379,6 @@ namespace IssaPlugin.Items
                 yield return new WaitForFixedUpdate();
             }
 
-            // Restore physics when session ends
             if (lastRb != null)
                 lastRb.useGravity = true;
         }
@@ -468,28 +411,22 @@ namespace IssaPlugin.Items
             );
         }
 
-        // Returns the world position the victim should occupy at a given session elapsed time.
         private static Vector3 ComputeVictimTargetPos(UfoAbductionSessionState state, float elapsed)
         {
             Vector3 ufoPos = state.GetUfoPosition(elapsed);
             float abductionElapsed = elapsed - state.ApproachDuration;
 
             if (abductionElapsed < state.AbductionDuration)
-            {
-                // Suspended in the beam directly below the UFO
                 return ufoPos - Vector3.up * state.NaturalLength;
-            }
 
-            // Sucked into the ship: offset shrinks from NaturalLength → 0 over ascent
-            float ascentT = state.AscentDuration > 0f
-                ? Mathf.Clamp01((abductionElapsed - state.AbductionDuration) / state.AscentDuration)
+            // Sucked into the ship: offset shrinks from NaturalLength → 0 over transit
+            float transitT = state.TransitDuration > 0f
+                ? Mathf.Clamp01((abductionElapsed - state.AbductionDuration) / state.TransitDuration)
                 : 1f;
-            float offset = Mathf.Lerp(state.NaturalLength, 0f, ascentT);
+            float offset = Mathf.Lerp(state.NaturalLength, 0f, transitT);
             return ufoPos - Vector3.up * offset;
         }
 
-        // Directly warps the rigidbody position toward targetPos (bypasses the
-        // velocity pipeline so PlayerMovement's grounding logic can't fight us).
         private static void LockToPosition(Rigidbody rb, Vector3 targetPos, float maxSpeed)
         {
             rb.linearVelocity = Vector3.zero;
@@ -513,7 +450,6 @@ namespace IssaPlugin.Items
             cam.farClipPlane = 500f;
             cam.allowHDR = false;
             cam.allowMSAA = false;
-            // depth -20 so it renders before the main camera without conflicting
             cam.depth = -20f;
             state.PipCamera = cam;
         }
@@ -529,13 +465,11 @@ namespace IssaPlugin.Items
                 return;
 
             Transform victimT = GetTransformByNetId(victimNetId);
-            Vector3 victimPos = victimT != null ? victimT.position : ufoPos - Vector3.up * state.HoverHeight;
+            Vector3 victimPos = victimT != null
+                ? victimT.position
+                : ufoPos - Vector3.up * state.HoverHeight;
 
-            // Focus on the midpoint so both victim and UFO stay in-frame
             Vector3 focusPoint = Vector3.Lerp(victimPos, ufoPos, 0.5f);
-
-            // Pull the camera back proportionally to the UFO-victim separation so the
-            // full approach arc is always framed (during hover this naturally zooms in)
             float separation = Vector3.Distance(victimPos, ufoPos);
             float camDist = Mathf.Max(separation * 0.7f, 12f);
 
@@ -545,7 +479,6 @@ namespace IssaPlugin.Items
             state.PipCamera.transform.LookAt(focusPoint);
         }
 
-        /// Returns the RenderTexture for any currently active abduction session, or null.
         internal static RenderTexture GetActivePipTexture()
         {
             foreach (var kvp in s_sessions)
@@ -567,8 +500,8 @@ namespace IssaPlugin.Items
             lr.startWidth = 0.3f;
             lr.endWidth = 0.8f;
             lr.material = new Material(Shader.Find("Sprites/Default"));
-            lr.startColor = new Color(0.3f, 1f, 0.5f, 0.7f); // green (UFO belly)
-            lr.endColor = new Color(0.3f, 1f, 0.5f, 0.15f); // fade at victim end
+            lr.startColor = new Color(0.3f, 1f, 0.5f, 0.7f);
+            lr.endColor = new Color(0.3f, 1f, 0.5f, 0.15f);
             lr.useWorldSpace = true;
             Object.DontDestroyOnLoad(lineGo);
             return lr;
@@ -584,7 +517,6 @@ namespace IssaPlugin.Items
             if (state.BeamLine == null)
                 return;
 
-            // Show beam only during abduction and ascent phases
             bool beamActive = elapsed >= state.ApproachDuration;
             state.BeamLine.enabled = beamActive;
 

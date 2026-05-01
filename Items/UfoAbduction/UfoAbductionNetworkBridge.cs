@@ -7,10 +7,17 @@ namespace IssaPlugin.Items
     /// <summary>
     /// Attached to every player object via NetworkBridgePatches.
     ///
-    /// Handles the UFO Abduction item's lock-on / single-victim session lifecycle.
+    /// Handles the UFO Abduction item's two-phase server flow:
+    ///   Phase A (pre-begin): target locked, wielder selects drop-off zone via targeting UI.
+    ///   Phase B (session):   UFO animates, victim is transported to chosen destination.
     ///
     /// Message flow:
     ///   Client → Server : UfoAbductionLockOnMessage
+    ///   Server → Wielder: UfoAbductionTargetAcquiredMessage
+    ///   Server → Victim : UfoAbductionBeingTargetedMessage
+    ///   Client → Server : UfoAbductionDropoffSelectedMessage  (wielder confirms)
+    ///   Client → Server : UfoAbductionDropoffCancelledMessage (wielder cancels)
+    ///   Server → All    : UfoAbductionSessionAbortedMessage   (any pre-begin cancel)
     ///   Server → All    : UfoAbductionBeginMessage
     ///   Server → All    : UfoAbductionEndMessage
     ///   Server → Wielder: UfoAbductionBusyMessage
@@ -22,19 +29,25 @@ namespace IssaPlugin.Items
         // ── Server-side session state (wielder's bridge only) ─────────────────
 
         private bool _serverSessionActive;
+        private bool _serverWaitingForDropoff;
         private NetworkConnectionToClient _wielderConn;
         private PlayerInfo _targetInfo;
         private Coroutine _serverCoroutine;
+        private Coroutine _serverDropoffTimeoutCoroutine;
         private int _wielderSlot = -1;
         private float _serverSessionStartTime;
 
         // Positions computed once at session start and reused by ServerHoleCleanup.
         private Vector3 _serverUfoSpawnPos;
         private Vector3 _serverHoverPos;
-        private Vector3 _serverExplosionPos;
+        private Vector3 _serverDropoffPos;    // UFO Phase 3 endpoint
+        private Vector3 _serverExplosionPos;  // ground-level destination for explosion
         private float _serverApproachDuration;
         private float _serverAbductionDuration;
-        private float _serverAscentDuration;
+        private float _serverTransitDuration;
+
+        // Cached for OnDestroy check after Mirror tears down network state.
+        private bool _wasOwned;
 
         // ── Unity lifecycle ───────────────────────────────────────────────────
 
@@ -44,6 +57,23 @@ namespace IssaPlugin.Items
                 return;
 
             UfoAbductionClientLogic.UpdateAll();
+        }
+
+        public override void OnStartClient()
+        {
+            _wasOwned = isOwned;
+        }
+
+        public override void OnStopClient()
+        {
+            if (isOwned)
+                UfoAbductionTargeting.CancelSelection();
+        }
+
+        private void OnDestroy()
+        {
+            if (_wasOwned)
+                UfoAbductionTargeting.CancelSelection();
         }
 
         // ── Client — initiating the lock-on ──────────────────────────────────
@@ -145,17 +175,69 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            // 5. Compute positions from config
-            Vector3 victimPos = targetInfo.transform.position;
+            // 5. Enter waiting-for-dropoff state
+            _serverWaitingForDropoff = true;
+            _wielderConn = conn;
+            _targetInfo = targetInfo;
+
+            _serverDropoffTimeoutCoroutine = StartCoroutine(ServerDropoffTimeoutCoroutine());
+
+            IssaPluginPlugin.Log.LogInfo(
+                $"[UfoAbduction] Server: target acquired. wielder={GetComponent<NetworkIdentity>().netId} victim={targetIdentity.netId}"
+            );
+
+            // Tell wielder to open targeting UI
+            conn.Send(new UfoAbductionTargetAcquiredMessage
+            {
+                VictimPos = targetInfo.transform.position,
+            });
+
+            // Notify victim they are being targeted
+            if (targetIdentity.isLocalPlayer)
+                HandleBeingTargeted(new UfoAbductionBeingTargetedMessage());
+            else
+                targetIdentity.connectionToClient?.Send(new UfoAbductionBeingTargetedMessage());
+        }
+
+        // ── Server — drop-off selected ────────────────────────────────────────
+
+        public void ServerHandleDropoffSelected(
+            NetworkConnectionToClient conn,
+            UfoAbductionDropoffSelectedMessage msg
+        )
+        {
+            if (!isServer)
+                return;
+
+            if (!_serverWaitingForDropoff || conn != _wielderConn)
+                return;
+
+            // Re-validate victim is still connected
+            var targetNetId = _targetInfo.GetComponent<NetworkIdentity>().netId;
+            if (!NetworkServer.spawned.ContainsKey(targetNetId))
+            {
+                IssaPluginPlugin.Log.LogWarning(
+                    "[UfoAbduction] Server: victim disconnected before drop-off selected — aborting."
+                );
+                ServerAbortWaiting();
+                return;
+            }
+
+            StopCoroutine(_serverDropoffTimeoutCoroutine);
+            _serverDropoffTimeoutCoroutine = null;
+            _serverWaitingForDropoff = false;
+            _serverSessionActive = true;
+            _serverSessionStartTime = Time.time;
+
+            Vector3 victimPos = _targetInfo.transform.position;
             float hoverHeight = ModConfig.UfoAbduction.HoverHeight.Value;
-            float ascentExtra = ModConfig.UfoAbduction.AscentExtraHeight.Value;
 
-            Vector3 hoverPos = victimPos + Vector3.up * hoverHeight;
-            Vector3 explosionPos = hoverPos + Vector3.up * ascentExtra;
+            _serverDropoffPos   = msg.Destination + Vector3.up * ModConfig.UfoAbduction.DropHeight.Value;
+            _serverExplosionPos = msg.Destination;
+            _serverHoverPos     = victimPos + Vector3.up * hoverHeight;
 
-            // UFO spawns high above and to a random horizontal side of the victim
             float spawnAngle = UnityEngine.Random.Range(0f, 360f) * Mathf.Deg2Rad;
-            Vector3 ufoSpawnPos =
+            _serverUfoSpawnPos =
                 victimPos
                 + new Vector3(
                     Mathf.Cos(spawnAngle) * 40f,
@@ -165,89 +247,121 @@ namespace IssaPlugin.Items
 
             uint wielderNetId = GetComponent<NetworkIdentity>().netId;
 
-            float approachDuration = ModConfig.UfoAbduction.ApproachDuration.Value;
+            float approachDuration  = ModConfig.UfoAbduction.ApproachDuration.Value;
             float abductionDuration = ModConfig.UfoAbduction.AbductionDuration.Value;
-            float ascentDuration = ModConfig.UfoAbduction.AscentDuration.Value;
+            float transitDuration   = ModConfig.UfoAbduction.AscentDuration.Value;
 
-            // 6. Store server session state
-            _serverSessionActive = true;
-            _wielderConn = conn;
-            _targetInfo = targetInfo;
-            _serverSessionStartTime = Time.time;
-            _serverUfoSpawnPos = ufoSpawnPos;
-            _serverHoverPos = hoverPos;
-            _serverExplosionPos = explosionPos;
-            _serverApproachDuration = approachDuration;
+            _serverApproachDuration  = approachDuration;
             _serverAbductionDuration = abductionDuration;
-            _serverAscentDuration = ascentDuration;
+            _serverTransitDuration   = transitDuration;
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[UfoAbduction] Server: session started. wielder={wielderNetId} target={targetIdentity.netId}"
+                $"[UfoAbduction] Server: session started. wielder={wielderNetId} victim={targetNetId} dropoff={msg.Destination}"
             );
-
-            // 7. Broadcast begin to all clients
 
             NetworkServer.SendToAll(
                 new UfoAbductionBeginMessage
                 {
-                    WielderNetId = wielderNetId,
-                    VictimNetId = targetIdentity.netId,
-                    UfoSpawnPos = ufoSpawnPos,
-                    HoverPos = hoverPos,
-                    ExplosionPos = explosionPos,
-                    ApproachDuration = approachDuration,
+                    WielderNetId     = wielderNetId,
+                    VictimNetId      = targetNetId,
+                    UfoSpawnPos      = _serverUfoSpawnPos,
+                    HoverPos         = _serverHoverPos,
+                    DropoffPos       = _serverDropoffPos,
+                    ApproachDuration  = approachDuration,
                     AbductionDuration = abductionDuration,
-                    AscentDuration = ascentDuration,
-                    SpringForce = ModConfig.UfoAbduction.SpringForce.Value,
-                    MaxPullSpeed = ModConfig.UfoAbduction.MaxPullSpeed.Value,
-                    NaturalLength = ModConfig.UfoAbduction.NaturalLength.Value,
-                    ExplosionForce = ModConfig.UfoAbduction.ExplosionForce.Value,
-                    ExplosionRadius = ModConfig.UfoAbduction.ExplosionRadius.Value,
-                    HoverHeight = hoverHeight,
-                    AscentHeight = ascentExtra,
+                    TransitDuration   = transitDuration,
+                    SpringForce      = ModConfig.UfoAbduction.SpringForce.Value,
+                    MaxPullSpeed     = ModConfig.UfoAbduction.MaxPullSpeed.Value,
+                    NaturalLength    = ModConfig.UfoAbduction.NaturalLength.Value,
+                    ExplosionForce   = ModConfig.UfoAbduction.ExplosionForce.Value,
+                    ExplosionRadius  = ModConfig.UfoAbduction.ExplosionRadius.Value,
+                    HoverHeight      = hoverHeight,
                 }
             );
 
-            // 8. Start server timeout coroutine
-            float totalDuration = approachDuration + abductionDuration + ascentDuration;
-            _serverCoroutine = StartCoroutine(ServerSessionCoroutine(totalDuration, explosionPos));
+            float totalDuration = approachDuration + abductionDuration + transitDuration;
+            _serverCoroutine = StartCoroutine(ServerSessionCoroutine(totalDuration));
+        }
+
+        // ── Server — drop-off cancelled ───────────────────────────────────────
+
+        public void ServerHandleDropoffCancelled(
+            NetworkConnectionToClient conn,
+            UfoAbductionDropoffCancelledMessage msg
+        )
+        {
+            if (!isServer)
+                return;
+
+            if (!_serverWaitingForDropoff || conn != _wielderConn)
+                return;
+
+            IssaPluginPlugin.Log.LogInfo("[UfoAbduction] Server: wielder cancelled drop-off selection.");
+            ServerAbortWaiting();
+        }
+
+        // ── Server — centralized pre-begin abort ──────────────────────────────
+
+        private void ServerAbortWaiting()
+        {
+            _serverWaitingForDropoff = false;
+
+            if (_serverDropoffTimeoutCoroutine != null)
+            {
+                StopCoroutine(_serverDropoffTimeoutCoroutine);
+                _serverDropoffTimeoutCoroutine = null;
+            }
+
+            // Notify all clients: wielder's targeting UI exits, victim's banner clears
+            NetworkServer.SendToAll(new UfoAbductionSessionAbortedMessage());
+
+            GlobalSessionLock<UfoAbductionNetworkBridge>.Release();
+
+            _wielderConn = null;
+            _targetInfo  = null;
+            _wielderSlot = -1;
+        }
+
+        // ── Server — drop-off selection timeout ───────────────────────────────
+
+        private System.Collections.IEnumerator ServerDropoffTimeoutCoroutine()
+        {
+            yield return new WaitForSeconds(ModConfig.UfoAbduction.DropoffSelectionTimeout.Value);
+
+            if (_serverWaitingForDropoff)
+            {
+                IssaPluginPlugin.Log.LogInfo("[UfoAbduction] Server: drop-off selection timed out.");
+                ServerAbortWaiting();
+            }
         }
 
         // ── Server — session coroutine ────────────────────────────────────────
 
-        private System.Collections.IEnumerator ServerSessionCoroutine(
-            float duration,
-            Vector3 explosionPos
-        )
+        private System.Collections.IEnumerator ServerSessionCoroutine(float duration)
         {
             yield return new WaitForSeconds(duration);
 
             if (!_serverSessionActive)
                 yield break;
 
-            IssaPluginPlugin.Log.LogInfo("[UfoAbduction] Server: UFO exploding.");
-            ServerEndSession(
-                explosionPos,
-                ModConfig.UfoAbduction.ExplosionForce.Value,
-                ModConfig.UfoAbduction.ExplosionRadius.Value
-            );
+            IssaPluginPlugin.Log.LogInfo("[UfoAbduction] Server: session ended — applying explosion.");
+            ServerEndSession();
         }
 
         // ── Server — session lifecycle ────────────────────────────────────────
 
-        private void ServerEndSession(
-            Vector3 explosionPos,
-            float explosionForce,
-            float explosionRadius
-        )
+        private void ServerEndSession()
         {
             if (!_serverSessionActive)
                 return;
 
             _serverSessionActive = false;
 
-            // Apply explosion to non-player Rigidbodies server-side
-            var colliders = Physics.OverlapSphere(explosionPos, explosionRadius);
+            // Apply explosion to non-player Rigidbodies at the destination
+            float explosionForce  = ModConfig.UfoAbduction.ExplosionForce.Value;
+            float explosionRadius = ModConfig.UfoAbduction.ExplosionRadius.Value;
+
+            var colliders = Physics.OverlapSphere(_serverExplosionPos, explosionRadius);
             foreach (var col in colliders)
             {
                 var rb = col.attachedRigidbody;
@@ -257,7 +371,7 @@ namespace IssaPlugin.Items
                     continue;
                 rb.AddExplosionForce(
                     explosionForce,
-                    explosionPos,
+                    _serverExplosionPos,
                     explosionRadius,
                     0.5f,
                     ForceMode.VelocityChange
@@ -277,13 +391,12 @@ namespace IssaPlugin.Items
             }
             _wielderSlot = -1;
 
-            // Broadcast end to all clients
             NetworkServer.SendToAll(
                 new UfoAbductionEndMessage
                 {
-                    VictimNetId = _targetInfo.GetComponent<NetworkIdentity>().netId,
-                    ExplosionPos = explosionPos,
-                    ExplosionForce = explosionForce,
+                    VictimNetId     = _targetInfo.GetComponent<NetworkIdentity>().netId,
+                    ExplosionPos    = _serverExplosionPos,
+                    ExplosionForce  = explosionForce,
                     ExplosionRadius = explosionRadius,
                 }
             );
@@ -297,7 +410,7 @@ namespace IssaPlugin.Items
             }
 
             _wielderConn = null;
-            _targetInfo = null;
+            _targetInfo  = null;
         }
 
         // ── Client — message handlers ─────────────────────────────────────────
@@ -310,44 +423,38 @@ namespace IssaPlugin.Items
             UfoAbductionOverlay.Instance?.ShowBusy();
         }
 
+        public static void HandleTargetAcquired(UfoAbductionTargetAcquiredMessage msg)
+        {
+            var movement = GameManager.LocalPlayerInfo?.Movement;
+            if (movement == null)
+                return;
+            movement.StartCoroutine(UfoAbductionTargeting.BeginDropoffSelectionRoutine(msg.VictimPos));
+        }
+
+        public static void HandleBeingTargeted(UfoAbductionBeingTargetedMessage msg)
+        {
+            UfoAbductionOverlay.Instance?.ShowBeingTargeted();
+        }
+
+        public static void HandleSessionAborted(UfoAbductionSessionAbortedMessage msg)
+        {
+            // Capture before CancelSelection sets the flag (coroutine hasn't exited yet)
+            bool wasSelecting = UfoAbductionTargeting.IsSelectingDropoff;
+            UfoAbductionTargeting.CancelSelection();
+            UfoAbductionOverlay.Instance?.ClearBeingTargeted();
+            if (wasSelecting)
+                UfoAbductionOverlay.Instance?.ShowAborted();
+        }
+
         // ── Hole cleanup ──────────────────────────────────────────────────────
 
         public override void ServerHoleCleanup()
         {
-            if (_serverSessionActive)
-            {
-                // Compute where the UFO currently is using the same three-phase
-                // interpolation that clients use in GetUfoPosition(), so the explosion
-                // VFX appears at the UFO's actual position even during hole cleanup.
-                float elapsed = Time.time - _serverSessionStartTime;
-                Vector3 explosionPos;
-                if (elapsed < _serverApproachDuration)
-                {
-                    float t = _serverApproachDuration > 0f
-                        ? Mathf.Clamp01(elapsed / _serverApproachDuration)
-                        : 1f;
-                    explosionPos = Vector3.Lerp(_serverUfoSpawnPos, _serverHoverPos, t);
-                }
-                else
-                {
-                    float ascentElapsed = elapsed - _serverApproachDuration - _serverAbductionDuration;
-                    if (ascentElapsed > 0f && _serverAscentDuration > 0f)
-                    {
-                        float t = Mathf.Clamp01(ascentElapsed / _serverAscentDuration);
-                        explosionPos = Vector3.Lerp(_serverHoverPos, _serverExplosionPos, t);
-                    }
-                    else
-                    {
-                        explosionPos = _serverHoverPos;
-                    }
-                }
+            if (_serverWaitingForDropoff)
+                ServerAbortWaiting();
 
-                ServerEndSession(
-                    explosionPos,
-                    ModConfig.UfoAbduction.ExplosionForce.Value,
-                    ModConfig.UfoAbduction.ExplosionRadius.Value
-                );
-            }
+            if (_serverSessionActive)
+                ServerEndSession();
 
             if (_serverCoroutine != null)
             {
@@ -359,6 +466,7 @@ namespace IssaPlugin.Items
         public override void ClientHoleCleanup()
         {
             UfoAbductionClientLogic.ClearAll();
+            UfoAbductionTargeting.CancelSelection();
         }
     }
 }

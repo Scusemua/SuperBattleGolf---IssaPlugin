@@ -23,6 +23,40 @@ namespace IssaPlugin.Items
         ) => new UfoAbductionLockOnMessage { TargetNetId = reader.ReadUInt() };
     }
 
+    /// Sent when the wielder confirms a drop-off destination in the targeting UI.
+    public struct UfoAbductionDropoffSelectedMessage : NetworkMessage
+    {
+        public Vector3 Destination;
+    }
+
+    public static class UfoAbductionDropoffSelectedMessageSerialization
+    {
+        public static void WriteUfoAbductionDropoffSelectedMessage(
+            NetworkWriter writer,
+            UfoAbductionDropoffSelectedMessage msg
+        ) => writer.WriteVector3(msg.Destination);
+
+        public static UfoAbductionDropoffSelectedMessage ReadUfoAbductionDropoffSelectedMessage(
+            NetworkReader reader
+        ) => new UfoAbductionDropoffSelectedMessage { Destination = reader.ReadVector3() };
+    }
+
+    /// Sent when the wielder explicitly cancels the drop-off targeting UI (Space / RMB).
+    /// NOT sent during hole transitions or disconnects — the server handles those itself.
+    public struct UfoAbductionDropoffCancelledMessage : NetworkMessage { }
+
+    public static class UfoAbductionDropoffCancelledMessageSerialization
+    {
+        public static void WriteUfoAbductionDropoffCancelledMessage(
+            NetworkWriter writer,
+            UfoAbductionDropoffCancelledMessage msg
+        ) { }
+
+        public static UfoAbductionDropoffCancelledMessage ReadUfoAbductionDropoffCancelledMessage(
+            NetworkReader reader
+        ) => new UfoAbductionDropoffCancelledMessage();
+    }
+
     // ── Server → Wielder only ────────────────────────────────────────────────
 
     /// Sent only to the wielder's connection when another abduction session is already active.
@@ -39,7 +73,62 @@ namespace IssaPlugin.Items
             new UfoAbductionBusyMessage();
     }
 
+    /// Sent only to the wielder's connection after the target is validated.
+    /// Tells the wielder's client to open the drop-zone targeting UI.
+    public struct UfoAbductionTargetAcquiredMessage : NetworkMessage
+    {
+        /// Victim's position at lock-on time; used to position the targeting camera.
+        public Vector3 VictimPos;
+    }
+
+    public static class UfoAbductionTargetAcquiredMessageSerialization
+    {
+        public static void WriteUfoAbductionTargetAcquiredMessage(
+            NetworkWriter writer,
+            UfoAbductionTargetAcquiredMessage msg
+        ) => writer.WriteVector3(msg.VictimPos);
+
+        public static UfoAbductionTargetAcquiredMessage ReadUfoAbductionTargetAcquiredMessage(
+            NetworkReader reader
+        ) => new UfoAbductionTargetAcquiredMessage { VictimPos = reader.ReadVector3() };
+    }
+
+    // ── Server → Victim only ─────────────────────────────────────────────────
+
+    /// Sent only to the victim's connection when they are locked on as a target.
+    /// Shows a "YOU ARE BEING TARGETED" warning banner.
+    public struct UfoAbductionBeingTargetedMessage : NetworkMessage { }
+
+    public static class UfoAbductionBeingTargetedMessageSerialization
+    {
+        public static void WriteUfoAbductionBeingTargetedMessage(
+            NetworkWriter writer,
+            UfoAbductionBeingTargetedMessage msg
+        ) { }
+
+        public static UfoAbductionBeingTargetedMessage ReadUfoAbductionBeingTargetedMessage(
+            NetworkReader reader
+        ) => new UfoAbductionBeingTargetedMessage();
+    }
+
     // ── Server → All Clients ─────────────────────────────────────────────────
+
+    /// Broadcast when the pre-begin session is cancelled for any reason
+    /// (wielder cancelled, selection timed out, hole transition).
+    /// All clients use this to clear any pending targeting/victim-warning UI state.
+    public struct UfoAbductionSessionAbortedMessage : NetworkMessage { }
+
+    public static class UfoAbductionSessionAbortedMessageSerialization
+    {
+        public static void WriteUfoAbductionSessionAbortedMessage(
+            NetworkWriter writer,
+            UfoAbductionSessionAbortedMessage msg
+        ) { }
+
+        public static UfoAbductionSessionAbortedMessage ReadUfoAbductionSessionAbortedMessage(
+            NetworkReader reader
+        ) => new UfoAbductionSessionAbortedMessage();
+    }
 
     /// Broadcast when a UFO abduction session begins.
     /// All clients use this to animate the UFO and apply physics to the victim.
@@ -54,12 +143,13 @@ namespace IssaPlugin.Items
         /// UFO hovers here during the abduction phase, pulling the victim up.
         public Vector3 HoverPos;
 
-        /// UFO (and victim) fly to this position during ascent, then explode.
-        public Vector3 ExplosionPos;
+        /// UFO flies to this position during transit (= destination + DropHeight).
+        /// Victim is sucked in here and released to fall.
+        public Vector3 DropoffPos;
 
         public float ApproachDuration;
         public float AbductionDuration;
-        public float AscentDuration;
+        public float TransitDuration;
 
         public float SpringForce;
         public float MaxPullSpeed;
@@ -71,9 +161,6 @@ namespace IssaPlugin.Items
         /// Vertical distance from victim to hover point; used by clients to
         /// recompute HoverPos against the victim's live position at approach end.
         public float HoverHeight;
-
-        /// Additional vertical distance from hover point to explosion point.
-        public float AscentHeight;
     }
 
     public static class UfoAbductionBeginMessageSerialization
@@ -87,17 +174,16 @@ namespace IssaPlugin.Items
             writer.WriteUInt(msg.VictimNetId);
             writer.WriteVector3(msg.UfoSpawnPos);
             writer.WriteVector3(msg.HoverPos);
-            writer.WriteVector3(msg.ExplosionPos);
+            writer.WriteVector3(msg.DropoffPos);
             writer.WriteFloat(msg.ApproachDuration);
             writer.WriteFloat(msg.AbductionDuration);
-            writer.WriteFloat(msg.AscentDuration);
+            writer.WriteFloat(msg.TransitDuration);
             writer.WriteFloat(msg.SpringForce);
             writer.WriteFloat(msg.MaxPullSpeed);
             writer.WriteFloat(msg.NaturalLength);
             writer.WriteFloat(msg.ExplosionForce);
             writer.WriteFloat(msg.ExplosionRadius);
             writer.WriteFloat(msg.HoverHeight);
-            writer.WriteFloat(msg.AscentHeight);
         }
 
         public static UfoAbductionBeginMessage ReadUfoAbductionBeginMessage(NetworkReader reader) =>
@@ -107,21 +193,20 @@ namespace IssaPlugin.Items
                 VictimNetId = reader.ReadUInt(),
                 UfoSpawnPos = reader.ReadVector3(),
                 HoverPos = reader.ReadVector3(),
-                ExplosionPos = reader.ReadVector3(),
+                DropoffPos = reader.ReadVector3(),
                 ApproachDuration = reader.ReadFloat(),
                 AbductionDuration = reader.ReadFloat(),
-                AscentDuration = reader.ReadFloat(),
+                TransitDuration = reader.ReadFloat(),
                 SpringForce = reader.ReadFloat(),
                 MaxPullSpeed = reader.ReadFloat(),
                 NaturalLength = reader.ReadFloat(),
                 ExplosionForce = reader.ReadFloat(),
                 ExplosionRadius = reader.ReadFloat(),
                 HoverHeight = reader.ReadFloat(),
-                AscentHeight = reader.ReadFloat(),
             };
     }
 
-    /// Broadcast when the UFO explodes and the victim is released.
+    /// Broadcast when the UFO releases the victim at the destination and the explosion fires.
     public struct UfoAbductionEndMessage : NetworkMessage
     {
         public uint VictimNetId;

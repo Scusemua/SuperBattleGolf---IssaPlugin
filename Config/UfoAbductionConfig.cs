@@ -17,9 +17,9 @@ namespace IssaPlugin
         public ConfigEntry<float> AbductionDuration { get; private set; }
         public ConfigEntry<float> AscentDuration { get; private set; }
 
-        // Heights (world-space offsets above victim's initial position)
+        // Heights
         public ConfigEntry<float> HoverHeight { get; private set; }
-        public ConfigEntry<float> AscentExtraHeight { get; private set; }
+        public ConfigEntry<float> DropHeight { get; private set; }
 
         // Spring physics during abduction / ascent
         public ConfigEntry<float> SpringForce { get; private set; }
@@ -30,9 +30,11 @@ namespace IssaPlugin
         public ConfigEntry<float> ExplosionForce { get; private set; }
         public ConfigEntry<float> ExplosionRadius { get; private set; }
 
-        // Erratic ascent movement
+        // Kept for backward compat; no longer used in transit phase
         public ConfigEntry<float> AscentDriftAmplitude { get; private set; }
         public ConfigEntry<float> AscentDriftFrequency { get; private set; }
+
+        public ConfigEntry<float> DropoffSelectionTimeout { get; private set; }
 
         public UfoAbductionConfig(ConfigFile cfg, GlobalConfig global)
         {
@@ -71,19 +73,19 @@ namespace IssaPlugin
                 Section,
                 "AscentDuration",
                 5f,
-                "Seconds for UFO to fly up into the black hole."
+                "Transit duration — seconds for UFO to fly to the drop zone."
             );
             HoverHeight = cfg.Bind(
                 Section,
                 "HoverHeight",
                 20f,
-                "Height (units) above victim's initial position where the UFO hovers."
+                "Height (units) above victim's position where the UFO hovers during abduction."
             );
-            AscentExtraHeight = cfg.Bind(
+            DropHeight = cfg.Bind(
                 Section,
-                "AscentExtraHeight",
-                200f,
-                "Additional height (units) the UFO climbs above the hover position before exploding."
+                "DropHeight",
+                20f,
+                "Height (units) above the chosen destination from which the UFO releases the victim."
             );
             SpringForce = cfg.Bind(
                 Section,
@@ -119,13 +121,19 @@ namespace IssaPlugin
                 Section,
                 "AscentDriftAmplitude",
                 20f,
-                "Peak horizontal drift (units) of the UFO during ascent. 0 = straight up."
+                "No longer used. Kept for backward compatibility."
             );
             AscentDriftFrequency = cfg.Bind(
                 Section,
                 "AscentDriftFrequency",
                 1f,
-                "How rapidly the UFO changes direction during ascent. Higher = more twitchy."
+                "No longer used. Kept for backward compatibility."
+            );
+            DropoffSelectionTimeout = cfg.Bind(
+                Section,
+                "DropoffSelectionTimeout",
+                20f,
+                "Seconds the wielder has to select a drop zone before the abduction is cancelled."
             );
         }
     }

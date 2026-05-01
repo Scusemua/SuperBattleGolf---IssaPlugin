@@ -1633,6 +1633,28 @@ namespace IssaPlugin.Patches
                         GetBridge<UfoAbductionNetworkBridge>(conn)?.ServerHandleLockOn(conn, msg)
                 );
 
+            Writer<UfoAbductionDropoffSelectedMessage>.write =
+                UfoAbductionDropoffSelectedMessageSerialization.WriteUfoAbductionDropoffSelectedMessage;
+            Reader<UfoAbductionDropoffSelectedMessage>.read =
+                UfoAbductionDropoffSelectedMessageSerialization.ReadUfoAbductionDropoffSelectedMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<UfoAbductionDropoffSelectedMessage>(
+                    (conn, msg) =>
+                        GetBridge<UfoAbductionNetworkBridge>(conn)
+                            ?.ServerHandleDropoffSelected(conn, msg)
+                );
+
+            Writer<UfoAbductionDropoffCancelledMessage>.write =
+                UfoAbductionDropoffCancelledMessageSerialization.WriteUfoAbductionDropoffCancelledMessage;
+            Reader<UfoAbductionDropoffCancelledMessage>.read =
+                UfoAbductionDropoffCancelledMessageSerialization.ReadUfoAbductionDropoffCancelledMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<UfoAbductionDropoffCancelledMessage>(
+                    (conn, msg) =>
+                        GetBridge<UfoAbductionNetworkBridge>(conn)
+                            ?.ServerHandleDropoffCancelled(conn, msg)
+                );
+
             // Server → Wielder only
             Writer<UfoAbductionBusyMessage>.write =
                 UfoAbductionBusyMessageSerialization.WriteUfoAbductionBusyMessage;
@@ -1642,7 +1664,32 @@ namespace IssaPlugin.Patches
                 UfoAbductionNetworkBridge.HandleBusy
             );
 
+            Writer<UfoAbductionTargetAcquiredMessage>.write =
+                UfoAbductionTargetAcquiredMessageSerialization.WriteUfoAbductionTargetAcquiredMessage;
+            Reader<UfoAbductionTargetAcquiredMessage>.read =
+                UfoAbductionTargetAcquiredMessageSerialization.ReadUfoAbductionTargetAcquiredMessage;
+            NetworkClient.RegisterHandler<UfoAbductionTargetAcquiredMessage>(
+                UfoAbductionNetworkBridge.HandleTargetAcquired
+            );
+
+            // Server → Victim only
+            Writer<UfoAbductionBeingTargetedMessage>.write =
+                UfoAbductionBeingTargetedMessageSerialization.WriteUfoAbductionBeingTargetedMessage;
+            Reader<UfoAbductionBeingTargetedMessage>.read =
+                UfoAbductionBeingTargetedMessageSerialization.ReadUfoAbductionBeingTargetedMessage;
+            NetworkClient.RegisterHandler<UfoAbductionBeingTargetedMessage>(
+                UfoAbductionNetworkBridge.HandleBeingTargeted
+            );
+
             // Server → All Clients
+            Writer<UfoAbductionSessionAbortedMessage>.write =
+                UfoAbductionSessionAbortedMessageSerialization.WriteUfoAbductionSessionAbortedMessage;
+            Reader<UfoAbductionSessionAbortedMessage>.read =
+                UfoAbductionSessionAbortedMessageSerialization.ReadUfoAbductionSessionAbortedMessage;
+            NetworkClient.RegisterHandler<UfoAbductionSessionAbortedMessage>(
+                UfoAbductionNetworkBridge.HandleSessionAborted
+            );
+
             Writer<UfoAbductionBeginMessage>.write =
                 UfoAbductionBeginMessageSerialization.WriteUfoAbductionBeginMessage;
             Reader<UfoAbductionBeginMessage>.read =
