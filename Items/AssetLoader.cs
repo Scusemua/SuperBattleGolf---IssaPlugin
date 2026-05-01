@@ -74,6 +74,7 @@ namespace IssaPlugin.Items
         public static Sprite ElectricGravityGunIcon { get; private set; }
         public static Sprite RedBullIcon { get; private set; }
         public static Sprite WindStormIcon { get; private set; }
+        public static Sprite UfoAbductionIcon { get; private set; }
 
         /// Falls back to DonutIcon at runtime if the asset is absent from the bundle.
         public static Sprite SuperDonutIcon { get; private set; }
@@ -128,6 +129,12 @@ namespace IssaPlugin.Items
 
         /// Networked hunter drone projectile. Null until hunter_drone.prefab is added to the bundle.
         public static GameObject HunterDronePrefab { get; private set; }
+
+        /// Handheld UFO model shown in the player's hand. Null until ufo_abduction_handheld.prefab is added.
+        public static GameObject UfoAbductionHandheldPrefab { get; private set; }
+
+        /// Client-only UFO VFX that flies over and abducts the victim. Null until ufo_abduction.prefab is added.
+        public static GameObject UfoAbductionUfoPrefab { get; private set; }
 
         /// Networked droppable-item prefab; carries NetworkIdentity, NetworkTransform,
         /// Rigidbody (kinematic), SphereCollider (trigger), Entity, and DroppedCustomItem.
@@ -494,6 +501,15 @@ namespace IssaPlugin.Items
                 SpriteAsset(p => SpinachIcon = p, "spinach_icon.png"),
                 HandheldPrefab(p => SpinachPrefab = p, "spinach.prefab"),
                 LocalVfxPrefab(p => SpinachTrailPrefab = p, "spinach_trail.prefab"),
+                // ── UFO Abduction ─────────────────────────────────────────────
+                // TODO: replace asset names with the real bundle names once known.
+                SpriteAsset(p => UfoAbductionIcon = p, "ufo_abduction_icon.png", optional: true),
+                HandheldPrefab(
+                    p => UfoAbductionHandheldPrefab = p,
+                    "ufo_abduction_handheld.prefab",
+                    optional: true
+                ),
+                LocalVfxPrefab(p => UfoAbductionUfoPrefab = p, "ufo_abduction.prefab"),
                 // ── First Place Star ──────────────────────────────────────────
                 // TODO: replace asset name with the real bundle name once known.
                 LocalVfxPrefab(p => GoldStarPrefab = p, "gold_star.prefab"),

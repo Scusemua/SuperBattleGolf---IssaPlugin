@@ -18,15 +18,15 @@ namespace IssaPlugin.Items
 
         public override int MaxUses => (int)ModConfig.HunterDrone.Uses.Value;
 
-        public override float DefaultPoolWeight => 5f;
+        public override float DefaultPoolWeight => 10f;
 
         public override float GetDefaultPoolWeight(int poolIndex) =>
             poolIndex switch
             {
                 GlobalConfig.PoolLead => 0f,
                 GlobalConfig.PoolAhead => 0f,
-                GlobalConfig.PoolBehind50 => 1f,
-                GlobalConfig.PoolBehind200 => 2f,
+                GlobalConfig.PoolBehind50 => 2f,
+                GlobalConfig.PoolBehind200 => 4f,
                 _ => DefaultPoolWeight,
             };
 

@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
+using HarmonyLib;
 using IssaPlugin.Items;
 using IssaPlugin.Network;
 using IssaPlugin.Patches;
@@ -25,6 +27,20 @@ namespace IssaPlugin
             ItemPoolWeights = null,
         };
         private static int _lastEnabledHash;
+
+        // Re-applying base-game spawnChanceWeights after ResetRuntimeData().
+        // ResetRuntimeData() rebuilds runtime pools from ScriptableObject defaults,
+        // which resets any user-configured weights (e.g. 0%) back to their original
+        // values. ServerUpdateSpawnChanceValue pushes each spawnChanceWeights entry
+        // back into the runtime pool, restoring the user's configuration.
+        private static readonly MethodInfo ServerUpdateSpawnChanceValueMethod = AccessTools.Method(
+            typeof(MatchSetupRules),
+            "ServerUpdateSpawnChanceValue"
+        );
+        private static readonly FieldInfo SpawnChanceWeightsField = AccessTools.Field(
+            typeof(MatchSetupRules),
+            "spawnChanceWeights"
+        );
 
         private IEnumerator Start()
         {
@@ -59,7 +75,8 @@ namespace IssaPlugin
         /// </summary>
         internal static void SyncToConnection(NetworkConnectionToClient conn)
         {
-            if (!NetworkServer.active || !NetworkClient.active) return;
+            if (!NetworkServer.active || !NetworkClient.active)
+                return;
 
             foreach (var item in ItemRegistry.AllItems)
                 item.ResetServerWeights();
@@ -83,6 +100,10 @@ namespace IssaPlugin
             foreach (var settings in Resources.FindObjectsOfTypeAll<ItemSpawnerSettings>())
                 settings.ResetRuntimeData();
 
+            // Re-apply base-game spawnChanceWeights so user-configured 0% items (and
+            // any other non-default weights) are not silently reset to defaults.
+            ReapplyBaseGameWeights();
+
             // Force next periodic tick to SendToAll so the rest of the clients
             // also receive the freshly-rebuilt weights within 5 seconds.
             _lastSent = new SpawnWeightsMessage { ItemPoolWeights = null };
@@ -97,7 +118,8 @@ namespace IssaPlugin
         {
             // Writers are registered in OnStartClient. Mirror clears them on disconnect, so
             // don't attempt a send in the window between OnStopClient and the next OnStartClient.
-            if (!NetworkClient.active) return;
+            if (!NetworkClient.active)
+                return;
 
             // Reset server overrides so the host resolves fresh from config.
             foreach (var item in ItemRegistry.AllItems)
@@ -121,9 +143,11 @@ namespace IssaPlugin
 
             int enabledHash = 0;
             foreach (var def in ItemRegistry.AllItems)
-                if (def.Enabled) enabledHash ^= (int)def.ItemType;
+                if (def.Enabled)
+                    enabledHash ^= (int)def.ItemType;
 
-            if (!ShouldBroadcast(msg, enabledHash)) return;
+            if (!ShouldBroadcast(msg, enabledHash))
+                return;
 
             _lastSent = msg;
             _lastEnabledHash = enabledHash;
@@ -135,8 +159,42 @@ namespace IssaPlugin
             foreach (var settings in Resources.FindObjectsOfTypeAll<ItemSpawnerSettings>())
                 settings.ResetRuntimeData();
 
+            // ResetRuntimeData() rebuilds pools from ScriptableObject defaults, which
+            // loses any user-configured base-game item weights (e.g. items set to 0%).
+            // Re-apply spawnChanceWeights so those settings are honoured during gameplay.
+            ReapplyBaseGameWeights();
+
             NetworkServer.SendToAll(msg);
             IssaPluginPlugin.Log.LogDebug($"[SpawnWeights] Synced: {msg}");
+        }
+
+        /// <summary>
+        /// Re-applies MatchSetupRules.spawnChanceWeights to the runtime ItemPool instances
+        /// after ResetRuntimeData() has rebuilt them from ScriptableObject defaults. Without
+        /// this, base-game items set to 0% in the match setup UI will silently revert to
+        /// their default spawn weights in the actual runtime pools.
+        /// </summary>
+        private static void ReapplyBaseGameWeights()
+        {
+            if (!NetworkServer.active)
+                return;
+
+            var rules = Object.FindAnyObjectByType<MatchSetupRules>();
+            if (rules == null)
+                return;
+
+            var weights =
+                SpawnChanceWeightsField.GetValue(rules)
+                as IDictionary<MatchSetupRules.ItemPoolId, float>;
+            if (weights == null)
+                return;
+
+            foreach (var key in weights.Keys)
+            {
+                if (ItemRegistry.IsCustomItem(key.itemType))
+                    continue;
+                ServerUpdateSpawnChanceValueMethod.Invoke(rules, new object[] { key });
+            }
         }
 
         private static bool ShouldBroadcast(SpawnWeightsMessage newMsg, int enabledHash)
@@ -164,7 +222,8 @@ namespace IssaPlugin
         /// <summary>Called on each client when a SpawnWeightsMessage arrives.</summary>
         internal static void HandleSpawnWeights(SpawnWeightsMessage msg)
         {
-            if (NetworkServer.active) return;  // host is authoritative
+            if (NetworkServer.active)
+                return; // host is authoritative
 
             ModConfig.Global.CustomItemSpawnsEnabled.Value = msg.CustomItemSpawnsEnabled;
 

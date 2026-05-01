@@ -8,6 +8,7 @@ namespace IssaPlugin
         private const string Section = "BaseballBat";
 
         public ConfigEntry<float> PowerMultiplier { get; private set; }
+        public ConfigEntry<float> GolfBallPowerMultiplier { get; private set; }
         public ConfigEntry<float> Uses { get; private set; }
         public ConfigEntry<Key> GiveKey { get; private set; }
 
@@ -16,8 +17,15 @@ namespace IssaPlugin
             PowerMultiplier = cfg.Bind(
                 Section,
                 "PowerMultiplier",
-                3.0f,
-                "Multiplier applied to the golf swing power when using the bat."
+                2.5f,
+                "Multiplier applied to swing power for non-golf-ball hits (e.g. golf carts)."
+            );
+
+            GolfBallPowerMultiplier = cfg.Bind(
+                Section,
+                "GolfBallPowerMultiplier",
+                1.25f,
+                "Multiplier applied to swing power specifically for golf ball hits."
             );
 
             Uses = cfg.Bind(
