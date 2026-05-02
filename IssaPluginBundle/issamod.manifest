@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 129911357
+CRC: 3148591792
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: f0d5596a764712f7056b03093a3be84e
+    Hash: 54507f8b027969a15b694b5da74f1c6e
   TypeTreeHash:
     serializedVersion: 2
     Hash: 82d52513d6b19822b87b688cdb5147d6
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: c61ccce077a43d155f3d093078452982
+    Hash: 93aed9bae304c32e6dacfe8a0906c081
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -135,6 +135,7 @@ Assets:
 - Assets/Assets/gravity_gun.prefab
 - Assets/Assets/ac130_tablet.prefab
 - Assets/Assets/red_bull_trail.prefab
+- Assets/Assets/moon_icon.png
 - Assets/Assets/ak47.prefab
 - Assets/Assets/poison_bottle_icon.png
 - Assets/Assets/booby_trap_icon.png
@@ -143,6 +144,7 @@ Assets:
 - Assets/Assets/flamethrower_vfx.prefab
 - Assets/Assets/harrier_tablet.prefab
 - Assets/Assets/wall_icon.png
+- Assets/Assets/moon.prefab
 - Assets/Assets/hunter_drone_handheld.prefab
 - Assets/Assets/jetpack_icon.png
 - Assets/Assets/black_hole.prefab
