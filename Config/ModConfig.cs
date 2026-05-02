@@ -41,6 +41,7 @@ namespace IssaPlugin
         public static WindStormConfig WindStorm { get; private set; }
         public static HunterDroneConfig HunterDrone { get; private set; }
         public static UfoAbductionConfig UfoAbduction { get; private set; }
+        public static MoonConfig Moon { get; private set; }
 
         public static void Initialize(ConfigFile cfg)
         {
@@ -78,6 +79,7 @@ namespace IssaPlugin
             WindStorm = new WindStormConfig(cfg, Global);
             HunterDrone = new HunterDroneConfig(cfg, Global);
             UfoAbduction = new UfoAbductionConfig(cfg, Global);
+            Moon = new MoonConfig(cfg, Global);
         }
 
         // ── Pass-through helper methods (from GlobalConfig) ───────────────────

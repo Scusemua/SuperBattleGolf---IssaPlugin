@@ -72,6 +72,8 @@ namespace IssaPlugin.Patches
                 __instance.gameObject.AddComponent<HunterDroneNetworkBridge>();
             if (!__instance.GetComponent<UfoAbductionNetworkBridge>())
                 __instance.gameObject.AddComponent<UfoAbductionNetworkBridge>();
+            if (!__instance.GetComponent<MoonNetworkBridge>())
+                __instance.gameObject.AddComponent<MoonNetworkBridge>();
 
             IssaPluginPlugin.Log.LogDebug(
                 "[Network] Bridge components injected onto player object."

@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 3148591792
+CRC: 2789058858
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 54507f8b027969a15b694b5da74f1c6e
+    Hash: 94796ab2a1a9fcb04caaaf76e4b185cf
   TypeTreeHash:
     serializedVersion: 2
     Hash: 82d52513d6b19822b87b688cdb5147d6
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 93aed9bae304c32e6dacfe8a0906c081
+    Hash: abc954b2902846111f0c4dbc26832071
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -117,6 +117,7 @@ Assets:
 - Assets/Assets/stealth_bomber_tablet.prefab
 - Assets/Assets/ak47_icon.png
 - Assets/Assets/predator_missile_tablet.prefab
+- Assets/Assets/moon_handheld.prefab
 - Assets/Assets/spinach_trail.prefab
 - Assets/Assets/ufo_abduction_icon.png
 - Assets/Assets/NukeVerticalExplosionFire.prefab

@@ -1706,6 +1706,25 @@ namespace IssaPlugin.Patches
                 UfoAbductionClientLogic.HandleEnd
             );
 
+            // ── Moon ──────────────────────────────────────────────────────────────
+
+            // Client → Server
+            Writer<MoonUseMessage>.write = MoonUseMessageSerialization.WriteMoonUseMessage;
+            Reader<MoonUseMessage>.read = MoonUseMessageSerialization.ReadMoonUseMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<MoonUseMessage>(
+                    (conn, msg) => GetBridge<MoonNetworkBridge>(conn)?.ServerHandleUse(conn, msg)
+                );
+
+            // Server → All Clients
+            Writer<MoonBeginMessage>.write = MoonBeginMessageSerialization.WriteMoonBeginMessage;
+            Reader<MoonBeginMessage>.read = MoonBeginMessageSerialization.ReadMoonBeginMessage;
+            NetworkClient.RegisterHandler<MoonBeginMessage>(MoonClientLogic.HandleMoonBegin);
+
+            Writer<MoonEndMessage>.write = MoonEndMessageSerialization.WriteMoonEndMessage;
+            Reader<MoonEndMessage>.read = MoonEndMessageSerialization.ReadMoonEndMessage;
+            NetworkClient.RegisterHandler<MoonEndMessage>(MoonClientLogic.HandleMoonEnd);
+
             // ── Hunter Drone ──────────────────────────────────────────────────────
             Writer<HunterDroneLaunchMessage>.write =
                 HunterDroneLaunchMessageSerialization.WriteHunterDroneLaunchMessage;

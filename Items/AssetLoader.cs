@@ -136,6 +136,16 @@ namespace IssaPlugin.Items
         /// Client-only UFO VFX that flies over and abducts the victim. Null until ufo_abduction.prefab is added.
         public static GameObject UfoAbductionUfoPrefab { get; private set; }
 
+        // ── Moon ──────────────────────────────────────────────────────────────
+        /// Item icon for Majora's Moon. Null until moon_icon.png is added to the bundle.
+        public static Sprite MoonIcon { get; private set; }
+
+        /// Handheld model shown in the player's hand before activation. Null until moon_handheld.prefab is added.
+        public static GameObject MoonHandheldPrefab { get; private set; }
+
+        /// Client-only moon VFX prefab that approaches the course. Null until moon.prefab is added.
+        public static GameObject MoonVfxPrefab { get; private set; }
+
         /// Networked droppable-item prefab; carries NetworkIdentity, NetworkTransform,
         /// Rigidbody (kinematic), SphereCollider (trigger), Entity, and DroppedCustomItem.
         public static GameObject DroppedCustomItemPrefab { get; private set; }
@@ -480,12 +490,10 @@ namespace IssaPlugin.Items
                 LocalVfxPrefab(p => JetpackParticlePrefab = p, "jetpack_particles.prefab"),
                 NetworkedPrefab(p => JetpackEquippedPrefab = p, "jetpack.prefab", 0x00000000u), // TODO: assign a stable assetId
                 // ── Rocket Tether ─────────────────────────────────────────────
-                // TODO: replace asset names and assetId with the real values once known.
                 SpriteAsset(p => RocketTetherIcon = p, "rocket_tether_icon.png"),
                 HandheldPrefab(p => RocketTetherPrefab = p, "rocket_tether_handheld.prefab"),
                 LocalVfxPrefab(p => RocketTetherRocketPrefab = p, "player_linker_rocket.prefab"),
                 // ── Rocket Tether Grenade ─────────────────────────────────────
-                // TODO: replace asset names and assetId with the real values once known.
                 SpriteAsset(p => RocketTetherGrenadeIcon = p, "rocket_tether_grenade_icon.png"),
                 NetworkedPrefab(
                     p => RocketTetherGrenadePrefab = p,
@@ -497,12 +505,10 @@ namespace IssaPlugin.Items
                     "rocket_tether_grenade_explosion_vfx.prefab"
                 ),
                 // ── Spinach ───────────────────────────────────────────────────
-                // TODO: replace asset names with the real bundle names once known.
                 SpriteAsset(p => SpinachIcon = p, "spinach_icon.png"),
                 HandheldPrefab(p => SpinachPrefab = p, "spinach.prefab"),
                 LocalVfxPrefab(p => SpinachTrailPrefab = p, "spinach_trail.prefab"),
                 // ── UFO Abduction ─────────────────────────────────────────────
-                // TODO: replace asset names with the real bundle names once known.
                 SpriteAsset(p => UfoAbductionIcon = p, "ufo_abduction_icon.png", optional: true),
                 HandheldPrefab(
                     p => UfoAbductionHandheldPrefab = p,
@@ -510,8 +516,11 @@ namespace IssaPlugin.Items
                     optional: true
                 ),
                 LocalVfxPrefab(p => UfoAbductionUfoPrefab = p, "ufo_abduction.prefab"),
+                // ── Moon ──────────────────────────────────────────────────────
+                SpriteAsset(p => MoonIcon = p, "moon_icon.png", optional: true),
+                HandheldPrefab(p => MoonHandheldPrefab = p, "moon_handheld.prefab", optional: true),
+                LocalVfxPrefab(p => MoonVfxPrefab = p, "moon.prefab"),
                 // ── First Place Star ──────────────────────────────────────────
-                // TODO: replace asset name with the real bundle name once known.
                 LocalVfxPrefab(p => GoldStarPrefab = p, "gold_star.prefab"),
             };
         }
