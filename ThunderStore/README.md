@@ -212,19 +212,19 @@ Assets used in the project:
 
 -   "Snowball - Low resources"\
     https://skfb.ly/oyCyZ\
-    Licensed under Creative Commons Attribution 4.0
+    Licensed under [Creative Commons Attribution 4.0](http://creativecommons.org/licenses/by/4.0/). 
 
 -   "REMOTE"\
     https://skfb.ly/pAwPL\
-    Licensed under Creative Commons Attribution 4.0
+    Licensed under [Creative Commons Attribution 4.0](http://creativecommons.org/licenses/by/4.0/). 
 
 -   "M200 Intervention (Low-poly)"\
     https://skfb.ly/prrWy\
-    Licensed under Creative Commons Attribution 4.0
+    Licensed under [Creative Commons Attribution 4.0](http://creativecommons.org/licenses/by/4.0/). 
 
 -   "Militar explosive detonator"\
     (https://skfb.ly/o9YWC) by Oscar Royo 
-    Licensed under Creative Commons Attribution 4.0
+    Licensed under [Creative Commons Attribution 4.0](http://creativecommons.org/licenses/by/4.0/). 
 
 -   "Jinx Bomb - Arcane"\
     (https://skfb.ly/oytAV) by KangaroOz 3D 
@@ -232,11 +232,11 @@ Assets used in the project:
 
 -   "Crystal Ball"\
     (https://skfb.ly/6DUUx) by Yanez Designs 
-    Licensed under Creative Commons Attribution 
+    Licensed under [Creative Commons Attribution](http://creativecommons.org/licenses/by/4.0/). 
 
 -   "Wednesday Addams Signature Poison Bottle"\
     (https://skfb.ly/oBRyn) by misscanning
-    Licensed under Creative Commons Attribution
+    Licensed under [Creative Commons Attribution](http://creativecommons.org/licenses/by/4.0/).
 
 -   "Shahed-136"\
     (https://skfb.ly/ozuFr) by KillCaptureDestroy 
@@ -244,7 +244,7 @@ Assets used in the project:
 
 -   "Gravity Gun (Retry School)"\
     (https://skfb.ly/pxyOF) by Pixman 
-    Licensed under Creative Commons Attribution
+    Licensed under [Creative Commons Attribution](http://creativecommons.org/licenses/by/4.0/).
 
 -   Jetpack by Poly\
     (https://poly.pizza/m/a19dX3Vgo3S) by Google via Poly Pizza 
@@ -256,15 +256,23 @@ Assets used in the project:
 
 -   "Spinach" by eyes360vr\
     (https://skfb.ly/ossnR)
-    Licensed under Creative Commons Attribution
+    Licensed under [Creative Commons Attribution](http://creativecommons.org/licenses/by/4.0/).
 
 -   "Gold Star"\
     (https://skfb.ly/oqBBw) by AnshiNoWara 
-    Licensed under Creative Commons Attribution
+    Licensed under [Creative Commons Attribution](http://creativecommons.org/licenses/by/4.0/).
+
+-   "Empire Pyro Flamethrower"
+    by Elite Big Speakerman
+    Licensed under [Creative Commons Attribution](http://creativecommons.org/licenses/by/4.0/).
 
 -   "Toy Rocket 4K Free 3D model"\
     (https://skfb.ly/oyYKJ) by Desertsage
-    Licensed under Creative Commons Attribution
+    Licensed under [Creative Commons Attribution](http://creativecommons.org/licenses/by/4.0/).
+
+-   "The Legend Of Zelda Majoras Mask 3D - Moon"\
+    (https://skfb.ly/6pDZM) by Warrior364 
+    Licensed under [Creative Commons Attribution](http://creativecommons.org/licenses/by/4.0/).
 
 ---
 
