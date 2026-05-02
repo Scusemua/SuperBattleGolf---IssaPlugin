@@ -35,16 +35,9 @@ namespace IssaPlugin.Items
         private Coroutine _serverCoroutine;
         private Coroutine _serverDropoffTimeoutCoroutine;
         private int _wielderSlot = -1;
-        private float _serverSessionStartTime;
 
-        // Positions computed once at session start and reused by ServerHoleCleanup.
-        private Vector3 _serverUfoSpawnPos;
-        private Vector3 _serverHoverPos;
-        private Vector3 _serverDropoffPos; // UFO Phase 3 endpoint
-        private Vector3 _serverExplosionPos; // ground-level destination for explosion
-        private float _serverApproachDuration;
-        private float _serverAbductionDuration;
-        private float _serverTransitDuration;
+        // Ground-level destination; stored for ServerEndSession explosion.
+        private Vector3 _serverExplosionPos;
 
         // Cached for OnDestroy check after Mirror tears down network state.
         private bool _wasOwned;
@@ -226,18 +219,16 @@ namespace IssaPlugin.Items
             _serverDropoffTimeoutCoroutine = null;
             _serverWaitingForDropoff = false;
             _serverSessionActive = true;
-            _serverSessionStartTime = Time.time;
+            _serverExplosionPos = msg.Destination;
 
             Vector3 victimPos = _targetInfo.transform.position;
             float hoverHeight = ModConfig.UfoAbduction.HoverHeight.Value;
-
-            _serverDropoffPos =
+            Vector3 hoverPos = victimPos + Vector3.up * hoverHeight;
+            Vector3 dropoffPos =
                 msg.Destination + Vector3.up * ModConfig.UfoAbduction.DropHeight.Value;
-            _serverExplosionPos = msg.Destination;
-            _serverHoverPos = victimPos + Vector3.up * hoverHeight;
 
             float spawnAngle = UnityEngine.Random.Range(0f, 360f) * Mathf.Deg2Rad;
-            _serverUfoSpawnPos =
+            Vector3 ufoSpawnPos =
                 victimPos
                 + new Vector3(
                     Mathf.Cos(spawnAngle) * 40f,
@@ -251,10 +242,6 @@ namespace IssaPlugin.Items
             float abductionDuration = ModConfig.UfoAbduction.AbductionDuration.Value;
             float transitDuration = ModConfig.UfoAbduction.AscentDuration.Value;
 
-            _serverApproachDuration = approachDuration;
-            _serverAbductionDuration = abductionDuration;
-            _serverTransitDuration = transitDuration;
-
             IssaPluginPlugin.Log.LogInfo(
                 $"[UfoAbduction] Server: session started. wielder={wielderNetId} victim={targetNetId} dropoff={msg.Destination}"
             );
@@ -264,13 +251,12 @@ namespace IssaPlugin.Items
                 {
                     WielderNetId = wielderNetId,
                     VictimNetId = targetNetId,
-                    UfoSpawnPos = _serverUfoSpawnPos,
-                    HoverPos = _serverHoverPos,
-                    DropoffPos = _serverDropoffPos,
+                    UfoSpawnPos = ufoSpawnPos,
+                    HoverPos = hoverPos,
+                    DropoffPos = dropoffPos,
                     ApproachDuration = approachDuration,
                     AbductionDuration = abductionDuration,
                     TransitDuration = transitDuration,
-                    SpringForce = ModConfig.UfoAbduction.SpringForce.Value,
                     MaxPullSpeed = ModConfig.UfoAbduction.MaxPullSpeed.Value,
                     NaturalLength = ModConfig.UfoAbduction.NaturalLength.Value,
                     ExplosionForce = ModConfig.UfoAbduction.ExplosionForce.Value,

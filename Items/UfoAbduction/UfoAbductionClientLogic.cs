@@ -15,7 +15,7 @@ namespace IssaPlugin.Items
     //    Abduction [ApproachDuration, +AbductionDuration) — UFO hovers at locked HoverPos;
     //                                                      victim pulled toward it.
     //    Transit   [+AbductionDuration, totalDuration)    — UFO lerps HoverPos → DropoffPos;
-    //                                                      victim sucked in.
+    //                                                      victim hard-locked below UFO hull (stasis).
     //
     //  HoverPos starts as a server-provided estimate; UpdateAll() locks it to the victim's
     //  actual position the first frame after approach ends.
@@ -35,7 +35,6 @@ namespace IssaPlugin.Items
         public float AbductionDuration;
         public float TransitDuration;
         public float StartTime;
-        public float SpringForce;
         public float MaxPullSpeed;
         public float NaturalLength;
 
@@ -190,7 +189,6 @@ namespace IssaPlugin.Items
                 AbductionDuration = msg.AbductionDuration,
                 TransitDuration = msg.TransitDuration,
                 StartTime = Time.time,
-                SpringForce = msg.SpringForce,
                 MaxPullSpeed = msg.MaxPullSpeed,
                 NaturalLength = msg.NaturalLength,
                 HoverHeight = msg.HoverHeight,
@@ -238,16 +236,14 @@ namespace IssaPlugin.Items
             float explosionRadius
         )
         {
-            if (!s_sessions.ContainsKey(victimNetId))
+            if (!s_sessions.TryGetValue(victimNetId, out var state))
                 return;
 
             var localInfo = GameManager.LocalPlayerInfo;
             if (localInfo != null)
             {
-                s_sessions.TryGetValue(victimNetId, out var state);
                 uint localNetId = localInfo.GetComponent<NetworkIdentity>()?.netId ?? 0u;
 
-                // Explosion force on all nearby players (applied on their own client)
                 var seat = localInfo.ActiveGolfCartSeat;
                 Rigidbody rb =
                     seat.IsValid() && seat.golfCart != null
@@ -256,31 +252,38 @@ namespace IssaPlugin.Items
 
                 if (rb != null)
                 {
-                    // The beam disabled gravity on the victim; restore it now.
                     if (localNetId == victimNetId)
-                        rb.useGravity = true;
-
-                    float dist = Vector3.Distance(rb.position, explosionPos);
-                    if (dist < explosionRadius)
                     {
-                        rb.AddExplosionForce(
-                            explosionForce,
-                            explosionPos,
-                            explosionRadius,
-                            0f,
-                            ForceMode.VelocityChange
-                        );
-
-                        // Victim is above the explosion (dropped from DropHeight); cap upward
-                        // velocity so they fall back down rather than being blasted further up.
-                        if (localNetId == victimNetId)
-                        {
-                            Vector3 vel = rb.linearVelocity;
-                            if (vel.y > 0f)
-                                vel.y = 0f;
-                            rb.linearVelocity = vel;
-                        }
+                        // Release from stasis: zero velocity so they fall straight down.
+                        rb.linearVelocity = Vector3.zero;
+                        rb.useGravity = true;
                     }
+                    else
+                    {
+                        // Nearby players/carts: hit by the destination explosion.
+                        float dist = Vector3.Distance(rb.position, explosionPos);
+                        if (dist < explosionRadius)
+                            rb.AddExplosionForce(
+                                explosionForce,
+                                explosionPos,
+                                explosionRadius,
+                                0f,
+                                ForceMode.VelocityChange
+                            );
+                    }
+                }
+
+                // UFO flies away before being destroyed.
+                if (state.UfoVfxInstance != null)
+                {
+                    var runner = localInfo.Movement;
+                    if (runner != null)
+                        runner.StartCoroutine(
+                            FlyAwayCoroutine(state.UfoVfxInstance, state.DropoffPos)
+                        );
+                    else
+                        Object.Destroy(state.UfoVfxInstance);
+                    state.UfoVfxInstance = null; // prevent EndSessionInternal double-destroy
                 }
             }
 
@@ -302,6 +305,32 @@ namespace IssaPlugin.Items
             );
 
             EndSessionInternal(victimNetId);
+        }
+
+        private static IEnumerator FlyAwayCoroutine(GameObject ufoGo, Vector3 fromPos)
+        {
+            if (ufoGo == null)
+                yield break;
+
+            float angle = UnityEngine.Random.Range(0f, 360f) * Mathf.Deg2Rad;
+            Vector3 awayDir = new Vector3(Mathf.Cos(angle), 0.4f, Mathf.Sin(angle)).normalized;
+            Vector3 destination = fromPos + awayDir * 120f;
+            const float duration = 2.5f;
+            float elapsed = 0f;
+            Vector3 start = ufoGo.transform.position;
+
+            while (elapsed < duration)
+            {
+                if (ufoGo == null)
+                    yield break;
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                ufoGo.transform.position = Vector3.Lerp(start, destination, t * t); // ease-in
+                yield return null;
+            }
+
+            if (ufoGo != null)
+                Object.Destroy(ufoGo);
         }
 
         private static void EndSessionInternal(uint victimNetId)
@@ -331,9 +360,8 @@ namespace IssaPlugin.Items
 
         // ── Position-lock coroutine (victim's client only) ────────────────────
         //
-        //  During abduction: victim is suspended at NaturalLength below the UFO.
-        //  During transit:   offset lerps from NaturalLength → 0 so they get
-        //                    sucked into the ship as it flies to the destination.
+        //  During abduction: victim pulled toward NaturalLength below the hover point.
+        //  During transit:   victim hard-snapped to StasisBeamOffset below the UFO hull.
 
         private static IEnumerator ForceCoroutine(uint victimNetId)
         {
@@ -371,10 +399,15 @@ namespace IssaPlugin.Items
                             ApplyAbductionKnockout(localInfo, state);
                         }
 
+                        float abductionElapsed = sessionElapsed - state.ApproachDuration;
+                        bool inTransit = abductionElapsed >= state.AbductionDuration;
                         Vector3 targetPos = ComputeVictimTargetPos(state, sessionElapsed);
                         rb.useGravity = false;
                         rb.angularVelocity = Vector3.zero;
-                        LockToPosition(rb, targetPos, state.MaxPullSpeed);
+                        if (inTransit)
+                            SnapToPosition(rb, targetPos); // stasis: hard-lock to UFO
+                        else
+                            LockToPosition(rb, targetPos, state.MaxPullSpeed); // abduction: spring pull
                     }
                 }
 
@@ -416,23 +449,20 @@ namespace IssaPlugin.Items
             );
         }
 
+        // Victim hangs this far below the UFO hull during the locked transit phase.
+        private const float StasisBeamOffset = 1.5f;
+
         private static Vector3 ComputeVictimTargetPos(UfoAbductionSessionState state, float elapsed)
         {
             Vector3 ufoPos = state.GetUfoPosition(elapsed);
             float abductionElapsed = elapsed - state.ApproachDuration;
 
             if (abductionElapsed < state.AbductionDuration)
+                // Abduction: victim hangs NaturalLength below the hover point (pulled by beam)
                 return ufoPos - Vector3.up * state.NaturalLength;
 
-            // Sucked into the ship: offset shrinks from NaturalLength → 0 over transit
-            float transitT =
-                state.TransitDuration > 0f
-                    ? Mathf.Clamp01(
-                        (abductionElapsed - state.AbductionDuration) / state.TransitDuration
-                    )
-                    : 1f;
-            float offset = Mathf.Lerp(state.NaturalLength, 0f, transitT);
-            return ufoPos - Vector3.up * offset;
+            // Transit stasis: victim is locked just below the UFO hull, moves with it exactly
+            return ufoPos - Vector3.up * StasisBeamOffset;
         }
 
         private static void LockToPosition(Rigidbody rb, Vector3 targetPos, float maxSpeed)
@@ -443,6 +473,12 @@ namespace IssaPlugin.Items
                 targetPos,
                 maxSpeed * Time.fixedDeltaTime
             );
+        }
+
+        private static void SnapToPosition(Rigidbody rb, Vector3 targetPos)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.position = targetPos;
         }
 
         // ── PiP camera helpers ────────────────────────────────────────────────

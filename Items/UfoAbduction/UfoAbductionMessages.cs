@@ -151,7 +151,6 @@ namespace IssaPlugin.Items
         public float AbductionDuration;
         public float TransitDuration;
 
-        public float SpringForce;
         public float MaxPullSpeed;
         public float NaturalLength;
 
@@ -178,7 +177,6 @@ namespace IssaPlugin.Items
             writer.WriteFloat(msg.ApproachDuration);
             writer.WriteFloat(msg.AbductionDuration);
             writer.WriteFloat(msg.TransitDuration);
-            writer.WriteFloat(msg.SpringForce);
             writer.WriteFloat(msg.MaxPullSpeed);
             writer.WriteFloat(msg.NaturalLength);
             writer.WriteFloat(msg.ExplosionForce);
@@ -197,7 +195,6 @@ namespace IssaPlugin.Items
                 ApproachDuration = reader.ReadFloat(),
                 AbductionDuration = reader.ReadFloat(),
                 TransitDuration = reader.ReadFloat(),
-                SpringForce = reader.ReadFloat(),
                 MaxPullSpeed = reader.ReadFloat(),
                 NaturalLength = reader.ReadFloat(),
                 ExplosionForce = reader.ReadFloat(),
