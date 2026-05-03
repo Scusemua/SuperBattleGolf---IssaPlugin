@@ -23,6 +23,8 @@ namespace IssaPlugin
         public ConfigEntry<float> PullForce { get; private set; }
         public ConfigEntry<float> MaxPullSpeed { get; private set; }
         public ConfigEntry<float> PullRadius { get; private set; }
+        public ConfigEntry<bool> PullAffectsGolfBalls { get; private set; }
+        public ConfigEntry<bool> PullAffectsWielder { get; private set; }
 
         // Explosion
         public ConfigEntry<float> ExplosionForce { get; private set; }
@@ -43,65 +45,77 @@ namespace IssaPlugin
             ApproachDuration = cfg.Bind(
                 Section,
                 "ApproachDuration",
-                30f,
+                60f,
                 "Seconds for the moon to travel from spawn to above the course."
             );
             SpawnDistance = cfg.Bind(
                 Section,
                 "SpawnDistance",
-                150f,
+                999f,
                 "Horizontal distance (units) from the hole at which the moon spawns."
             );
             SpawnHeight = cfg.Bind(
                 Section,
                 "SpawnHeight",
-                120f,
+                999f,
                 "Height (units) above ground at which the moon spawns."
             );
             ImpactHeight = cfg.Bind(
                 Section,
                 "ImpactHeight",
-                40f,
+                350f,
                 "Height (units) above the hole where the moon stops before pulling players in."
             );
             SuckDuration = cfg.Bind(
                 Section,
                 "SuckDuration",
-                6f,
+                8f,
                 "Seconds the moon hovers at impact height while pulling all players upward."
             );
             PullForce = cfg.Bind(
                 Section,
                 "PullForce",
-                25f,
+                550f,
                 "Peak upward pull force (m/s²) applied to the local player during the suck phase."
             );
             MaxPullSpeed = cfg.Bind(
                 Section,
                 "MaxPullSpeed",
-                30f,
+                999f,
                 "Maximum velocity (m/s) toward the moon allowed during the suck phase."
             );
             PullRadius = cfg.Bind(
                 Section,
                 "PullRadius",
-                120f,
+                999f,
                 "Distance (units) at which pull force begins to fall off quadratically."
             );
             ExplosionForce = cfg.Bind(
                 Section,
                 "ExplosionForce",
-                500f,
+                999f,
                 "Peak velocity change (m/s) applied to non-player Rigidbodies at the moon's impact point."
             );
             ExplosionRadius = cfg.Bind(
                 Section,
                 "ExplosionRadius",
-                80f,
+                999f,
                 "Radius (units) within which the explosion force affects nearby Rigidbodies."
             );
-            InitialScale = cfg.Bind(Section, "InitialScale", 1.0f, "Initial scale of the moon.");
-            FinalScale = cfg.Bind(Section, "FinalScale", 2f, "Final scale of the moon.");
+            PullAffectsGolfBalls = cfg.Bind(
+                Section,
+                "PullAffectsGolfBalls",
+                false,
+                "If true, the moon's suck phase pulls nearby golf balls toward it."
+            );
+            PullAffectsWielder = cfg.Bind(
+                Section,
+                "PullAffectsWielder",
+                false,
+                "If true, the player who used the Moon item is also pulled toward it."
+            );
+            InitialScale = cfg.Bind(Section, "InitialScale", 0.01f, "Initial scale of the moon.");
+            FinalScale = cfg.Bind(Section, "FinalScale", 3f, "Final scale of the moon.");
         }
     }
 }

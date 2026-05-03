@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
 
@@ -27,6 +28,8 @@ namespace IssaPlugin.Items
         private Coroutine _serverCoroutine;
         private int _wielderSlot = -1;
         private Vector3 _serverImpactPos;
+
+        private readonly HashSet<Rigidbody> _seenRigidbodies = new HashSet<Rigidbody>();
 
         // ── Unity lifecycle ───────────────────────────────────────────────────
 
@@ -139,21 +142,76 @@ namespace IssaPlugin.Items
             );
 
             _serverCoroutine = StartCoroutine(
-                ServerSessionCoroutine(approachDuration + suckDuration)
+                ServerSessionCoroutine(approachDuration, suckDuration)
             );
         }
 
         // ── Server — session coroutine ────────────────────────────────────────
 
-        private System.Collections.IEnumerator ServerSessionCoroutine(float duration)
+        private System.Collections.IEnumerator ServerSessionCoroutine(
+            float approachDuration,
+            float suckDuration
+        )
         {
-            yield return new WaitForSeconds(duration);
+            yield return new WaitForSeconds(approachDuration);
+
+            if (!_serverSessionActive)
+                yield break;
+
+            // Suck phase: pull golf balls (and optionally the wielder is handled client-side).
+            float suckEnd = Time.time + suckDuration;
+            while (Time.time < suckEnd)
+            {
+                if (ModConfig.Moon.PullAffectsGolfBalls.Value)
+                    ServerApplyGolfBallPull();
+                yield return new WaitForFixedUpdate();
+            }
 
             if (!_serverSessionActive)
                 yield break;
 
             IssaPluginPlugin.Log.LogInfo("[Moon] Server: session complete — triggering explosion.");
             ServerEndSession(broadcast: true);
+        }
+
+        private void ServerApplyGolfBallPull()
+        {
+            float pullRadius = ModConfig.Moon.PullRadius.Value;
+            float pullForce = ModConfig.Moon.PullForce.Value;
+            float maxSpeed = ModConfig.Moon.MaxPullSpeed.Value;
+
+            var hits = Physics.OverlapSphere(
+                _serverImpactPos,
+                pullRadius,
+                Physics.DefaultRaycastLayers,
+                QueryTriggerInteraction.Ignore
+            );
+
+            _seenRigidbodies.Clear();
+
+            foreach (var col in hits)
+            {
+                if (col.GetComponentInParent<PlayerInfo>() != null)
+                    continue;
+                if (col.GetComponentInParent<GolfBall>() == null)
+                    continue;
+
+                var rb = col.attachedRigidbody;
+                if (rb == null || rb.isKinematic || _seenRigidbodies.Contains(rb))
+                    continue;
+                _seenRigidbodies.Add(rb);
+
+                Vector3 dir = (_serverImpactPos - rb.position).normalized;
+                float dist = Vector3.Distance(rb.position, _serverImpactPos);
+                float t = Mathf.Clamp01(1f - dist / pullRadius);
+                t *= t;
+                float force = Mathf.Lerp(pullForce * 0.3f, pullForce, t);
+                rb.AddForce(dir * force, ForceMode.Acceleration);
+
+                float towardSpeed = Vector3.Dot(rb.linearVelocity, dir);
+                if (towardSpeed > maxSpeed)
+                    rb.linearVelocity -= dir * (towardSpeed - maxSpeed);
+            }
         }
 
         // ── Server — session end ──────────────────────────────────────────────

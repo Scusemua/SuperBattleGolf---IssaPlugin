@@ -96,10 +96,6 @@ namespace IssaPlugin.Items
                     float progress = totalDist > 0f ? 1f - (curDist / totalDist) : 1f;
                     float scale = Mathf.Lerp(state.InitialScale, state.FinalScale, progress);
                     state.MoonVfxInstance.transform.localScale = Vector3.one * scale;
-
-                    IssaPluginPlugin.Log.LogInfo(
-                        $"[MoonClientLogic] MoonVfxInstance transform.position={moonPos}, localScale={scale}"
-                    );
                 }
             }
         }
@@ -213,23 +209,26 @@ namespace IssaPlugin.Items
             if (!s_sessions.TryGetValue(wielderNetId, out var state))
                 return;
 
-            // Restore gravity on local player if they were in the suck phase
             var localInfo = GameManager.LocalPlayerInfo;
             if (localInfo != null)
             {
-                float elapsed = Time.time - state.StartTime;
-                if (elapsed >= state.ApproachDuration)
+                var seat = localInfo.ActiveGolfCartSeat;
+                Rigidbody rb =
+                    seat.IsValid() && seat.golfCart != null
+                        ? seat.golfCart.AsEntity.Rigidbody
+                        : localInfo.GetComponentInParent<Rigidbody>();
+                if (rb != null)
                 {
-                    var seat = localInfo.ActiveGolfCartSeat;
-                    Rigidbody rb =
-                        seat.IsValid() && seat.golfCart != null
-                            ? seat.golfCart.AsEntity.Rigidbody
-                            : localInfo.GetComponentInParent<Rigidbody>();
-                    if (rb != null)
-                    {
-                        rb.linearVelocity = Vector3.zero;
-                        rb.useGravity = true;
-                    }
+                    rb.useGravity = true;
+                    float explosionForce = ModConfig.Moon.ExplosionForce.Value;
+                    float explosionRadius = ModConfig.Moon.ExplosionRadius.Value;
+                    rb.AddExplosionForce(
+                        explosionForce,
+                        explosionPos,
+                        explosionRadius,
+                        1f,
+                        ForceMode.VelocityChange
+                    );
                 }
             }
 
@@ -237,7 +236,7 @@ namespace IssaPlugin.Items
                 VfxType.RocketLauncherRocketExplosion,
                 explosionPos,
                 Quaternion.identity,
-                Vector3.one * 4f
+                Vector3.one * 10f
             );
             CameraModuleController.Shake(
                 GameManager.CameraGameplaySettings.RocketExplosionScreenshakeSettings,
@@ -277,6 +276,10 @@ namespace IssaPlugin.Items
             if (localInfo == null)
                 yield break;
 
+            uint localNetId =
+                localInfo.GetComponent<NetworkIdentity>()?.netId ?? 0u;
+            bool localIsWielder = localNetId == wielderNetId;
+
             Rigidbody lastRb = null;
             bool knockoutApplied = false;
 
@@ -293,7 +296,14 @@ namespace IssaPlugin.Items
                     continue;
                 }
 
-                // Suck phase
+                // Suck phase — skip forces entirely if this player is the wielder and
+                // the config says not to pull the wielder.
+                if (localIsWielder && !ModConfig.Moon.PullAffectsWielder.Value)
+                {
+                    yield return new WaitForFixedUpdate();
+                    continue;
+                }
+
                 var seat = localInfo.ActiveGolfCartSeat;
                 Rigidbody rb =
                     seat.IsValid() && seat.golfCart != null
