@@ -98,6 +98,9 @@ Create a wind storm with extremely high speed winds and dynamically-changing dir
 ### 🛸 UFO Abduction
 Aim at another player and fire. A flying saucer swoops in from off-map and locks on. When it arrives, a tractor beam engages — the victim gets knocked off their feet and hauled upward, suspended helplessly in the beam while the UFO hovers. After a few seconds the ship begins its escape, dragging the victim up with it in an erratic, spiraling climb before they're finally pulled inside and the whole thing detonates at altitude. A picture-in-picture camera appears on every player's screen for the full duration so nobody misses a second of it.
 
+### 🌕 Majora's Moon
+Use this item and a giant moon appears on the horizon, slowly descending toward the course. A countdown warning fills every player's screen as it approaches. When the moon reaches the hole, everyone is knocked off their feet and pulled skyward — helplessly dragged upward as gravity stops working. Once the moon slams into the course it detonates in a massive explosion, sending anything nearby flying. There is no defending against it. There is no escape. The moon will fall.
+
 ---
 
 ## Installation
