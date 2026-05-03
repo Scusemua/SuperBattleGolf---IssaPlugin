@@ -99,7 +99,7 @@ namespace IssaPlugin
             ExplosionRadius = cfg.Bind(
                 Section,
                 "ExplosionRadius",
-                999f,
+                250f,
                 "Radius (units) within which the explosion force affects nearby Rigidbodies."
             );
             PullAffectsGolfBalls = cfg.Bind(

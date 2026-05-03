@@ -220,15 +220,21 @@ namespace IssaPlugin.Items
                 if (rb != null)
                 {
                     rb.useGravity = true;
-                    float explosionForce = ModConfig.Moon.ExplosionForce.Value;
-                    float explosionRadius = ModConfig.Moon.ExplosionRadius.Value;
-                    rb.AddExplosionForce(
-                        explosionForce,
-                        explosionPos,
-                        explosionRadius,
-                        1f,
-                        ForceMode.VelocityChange
-                    );
+
+                    bool localIsWielder =
+                        (localInfo.GetComponent<NetworkIdentity>()?.netId ?? 0u) == wielderNetId;
+                    if (!localIsWielder || ModConfig.Moon.PullAffectsWielder.Value)
+                    {
+                        float explosionForce = ModConfig.Moon.ExplosionForce.Value;
+                        float explosionRadius = ModConfig.Moon.ExplosionRadius.Value;
+                        rb.AddExplosionForce(
+                            explosionForce,
+                            explosionPos,
+                            explosionRadius,
+                            1f,
+                            ForceMode.VelocityChange
+                        );
+                    }
                 }
             }
 
