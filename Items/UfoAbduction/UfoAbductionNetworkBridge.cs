@@ -32,6 +32,7 @@ namespace IssaPlugin.Items
         private bool _serverWaitingForDropoff;
         private NetworkConnectionToClient _wielderConn;
         private PlayerInfo _targetInfo;
+        private uint _victimNetId;
         private Coroutine _serverCoroutine;
         private Coroutine _serverDropoffTimeoutCoroutine;
         private int _wielderSlot = -1;
@@ -206,6 +207,7 @@ namespace IssaPlugin.Items
 
             // Re-validate victim is still connected
             var targetNetId = _targetInfo.GetComponent<NetworkIdentity>().netId;
+            _victimNetId = targetNetId;
             if (!NetworkServer.spawned.ContainsKey(targetNetId))
             {
                 IssaPluginPlugin.Log.LogWarning(
@@ -386,7 +388,7 @@ namespace IssaPlugin.Items
             NetworkServer.SendToAll(
                 new UfoAbductionEndMessage
                 {
-                    VictimNetId = _targetInfo.GetComponent<NetworkIdentity>().netId,
+                    VictimNetId = _victimNetId,
                     ExplosionPos = _serverExplosionPos,
                     ExplosionForce = explosionForce,
                     ExplosionRadius = explosionRadius,
@@ -403,6 +405,7 @@ namespace IssaPlugin.Items
 
             _wielderConn = null;
             _targetInfo = null;
+            _victimNetId = 0;
         }
 
         // ── Client — message handlers ─────────────────────────────────────────
@@ -455,6 +458,12 @@ namespace IssaPlugin.Items
                 StopCoroutine(_serverCoroutine);
                 _serverCoroutine = null;
             }
+        }
+
+        public override void OnStopServer()
+        {
+            // Release lock and broadcast cleanup if wielder disconnects mid-session.
+            ServerHoleCleanup();
         }
 
         public override void ClientHoleCleanup()

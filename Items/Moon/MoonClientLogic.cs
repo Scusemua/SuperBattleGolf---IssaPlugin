@@ -96,6 +96,26 @@ namespace IssaPlugin.Items
                     float progress = totalDist > 0f ? 1f - (curDist / totalDist) : 1f;
                     float scale = Mathf.Lerp(state.InitialScale, state.FinalScale, progress);
                     state.MoonVfxInstance.transform.localScale = Vector3.one * scale;
+
+                    // Keep the face pointed at the wielder. When the direction is nearly
+                    // vertical (moon directly above), use Vector3.forward as the up reference
+                    // to avoid gimbal lock in LookRotation.
+                    Transform wielderT = GetTransformByNetId(state.WielderNetId);
+                    if (wielderT != null)
+                    {
+                        Vector3 dirToWielder = (wielderT.position - moonPos).normalized;
+                        if (dirToWielder.sqrMagnitude > 0.001f)
+                        {
+                            Vector3 up =
+                                Mathf.Abs(Vector3.Dot(dirToWielder, Vector3.up)) > 0.99f
+                                    ? Vector3.forward
+                                    : Vector3.up;
+                            state.MoonVfxInstance.transform.rotation = Quaternion.LookRotation(
+                                dirToWielder,
+                                up
+                            );
+                        }
+                    }
                 }
             }
         }
@@ -282,8 +302,7 @@ namespace IssaPlugin.Items
             if (localInfo == null)
                 yield break;
 
-            uint localNetId =
-                localInfo.GetComponent<NetworkIdentity>()?.netId ?? 0u;
+            uint localNetId = localInfo.GetComponent<NetworkIdentity>()?.netId ?? 0u;
             bool localIsWielder = localNetId == wielderNetId;
 
             Rigidbody lastRb = null;

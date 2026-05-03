@@ -79,6 +79,9 @@ namespace IssaPlugin.Items
         private static readonly Dictionary<uint, UfoAbductionSessionState> s_sessions =
             new Dictionary<uint, UfoAbductionSessionState>();
 
+        // Tracks UFO GameObjects mid-fly-away so ClearAll() can destroy them on hole transition.
+        private static readonly List<GameObject> s_flyAwayInstances = new List<GameObject>();
+
         // ── NetworkClient message handlers ────────────────────────────────────
 
         public static void HandleBegin(UfoAbductionBeginMessage msg)
@@ -167,6 +170,11 @@ namespace IssaPlugin.Items
         {
             foreach (var kvp in s_sessions.ToArray())
                 EndSessionInternal(kvp.Key);
+
+            foreach (var go in s_flyAwayInstances)
+                if (go != null)
+                    Object.Destroy(go);
+            s_flyAwayInstances.Clear();
         }
 
         // ── Session lifecycle ─────────────────────────────────────────────────
@@ -278,9 +286,12 @@ namespace IssaPlugin.Items
                 {
                     var runner = localInfo.Movement;
                     if (runner != null)
+                    {
+                        s_flyAwayInstances.Add(state.UfoVfxInstance);
                         runner.StartCoroutine(
                             FlyAwayCoroutine(state.UfoVfxInstance, state.DropoffPos)
                         );
+                    }
                     else
                         Object.Destroy(state.UfoVfxInstance);
                     state.UfoVfxInstance = null; // prevent EndSessionInternal double-destroy
@@ -330,7 +341,10 @@ namespace IssaPlugin.Items
             }
 
             if (ufoGo != null)
+            {
+                s_flyAwayInstances.Remove(ufoGo);
                 Object.Destroy(ufoGo);
+            }
         }
 
         private static void EndSessionInternal(uint victimNetId)

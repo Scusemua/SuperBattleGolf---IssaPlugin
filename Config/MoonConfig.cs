@@ -45,19 +45,19 @@ namespace IssaPlugin
             ApproachDuration = cfg.Bind(
                 Section,
                 "ApproachDuration",
-                60f,
+                30f,
                 "Seconds for the moon to travel from spawn to above the course."
             );
             SpawnDistance = cfg.Bind(
                 Section,
                 "SpawnDistance",
-                999f,
+                300f,
                 "Horizontal distance (units) from the hole at which the moon spawns."
             );
             SpawnHeight = cfg.Bind(
                 Section,
                 "SpawnHeight",
-                999f,
+                1025f,
                 "Height (units) above ground at which the moon spawns."
             );
             ImpactHeight = cfg.Bind(

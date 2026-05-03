@@ -24,7 +24,6 @@ namespace IssaPlugin.Items
         // ── Server-side session state (wielder's bridge only) ─────────────────
 
         private bool _serverSessionActive;
-        private NetworkConnectionToClient _wielderConn;
         private Coroutine _serverCoroutine;
         private int _wielderSlot = -1;
         private Vector3 _serverImpactPos;
@@ -112,14 +111,10 @@ namespace IssaPlugin.Items
             float approachDuration = ModConfig.Moon.ApproachDuration.Value;
             float suckDuration = ModConfig.Moon.SuckDuration.Value;
 
-            Vector3 moonSpawnPos =
-                holePos
-                + /* xzDir * spawnDist + */
-                Vector3.up * spawnHeight;
+            Vector3 moonSpawnPos = holePos + xzDir * spawnDist + Vector3.up * spawnHeight;
             Vector3 moonImpactPos = holePos + Vector3.up * impactHeight;
 
             _serverImpactPos = moonImpactPos;
-            _wielderConn = conn;
             _serverSessionActive = true;
 
             uint wielderNetId = GetComponent<NetworkIdentity>().netId;
@@ -273,7 +268,6 @@ namespace IssaPlugin.Items
                 _serverCoroutine = null;
             }
 
-            _wielderConn = null;
             _wielderSlot = -1;
         }
 
@@ -285,12 +279,14 @@ namespace IssaPlugin.Items
             // handles VFX teardown on each client directly via ClearAll().
             if (_serverSessionActive)
                 ServerEndSession(broadcast: false);
+        }
 
-            if (_serverCoroutine != null)
-            {
-                StopCoroutine(_serverCoroutine);
-                _serverCoroutine = null;
-            }
+        public override void OnStopServer()
+        {
+            // Broadcast on player disconnect so other clients clean up the moon VFX.
+            // (ServerHoleCleanup handles hole transitions; OnStopServer handles disconnects.)
+            if (_serverSessionActive)
+                ServerEndSession(broadcast: true);
         }
 
         public override void ClientHoleCleanup()
