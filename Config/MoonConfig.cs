@@ -33,6 +33,10 @@ namespace IssaPlugin
 
         public ConfigEntry<float> FinalScale { get; private set; }
 
+        // Dusk effect
+        public ConfigEntry<bool> DuskEnabled { get; private set; }
+        public ConfigEntry<float> DuskFadeDuration { get; private set; }
+
         public MoonConfig(ConfigFile cfg, GlobalConfig global)
         {
             GiveKey = cfg.Bind(
@@ -116,6 +120,18 @@ namespace IssaPlugin
             );
             InitialScale = cfg.Bind(Section, "InitialScale", 0.01f, "Initial scale of the moon.");
             FinalScale = cfg.Bind(Section, "FinalScale", 3f, "Final scale of the moon.");
+            DuskEnabled = cfg.Bind(
+                Section,
+                "DuskEnabled",
+                true,
+                "If true, the sky shifts to a dusk palette while the moon is active."
+            );
+            DuskFadeDuration = cfg.Bind(
+                Section,
+                "DuskFadeDuration",
+                3f,
+                "Seconds to fade the sky in/out when the moon session begins or ends."
+            );
         }
     }
 }

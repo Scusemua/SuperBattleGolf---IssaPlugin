@@ -533,6 +533,13 @@ namespace IssaPlugin.Items
             Vector3 focusPoint = Vector3.Lerp(victimPos, ufoPos, 0.5f);
             float separation = Vector3.Distance(victimPos, ufoPos);
 
+            // During approach the UFO is far from the victim; 0.7× separation puts both
+            // outside the vertical half-FOV (35.5° > 27.5°), so use 1.2× instead.
+            // During abduction/transit use 0.7× — separation is small and the tighter
+            // view keeps the beam and victim readable.
+            bool inApproach = elapsed < state.ApproachDuration;
+            float separationMultiplier = inApproach ? 1.2f : 0.7f;
+
             // During transit the victim is locked 1.5 units below the UFO, so separation
             // collapses to near-zero and the camera becomes too close. Smoothly zoom out
             // to 45 units over the transit phase so the full flight is visible.
@@ -542,7 +549,7 @@ namespace IssaPlugin.Items
                 : 0f;
             float minDist = Mathf.Lerp(12f, 45f, transitT);
 
-            float camDist = Mathf.Max(separation * 0.7f, minDist);
+            float camDist = Mathf.Max(separation * separationMultiplier, minDist);
 
             float orbitAngle = elapsed * 20f;
             Vector3 camOffset =

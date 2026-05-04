@@ -157,9 +157,298 @@ namespace IssaPlugin.Items
             }
         }
 
+        // ── Dusk skybox effect ────────────────────────────────────────────────
+
+        private static readonly Color DuskSkyColor = new Color(0.05f, 0.02f, 0.08f);
+        private static readonly Color DuskHorizonColor = new Color(0.6f, 0.15f, 0.0f);
+        private static readonly Vector4 DuskSunDirection = new Vector4(0.5f, -0.2f, 0.5f, 0f);
+        private const float DuskMoonCycle = 0.3f;
+        private const float DuskStarsExposure = 5.0f;
+        private const float DuskAmbientIntensity = 0.3f;
+        private static readonly Color DuskAmbientLight = new Color(0.55f, 0.25f, 0.05f);
+        private static readonly Color DuskFogColor = new Color(0.6f, 0.25f, 0.05f);
+        private const float DuskFogDensity = 0.008f;
+        private static readonly Color DuskSunLightColor = new Color(1.0f, 0.45f, 0.1f);
+        private const float DuskSunLightIntensity = 0.4f;
+
+        private static Material _duskSkyInstance;
+        private static Material _originalSharedSkybox;
+        private static Color _origSkyColor,
+            _origHorizonColor;
+        private static Vector4 _origSunDirection;
+        private static float _origMoonCycle,
+            _origStarsExposure,
+            _origAmbientIntensity;
+        private static Color _savedAmbientLight,
+            _savedFogColor;
+        private static float _savedFogDensity;
+        private static bool _savedFog;
+        private static Light _sunLight;
+        private static Color _savedSunColor;
+        private static float _savedSunIntensity;
+        private static Coroutine _duskCoroutine;
+        private static MonoBehaviour _duskCoroutineHost;
+
+        private static void BeginDuskEffect(MonoBehaviour host)
+        {
+            if (!ModConfig.Moon.DuskEnabled.Value || host == null)
+                return;
+
+            _originalSharedSkybox = RenderSettings.skybox;
+            if (_originalSharedSkybox == null)
+                return;
+
+            _origSkyColor = _originalSharedSkybox.GetColor("_SkyColor");
+            _origHorizonColor = _originalSharedSkybox.GetColor("_HorizonColor");
+            _origSunDirection = _originalSharedSkybox.GetVector("_SunDirection");
+            _origMoonCycle = _originalSharedSkybox.GetFloat("_MoonCycle");
+            _origStarsExposure = _originalSharedSkybox.GetFloat("_StarsExposure");
+            _origAmbientIntensity = _originalSharedSkybox.GetFloat("_AmbientIntensity");
+
+            _savedAmbientLight = RenderSettings.ambientLight;
+            _savedFog = RenderSettings.fog;
+            _savedFogColor = RenderSettings.fogColor;
+            _savedFogDensity = RenderSettings.fogDensity;
+
+            _sunLight = RenderSettings.sun;
+            if (_sunLight == null)
+            {
+                foreach (var light in Object.FindObjectsByType<Light>(FindObjectsSortMode.None))
+                {
+                    if (light.type == LightType.Directional && light.isActiveAndEnabled)
+                    {
+                        _sunLight = light;
+                        break;
+                    }
+                }
+            }
+            if (_sunLight != null)
+            {
+                _savedSunColor = _sunLight.color;
+                _savedSunIntensity = _sunLight.intensity;
+            }
+
+            _duskSkyInstance = Object.Instantiate(_originalSharedSkybox);
+            RenderSettings.skybox = _duskSkyInstance;
+            _duskCoroutineHost = host;
+            _duskCoroutine = host.StartCoroutine(DuskFadeIn());
+        }
+
+        private static void EndDuskEffect()
+        {
+            if (_duskSkyInstance == null)
+                return;
+
+            if (_duskCoroutine != null && _duskCoroutineHost != null)
+                _duskCoroutineHost.StopCoroutine(_duskCoroutine);
+            _duskCoroutine = null;
+
+            if (_duskCoroutineHost == null)
+            {
+                ClearDuskState();
+                return;
+            }
+
+            _duskCoroutine = _duskCoroutineHost.StartCoroutine(DuskFadeOut());
+        }
+
+        private static void RestoreSkyboxImmediate()
+        {
+            if (_duskSkyInstance == null)
+                return;
+
+            if (_duskCoroutine != null && _duskCoroutineHost != null)
+                _duskCoroutineHost.StopCoroutine(_duskCoroutine);
+            _duskCoroutine = null;
+
+            ClearDuskState();
+        }
+
+        private static void ClearDuskState()
+        {
+            RenderSettings.skybox = _originalSharedSkybox;
+            RenderSettings.ambientLight = _savedAmbientLight;
+            RenderSettings.fog = _savedFog;
+            RenderSettings.fogColor = _savedFogColor;
+            RenderSettings.fogDensity = _savedFogDensity;
+            if (_sunLight != null)
+            {
+                _sunLight.color = _savedSunColor;
+                _sunLight.intensity = _savedSunIntensity;
+                _sunLight = null;
+            }
+            if (_duskSkyInstance != null)
+            {
+                Object.Destroy(_duskSkyInstance);
+                _duskSkyInstance = null;
+            }
+            _originalSharedSkybox = null;
+            _duskCoroutineHost = null;
+        }
+
+        private static IEnumerator DuskFadeIn()
+        {
+            bool hasSkyColor = _duskSkyInstance.HasProperty("_SkyColor");
+            bool hasHorizonColor = _duskSkyInstance.HasProperty("_HorizonColor");
+            bool hasSunDirection = _duskSkyInstance.HasProperty("_SunDirection");
+            bool hasMoonCycle = _duskSkyInstance.HasProperty("_MoonCycle");
+            bool hasStarsExposure = _duskSkyInstance.HasProperty("_StarsExposure");
+            bool hasAmbientIntensity = _duskSkyInstance.HasProperty("_AmbientIntensity");
+
+            if (
+                !hasSkyColor
+                && !hasHorizonColor
+                && !hasSunDirection
+                && !hasMoonCycle
+                && !hasStarsExposure
+                && !hasAmbientIntensity
+            )
+            {
+                IssaPluginPlugin.Log.LogWarning(
+                    "[MoonClientLogic] DuskEffect: skybox has no matching shader properties — dusk effect will not appear."
+                );
+                yield break;
+            }
+
+            RenderSettings.fog = true;
+
+            float duration = ModConfig.Moon.DuskFadeDuration.Value;
+            float elapsed = 0f;
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+
+                if (_duskSkyInstance == null)
+                    yield break;
+
+                if (hasSkyColor)
+                    _duskSkyInstance.SetColor("_SkyColor", Color.Lerp(_origSkyColor, DuskSkyColor, t));
+                if (hasHorizonColor)
+                    _duskSkyInstance.SetColor("_HorizonColor", Color.Lerp(_origHorizonColor, DuskHorizonColor, t));
+                if (hasSunDirection)
+                    _duskSkyInstance.SetVector("_SunDirection", Vector4.Lerp(_origSunDirection, DuskSunDirection, t));
+                if (hasMoonCycle)
+                    _duskSkyInstance.SetFloat("_MoonCycle", Mathf.Lerp(_origMoonCycle, DuskMoonCycle, t));
+                if (hasStarsExposure)
+                    _duskSkyInstance.SetFloat("_StarsExposure", Mathf.Lerp(_origStarsExposure, DuskStarsExposure, t));
+                if (hasAmbientIntensity)
+                    _duskSkyInstance.SetFloat("_AmbientIntensity", Mathf.Lerp(_origAmbientIntensity, DuskAmbientIntensity, t));
+
+                RenderSettings.ambientLight = Color.Lerp(_savedAmbientLight, DuskAmbientLight, t);
+                RenderSettings.fogColor = Color.Lerp(_savedFogColor, DuskFogColor, t);
+                RenderSettings.fogDensity = Mathf.Lerp(_savedFogDensity, DuskFogDensity, t);
+                if (_sunLight != null)
+                {
+                    _sunLight.color = Color.Lerp(_savedSunColor, DuskSunLightColor, t);
+                    _sunLight.intensity = Mathf.Lerp(_savedSunIntensity, DuskSunLightIntensity, t);
+                }
+
+                yield return null;
+            }
+        }
+
+        private static IEnumerator DuskFadeOut()
+        {
+            if (_duskSkyInstance == null)
+                yield break;
+
+            // Snapshot current values so we fade from where we actually are —
+            // handles sessions ending mid-approach before fade-in completes.
+            bool hasSkyColor = _duskSkyInstance.HasProperty("_SkyColor");
+            bool hasHorizonColor = _duskSkyInstance.HasProperty("_HorizonColor");
+            bool hasSunDirection = _duskSkyInstance.HasProperty("_SunDirection");
+            bool hasMoonCycle = _duskSkyInstance.HasProperty("_MoonCycle");
+            bool hasStarsExposure = _duskSkyInstance.HasProperty("_StarsExposure");
+            bool hasAmbientIntensity = _duskSkyInstance.HasProperty("_AmbientIntensity");
+
+            Color fromSkyColor = hasSkyColor
+                ? _duskSkyInstance.GetColor("_SkyColor")
+                : _origSkyColor;
+            Color fromHorizonColor = hasHorizonColor
+                ? _duskSkyInstance.GetColor("_HorizonColor")
+                : _origHorizonColor;
+            Vector4 fromSunDirection = hasSunDirection
+                ? _duskSkyInstance.GetVector("_SunDirection")
+                : _origSunDirection;
+            float fromMoonCycle = hasMoonCycle
+                ? _duskSkyInstance.GetFloat("_MoonCycle")
+                : _origMoonCycle;
+            float fromStarsExposure = hasStarsExposure
+                ? _duskSkyInstance.GetFloat("_StarsExposure")
+                : _origStarsExposure;
+            float fromAmbientIntensity = hasAmbientIntensity
+                ? _duskSkyInstance.GetFloat("_AmbientIntensity")
+                : _origAmbientIntensity;
+
+            Color fromAmbientLight = RenderSettings.ambientLight;
+            Color fromFogColor = RenderSettings.fogColor;
+            float fromFogDensity = RenderSettings.fogDensity;
+            Color fromSunColor = _sunLight != null ? _sunLight.color : _savedSunColor;
+            float fromSunIntensity = _sunLight != null ? _sunLight.intensity : _savedSunIntensity;
+
+            float duration = ModConfig.Moon.DuskFadeDuration.Value;
+            float elapsed = 0f;
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+
+                if (_duskSkyInstance == null)
+                    yield break;
+
+                if (hasSkyColor)
+                    _duskSkyInstance.SetColor(
+                        "_SkyColor",
+                        Color.Lerp(fromSkyColor, _origSkyColor, t)
+                    );
+                if (hasHorizonColor)
+                    _duskSkyInstance.SetColor(
+                        "_HorizonColor",
+                        Color.Lerp(fromHorizonColor, _origHorizonColor, t)
+                    );
+                if (hasSunDirection)
+                    _duskSkyInstance.SetVector(
+                        "_SunDirection",
+                        Vector4.Lerp(fromSunDirection, _origSunDirection, t)
+                    );
+                if (hasMoonCycle)
+                    _duskSkyInstance.SetFloat(
+                        "_MoonCycle",
+                        Mathf.Lerp(fromMoonCycle, _origMoonCycle, t)
+                    );
+                if (hasStarsExposure)
+                    _duskSkyInstance.SetFloat(
+                        "_StarsExposure",
+                        Mathf.Lerp(fromStarsExposure, _origStarsExposure, t)
+                    );
+                if (hasAmbientIntensity)
+                    _duskSkyInstance.SetFloat(
+                        "_AmbientIntensity",
+                        Mathf.Lerp(fromAmbientIntensity, _origAmbientIntensity, t)
+                    );
+
+                RenderSettings.ambientLight = Color.Lerp(fromAmbientLight, _savedAmbientLight, t);
+                RenderSettings.fogColor = Color.Lerp(fromFogColor, _savedFogColor, t);
+                RenderSettings.fogDensity = Mathf.Lerp(fromFogDensity, _savedFogDensity, t);
+                if (_sunLight != null)
+                {
+                    _sunLight.color = Color.Lerp(fromSunColor, _savedSunColor, t);
+                    _sunLight.intensity = Mathf.Lerp(fromSunIntensity, _savedSunIntensity, t);
+                }
+
+                yield return null;
+            }
+
+            ClearDuskState();
+        }
+
         /// Destroys all active sessions. Called by MoonNetworkBridge.ClientHoleCleanup().
         public static void ClearAll()
         {
+            RestoreSkyboxImmediate();
             foreach (var kvp in new List<uint>(s_sessions.Keys))
                 EndSessionInternal(kvp);
         }
@@ -219,6 +508,8 @@ namespace IssaPlugin.Items
                 state.ForceCoroutine = movement.StartCoroutine(ForceCoroutine(msg.WielderNetId));
             }
 
+            BeginDuskEffect(localInfo.Movement);
+
             IssaPluginPlugin.Log.LogInfo(
                 $"[MoonClientLogic] Session started. wielder={msg.WielderNetId} spawnPos={msg.MoonSpawnPos} impactPos={msg.MoonImpactPos}"
             );
@@ -273,6 +564,7 @@ namespace IssaPlugin.Items
                 $"[MoonClientLogic] Moon explosion at {explosionPos} (wielder={wielderNetId})."
             );
 
+            EndDuskEffect();
             EndSessionInternal(wielderNetId);
         }
 
