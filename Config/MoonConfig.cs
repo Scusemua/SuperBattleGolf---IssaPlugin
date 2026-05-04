@@ -33,6 +33,9 @@ namespace IssaPlugin
 
         public ConfigEntry<float> FinalScale { get; private set; }
 
+        // Fly-away
+        public ConfigEntry<float> FlyAwayDuration { get; private set; }
+
         // Dusk effect
         public ConfigEntry<bool> DuskEnabled { get; private set; }
         public ConfigEntry<float> DuskFadeDuration { get; private set; }
@@ -120,6 +123,12 @@ namespace IssaPlugin
             );
             InitialScale = cfg.Bind(Section, "InitialScale", 0.01f, "Initial scale of the moon.");
             FinalScale = cfg.Bind(Section, "FinalScale", 3f, "Final scale of the moon.");
+            FlyAwayDuration = cfg.Bind(
+                Section,
+                "FlyAwayDuration",
+                5f,
+                "Seconds the moon takes to fly back to its spawn point after the session ends. Set to 0 to destroy it instantly."
+            );
             DuskEnabled = cfg.Bind(
                 Section,
                 "DuskEnabled",

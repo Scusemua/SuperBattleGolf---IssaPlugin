@@ -324,17 +324,35 @@ namespace IssaPlugin.Items
                     yield break;
 
                 if (hasSkyColor)
-                    _duskSkyInstance.SetColor("_SkyColor", Color.Lerp(_origSkyColor, DuskSkyColor, t));
+                    _duskSkyInstance.SetColor(
+                        "_SkyColor",
+                        Color.Lerp(_origSkyColor, DuskSkyColor, t)
+                    );
                 if (hasHorizonColor)
-                    _duskSkyInstance.SetColor("_HorizonColor", Color.Lerp(_origHorizonColor, DuskHorizonColor, t));
+                    _duskSkyInstance.SetColor(
+                        "_HorizonColor",
+                        Color.Lerp(_origHorizonColor, DuskHorizonColor, t)
+                    );
                 if (hasSunDirection)
-                    _duskSkyInstance.SetVector("_SunDirection", Vector4.Lerp(_origSunDirection, DuskSunDirection, t));
+                    _duskSkyInstance.SetVector(
+                        "_SunDirection",
+                        Vector4.Lerp(_origSunDirection, DuskSunDirection, t)
+                    );
                 if (hasMoonCycle)
-                    _duskSkyInstance.SetFloat("_MoonCycle", Mathf.Lerp(_origMoonCycle, DuskMoonCycle, t));
+                    _duskSkyInstance.SetFloat(
+                        "_MoonCycle",
+                        Mathf.Lerp(_origMoonCycle, DuskMoonCycle, t)
+                    );
                 if (hasStarsExposure)
-                    _duskSkyInstance.SetFloat("_StarsExposure", Mathf.Lerp(_origStarsExposure, DuskStarsExposure, t));
+                    _duskSkyInstance.SetFloat(
+                        "_StarsExposure",
+                        Mathf.Lerp(_origStarsExposure, DuskStarsExposure, t)
+                    );
                 if (hasAmbientIntensity)
-                    _duskSkyInstance.SetFloat("_AmbientIntensity", Mathf.Lerp(_origAmbientIntensity, DuskAmbientIntensity, t));
+                    _duskSkyInstance.SetFloat(
+                        "_AmbientIntensity",
+                        Mathf.Lerp(_origAmbientIntensity, DuskAmbientIntensity, t)
+                    );
 
                 RenderSettings.ambientLight = Color.Lerp(_savedAmbientLight, DuskAmbientLight, t);
                 RenderSettings.fogColor = Color.Lerp(_savedFogColor, DuskFogColor, t);
@@ -564,8 +582,58 @@ namespace IssaPlugin.Items
                 $"[MoonClientLogic] Moon explosion at {explosionPos} (wielder={wielderNetId})."
             );
 
+            // Detach the VFX so EndSessionInternal doesn't destroy it — we'll fly it away instead.
+            float flyDuration = ModConfig.Moon.FlyAwayDuration.Value;
+            GameObject flyVfx = null;
+            MonoBehaviour flyHost = null;
+            if (flyDuration > 0f && state.MoonVfxInstance != null && state.ForceMovement != null)
+            {
+                flyVfx = state.MoonVfxInstance;
+                flyHost = state.ForceMovement;
+                state.MoonVfxInstance = null;
+            }
+
             EndDuskEffect();
             EndSessionInternal(wielderNetId);
+
+            if (flyVfx != null)
+                flyHost.StartCoroutine(
+                    FlyAwayCoroutine(
+                        flyVfx,
+                        explosionPos,
+                        state.MoonSpawnPos,
+                        state.FinalScale,
+                        state.InitialScale,
+                        flyDuration
+                    )
+                );
+        }
+
+        private static IEnumerator FlyAwayCoroutine(
+            GameObject vfx,
+            Vector3 from,
+            Vector3 to,
+            float fromScale,
+            float toScale,
+            float duration
+        )
+        {
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                if (vfx == null)
+                    yield break;
+
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                t *= t; // ease in — accelerates as it leaves
+                vfx.transform.position = Vector3.Lerp(from, to, t);
+                vfx.transform.localScale = Vector3.one * Mathf.Lerp(fromScale, toScale, t);
+                yield return null;
+            }
+
+            if (vfx != null)
+                Object.Destroy(vfx);
         }
 
         private static void EndSessionInternal(uint wielderNetId)
