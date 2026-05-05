@@ -140,8 +140,14 @@ namespace IssaPlugin.Items
             );
             if (numHits > 0)
             {
-                var hit = raycastHitBuffer[0];
-                return hit.point.y + markerSurfaceOffset;
+                // RaycastNonAlloc doesn't guarantee distance ordering. For a downward ray,
+                // "closest to origin" means highest Y — the topmost walkable surface, which
+                // is where a player falling from above would land.
+                int closest = 0;
+                for (int i = 1; i < numHits; i++)
+                    if (raycastHitBuffer[i].distance < raycastHitBuffer[closest].distance)
+                        closest = i;
+                return raycastHitBuffer[closest].point.y + markerSurfaceOffset;
             }
 
             // Nothing hit — keep the marker at its current height so it doesn't
