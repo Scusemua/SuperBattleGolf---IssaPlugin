@@ -15,6 +15,7 @@ namespace IssaPlugin
         public ConfigEntry<float> PhysicsDynamicFriction { get; private set; }
         public ConfigEntry<float> PhysicsBounciness { get; private set; }
         public ConfigEntry<float> PhysicsAngularDamping { get; private set; }
+        public ConfigEntry<float> PhysicsHitSpinFactor { get; private set; }
 
         public CubeBallConfig(ConfigFile cfg, GlobalConfig global)
         {
@@ -28,7 +29,7 @@ namespace IssaPlugin
             Duration = cfg.Bind(
                 Section,
                 "Duration",
-                10f,
+                20f,
                 "Seconds the target player's golf ball remains a cube."
             );
             SpawnWeight = cfg.Bind(
@@ -40,13 +41,13 @@ namespace IssaPlugin
             PhysicsStaticFriction = cfg.Bind(
                 Section,
                 "PhysicsStaticFriction",
-                1f,
+                3f,
                 "Static friction of the cube's physics material. Higher = more grip, more tumbling."
             );
             PhysicsDynamicFriction = cfg.Bind(
                 Section,
                 "PhysicsDynamicFriction",
-                1f,
+                2f,
                 "Dynamic friction of the cube's physics material. Higher = more resistance while sliding."
             );
             PhysicsBounciness = cfg.Bind(
@@ -66,6 +67,17 @@ namespace IssaPlugin
                     "Angular damping override while the cube effect is active. Lower = more tumbling. "
                         + "The game normally resets this each frame; this patch overrides it after the reset.",
                     new AcceptableValueRange<float>(0.0f, 10.0f)
+                )
+            );
+            PhysicsHitSpinFactor = cfg.Bind(
+                Section,
+                "PhysicsHitSpinFactor",
+                5.0f,
+                new ConfigDescription(
+                    "Multiplier for the angular impulse applied when a cubed ball is hit. "
+                        + "Higher = cube starts tumbling more immediately instead of sliding flat. "
+                        + "Set to 0 to disable.",
+                    new AcceptableValueRange<float>(0.0f, 20.0f)
                 )
             );
         }

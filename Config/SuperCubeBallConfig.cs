@@ -25,7 +25,7 @@ namespace IssaPlugin
             Duration = cfg.Bind(
                 Section,
                 "Duration",
-                8f,
+                20f,
                 "Seconds all other players' golf balls remain cubes."
             );
             SpawnWeight = cfg.Bind(
