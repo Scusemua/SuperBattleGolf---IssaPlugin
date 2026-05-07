@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 1384854797
+CRC: 4065499055
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 1a8f272f4994f3ee87df0799ad8d8c93
+    Hash: b7f1c1c76665b7b77157baf04fb93367
   TypeTreeHash:
     serializedVersion: 2
     Hash: 82d52513d6b19822b87b688cdb5147d6
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: bf96b63843baa67610b98b28adacb725
+    Hash: d1cc687be7f867662fb8e545acef06c6
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -93,6 +93,7 @@ Assets:
 - Assets/Assets/spinach.prefab
 - Assets/Assets/super_cube_ball_icon.png
 - Assets/Assets/donut_icon_v2.png
+- Assets/Assets/bomb_for_exploding_balls.prefab
 - Assets/Assets/cube_ball_icon.png
 - Assets/Assets/flamethrower.prefab
 - Assets/Assets/gravity_gun_vfx.prefab

@@ -555,7 +555,7 @@ namespace IssaPlugin.Items
                 ),
                 HandheldPrefab(
                     p => ExplosiveGolfBallsHandheldPrefab = p,
-                    "explosive_golf_balls_handheld.prefab",
+                    "bomb_for_exploding_balls.prefab",
                     optional: true
                 ),
                 // ── First Place Star ──────────────────────────────────────────
