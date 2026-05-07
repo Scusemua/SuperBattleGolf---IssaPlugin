@@ -7,7 +7,7 @@ using UnityEngine;
 namespace IssaPlugin.Patches
 {
     /// <summary>
-    /// Prefix+Postfix on Hittable.HitWithGolfSwingInternal (server-side only).
+    /// Postfix on Hittable.HitWithGolfSwingInternal (server-side only).
     ///
     /// When the hitter's inventory contains Explosive Golf Balls, one use is consumed
     /// and ExplosiveGolfBallsBehaviour is attached to the ball.  That component fires
@@ -19,45 +19,16 @@ namespace IssaPlugin.Patches
         static MethodBase TargetMethod() =>
             AccessTools.Method(typeof(Hittable), "HitWithGolfSwingInternal");
 
-        // Captured in Prefix before HitWithGolfSwingInternal has a chance to clear LockOnTarget.
-        private static bool _pendingIsHoming;
-
-        static void Prefix(Hittable __instance, PlayerGolfer hitter)
+        static void Postfix(Hittable __instance, PlayerGolfer hitter, Hittable homingTargetHittable)
         {
-            _pendingIsHoming = false;
-            if (!NetworkServer.active)
+            if (!NetworkServer.active || hitter == null || !__instance.AsEntity.IsGolfBall)
             {
-                IssaPluginPlugin.Log.LogInfo("[ExplosiveGolfBalls] Prefix: skipped — not server.");
                 return;
             }
-            if (!__instance.AsEntity.IsGolfBall)
-            {
-                IssaPluginPlugin.Log.LogInfo("[ExplosiveGolfBalls] Prefix: skipped — not a golf ball.");
-                return;
-            }
-            _pendingIsHoming = hitter?.LockOnTarget != null;
-            IssaPluginPlugin.Log.LogInfo(
-                $"[ExplosiveGolfBalls] Prefix: isGolfBall=true hitter={hitter?.name} "
-                + $"LockOnTarget={hitter?.LockOnTarget?.name ?? "null"} pendingIsHoming={_pendingIsHoming}"
-            );
-        }
-
-        static void Postfix(Hittable __instance, PlayerGolfer hitter)
-        {
-            if (!NetworkServer.active)
-                return;
-            if (hitter == null)
-            {
-                IssaPluginPlugin.Log.LogInfo("[ExplosiveGolfBalls] Postfix: skipped — hitter is null.");
-                return;
-            }
-            if (!__instance.AsEntity.IsGolfBall)
-                return;
 
             var inventory = hitter.PlayerInfo?.Inventory;
             if (inventory == null)
             {
-                IssaPluginPlugin.Log.LogInfo("[ExplosiveGolfBalls] Postfix: skipped — inventory is null.");
                 return;
             }
 
@@ -66,26 +37,15 @@ namespace IssaPlugin.Patches
                 ItemRegistry.ExplosiveGolfBallsItemType
             );
 
-            IssaPluginPlugin.Log.LogInfo(
-                $"[ExplosiveGolfBalls] Postfix: hitter={hitter.name} slot={slot} "
-                + $"pendingIsHoming={_pendingIsHoming} lockOnOnly={ModConfig.ExplosiveGolfBalls.LockOnOnly.Value}"
-            );
+            bool isHoming = homingTargetHittable != null;
 
-            if (slot < 0)
+            if (slot < 0 || __instance.GetComponent<ExplosiveGolfBallsBehaviour>() != null)
             {
-                IssaPluginPlugin.Log.LogInfo("[ExplosiveGolfBalls] Postfix: skipped — item not in inventory.");
                 return;
             }
 
-            if (ModConfig.ExplosiveGolfBalls.LockOnOnly.Value && !_pendingIsHoming)
+            if (ModConfig.ExplosiveGolfBalls.LockOnOnly.Value && !isHoming)
             {
-                IssaPluginPlugin.Log.LogInfo("[ExplosiveGolfBalls] Postfix: skipped — LockOnOnly=true but shot was not homing.");
-                return;
-            }
-
-            if (__instance.GetComponent<ExplosiveGolfBallsBehaviour>() != null)
-            {
-                IssaPluginPlugin.Log.LogInfo("[ExplosiveGolfBalls] Postfix: skipped — behaviour already attached.");
                 return;
             }
 
