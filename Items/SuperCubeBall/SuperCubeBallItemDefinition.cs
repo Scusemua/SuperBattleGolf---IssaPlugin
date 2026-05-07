@@ -15,7 +15,7 @@ namespace IssaPlugin.Items
         public override GameObject HeldModelPrefab => AssetLoader.CubeBallHandheldPrefab;
 
         public override int MaxUses => (int)ModConfig.SuperCubeBall.Uses.Value;
-        public override float DefaultPoolWeight => ModConfig.SuperCubeBall.SpawnWeight.Value;
+        public override float DefaultPoolWeight => 3f;
         public override Key GiveKey => ModConfig.SuperCubeBall.GiveKey.Value;
 
         public override void OnUse(PlayerInventory inventory)

@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 173470609
+CRC: 2485507109
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 5eacc5079bf68710156b8f0cbc03c590
+    Hash: 83efcd084efbd3865b12407a920b036a
   TypeTreeHash:
     serializedVersion: 2
     Hash: 82d52513d6b19822b87b688cdb5147d6
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 542c4da680ef0edade1f5cc735d6bba7
+    Hash: cae21df3175d9f594a522cd310c8be45
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -91,7 +91,9 @@ Assets:
 - Assets/Assets/wind_storm_icon.png
 - Assets/Assets/bat_icon.png
 - Assets/Assets/spinach.prefab
+- Assets/Assets/super_cube_ball_icon.png
 - Assets/Assets/donut_icon_v2.png
+- Assets/Assets/cube_ball_icon.png
 - Assets/Assets/flamethrower.prefab
 - Assets/Assets/gravity_gun_vfx.prefab
 - Assets/Assets/javelin_target_indicator.prefab
@@ -153,9 +155,10 @@ Assets:
 - Assets/Assets/drone_swarm_tablet.prefab
 - Assets/Assets/freeze_effect_icon.png
 - Assets/Assets/DroppedCustomItem.prefab
-- Assets/Assets/gravity_remote_icon.png
+- Assets/Assets/rubixcube.prefab
 - Assets/Assets/smoke_prefab.prefab
 - Assets/Assets/player_linker_rocket.prefab
+- Assets/Assets/gravity_remote_icon.png
 - Assets/Assets/teleporter_icon.png
 - Assets/Assets/sniper_scope.png
 - Assets/Assets/nuclear_bomb.prefab
