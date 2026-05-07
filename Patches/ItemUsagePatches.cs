@@ -38,7 +38,7 @@ namespace IssaPlugin.Patches
 
             var movement = __instance.PlayerInfo?.Movement;
             if (
-                movement != null && movement.IsKnockedOutOrRecovering
+                (movement != null && movement.IsKnockedOutOrRecovering)
                 || __instance.PlayerInfo?.AsHittable?.IsFrozen == true
             )
             {
