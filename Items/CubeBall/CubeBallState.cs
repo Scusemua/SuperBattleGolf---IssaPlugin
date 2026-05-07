@@ -43,6 +43,12 @@ namespace IssaPlugin.Items
                 worldCenter = b.center;
             }
 
+            // Convert visual world size → local space once; reused for both collider and mesh.
+            float uniformScale = transform.lossyScale.x;
+            float localSide = worldSide > 0f
+                ? (uniformScale > 0f ? worldSide / uniformScale : worldSide)
+                : 0f;
+
             // ── Collider swap ─────────────────────────────────────────────────
             _sphere = GetComponent<SphereCollider>();
             if (_sphere != null)
@@ -51,11 +57,8 @@ namespace IssaPlugin.Items
 
                 _box = gameObject.AddComponent<BoxCollider>();
 
-                if (worldSide > 0f)
+                if (localSide > 0f)
                 {
-                    // Convert world size → local space (handles non-unit transform scale).
-                    float uniformScale = transform.lossyScale.x;
-                    float localSide = uniformScale > 0f ? worldSide / uniformScale : worldSide;
                     _box.size = Vector3.one * localSide;
                     _box.center = transform.InverseTransformPoint(worldCenter);
                 }
@@ -103,17 +106,11 @@ namespace IssaPlugin.Items
 
             _cubeChild.transform.SetParent(transform, worldPositionStays: false);
 
-            if (worldSide > 0f)
+            if (localSide > 0f)
             {
                 // Position the cube child at the visual center of the ball in local space.
                 _cubeChild.transform.localPosition = transform.InverseTransformPoint(worldCenter);
-
-                // The cube primitive mesh has unit vertices (±0.5), so localScale = worldSide
-                // gives the right world-space size, divided by parent lossyScale to
-                // counteract the parent's own scale.
-                float uniformScale = transform.lossyScale.x;
-                float localCubeScale = uniformScale > 0f ? worldSide / uniformScale : worldSide;
-                _cubeChild.transform.localScale = Vector3.one * localCubeScale;
+                _cubeChild.transform.localScale = Vector3.one * localSide;
             }
             else
             {
