@@ -151,14 +151,16 @@ namespace IssaPlugin.Items
         public static void HandleCubeBallEnd(CubeBallEndMessage msg)
         {
             var ball = FindBall(msg.TargetNetId);
-            ball?.GetComponent<CubeBallState>()?.Revert();
+            var state = ball?.GetComponent<CubeBallState>();
+            state?.Revert();
 
             if (IsLocalPlayerTarget(msg.TargetNetId))
                 CubeBallOverlay.Instance?.SetCubed(false);
 
-            IssaPluginPlugin.Log.LogInfo(
-                $"[CubeBall] Cube reverted for ball owned by netId={msg.TargetNetId}."
-            );
+            if (state != null)
+                IssaPluginPlugin.Log.LogInfo(
+                    $"[CubeBall] Cube reverted for ball owned by netId={msg.TargetNetId}."
+                );
         }
 
         // ── Internal ──────────────────────────────────────────────────────────
@@ -178,7 +180,8 @@ namespace IssaPlugin.Items
             // Effect has expired (or was cleaned up externally).
             _cubeEndTimes.Remove(targetNetId);
             _cubeCoroutines.Remove(targetNetId);
-            NetworkServer.SendToAll(new CubeBallEndMessage { TargetNetId = targetNetId });
+            if (NetworkServer.active)
+                NetworkServer.SendToAll(new CubeBallEndMessage { TargetNetId = targetNetId });
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[CubeBall] Cube effect timed out for netId={targetNetId}."
