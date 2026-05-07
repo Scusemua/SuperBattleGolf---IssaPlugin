@@ -73,11 +73,7 @@ namespace IssaPlugin.Items
         //  NetworkBridgeBase overrides
         // ================================================================
 
-        public override void ServerHoleCleanup()
-        {
-            // Delegate to shared helper; safe to call from multiple bridges.
-            CubeBallHelper.ServerCleanupAll();
-        }
+        public override void ServerHoleCleanup() { }
 
         public override void ClientHoleCleanup() { }
     }
