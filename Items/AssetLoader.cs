@@ -147,10 +147,6 @@ namespace IssaPlugin.Items
         /// Null until cube_ball_handheld.prefab is added to the bundle.
         public static GameObject CubeBallHandheldPrefab { get; private set; }
 
-        /// Unity built-in cube mesh, captured at load time and used by CubeBallState
-        /// to replace golf-ball mesh renderers.  Never null after Load() completes.
-        public static Mesh CubeMesh { get; private set; }
-
         // ── Moon ──────────────────────────────────────────────────────────────
         /// Item icon for Majora's Moon. Null until moon_icon.png is added to the bundle.
         public static Sprite MoonIcon { get; private set; }
@@ -588,15 +584,6 @@ namespace IssaPlugin.Items
 
             // SuperCubeBall icon falls back to CubeBall icon when the dedicated one is absent.
             SuperCubeBallIcon ??= CubeBallIcon;
-
-            // Capture Unity's built-in cube mesh so CubeBallState can use it without
-            // requiring a bundle asset.  Resources.GetBuiltinResource works at runtime
-            // even in standalone builds.
-            CubeMesh = Resources.GetBuiltinResource<Mesh>("Cube.fbx");
-            if (CubeMesh == null)
-                IssaPluginPlugin.Log.LogWarning(
-                    "[Assets] Could not load built-in Cube.fbx mesh — cube ball visual will be missing."
-                );
         }
 
         // ─────────────────────────────────────────────────────────────────────
