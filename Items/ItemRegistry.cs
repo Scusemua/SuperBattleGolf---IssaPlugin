@@ -45,6 +45,8 @@ namespace IssaPlugin.Items
         public static readonly ItemType HunterDroneItemType = (ItemType)129;
         public static readonly ItemType UfoAbductionItemType = (ItemType)130;
         public static readonly ItemType MoonItemType = (ItemType)131;
+        public static readonly ItemType CubeBallItemType = (ItemType)132;
+        public static readonly ItemType SuperCubeBallItemType = (ItemType)133;
 
         // Static initialization order note: AllItems is a static field initializer that only
         // instantiates the definition objects; it does not call any abstract members. Properties like
@@ -85,6 +87,8 @@ namespace IssaPlugin.Items
                 new HunterDroneItemDefinition(),
                 new UfoAbductionItemDefinition(),
                 new MoonItemDefinition(),
+                new CubeBallItemDefinition(),
+                new SuperCubeBallItemDefinition(),
             };
 
         private static IReadOnlyDictionary<int, CustomItemDefinition> _customItemDefinitionMap;

@@ -193,6 +193,9 @@ namespace IssaPlugin.Items
             if (inputX == 0f && inputZ == 0f)
                 return;
 
+            if (keyboard[Key.LeftShift].isPressed || keyboard[Key.RightShift].isPressed)
+                moveSpeed *= ModConfig.Teleporter.SprintMultiplier.Value;
+
             Vector3 camForward = Vector3.forward;
             Vector3 camRight = Vector3.right;
 

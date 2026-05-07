@@ -70,6 +70,8 @@ namespace IssaPlugin
             gameObject.AddComponent<SpinachOverlay>();
             gameObject.AddComponent<FirstPlaceStarOverlay>();
             gameObject.AddComponent<SpawnConfigUI>();
+            gameObject.AddComponent<CubeBallManager>();
+            gameObject.AddComponent<CubeBallOverlay>();
 
             Log.LogInfo("IssaPlugin by Scusemua has loaded.");
         }

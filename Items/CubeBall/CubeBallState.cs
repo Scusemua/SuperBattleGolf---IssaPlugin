@@ -24,9 +24,7 @@ namespace IssaPlugin.Items
         public void Apply()
         {
             // ── Collider swap ─────────────────────────────────────────────────
-            _sphere = GetComponentInParent<SphereCollider>();
-            if (_sphere == null)
-                _sphere = GetComponent<SphereCollider>();
+            _sphere = GetComponent<SphereCollider>();
 
             if (_sphere != null)
             {

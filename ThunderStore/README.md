@@ -277,6 +277,10 @@ Assets used in the project:
     (https://skfb.ly/6pDZM) by Warrior364 
     Licensed under [Creative Commons Attribution](http://creativecommons.org/licenses/by/4.0/).
 
+-   "Rubix Cube"\
+    (https://skfb.ly/pABLH) by austicles
+    Licensed under [Creative Commons Attribution](http://creativecommons.org/licenses/by/4.0/).
+
 ---
 
 *IssaPlugin is a fan-made mod and is not affiliated with Brimstone or Oro Interactive.*

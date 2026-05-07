@@ -34,7 +34,7 @@ namespace IssaPlugin.Items
         /// sent (the ball is already a cube on all clients).
         public static void ServerApplyCube(uint targetNetId, float duration)
         {
-            float newEnd = Time.realtimeSinceStartup + duration;
+            float newEnd = Time.time + duration;
 
             if (_cubeEndTimes.TryGetValue(targetNetId, out float existingEnd))
             {
@@ -157,10 +157,10 @@ namespace IssaPlugin.Items
         {
             while (
                 _cubeEndTimes.TryGetValue(targetNetId, out float endTime)
-                && Time.realtimeSinceStartup < endTime
+                && Time.time < endTime
             )
             {
-                float remaining = endTime - Time.realtimeSinceStartup;
+                float remaining = endTime - Time.time;
                 yield return new WaitForSeconds(remaining);
                 // Loop again: endTime may have been extended while we waited.
             }

@@ -136,6 +136,21 @@ namespace IssaPlugin.Items
         /// Client-only UFO VFX that flies over and abducts the victim. Null until ufo_abduction.prefab is added.
         public static GameObject UfoAbductionUfoPrefab { get; private set; }
 
+        // ── CubeBall / SuperCubeBall ──────────────────────────────────────────
+        /// Item icon for Cube Ball. Null until cube_ball_icon.png is added to the bundle.
+        public static Sprite CubeBallIcon { get; private set; }
+
+        /// Item icon for Super Cube Ball. Falls back to CubeBallIcon at runtime if absent.
+        public static Sprite SuperCubeBallIcon { get; private set; }
+
+        /// Shared handheld/dropped prefab for both CubeBall and SuperCubeBall.
+        /// Null until cube_ball_handheld.prefab is added to the bundle.
+        public static GameObject CubeBallHandheldPrefab { get; private set; }
+
+        /// Unity built-in cube mesh, captured at load time and used by CubeBallState
+        /// to replace golf-ball mesh renderers.  Never null after Load() completes.
+        public static Mesh CubeMesh { get; private set; }
+
         // ── Moon ──────────────────────────────────────────────────────────────
         /// Item icon for Majora's Moon. Null until moon_icon.png is added to the bundle.
         public static Sprite MoonIcon { get; private set; }
@@ -520,6 +535,15 @@ namespace IssaPlugin.Items
                 SpriteAsset(p => MoonIcon = p, "moon_icon.png", optional: true),
                 HandheldPrefab(p => MoonHandheldPrefab = p, "moon_handheld.prefab", optional: true),
                 LocalVfxPrefab(p => MoonVfxPrefab = p, "moon.prefab"),
+                // ── CubeBall / SuperCubeBall ──────────────────────────────────
+                SpriteAsset(p => CubeBallIcon = p, "cube_ball_icon.png", optional: true),
+                SpriteAsset(p => SuperCubeBallIcon = p, "super_cube_ball_icon.png", optional: true),
+                HandheldPrefab(
+                    p => CubeBallHandheldPrefab = p,
+                    "rubixcube.prefab",
+                    optional: true,
+                    fallback: BuildCubeBallHandheldFallback
+                ),
                 // ── First Place Star ──────────────────────────────────────────
                 LocalVfxPrefab(p => GoldStarPrefab = p, "gold_star.prefab"),
             };
@@ -561,6 +585,18 @@ namespace IssaPlugin.Items
             // SuperDonut fallbacks: use Donut assets when the dedicated ones are absent.
             SuperDonutIcon ??= DonutIcon;
             SuperDonutHandheldPrefab ??= DonutHandheldPrefab;
+
+            // SuperCubeBall icon falls back to CubeBall icon when the dedicated one is absent.
+            SuperCubeBallIcon ??= CubeBallIcon;
+
+            // Capture Unity's built-in cube mesh so CubeBallState can use it without
+            // requiring a bundle asset.  Resources.GetBuiltinResource works at runtime
+            // even in standalone builds.
+            CubeMesh = Resources.GetBuiltinResource<Mesh>("Cube.fbx");
+            if (CubeMesh == null)
+                IssaPluginPlugin.Log.LogWarning(
+                    "[Assets] Could not load built-in Cube.fbx mesh — cube ball visual will be missing."
+                );
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -571,6 +607,16 @@ namespace IssaPlugin.Items
         //  Kept here so the asset table remains readable and these details are
         //  all in one place.
         // ─────────────────────────────────────────────────────────────────────
+
+        private static GameObject BuildCubeBallHandheldFallback()
+        {
+            var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            go.name = "CubeBallHandheld_Fallback";
+            go.transform.localScale = Vector3.one * 0.15f;
+            Object.DontDestroyOnLoad(go);
+            go.SetActive(false);
+            return go;
+        }
 
         private static GameObject BuildWallHandheldFallback()
         {

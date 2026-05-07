@@ -10,6 +10,7 @@ namespace IssaPlugin
         public ConfigEntry<Key> GiveKey { get; private set; }
         public ConfigEntry<float> Uses { get; private set; }
         public ConfigEntry<float> TargetMoveSpeed { get; private set; }
+        public ConfigEntry<float> SprintMultiplier { get; private set; }
         public ConfigEntry<float> MarkerRadius { get; private set; }
 
         public TeleporterConfig(ConfigFile cfg, GlobalConfig global)
@@ -26,6 +27,12 @@ namespace IssaPlugin
                 "TargetMoveSpeed",
                 60f,
                 "Speed (units/second) at which the target marker moves during the targeting phase."
+            );
+            SprintMultiplier = cfg.Bind(
+                Section,
+                "SprintMultiplier",
+                3f,
+                "Speed multiplier applied while holding Shift during the targeting phase."
             );
             MarkerRadius = cfg.Bind(
                 Section,

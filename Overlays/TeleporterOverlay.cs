@@ -123,7 +123,7 @@ namespace IssaPlugin.Overlays
             GUI.Label(new Rect(0, h - 75, w, 35), "TELEPORTER TARGETING", _titleStyle);
             GUI.Label(
                 new Rect(0, h - 42, w, 30),
-                "WASD: Move Target   |   Scroll: Zoom   |   Click / Enter: Confirm   |   Space: Cancel",
+                "WASD: Move Target   |   Scroll: Zoom   |   Click / Enter: Confirm   |   Space: Cancel   |   Shift: Move Faster",
                 _instructionStyle
             );
         }

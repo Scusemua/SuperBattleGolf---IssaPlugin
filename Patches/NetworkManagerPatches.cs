@@ -1753,6 +1753,46 @@ namespace IssaPlugin.Patches
                 HunterDroneNetworkBridge.HandleDroneExploded
             );
 
+            // ── Cube Ball / Super Cube Ball ───────────────────────────────────────
+
+            // Client → Server: single-target request
+            Writer<CubeBallRequestMessage>.write =
+                CubeBallRequestMessageSerialization.WriteCubeBallRequestMessage;
+            Reader<CubeBallRequestMessage>.read =
+                CubeBallRequestMessageSerialization.ReadCubeBallRequestMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<CubeBallRequestMessage>(
+                    (conn, msg) =>
+                        GetBridge<CubeBallNetworkBridge>(conn)
+                            ?.ServerHandleRequest(msg.TargetNetId, msg.EquippedSlotIndex)
+                );
+
+            // Client → Server: all-targets request (SuperCubeBall)
+            Writer<SuperCubeBallRequestMessage>.write =
+                SuperCubeBallRequestMessageSerialization.WriteSuperCubeBallRequestMessage;
+            Reader<SuperCubeBallRequestMessage>.read =
+                SuperCubeBallRequestMessageSerialization.ReadSuperCubeBallRequestMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<SuperCubeBallRequestMessage>(
+                    (conn, msg) =>
+                        GetBridge<SuperCubeBallNetworkBridge>(conn)
+                            ?.ServerHandleRequest(msg.EquippedSlotIndex)
+                );
+
+            // Server → All Clients: cube effect begins on a specific ball
+            Writer<CubeBallBeginMessage>.write =
+                CubeBallBeginMessageSerialization.WriteCubeBallBeginMessage;
+            Reader<CubeBallBeginMessage>.read =
+                CubeBallBeginMessageSerialization.ReadCubeBallBeginMessage;
+            NetworkClient.RegisterHandler<CubeBallBeginMessage>(CubeBallHelper.HandleCubeBallBegin);
+
+            // Server → All Clients: cube effect ends on a specific ball
+            Writer<CubeBallEndMessage>.write =
+                CubeBallEndMessageSerialization.WriteCubeBallEndMessage;
+            Reader<CubeBallEndMessage>.read =
+                CubeBallEndMessageSerialization.ReadCubeBallEndMessage;
+            NetworkClient.RegisterHandler<CubeBallEndMessage>(CubeBallHelper.HandleCubeBallEnd);
+
             // ── Scaled explosion VFX (Server → All Clients) ──────────────────────
             Writer<ScaledExplosionVfxMessage>.write =
                 ScaledExplosionVfxMessageSerialization.WriteScaledExplosionVfxMessage;
