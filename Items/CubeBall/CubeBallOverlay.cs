@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using IssaPlugin.Overlays;
 using Mirror;
 using UnityEngine;
 
@@ -6,13 +7,27 @@ namespace IssaPlugin.Items
 {
     /// HUD overlay for the Cube Ball item.
     ///
-    /// Shows a target-selection panel when the player uses the item.  On click
-    /// the CubeBallRequestMessage is sent to the server and the panel closes.
+    /// Shows a target-selection panel when the player uses the item.
+    /// Also draws a time-remaining bar when the local player's own ball is cubed.
     public class CubeBallOverlay : MonoBehaviour
     {
         public static CubeBallOverlay Instance { get; private set; }
 
-        // ── State ─────────────────────────────────────────────────────────────
+        // ── Timer bar state ───────────────────────────────────────────────────
+
+        private bool _cubed;
+        private float _cubeStartTime;
+        private float _cubeDuration;
+
+        private Texture2D _barBgTexture;
+        private Texture2D _barFillTexture;
+        private int _cachedBarW = -1;
+        private GUIStyle _barLabelStyle;  // lazy-initialised in OnGUI
+
+        private static readonly Color FillColor = new Color(0.85f, 0.50f, 0.15f, 0.9f);  // orange
+        private static readonly Color BgColor = new Color(0f, 0f, 0f, 0.55f);
+
+        // ── Chooser state ─────────────────────────────────────────────────────
 
         private bool _isOpen;
         private int _equippedSlotIndex;
@@ -52,6 +67,7 @@ namespace IssaPlugin.Items
         {
             if (Instance == this)
                 Instance = null;
+            DestroyBarTextures();
             Object.Destroy(_panelBgTex);
             Object.Destroy(_selectOnTex);
             Object.Destroy(_selectHovTex);
@@ -72,15 +88,121 @@ namespace IssaPlugin.Items
         /// Closes the panel without sending a request (hole transition / item lost).
         public void ForceClose() => _isOpen = false;
 
+        /// Shows or hides the time-remaining bar for the local player's cubed ball.
+        public void SetCubed(bool cubed, float duration = 0f)
+        {
+            _cubed = cubed;
+            if (cubed)
+            {
+                _cubeDuration = duration;
+                _cubeStartTime = Time.time;
+            }
+        }
+
         // ── GUI ───────────────────────────────────────────────────────────────
 
         private void OnGUI()
         {
-            if (!_isOpen)
+            if (_cubed)
+                DrawTimerBar();
+
+            if (_isOpen)
+            {
+                EnsureStyles();
+                DrawChooser();
+            }
+        }
+
+        private void DrawTimerBar()
+        {
+            if (_cubeDuration <= 0f)
                 return;
 
-            EnsureStyles();
-            DrawChooser();
+            int barWInt = (int)EffectBarLayout.GetBarWidth();
+            if (barWInt != _cachedBarW)
+                RebuildBarTextures(barWInt);
+
+            if (_barBgTexture == null || _barFillTexture == null)
+                return;
+
+            float elapsed = Time.time - _cubeStartTime;
+            float fraction = Mathf.Clamp01(1f - elapsed / _cubeDuration);
+            float remaining = Mathf.Max(0f, _cubeDuration - elapsed);
+
+            if (remaining <= 0f)
+            {
+                _cubed = false;
+                return;
+            }
+
+            float barW = EffectBarLayout.GetBarWidth();
+            float barH = EffectBarLayout.BarHeight;
+            float barX = EffectBarLayout.GetBarX();
+
+            // Stack above Freeze (slot 0) and LowGravity (slot 1) if active.
+            int slot = 0;
+            if (FreezeItem.IsFrozen) slot++;
+            if (LowGravityItem.IsActive) slot++;
+            float barY = EffectBarLayout.GetBarY(slot);
+
+            GUI.DrawTexture(new Rect(barX, barY, barW, barH), _barBgTexture);
+
+            GUI.BeginGroup(new Rect(barX, barY, barW * fraction, barH));
+            GUI.DrawTexture(new Rect(0, 0, barW, barH), _barFillTexture);
+            GUI.EndGroup();
+
+            _barLabelStyle ??= new GUIStyle(GUI.skin.label)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                fontSize = 13,
+                fontStyle = FontStyle.Bold,
+                normal = { textColor = Color.white },
+            };
+            GUI.Label(
+                new Rect(barX, barY, barW, barH),
+                $"Cube Ball Time Remaining:  {remaining:F1}s",
+                _barLabelStyle
+            );
+        }
+
+        private void RebuildBarTextures(int barW)
+        {
+            DestroyBarTextures();
+            int barH = (int)EffectBarLayout.BarHeight;
+            int radius = barH / 3;
+            _barBgTexture = GenerateRoundedRectTexture(barW, barH, radius, BgColor);
+            _barFillTexture = GenerateRoundedRectTexture(barW, barH, radius, FillColor);
+            _cachedBarW = barW;
+        }
+
+        private void DestroyBarTextures()
+        {
+            if (_barBgTexture != null) { Destroy(_barBgTexture); _barBgTexture = null; }
+            if (_barFillTexture != null) { Destroy(_barFillTexture); _barFillTexture = null; }
+            _cachedBarW = -1;
+        }
+
+        private static Texture2D GenerateRoundedRectTexture(int w, int h, int radius, Color color)
+        {
+            var tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
+            var pixels = new Color[w * h];
+            for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+                pixels[y * w + x] = IsInsideRoundedRect(x, y, w, h, radius) ? color : Color.clear;
+            tex.SetPixels(pixels);
+            tex.filterMode = FilterMode.Bilinear;
+            tex.Apply();
+            return tex;
+        }
+
+        private static bool IsInsideRoundedRect(int x, int y, int w, int h, int r)
+        {
+            bool inL = x < r, inR = x >= w - r, inT = y < r, inB = y >= h - r;
+            if (!((inL || inR) && (inT || inB))) return true;
+            int cx = inL ? r : w - 1 - r;
+            int cy = inT ? r : h - 1 - r;
+            float dx = x - cx, dy = y - cy;
+            return dx * dx + dy * dy <= r * r;
         }
 
         private void DrawChooser()

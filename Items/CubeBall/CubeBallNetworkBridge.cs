@@ -100,6 +100,7 @@ namespace IssaPlugin.Items
         public override void ClientHoleCleanup()
         {
             CubeBallOverlay.Instance?.ForceClose();
+            CubeBallOverlay.Instance?.SetCubed(false);
         }
     }
 }

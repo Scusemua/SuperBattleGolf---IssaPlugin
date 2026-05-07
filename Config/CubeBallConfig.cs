@@ -14,6 +14,7 @@ namespace IssaPlugin
         public ConfigEntry<float> PhysicsStaticFriction { get; private set; }
         public ConfigEntry<float> PhysicsDynamicFriction { get; private set; }
         public ConfigEntry<float> PhysicsBounciness { get; private set; }
+        public ConfigEntry<float> PhysicsAngularDamping { get; private set; }
 
         public CubeBallConfig(ConfigFile cfg, GlobalConfig global)
         {
@@ -39,22 +40,32 @@ namespace IssaPlugin
             PhysicsStaticFriction = cfg.Bind(
                 Section,
                 "PhysicsStaticFriction",
-                0.8f,
+                1f,
                 "Static friction of the cube's physics material. Higher = more grip, more tumbling."
             );
             PhysicsDynamicFriction = cfg.Bind(
                 Section,
                 "PhysicsDynamicFriction",
-                0.8f,
+                1f,
                 "Dynamic friction of the cube's physics material. Higher = more resistance while sliding."
             );
             PhysicsBounciness = cfg.Bind(
                 Section,
                 "PhysicsBounciness",
-                0.1f,
+                1.0f,
                 new ConfigDescription(
                     "Bounciness of the cube's physics material (0 = no bounce, 1 = full bounce).",
                     new AcceptableValueRange<float>(0.0f, 1.0f)
+                )
+            );
+            PhysicsAngularDamping = cfg.Bind(
+                Section,
+                "PhysicsAngularDamping",
+                0.002f,
+                new ConfigDescription(
+                    "Angular damping override while the cube effect is active. Lower = more tumbling. "
+                        + "The game normally resets this each frame; this patch overrides it after the reset.",
+                    new AcceptableValueRange<float>(0.0f, 10.0f)
                 )
             );
         }

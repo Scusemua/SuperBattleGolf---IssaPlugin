@@ -38,14 +38,20 @@ namespace IssaPlugin.Items
 
             if (_cubeEndTimes.TryGetValue(targetNetId, out float existingEnd))
             {
-                // Already cubed — just extend if the new end is later.
+                // Already cubed — extend if the new end is later.
                 if (newEnd > existingEnd)
                     _cubeEndTimes[targetNetId] = newEnd;
+
+                // Always re-send begin with the updated remaining time so clients
+                // can reset their timer bar. The client apply-guard in HandleCubeBallBegin
+                // prevents a double collider/mesh swap.
+                float remaining = _cubeEndTimes[targetNetId] - Time.time;
+                NetworkServer.SendToAll(new CubeBallBeginMessage { TargetNetId = targetNetId, Duration = remaining });
                 return;
             }
 
             _cubeEndTimes[targetNetId] = newEnd;
-            NetworkServer.SendToAll(new CubeBallBeginMessage { TargetNetId = targetNetId });
+            NetworkServer.SendToAll(new CubeBallBeginMessage { TargetNetId = targetNetId, Duration = duration });
 
             var manager = CubeBallManager.Instance;
             if (manager == null)
@@ -125,15 +131,19 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            if (ball.GetComponent<CubeBallState>() != null)
-                return; // Already cubed — server extended the timer; no visual change needed.
+            // Apply collider/mesh swap only on first begin; extension messages skip this.
+            if (ball.GetComponent<CubeBallState>() == null)
+            {
+                var state = ball.gameObject.AddComponent<CubeBallState>();
+                state.Apply();
+                IssaPluginPlugin.Log.LogInfo(
+                    $"[CubeBall] Cube applied to ball owned by netId={msg.TargetNetId}."
+                );
+            }
 
-            var state = ball.gameObject.AddComponent<CubeBallState>();
-            state.Apply();
-
-            IssaPluginPlugin.Log.LogInfo(
-                $"[CubeBall] Cube applied to ball owned by netId={msg.TargetNetId}."
-            );
+            // Update the local player's timer bar on every begin (including extensions).
+            if (IsLocalPlayerTarget(msg.TargetNetId))
+                CubeBallOverlay.Instance?.SetCubed(true, msg.Duration);
         }
 
         /// Called on every client (including the listen-server) when the server
@@ -141,10 +151,10 @@ namespace IssaPlugin.Items
         public static void HandleCubeBallEnd(CubeBallEndMessage msg)
         {
             var ball = FindBall(msg.TargetNetId);
-            if (ball == null)
-                return;
+            ball?.GetComponent<CubeBallState>()?.Revert();
 
-            ball.GetComponent<CubeBallState>()?.Revert();
+            if (IsLocalPlayerTarget(msg.TargetNetId))
+                CubeBallOverlay.Instance?.SetCubed(false);
 
             IssaPluginPlugin.Log.LogInfo(
                 $"[CubeBall] Cube reverted for ball owned by netId={msg.TargetNetId}."
@@ -187,5 +197,8 @@ namespace IssaPlugin.Items
 
             return identity.GetComponent<PlayerInventory>()?.PlayerInfo?.AsGolfer?.OwnBall;
         }
+
+        private static bool IsLocalPlayerTarget(uint targetNetId) =>
+            NetworkClient.localPlayer != null && NetworkClient.localPlayer.netId == targetNetId;
     }
 }

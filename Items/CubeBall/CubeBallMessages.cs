@@ -64,12 +64,13 @@ namespace IssaPlugin.Items
 
     // ── Server → All Clients ─────────────────────────────────────────────────
 
-    /// Broadcast by the server when a player's ball begins the cube effect.
-    /// Shared by both CubeBall (single target) and SuperCubeBall (one message
-    /// per target).
+    /// Broadcast by the server when a player's ball begins (or has its duration
+    /// extended for) the cube effect. Shared by both CubeBall and SuperCubeBall.
+    /// Duration is the remaining time in seconds so clients can drive a timer bar.
     public struct CubeBallBeginMessage : NetworkMessage
     {
         public uint TargetNetId;
+        public float Duration;
     }
 
     public static class CubeBallBeginMessageSerialization
@@ -77,11 +78,16 @@ namespace IssaPlugin.Items
         public static void WriteCubeBallBeginMessage(NetworkWriter writer, CubeBallBeginMessage msg)
         {
             writer.WriteUInt(msg.TargetNetId);
+            writer.WriteFloat(msg.Duration);
         }
 
         public static CubeBallBeginMessage ReadCubeBallBeginMessage(NetworkReader reader)
         {
-            return new CubeBallBeginMessage { TargetNetId = reader.ReadUInt() };
+            return new CubeBallBeginMessage
+            {
+                TargetNetId = reader.ReadUInt(),
+                Duration = reader.ReadFloat(),
+            };
         }
     }
 
