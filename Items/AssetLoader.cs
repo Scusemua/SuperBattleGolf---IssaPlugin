@@ -137,6 +137,13 @@ namespace IssaPlugin.Items
         public static GameObject UfoAbductionUfoPrefab { get; private set; }
 
         // ── CubeBall / SuperCubeBall ──────────────────────────────────────────
+        // ── Explosive Golf Balls ──────────────────────────────────────────────
+        /// Item icon for Explosive Golf Balls. Null until explosive_golf_balls_icon.png is added to the bundle.
+        public static Sprite ExplosiveGolfBallsIcon { get; private set; }
+
+        /// Handheld model shown in the player's hand. Null until explosive_golf_balls_handheld.prefab is added.
+        public static GameObject ExplosiveGolfBallsHandheldPrefab { get; private set; }
+
         /// Item icon for Cube Ball. Null until cube_ball_icon.png is added to the bundle.
         public static Sprite CubeBallIcon { get; private set; }
 
@@ -539,6 +546,17 @@ namespace IssaPlugin.Items
                     "rubixcube.prefab",
                     optional: true,
                     fallback: BuildCubeBallHandheldFallback
+                ),
+                // ── Explosive Golf Balls ──────────────────────────────────────
+                SpriteAsset(
+                    p => ExplosiveGolfBallsIcon = p,
+                    "exploding_ball_icon.png",
+                    optional: true
+                ),
+                HandheldPrefab(
+                    p => ExplosiveGolfBallsHandheldPrefab = p,
+                    "explosive_golf_balls_handheld.prefab",
+                    optional: true
                 ),
                 // ── First Place Star ──────────────────────────────────────────
                 LocalVfxPrefab(p => GoldStarPrefab = p, "gold_star.prefab"),

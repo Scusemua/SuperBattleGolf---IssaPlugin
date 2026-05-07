@@ -1793,6 +1793,15 @@ namespace IssaPlugin.Patches
                 CubeBallEndMessageSerialization.ReadCubeBallEndMessage;
             NetworkClient.RegisterHandler<CubeBallEndMessage>(CubeBallHelper.HandleCubeBallEnd);
 
+            // ── Explosive Golf Balls (Server → All Clients) ──────────────────────
+            Writer<ExplosiveGolfBallsExplodeMessage>.write =
+                ExplosiveGolfBallsExplodeMessageSerialization.WriteExplosiveGolfBallsExplodeMessage;
+            Reader<ExplosiveGolfBallsExplodeMessage>.read =
+                ExplosiveGolfBallsExplodeMessageSerialization.ReadExplosiveGolfBallsExplodeMessage;
+            NetworkClient.RegisterHandler<ExplosiveGolfBallsExplodeMessage>(
+                ExplosiveGolfBallsNetworkBridge.HandleExplosion
+            );
+
             // ── Scaled explosion VFX (Server → All Clients) ──────────────────────
             Writer<ScaledExplosionVfxMessage>.write =
                 ScaledExplosionVfxMessageSerialization.WriteScaledExplosionVfxMessage;

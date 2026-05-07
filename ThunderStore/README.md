@@ -1,6 +1,6 @@
 # IssaMod
 
-Adds **30 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
+Adds **31 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
 
 For more information as well as the mod's source code, please see [the mod's GitHub repository](https://github.com/Scusemua/SuperBattleGolf---IssaPlugin/).
 
@@ -118,6 +118,9 @@ Pick a target from the chooser overlay and their golf ball transforms into a cub
 
 ### 🎲🎲 Super Cube Ball
 The AOE variant of Cube Ball. No target selection — activating it instantly cubes every other player's ball simultaneously. Each ball reverts independently after the duration. Great for chaos, terrible for anyone mid-putt.
+
+### 💥 Explosive Golf Balls
+A passive item — just having it in your inventory is enough. Every swing launches an explosive charge: the ball detonates on its first collision with anything — terrain, walls, structures, or another player. One use is consumed per swing. Optionally configurable to only trigger on overcharge (lock-on) shots, keeping normal putts clean.
 
 ---
 

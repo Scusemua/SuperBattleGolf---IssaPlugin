@@ -2,7 +2,7 @@
 
 <img src="icon.png" width="256" height="256" />
 
-Adds **30 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
+Adds **31 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
 
 To download and/or install the mod, please check out the GitHub releases or the mod's [ThunderStore page](https://thunderstore.io/c/super-battle-golf/p/TeamScusemua/IssaMod/).
 
@@ -106,6 +106,9 @@ Pick a target from the chooser overlay and their golf ball transforms into a cub
 
 ### 🎲🎲 Super Cube Ball
 The AOE variant of Cube Ball. No target selection: activating it instantly cubes every other player's ball simultaneously. Each ball reverts independently after the duration. Great for chaos, terrible for anyone mid-putt.
+
+### 💥 Explosive Golf Balls
+A passive item — just having it in your inventory is enough. Every swing launches an explosive charge: the ball detonates on its first collision with anything — terrain, walls, structures, or another player. One use is consumed per swing. Optionally configurable to only trigger on overcharge (lock-on) shots, keeping normal putts clean.
 
 ---
 
@@ -286,38 +289,66 @@ The compiled plugin will appear in:
 
 ------------------------------------------------------------------------
 
-## Project Structure (Possibly Oudated)
+## Project Structure
 ```
     IssaPlugin/
     │
-    ├── Plugin.cs
-    ├── PluginInfo.cs
-    ├── Configuration.cs
+    ├── Plugin.cs                   — BepInEx entry point
+    ├── Configuration.cs            — All 200+ ConfigEntry<T> properties
+    ├── ModConfig.cs                — Per-item config groupings
     │
     ├── Items/
+    │   ├── ItemRegistry.cs         — Custom ItemType values (100–134), item injection
+    │   ├── CustomItemDefinition.cs — Abstract base for all items
+    │   ├── AssetLoader.cs          — Loads prefabs/sprites from asset bundle
+    │   ├── ExplosionScaler.cs      — Per-item explosion scale registry
     │   ├── AC130/
-    │   ├── PredatorMissile/
-    │   ├── StealthBomber/
-    │   ├── SniperRifle/
+    │   ├── BaseballBat/
+    │   ├── Bear/
+    │   ├── BlackHoleGrenade/
+    │   ├── CubeBall/
+    │   ├── DroneSwarm/
+    │   ├── ExplosiveGolfBalls/
+    │   ├── Flamethrower/
     │   ├── FreezeWorld/
+    │   ├── GravityGun/
+    │   ├── Harrier/
+    │   ├── HunterDrone/
+    │   ├── Javelin/
+    │   ├── Jetpack/
     │   ├── LowGravity/
-    │   └── BaseballBatItem.cs
+    │   ├── Moon/
+    │   ├── Nuke/
+    │   ├── PlaceableWall/
+    │   ├── PoisonJar/
+    │   ├── PositionSwap/
+    │   ├── PredatorMissile/
+    │   ├── RedBull/
+    │   ├── RocketTether/
+    │   ├── RocketTetherGrenade/
+    │   ├── SniperRifle/
+    │   ├── Spinach/
+    │   ├── StealthBomber/
+    │   ├── StickyGrenade/
+    │   ├── SuperCubeBall/
+    │   ├── SuperDonut/
+    │   ├── Teleporter/
+    │   ├── UfoAbduction/
+    │   └── WindStorm/
     │
-    ├── Overlays/
-    │   ├── AC130Overlay
-    │   ├── BomberOverlay
-    │   ├── SniperScopeOverlay
-    │   └── Effect UI components
+    ├── Overlays/                   — HUD / OnGUI components
     │
-    ├── Patches/
-    │   ├── ItemRegistryPatches
-    │   ├── NetworkManagerPatches
-    │   ├── ExplosionPatches
-    │   ├── RocketPatches
-    │   └── Gameplay patches
+    ├── Patches/                    — Harmony hooks into base game methods
+    │   ├── ItemRegistryPatches.cs
+    │   ├── NetworkBridgePatches.cs
+    │   ├── NetworkManagerPatches.cs
+    │   └── (item-specific patches)
     │
-    └── Bundle/
-        └── AssetBundle files
+    ├── Network/
+    │   └── SpawnWeightsSyncer.cs   — Server → client spawn weight broadcast
+    │
+    └── IssaPluginBundle/
+        └── issamod                 — Pre-built Unity asset bundle (22 MB)
 ```
 
 ------------------------------------------------------------------------

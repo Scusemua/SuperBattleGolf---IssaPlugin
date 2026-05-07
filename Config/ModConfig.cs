@@ -44,6 +44,7 @@ namespace IssaPlugin
         public static MoonConfig Moon { get; private set; }
         public static CubeBallConfig CubeBall { get; private set; }
         public static SuperCubeBallConfig SuperCubeBall { get; private set; }
+        public static ExplosiveGolfBallsConfig ExplosiveGolfBalls { get; private set; }
 
         public static void Initialize(ConfigFile cfg)
         {
@@ -84,6 +85,7 @@ namespace IssaPlugin
             Moon = new MoonConfig(cfg, Global);
             CubeBall = new CubeBallConfig(cfg, Global);
             SuperCubeBall = new SuperCubeBallConfig(cfg, Global);
+            ExplosiveGolfBalls = new ExplosiveGolfBallsConfig(cfg, Global);
         }
 
         // ── Pass-through helper methods (from GlobalConfig) ───────────────────

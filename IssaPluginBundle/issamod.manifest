@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 1521894499
+CRC: 2441758937
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: ee92e344cf9222721caa3399642d74b2
+    Hash: 6c7cc6b0d8b7352af928a44cb3a721c3
   TypeTreeHash:
     serializedVersion: 2
     Hash: 82d52513d6b19822b87b688cdb5147d6
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 7076541030383ea11cb99e3676d8fb55
+    Hash: 96aff2cb980c651f0764121a5bfeb687
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -164,8 +164,8 @@ Assets:
 - Assets/Assets/nuclear_bomb.prefab
 - Assets/Assets/posion_bottle.prefab
 - Assets/Assets/booby_trap_handheld.prefab
+- Assets/Assets/exploding_ball_icon.png
 - Assets/Assets/ac130_icon.png
-- Assets/Assets/black_hole_grenade.prefab
 - Assets/Assets/poison_cloud_vfx.prefab
 - Assets/Assets/harrier_icon.png
 - Assets/Assets/drone_explosion.prefab
@@ -182,6 +182,7 @@ Assets:
 - Assets/Assets/snowball.prefab
 - Assets/Assets/NukeExplosionFire.prefab
 - Assets/Assets/jetpack_handheld.prefab
+- Assets/Assets/black_hole_grenade.prefab
 - Assets/Assets/bear_icon.png
 - Assets/Assets/blood_splatter_critical.prefab
 - Assets/Assets/nuclear_detonator.prefab
