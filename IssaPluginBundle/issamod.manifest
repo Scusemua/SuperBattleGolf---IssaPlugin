@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 2441758937
+CRC: 1384854797
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 6c7cc6b0d8b7352af928a44cb3a721c3
+    Hash: 1a8f272f4994f3ee87df0799ad8d8c93
   TypeTreeHash:
     serializedVersion: 2
     Hash: 82d52513d6b19822b87b688cdb5147d6
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 96aff2cb980c651f0764121a5bfeb687
+    Hash: bf96b63843baa67610b98b28adacb725
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -141,7 +141,6 @@ Assets:
 - Assets/Assets/moon_icon.png
 - Assets/Assets/ak47.prefab
 - Assets/Assets/poison_bottle_icon.png
-- Assets/Assets/booby_trap_icon.png
 - Assets/Assets/position_swap_icon.png
 - Assets/Assets/booby_trap_vfx.prefab
 - Assets/Assets/flamethrower_vfx.prefab
