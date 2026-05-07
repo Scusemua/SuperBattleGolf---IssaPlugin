@@ -11,6 +11,7 @@ namespace IssaPlugin
         public ConfigEntry<float> Uses { get; private set; }
         public ConfigEntry<float> Duration { get; private set; }
         public ConfigEntry<float> SpawnWeight { get; private set; }
+        public ConfigEntry<bool> AffectSelf { get; private set; }
 
         public SuperCubeBallConfig(ConfigFile cfg, GlobalConfig global)
         {
@@ -32,6 +33,12 @@ namespace IssaPlugin
                 "SpawnWeight",
                 3f,
                 "Relative spawn weight for the Super Cube Ball item in the item pool."
+            );
+            AffectSelf = cfg.Bind(
+                Section,
+                "AffectSelf",
+                false,
+                "If true, the activating player's own ball is also cubed."
             );
         }
     }

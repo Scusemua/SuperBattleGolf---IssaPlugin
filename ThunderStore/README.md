@@ -1,6 +1,6 @@
 # IssaMod
 
-Adds **28 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
+Adds **30 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
 
 For more information as well as the mod's source code, please see [the mod's GitHub repository](https://github.com/Scusemua/SuperBattleGolf---IssaPlugin/).
 
@@ -112,6 +112,12 @@ Aim at another player and fire. A flying saucer swoops in from off-map and locks
 
 ### 🌕 Majora's Moon
 Use this item and a giant moon appears on the horizon, slowly descending toward the course. A countdown warning fills every player's screen as it approaches. When the moon reaches the hole, everyone is knocked off their feet and pulled skyward — helplessly dragged upward as gravity stops working. Once the moon slams into the course it detonates in a massive explosion, sending anything nearby flying. There is no defending against it. There is no escape. The moon will fall.
+
+### 🎲 Cube Ball
+Pick a target from the chooser overlay and their golf ball transforms into a cube for a configurable duration. A cube doesn't roll like a sphere — it tumbles, catches edges, and bounces unpredictably. The collider is actually replaced server-side so the physics are genuine, not cosmetic. After the timer expires the ball snaps back to its normal shape.
+
+### 🎲🎲 Super Cube Ball
+The AOE variant of Cube Ball. No target selection — activating it instantly cubes every other player's ball simultaneously. Each ball reverts independently after the duration. Great for chaos, terrible for anyone mid-putt.
 
 ---
 

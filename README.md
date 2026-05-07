@@ -2,7 +2,7 @@
 
 <img src="icon.png" width="256" height="256" />
 
-Adds **28 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
+Adds **30 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
 
 To download and/or install the mod, please check out the GitHub releases or the mod's [ThunderStore page](https://thunderstore.io/c/super-battle-golf/p/TeamScusemua/IssaMod/).
 
@@ -99,7 +99,13 @@ Create a wind storm with extremely high speed winds and dynamically-changing dir
 Aim at another player and fire. A flying saucer swoops in from off-map and locks on. When it arrives, a tractor beam engages — the victim gets knocked off their feet and hauled upward, suspended helplessly in the beam while the UFO hovers. After a few seconds the ship begins its escape, dragging the victim up with it in an erratic, spiraling climb before they're finally pulled inside and the whole thing detonates at altitude. A picture-in-picture camera appears on every player's screen for the full duration so nobody misses a second of it.
 
 ### 🌕 Majora's Moon
-Use this item and a giant moon appears on the horizon, slowly descending toward the course. A countdown warning fills every player's screen as it approaches. When the moon reaches the hole, everyone is knocked off their feet and pulled skyward — helplessly dragged upward as gravity stops working. Once the moon slams into the course it detonates in a massive explosion, sending anything nearby flying. There is no defending against it. There is no escape. The moon will fall.
+Use this item and a giant moon appears on the horizon, slowly descending toward the course. A countdown warning fills every player's screen as it approaches. When the moon reaches the hole, everyone is knocked off their feet and pulled skyward, helplessly dragged upward as gravity stops working. Once the moon slams into the course it detonates in a massive explosion, sending anything nearby flying. There is no defending against it. There is no escape. The moon will fall.
+
+### 🎲 Cube Ball
+Pick a target from the chooser overlay and their golf ball transforms into a cube for a configurable duration. A cube doesn't roll like a sphere: it tumbles, catches edges, and bounces unpredictably. The collider is actually replaced server-side so the physics are genuine, not cosmetic. After the timer expires the ball snaps back to its normal shape.
+
+### 🎲🎲 Super Cube Ball
+The AOE variant of Cube Ball. No target selection: activating it instantly cubes every other player's ball simultaneously. Each ball reverts independently after the duration. Great for chaos, terrible for anyone mid-putt.
 
 ---
 

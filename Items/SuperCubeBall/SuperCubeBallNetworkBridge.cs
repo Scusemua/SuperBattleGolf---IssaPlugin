@@ -46,7 +46,10 @@ namespace IssaPlugin.Items
             foreach (var conn in NetworkServer.connections.Values)
             {
                 var identity = conn?.identity;
-                if (identity == null || identity.netId == netId)
+                if (identity == null)
+                    continue;
+
+                if (identity.netId == netId && !ModConfig.SuperCubeBall.AffectSelf.Value)
                     continue;
 
                 var targetInventory = identity.GetComponent<PlayerInventory>();
