@@ -52,7 +52,10 @@ namespace IssaPlugin
                 Section,
                 "PhysicsBounciness",
                 0.1f,
-                "Bounciness of the cube's physics material (0 = no bounce, 1 = full bounce)."
+                new ConfigDescription(
+                    "Bounciness of the cube's physics material (0 = no bounce, 1 = full bounce).",
+                    new AcceptableValueRange<float>(0.0f, 1.0f)
+                )
             );
         }
     }
