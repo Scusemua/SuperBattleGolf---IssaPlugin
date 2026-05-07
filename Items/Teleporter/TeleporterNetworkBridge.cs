@@ -60,6 +60,13 @@ namespace IssaPlugin.Items
             var playerInfo = inv.PlayerInfo;
             Vector3 origin = playerInfo.Rigidbody.position;
 
+            // Re-snap the destination Y server-side. The client computes terrain Y
+            // from its own physics world; on some maps those results diverge from the
+            // server's, causing the player to land inside geometry. Resampling here
+            // uses the server's authoritative physics state.
+            float serverY = ItemHelper.SampleTerrainY(destination.x, destination.z, destination.y);
+            destination = new Vector3(destination.x, serverY, destination.z);
+
             IssaPluginPlugin.Log.LogInfo(
                 $"[Teleporter] Player '{playerInfo.PlayerId.PlayerName}' teleporting "
                     + $"from {origin} to {destination}."
