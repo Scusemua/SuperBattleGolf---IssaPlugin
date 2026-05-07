@@ -63,6 +63,12 @@ namespace IssaPlugin.Items
 
         private void Awake() => Instance = this;
 
+        private void Update()
+        {
+            if (_cubed && _cubeDuration > 0f && Time.time - _cubeStartTime >= _cubeDuration)
+                _cubed = false;
+        }
+
         private void OnDestroy()
         {
             if (Instance == this)
@@ -128,12 +134,6 @@ namespace IssaPlugin.Items
             float elapsed = Time.time - _cubeStartTime;
             float fraction = Mathf.Clamp01(1f - elapsed / _cubeDuration);
             float remaining = Mathf.Max(0f, _cubeDuration - elapsed);
-
-            if (remaining <= 0f)
-            {
-                _cubed = false;
-                return;
-            }
 
             float barW = EffectBarLayout.GetBarWidth();
             float barH = EffectBarLayout.BarHeight;
