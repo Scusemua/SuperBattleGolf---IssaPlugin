@@ -11,6 +11,9 @@ namespace IssaPlugin
         public ConfigEntry<float> Uses { get; private set; }
         public ConfigEntry<float> Duration { get; private set; }
         public ConfigEntry<float> SpawnWeight { get; private set; }
+        public ConfigEntry<float> PhysicsStaticFriction { get; private set; }
+        public ConfigEntry<float> PhysicsDynamicFriction { get; private set; }
+        public ConfigEntry<float> PhysicsBounciness { get; private set; }
 
         public CubeBallConfig(ConfigFile cfg, GlobalConfig global)
         {
@@ -32,6 +35,24 @@ namespace IssaPlugin
                 "SpawnWeight",
                 5f,
                 "Relative spawn weight for the Cube Ball item in the item pool."
+            );
+            PhysicsStaticFriction = cfg.Bind(
+                Section,
+                "PhysicsStaticFriction",
+                0.8f,
+                "Static friction of the cube's physics material. Higher = more grip, more tumbling."
+            );
+            PhysicsDynamicFriction = cfg.Bind(
+                Section,
+                "PhysicsDynamicFriction",
+                0.8f,
+                "Dynamic friction of the cube's physics material. Higher = more resistance while sliding."
+            );
+            PhysicsBounciness = cfg.Bind(
+                Section,
+                "PhysicsBounciness",
+                0.1f,
+                "Bounciness of the cube's physics material (0 = no bounce, 1 = full bounce)."
             );
         }
     }

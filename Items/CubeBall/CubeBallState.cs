@@ -69,9 +69,9 @@ namespace IssaPlugin.Items
                 // High friction so the cube tumbles (grips ground) rather than sliding.
                 _cubeMaterial = new PhysicsMaterial("CubeBallMat")
                 {
-                    staticFriction = 0.8f,
-                    dynamicFriction = 0.8f,
-                    bounciness = 0.1f,
+                    staticFriction = ModConfig.CubeBall.PhysicsStaticFriction.Value,
+                    dynamicFriction = ModConfig.CubeBall.PhysicsDynamicFriction.Value,
+                    bounciness = ModConfig.CubeBall.PhysicsBounciness.Value,
                     frictionCombine = PhysicsMaterialCombine.Maximum,
                     bounceCombine = PhysicsMaterialCombine.Minimum,
                 };
