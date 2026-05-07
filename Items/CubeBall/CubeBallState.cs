@@ -24,7 +24,6 @@ namespace IssaPlugin.Items
         private PhysicsMaterial _cubeMaterial;
 
         private MeshRenderer[] _originalRenderers;
-        private bool[] _originalRendererEnabled;
         private GameObject _cubeChild;
 
         public void Apply()
@@ -45,9 +44,8 @@ namespace IssaPlugin.Items
 
             // Convert visual world size → local space once; reused for both collider and mesh.
             float uniformScale = transform.lossyScale.x;
-            float localSide = worldSide > 0f
-                ? (uniformScale > 0f ? worldSide / uniformScale : worldSide)
-                : 0f;
+            float localSide =
+                worldSide > 0f ? (uniformScale > 0f ? worldSide / uniformScale : worldSide) : 0f;
 
             // ── Collider swap ─────────────────────────────────────────────────
             _sphere = GetComponent<SphereCollider>();
@@ -88,13 +86,20 @@ namespace IssaPlugin.Items
             }
 
             // ── Visual: hide original renderers, spawn sized cube child ───────
-            _originalRenderers = GetComponentsInChildren<MeshRenderer>(includeInactive: true);
-            _originalRendererEnabled = new bool[_originalRenderers.Length];
+            // Capture only renderers that are currently ON so Revert() can safely
+            // force them back on regardless of what the game does to them during flight.
+            var all = GetComponentsInChildren<MeshRenderer>(includeInactive: true);
+            int count = 0;
+            for (int i = 0; i < all.Length; i++)
+                if (all[i].enabled)
+                    count++;
+            _originalRenderers = new MeshRenderer[count];
+            int idx = 0;
+            for (int i = 0; i < all.Length; i++)
+                if (all[i].enabled)
+                    _originalRenderers[idx++] = all[i];
             for (int i = 0; i < _originalRenderers.Length; i++)
-            {
-                _originalRendererEnabled[i] = _originalRenderers[i].enabled;
                 _originalRenderers[i].enabled = false;
-            }
 
             _cubeChild = GameObject.CreatePrimitive(PrimitiveType.Cube);
 
@@ -145,7 +150,7 @@ namespace IssaPlugin.Items
                 for (int i = 0; i < _originalRenderers.Length; i++)
                 {
                     if (_originalRenderers[i] != null)
-                        _originalRenderers[i].enabled = _originalRendererEnabled[i];
+                        _originalRenderers[i].enabled = true;
                 }
             }
 
