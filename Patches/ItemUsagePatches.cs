@@ -43,6 +43,12 @@ namespace IssaPlugin.Patches
                 return false; // block custom items while knocked over / recovering
             }
 
+            if (__instance.PlayerInfo?.AsHittable?.IsFrozen == true)
+            {
+                __result = false;
+                return false; // block custom items while the player is encased in ice
+            }
+
             if (FreezeItem.IsFrozen)
             {
                 __result = false;
