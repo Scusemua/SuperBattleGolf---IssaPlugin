@@ -37,17 +37,21 @@ namespace IssaPlugin.Patches
             }
 
             var movement = __instance.PlayerInfo?.Movement;
-            if (movement != null && movement.IsKnockedOutOrRecovering)
+            if (
+                (movement != null && movement.IsKnockedOutOrRecovering)
+                || __instance.PlayerInfo?.AsHittable?.IsFrozen == true
+            )
             {
                 __result = false;
-                return false; // block custom items while knocked over / recovering
+                // block custom items while knocked over / recovering or while the player is encased in ice
+                return false;
             }
 
-            if (FreezeItem.IsFrozen)
-            {
-                __result = false;
-                return false; // block custom items while the world is frozen
-            }
+            // if (FreezeItem.IsFrozen)
+            // {
+            //     __result = false;
+            //     return false; // block custom items while the world is frozen
+            // }
 
             shouldEatInput = def.ShouldEatInputOnUse;
             __result = def.UseResult;
