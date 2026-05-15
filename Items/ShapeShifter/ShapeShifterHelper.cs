@@ -7,13 +7,13 @@ namespace IssaPlugin.Items
 {
     /// Shared server-side state for the cube-ball effect.
     ///
-    /// Both CubeBallNetworkBridge (single target) and SuperCubeBallNetworkBridge
+    /// Both ShapeShifterNetworkBridge (single target) and SuperShapeShifterNetworkBridge
     /// (all other players) call ServerApplyCube here so all duration-extension
     /// logic lives in one place.
     ///
-    /// The coroutines that fire CubeBallEndMessage are hosted on CubeBallManager,
+    /// The coroutines that fire ShapeShifterEndMessage are hosted on ShapeShifterManager,
     /// a persistent singleton, so they survive any player disconnect.
-    public static class CubeBallHelper
+    public static class ShapeShifterHelper
     {
         // ── Server-side state ─────────────────────────────────────────────────
         // Key = target player's NetworkIdentity netId.
@@ -27,7 +27,7 @@ namespace IssaPlugin.Items
         /// Applies (or extends) the cube effect on the ball owned by the player
         /// with the given <paramref name="targetNetId"/>.
         ///
-        /// If the ball is not already cubed: broadcasts CubeBallBeginMessage to
+        /// If the ball is not already cubed: broadcasts ShapeShifterBeginMessage to
         /// all clients and starts a timeout coroutine.
         /// If it is already cubed: silently extends the end time to the later of
         /// the current end time and the new end time; no second begin message is
@@ -43,21 +43,25 @@ namespace IssaPlugin.Items
                     _cubeEndTimes[targetNetId] = newEnd;
 
                 // Always re-send begin with the updated remaining time so clients
-                // can reset their timer bar. The client apply-guard in HandleCubeBallBegin
+                // can reset their timer bar. The client apply-guard in HandleShapeShifterBegin
                 // prevents a double collider/mesh swap.
                 float remaining = _cubeEndTimes[targetNetId] - Time.time;
-                NetworkServer.SendToAll(new CubeBallBeginMessage { TargetNetId = targetNetId, Duration = remaining });
+                NetworkServer.SendToAll(
+                    new ShapeShifterBeginMessage { TargetNetId = targetNetId, Duration = remaining }
+                );
                 return;
             }
 
             _cubeEndTimes[targetNetId] = newEnd;
-            NetworkServer.SendToAll(new CubeBallBeginMessage { TargetNetId = targetNetId, Duration = duration });
+            NetworkServer.SendToAll(
+                new ShapeShifterBeginMessage { TargetNetId = targetNetId, Duration = duration }
+            );
 
-            var manager = CubeBallManager.Instance;
+            var manager = ShapeShifterManager.Instance;
             if (manager == null)
             {
                 IssaPluginPlugin.Log.LogError(
-                    "[CubeBall] CubeBallManager.Instance is null — cannot start timeout coroutine."
+                    "[ShapeShifter] ShapeShifterManager.Instance is null — cannot start timeout coroutine."
                 );
                 return;
             }
@@ -66,7 +70,7 @@ namespace IssaPlugin.Items
             _cubeCoroutines[targetNetId] = co;
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[CubeBall] Cube effect started for netId={targetNetId}, duration={duration:F1}s."
+                $"[ShapeShifter] Cube effect started for netId={targetNetId}, duration={duration:F1}s."
             );
         }
 
@@ -82,12 +86,12 @@ namespace IssaPlugin.Items
             if (_cubeCoroutines.TryGetValue(targetNetId, out var co))
             {
                 _cubeCoroutines.Remove(targetNetId);
-                CubeBallManager.Instance?.StopCoroutine(co);
+                ShapeShifterManager.Instance?.StopCoroutine(co);
             }
 
-            NetworkServer.SendToAll(new CubeBallEndMessage { TargetNetId = targetNetId });
+            NetworkServer.SendToAll(new ShapeShifterEndMessage { TargetNetId = targetNetId });
             IssaPluginPlugin.Log.LogInfo(
-                $"[CubeBall] Cube effect cancelled for netId={targetNetId}."
+                $"[ShapeShifter] Cube effect cancelled for netId={targetNetId}."
             );
         }
 
@@ -97,7 +101,7 @@ namespace IssaPlugin.Items
             if (_cubeEndTimes.Count == 0)
                 return;
 
-            var manager = CubeBallManager.Instance;
+            var manager = ShapeShifterManager.Instance;
 
             // Copy keys before iterating to avoid modifying the collection mid-loop.
             var netIds = new List<uint>(_cubeEndTimes.Keys);
@@ -106,60 +110,60 @@ namespace IssaPlugin.Items
                 if (_cubeCoroutines.TryGetValue(netId, out var co))
                     manager?.StopCoroutine(co);
 
-                NetworkServer.SendToAll(new CubeBallEndMessage { TargetNetId = netId });
+                NetworkServer.SendToAll(new ShapeShifterEndMessage { TargetNetId = netId });
             }
 
             _cubeEndTimes.Clear();
             _cubeCoroutines.Clear();
 
-            IssaPluginPlugin.Log.LogInfo("[CubeBall] All cube effects cleaned up.");
+            IssaPluginPlugin.Log.LogInfo("[ShapeShifter] All cube effects cleaned up.");
         }
 
         // ── Shared client-side handlers (registered in NetworkManagerPatches) ─
 
         /// Called on every client (including the listen-server) when the server
         /// starts a cube effect.  Finds the target's GolfBall and applies
-        /// CubeBallState to it.
-        public static void HandleCubeBallBegin(CubeBallBeginMessage msg)
+        /// ShapeShifterState to it.
+        public static void HandleShapeShifterBegin(ShapeShifterBeginMessage msg)
         {
             var ball = FindBall(msg.TargetNetId);
             if (ball == null)
             {
                 IssaPluginPlugin.Log.LogWarning(
-                    $"[CubeBall] HandleBegin: no GolfBall found for netId={msg.TargetNetId}."
+                    $"[ShapeShifter] HandleBegin: no GolfBall found for netId={msg.TargetNetId}."
                 );
                 return;
             }
 
             // Apply collider/mesh swap only on first begin; extension messages skip this.
-            if (ball.GetComponent<CubeBallState>() == null)
+            if (ball.GetComponent<ShapeShifterState>() == null)
             {
-                var state = ball.gameObject.AddComponent<CubeBallState>();
+                var state = ball.gameObject.AddComponent<ShapeShifterState>();
                 state.Apply();
                 IssaPluginPlugin.Log.LogInfo(
-                    $"[CubeBall] Cube applied to ball owned by netId={msg.TargetNetId}."
+                    $"[ShapeShifter] Cube applied to ball owned by netId={msg.TargetNetId}."
                 );
             }
 
             // Update the local player's timer bar on every begin (including extensions).
             if (IsLocalPlayerTarget(msg.TargetNetId))
-                CubeBallOverlay.Instance?.SetCubed(true, msg.Duration);
+                ShapeShifterOverlay.Instance?.SetCubed(true, msg.Duration);
         }
 
         /// Called on every client (including the listen-server) when the server
-        /// ends a cube effect.  Reverts CubeBallState on the target's ball.
-        public static void HandleCubeBallEnd(CubeBallEndMessage msg)
+        /// ends a cube effect.  Reverts ShapeShifterState on the target's ball.
+        public static void HandleShapeShifterEnd(ShapeShifterEndMessage msg)
         {
             var ball = FindBall(msg.TargetNetId);
-            var state = ball?.GetComponent<CubeBallState>();
+            var state = ball?.GetComponent<ShapeShifterState>();
             state?.Revert();
 
             if (IsLocalPlayerTarget(msg.TargetNetId))
-                CubeBallOverlay.Instance?.SetCubed(false);
+                ShapeShifterOverlay.Instance?.SetCubed(false);
 
             if (state != null)
                 IssaPluginPlugin.Log.LogInfo(
-                    $"[CubeBall] Cube reverted for ball owned by netId={msg.TargetNetId}."
+                    $"[ShapeShifter] Cube reverted for ball owned by netId={msg.TargetNetId}."
                 );
         }
 
@@ -167,10 +171,7 @@ namespace IssaPlugin.Items
 
         private static IEnumerator ServerCubeTimeout(uint targetNetId)
         {
-            while (
-                _cubeEndTimes.TryGetValue(targetNetId, out float endTime)
-                && Time.time < endTime
-            )
+            while (_cubeEndTimes.TryGetValue(targetNetId, out float endTime) && Time.time < endTime)
             {
                 float remaining = endTime - Time.time;
                 yield return new WaitForSeconds(remaining);
@@ -181,10 +182,10 @@ namespace IssaPlugin.Items
             _cubeEndTimes.Remove(targetNetId);
             _cubeCoroutines.Remove(targetNetId);
             if (NetworkServer.active)
-                NetworkServer.SendToAll(new CubeBallEndMessage { TargetNetId = targetNetId });
+                NetworkServer.SendToAll(new ShapeShifterEndMessage { TargetNetId = targetNetId });
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[CubeBall] Cube effect timed out for netId={targetNetId}."
+                $"[ShapeShifter] Cube effect timed out for netId={targetNetId}."
             );
         }
 

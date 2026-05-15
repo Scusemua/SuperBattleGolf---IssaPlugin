@@ -45,8 +45,8 @@ namespace IssaPlugin.Items
         public static readonly ItemType HunterDroneItemType = (ItemType)129;
         public static readonly ItemType UfoAbductionItemType = (ItemType)130;
         public static readonly ItemType MoonItemType = (ItemType)131;
-        public static readonly ItemType CubeBallItemType = (ItemType)132;
-        public static readonly ItemType SuperCubeBallItemType = (ItemType)133;
+        public static readonly ItemType ShapeShifterItemType = (ItemType)132;
+        public static readonly ItemType SuperShapeShifterItemType = (ItemType)133;
         public static readonly ItemType ExplosiveGolfBallsItemType = (ItemType)134;
 
         // Static initialization order note: AllItems is a static field initializer that only
@@ -88,8 +88,8 @@ namespace IssaPlugin.Items
                 new HunterDroneItemDefinition(),
                 new UfoAbductionItemDefinition(),
                 new MoonItemDefinition(),
-                new CubeBallItemDefinition(),
-                new SuperCubeBallItemDefinition(),
+                new ShapeShifterItemDefinition(),
+                new SuperShapeShifterItemDefinition(),
                 new ExplosiveGolfBallsItemDefinition(),
             };
 

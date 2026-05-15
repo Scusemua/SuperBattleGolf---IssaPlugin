@@ -5,13 +5,13 @@ using UnityEngine;
 
 namespace IssaPlugin.Items
 {
-    /// HUD overlay for the Cube Ball item.
+    /// HUD overlay for the Shape Shifter item.
     ///
     /// Shows a target-selection panel when the player uses the item.
     /// Also draws a time-remaining bar when the local player's own ball is cubed.
-    public class CubeBallOverlay : MonoBehaviour
+    public class ShapeShifterOverlay : MonoBehaviour
     {
-        public static CubeBallOverlay Instance { get; private set; }
+        public static ShapeShifterOverlay Instance { get; private set; }
 
         // ── Timer bar state ───────────────────────────────────────────────────
 
@@ -22,9 +22,9 @@ namespace IssaPlugin.Items
         private Texture2D _barBgTexture;
         private Texture2D _barFillTexture;
         private int _cachedBarW = -1;
-        private GUIStyle _barLabelStyle;  // lazy-initialised in OnGUI
+        private GUIStyle _barLabelStyle; // lazy-initialised in OnGUI
 
-        private static readonly Color FillColor = new Color(0.85f, 0.50f, 0.15f, 0.9f);  // orange
+        private static readonly Color FillColor = new Color(0.85f, 0.50f, 0.15f, 0.9f); // orange
         private static readonly Color BgColor = new Color(0f, 0f, 0f, 0.55f);
 
         // ── Chooser state ─────────────────────────────────────────────────────
@@ -83,7 +83,7 @@ namespace IssaPlugin.Items
 
         // ── Public API ────────────────────────────────────────────────────────
 
-        /// Opens the chooser panel (called from CubeBallItemDefinition.OnUse).
+        /// Opens the chooser panel (called from ShapeShifterItemDefinition.OnUse).
         public void OpenChooser(int equippedSlotIndex)
         {
             _equippedSlotIndex = equippedSlotIndex;
@@ -141,8 +141,10 @@ namespace IssaPlugin.Items
 
             // Stack above Freeze (slot 0) and LowGravity (slot 1) if active.
             int slot = 0;
-            if (FreezeItem.IsFrozen) slot++;
-            if (LowGravityItem.IsActive) slot++;
+            if (FreezeItem.IsFrozen)
+                slot++;
+            if (LowGravityItem.IsActive)
+                slot++;
             float barY = EffectBarLayout.GetBarY(slot);
 
             GUI.DrawTexture(new Rect(barX, barY, barW, barH), _barBgTexture);
@@ -177,8 +179,16 @@ namespace IssaPlugin.Items
 
         private void DestroyBarTextures()
         {
-            if (_barBgTexture != null) { Destroy(_barBgTexture); _barBgTexture = null; }
-            if (_barFillTexture != null) { Destroy(_barFillTexture); _barFillTexture = null; }
+            if (_barBgTexture != null)
+            {
+                Destroy(_barBgTexture);
+                _barBgTexture = null;
+            }
+            if (_barFillTexture != null)
+            {
+                Destroy(_barFillTexture);
+                _barFillTexture = null;
+            }
             _cachedBarW = -1;
         }
 
@@ -197,11 +207,16 @@ namespace IssaPlugin.Items
 
         private static bool IsInsideRoundedRect(int x, int y, int w, int h, int r)
         {
-            bool inL = x < r, inR = x >= w - r, inT = y < r, inB = y >= h - r;
-            if (!((inL || inR) && (inT || inB))) return true;
+            bool inL = x < r,
+                inR = x >= w - r,
+                inT = y < r,
+                inB = y >= h - r;
+            if (!((inL || inR) && (inT || inB)))
+                return true;
             int cx = inL ? r : w - 1 - r;
             int cy = inT ? r : h - 1 - r;
-            float dx = x - cx, dy = y - cy;
+            float dx = x - cx,
+                dy = y - cy;
             return dx * dx + dy * dy <= r * r;
         }
 
@@ -274,7 +289,7 @@ namespace IssaPlugin.Items
                         if (identity != null)
                         {
                             NetworkClient.Send(
-                                new CubeBallRequestMessage
+                                new ShapeShifterRequestMessage
                                 {
                                     TargetNetId = identity.netId,
                                     EquippedSlotIndex = _equippedSlotIndex,

@@ -13,19 +13,19 @@ namespace IssaPlugin.Patches
     /// GolfBallSettings. This undoes our angular damping override every time.
     ///
     /// This postfix re-applies the configurable damping value after the game's
-    /// reset, but only when the ball has an active CubeBallState component.
+    /// reset, but only when the ball has an active ShapeShifterState component.
     [HarmonyPatch]
-    static class CubeBallPhysicsPatch
+    static class ShapeShifterPhysicsPatch
     {
         private static readonly MethodBase TargetMb;
 
-        static CubeBallPhysicsPatch()
+        static ShapeShifterPhysicsPatch()
         {
             var type = AccessTools.TypeByName("GolfBall");
             if (type == null)
             {
                 IssaPluginPlugin.Log.LogWarning(
-                    "[CubeBall] GolfBall type not found — angular damping patch skipped."
+                    "[ShapeShifter] GolfBall type not found — angular damping patch skipped."
                 );
                 return;
             }
@@ -33,7 +33,7 @@ namespace IssaPlugin.Patches
             TargetMb = AccessTools.Method(type, "UpdateFrictionMode");
             if (TargetMb == null)
                 IssaPluginPlugin.Log.LogWarning(
-                    "[CubeBall] GolfBall.UpdateFrictionMode not found — angular damping patch skipped."
+                    "[ShapeShifter] GolfBall.UpdateFrictionMode not found — angular damping patch skipped."
                 );
         }
 
@@ -41,12 +41,12 @@ namespace IssaPlugin.Patches
 
         static void Postfix(Component __instance)
         {
-            if (__instance.GetComponent<CubeBallState>() == null)
+            if (__instance.GetComponent<ShapeShifterState>() == null)
                 return;
 
             var rb = __instance.GetComponent<Rigidbody>();
             if (rb != null)
-                rb.angularDamping = ModConfig.CubeBall.PhysicsAngularDamping.Value;
+                rb.angularDamping = ModConfig.ShapeShifter.PhysicsAngularDamping.Value;
         }
     }
 
@@ -57,7 +57,7 @@ namespace IssaPlugin.Patches
     /// rolling.  This postfix injects an angular impulse about the transverse axis
     /// (perpendicular to velocity, horizontal) so the cube immediately tumbles.
     [HarmonyPatch]
-    static class CubeBallHitSpinPatch
+    static class ShapeShifterHitSpinPatch
     {
         static MethodBase TargetMethod() =>
             AccessTools.Method(typeof(Hittable), "HitWithGolfSwingInternal");
@@ -70,10 +70,10 @@ namespace IssaPlugin.Patches
             if (!__instance.AsEntity.IsGolfBall)
                 return;
 
-            if (__instance.GetComponent<CubeBallState>() == null)
+            if (__instance.GetComponent<ShapeShifterState>() == null)
                 return;
 
-            float spinFactor = ModConfig.CubeBall.PhysicsHitSpinFactor.Value;
+            float spinFactor = ModConfig.ShapeShifter.PhysicsHitSpinFactor.Value;
             if (spinFactor <= 0f)
                 return;
 

@@ -5,10 +5,10 @@ namespace IssaPlugin.Items
 {
     /// Attached to every player object via NetworkBridgePatches.
     ///
-    /// Receives CubeBallRequestMessage from the owning client, validates that
+    /// Receives ShapeShifterRequestMessage from the owning client, validates that
     /// the item is equipped and the target is valid, consumes the item, then
-    /// calls CubeBallHelper.ServerApplyCube to start the effect.
-    public class CubeBallNetworkBridge : NetworkBridgeBase
+    /// calls ShapeShifterHelper.ServerApplyCube to start the effect.
+    public class ShapeShifterNetworkBridge : NetworkBridgeBase
     {
         private PlayerInventory _inventory;
 
@@ -16,7 +16,7 @@ namespace IssaPlugin.Items
 
         // ================================================================
         //  Server-side request handler
-        //  Called from NetworkManagerPatches when CubeBallRequestMessage arrives.
+        //  Called from NetworkManagerPatches when ShapeShifterRequestMessage arrives.
         // ================================================================
 
         public void ServerHandleRequest(uint targetNetId, int equippedSlotIndex)
@@ -29,11 +29,11 @@ namespace IssaPlugin.Items
 
             if (
                 ItemRegistry.GetItemTypeAtSlot(_inventory, equippedSlotIndex)
-                != ItemRegistry.CubeBallItemType
+                != ItemRegistry.ShapeShifterItemType
             )
             {
                 IssaPluginPlugin.Log.LogWarning(
-                    "[CubeBall] ServerHandleRequest: item not at expected slot."
+                    "[ShapeShifter] ServerHandleRequest: item not at expected slot."
                 );
                 return;
             }
@@ -41,7 +41,7 @@ namespace IssaPlugin.Items
             if (targetNetId == netId)
             {
                 IssaPluginPlugin.Log.LogWarning(
-                    "[CubeBall] ServerHandleRequest: self-targeting rejected."
+                    "[ShapeShifter] ServerHandleRequest: self-targeting rejected."
                 );
                 return;
             }
@@ -49,7 +49,7 @@ namespace IssaPlugin.Items
             if (!NetworkServer.spawned.ContainsKey(targetNetId))
             {
                 IssaPluginPlugin.Log.LogWarning(
-                    $"[CubeBall] ServerHandleRequest: target netId {targetNetId} not found."
+                    $"[ShapeShifter] ServerHandleRequest: target netId {targetNetId} not found."
                 );
                 return;
             }
@@ -60,7 +60,7 @@ namespace IssaPlugin.Items
             if (targetInventory == null)
             {
                 IssaPluginPlugin.Log.LogWarning(
-                    "[CubeBall] ServerHandleRequest: target has no PlayerInventory."
+                    "[ShapeShifter] ServerHandleRequest: target has no PlayerInventory."
                 );
                 return;
             }
@@ -70,18 +70,18 @@ namespace IssaPlugin.Items
             if (ball == null)
             {
                 IssaPluginPlugin.Log.LogWarning(
-                    "[CubeBall] ServerHandleRequest: target has no GolfBall."
+                    "[ShapeShifter] ServerHandleRequest: target has no GolfBall."
                 );
                 return;
             }
 
             ItemHelper.ConsumeItemAtSlot(_inventory, equippedSlotIndex);
 
-            float duration = ModConfig.CubeBall.Duration.Value;
-            CubeBallHelper.ServerApplyCube(targetNetId, duration);
+            float duration = ModConfig.ShapeShifter.Duration.Value;
+            ShapeShifterHelper.ServerApplyCube(targetNetId, duration);
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[CubeBall] Applied cube to target netId={targetNetId} for {duration:F1}s."
+                $"[ShapeShifter] Applied cube to target netId={targetNetId} for {duration:F1}s."
             );
         }
 
@@ -91,16 +91,16 @@ namespace IssaPlugin.Items
 
         public override void ServerHoleCleanup()
         {
-            // Cleanup is global; handled by CubeBallHelper.ServerCleanupAll()
+            // Cleanup is global; handled by ShapeShifterHelper.ServerCleanupAll()
             // called from the first bridge instance that runs this (harmless to
             // call multiple times since the dict will be empty after the first).
-            CubeBallHelper.ServerCleanupAll();
+            ShapeShifterHelper.ServerCleanupAll();
         }
 
         public override void ClientHoleCleanup()
         {
-            CubeBallOverlay.Instance?.ForceClose();
-            CubeBallOverlay.Instance?.SetCubed(false);
+            ShapeShifterOverlay.Instance?.ForceClose();
+            ShapeShifterOverlay.Instance?.SetCubed(false);
         }
     }
 }

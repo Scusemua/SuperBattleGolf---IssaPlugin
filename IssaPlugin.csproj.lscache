@@ -56,7 +56,6 @@ Config/
  BaseballBatConfig.cs
  BearConfig.cs
  BlackHoleGrenadeConfig.cs
- CubeBallConfig.cs
  DonutConfig.cs
  DroneSwarmConfig.cs
  ExplosiveGolfBallsConfig.cs
@@ -79,12 +78,13 @@ Config/
  RedBullConfig.cs
  RocketTetherConfig.cs
  RocketTetherGrenadeConfig.cs
+ ShapeShifterConfig.cs
  SniperRifleConfig.cs
  SpinachConfig.cs
  StealthBomberConfig.cs
  StickyGrenadeConfig.cs
- SuperCubeBallConfig.cs
  SuperDonutConfig.cs
+ SuperShapeShifterConfig.cs
  TeleporterConfig.cs
  UfoAbductionConfig.cs
  WindStormConfig.cs
@@ -126,14 +126,6 @@ Items/
   BlackHoleGrenadeItemDefinition.cs
   BlackHoleGrenadeMessages.cs
   BlackHoleGrenadeNetworkBridge.cs
- CubeBall/
-  CubeBallHelper.cs
-  CubeBallItemDefinition.cs
-  CubeBallManager.cs
-  CubeBallMessages.cs
-  CubeBallNetworkBridge.cs
-  CubeBallOverlay.cs
-  CubeBallState.cs
  CustomHittable.cs
  CustomItemDefinition.cs
  CustomSpawnedRocket.cs
@@ -270,6 +262,14 @@ Items/
   RocketTetherGrenadeMessages.cs
   RocketTetherGrenadeNetworkBridge.cs
  ScreenShakeHelper.cs
+ ShapeShifter/
+  ShapeShifterHelper.cs
+  ShapeShifterItemDefinition.cs
+  ShapeShifterManager.cs
+  ShapeShifterMessages.cs
+  ShapeShifterNetworkBridge.cs
+  ShapeShifterOverlay.cs
+  ShapeShifterState.cs
  SniperRifle/
   SniperRifleItem.cs
   SniperRifleItemDefinition.cs
@@ -296,13 +296,13 @@ Items/
   StickyGrenadeMessages.cs
   StickyGrenadeNetworkBridge.cs
   StickyGrenadeTrajectoryPreview.cs
- SuperCubeBall/
-  SuperCubeBallItemDefinition.cs
-  SuperCubeBallNetworkBridge.cs
  SuperDonut/
   SuperDonutItemDefinition.cs
   SuperDonutMessages.cs
   SuperDonutNetworkBridge.cs
+ SuperShapeShifter/
+  SuperShapeShifterItemDefinition.cs
+  SuperShapeShifterNetworkBridge.cs
  Teleporter/
   TeleporterItem.cs
   TeleporterItemDefinition.cs
@@ -369,7 +369,6 @@ Patches/
  BearWeaponHitPatches.cs
  BloodSplatterPatches.cs
  CoffeeDispenserPatch.cs
- CubeBallPhysicsPatch.cs
  DevConsoleCommands.cs
  DroppedItemHitPatches.cs
  ElephantGunRateLimitPatch.cs
@@ -393,6 +392,7 @@ Patches/
  OrbitalLaserPatches.cs
  RedBullPatches.cs
  RocketPatches.cs
+ ShapeShifterPhysicsPatch.cs
  WallHitPatches.cs
  WindStormMovementPatch.cs
  WindStormPatches.cs

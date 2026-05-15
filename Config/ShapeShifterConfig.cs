@@ -3,9 +3,9 @@ using UnityEngine.InputSystem;
 
 namespace IssaPlugin
 {
-    public class CubeBallConfig
+    public class ShapeShifterConfig
     {
-        private const string Section = "CubeBall";
+        private const string Section = "ShapeShifter";
 
         public ConfigEntry<Key> GiveKey { get; private set; }
         public ConfigEntry<float> Uses { get; private set; }
@@ -17,7 +17,7 @@ namespace IssaPlugin
         public ConfigEntry<float> PhysicsAngularDamping { get; private set; }
         public ConfigEntry<float> PhysicsHitSpinFactor { get; private set; }
 
-        public CubeBallConfig(ConfigFile cfg, GlobalConfig global)
+        public ShapeShifterConfig(ConfigFile cfg, GlobalConfig global)
         {
             GiveKey = cfg.Bind(
                 Section,

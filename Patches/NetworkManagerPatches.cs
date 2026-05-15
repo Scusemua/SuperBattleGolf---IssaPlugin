@@ -1753,45 +1753,49 @@ namespace IssaPlugin.Patches
                 HunterDroneNetworkBridge.HandleDroneExploded
             );
 
-            // ── Cube Ball / Super Cube Ball ───────────────────────────────────────
+            // ── Shape Shifter / Super Shape Shifter ──────────────────────────────
 
             // Client → Server: single-target request
-            Writer<CubeBallRequestMessage>.write =
-                CubeBallRequestMessageSerialization.WriteCubeBallRequestMessage;
-            Reader<CubeBallRequestMessage>.read =
-                CubeBallRequestMessageSerialization.ReadCubeBallRequestMessage;
+            Writer<ShapeShifterRequestMessage>.write =
+                ShapeShifterRequestMessageSerialization.WriteShapeShifterRequestMessage;
+            Reader<ShapeShifterRequestMessage>.read =
+                ShapeShifterRequestMessageSerialization.ReadShapeShifterRequestMessage;
             if (NetworkServer.active)
-                NetworkServer.RegisterHandler<CubeBallRequestMessage>(
+                NetworkServer.RegisterHandler<ShapeShifterRequestMessage>(
                     (conn, msg) =>
-                        GetBridge<CubeBallNetworkBridge>(conn)
+                        GetBridge<ShapeShifterNetworkBridge>(conn)
                             ?.ServerHandleRequest(msg.TargetNetId, msg.EquippedSlotIndex)
                 );
 
-            // Client → Server: all-targets request (SuperCubeBall)
-            Writer<SuperCubeBallRequestMessage>.write =
-                SuperCubeBallRequestMessageSerialization.WriteSuperCubeBallRequestMessage;
-            Reader<SuperCubeBallRequestMessage>.read =
-                SuperCubeBallRequestMessageSerialization.ReadSuperCubeBallRequestMessage;
+            // Client → Server: all-targets request (SuperShapeShifter)
+            Writer<SuperShapeShifterRequestMessage>.write =
+                SuperShapeShifterRequestMessageSerialization.WriteSuperShapeShifterRequestMessage;
+            Reader<SuperShapeShifterRequestMessage>.read =
+                SuperShapeShifterRequestMessageSerialization.ReadSuperShapeShifterRequestMessage;
             if (NetworkServer.active)
-                NetworkServer.RegisterHandler<SuperCubeBallRequestMessage>(
+                NetworkServer.RegisterHandler<SuperShapeShifterRequestMessage>(
                     (conn, msg) =>
-                        GetBridge<SuperCubeBallNetworkBridge>(conn)
+                        GetBridge<SuperShapeShifterNetworkBridge>(conn)
                             ?.ServerHandleRequest(msg.EquippedSlotIndex)
                 );
 
             // Server → All Clients: cube effect begins on a specific ball
-            Writer<CubeBallBeginMessage>.write =
-                CubeBallBeginMessageSerialization.WriteCubeBallBeginMessage;
-            Reader<CubeBallBeginMessage>.read =
-                CubeBallBeginMessageSerialization.ReadCubeBallBeginMessage;
-            NetworkClient.RegisterHandler<CubeBallBeginMessage>(CubeBallHelper.HandleCubeBallBegin);
+            Writer<ShapeShifterBeginMessage>.write =
+                ShapeShifterBeginMessageSerialization.WriteShapeShifterBeginMessage;
+            Reader<ShapeShifterBeginMessage>.read =
+                ShapeShifterBeginMessageSerialization.ReadShapeShifterBeginMessage;
+            NetworkClient.RegisterHandler<ShapeShifterBeginMessage>(
+                ShapeShifterHelper.HandleShapeShifterBegin
+            );
 
             // Server → All Clients: cube effect ends on a specific ball
-            Writer<CubeBallEndMessage>.write =
-                CubeBallEndMessageSerialization.WriteCubeBallEndMessage;
-            Reader<CubeBallEndMessage>.read =
-                CubeBallEndMessageSerialization.ReadCubeBallEndMessage;
-            NetworkClient.RegisterHandler<CubeBallEndMessage>(CubeBallHelper.HandleCubeBallEnd);
+            Writer<ShapeShifterEndMessage>.write =
+                ShapeShifterEndMessageSerialization.WriteShapeShifterEndMessage;
+            Reader<ShapeShifterEndMessage>.read =
+                ShapeShifterEndMessageSerialization.ReadShapeShifterEndMessage;
+            NetworkClient.RegisterHandler<ShapeShifterEndMessage>(
+                ShapeShifterHelper.HandleShapeShifterEnd
+            );
 
             // ── Explosive Golf Balls (Server → All Clients) ──────────────────────
             Writer<ExplosiveGolfBallsExplodeMessage>.write =

@@ -136,16 +136,7 @@ namespace IssaPlugin.Items
         /// Client-only UFO VFX that flies over and abducts the victim. Null until ufo_abduction.prefab is added.
         public static GameObject UfoAbductionUfoPrefab { get; private set; }
 
-        // ── CubeBall / SuperCubeBall shape prefabs ────────────────────────────
-        /// Visual-only shape prefabs spawned as children of the golf ball.
-        /// Each prefab must contain a MeshFilter + MeshRenderer + MeshCollider (convex).
-        /// No Rigidbody, NetworkIdentity, or NetworkTransform needed.
-        public static GameObject CubeBallShapeCube { get; private set; }
-        public static GameObject CubeBallShapeDisk { get; private set; }
-        public static GameObject CubeBallShapeCylinder { get; private set; }
-        public static GameObject CubeBallShapeCone { get; private set; }
-        public static GameObject CubeBallShapePyramid { get; private set; }
-
+        // ── ShapeShifter / SuperShapeShifter ──────────────────────────────────
         // ── Explosive Golf Balls ──────────────────────────────────────────────
         /// Item icon for Explosive Golf Balls. Null until explosive_golf_balls_icon.png is added to the bundle.
         public static Sprite ExplosiveGolfBallsIcon { get; private set; }
@@ -153,15 +144,15 @@ namespace IssaPlugin.Items
         /// Handheld model shown in the player's hand. Null until explosive_golf_balls_handheld.prefab is added.
         public static GameObject ExplosiveGolfBallsHandheldPrefab { get; private set; }
 
-        /// Item icon for Cube Ball. Null until cube_ball_icon.png is added to the bundle.
-        public static Sprite CubeBallIcon { get; private set; }
+        /// Item icon for Shape Shifter. Null until cube_ball_icon.png is added to the bundle.
+        public static Sprite ShapeShifterIcon { get; private set; }
 
-        /// Item icon for Super Cube Ball. Falls back to CubeBallIcon at runtime if absent.
-        public static Sprite SuperCubeBallIcon { get; private set; }
+        /// Item icon for Super Shape Shifter. Falls back to ShapeShifterIcon at runtime if absent.
+        public static Sprite SuperShapeShifterIcon { get; private set; }
 
-        /// Shared handheld/dropped prefab for both CubeBall and SuperCubeBall.
+        /// Shared handheld/dropped prefab for both ShapeShifter and SuperShapeShifter.
         /// Null until cube_ball_handheld.prefab is added to the bundle.
-        public static GameObject CubeBallHandheldPrefab { get; private set; }
+        public static GameObject ShapeShifterHandheldPrefab { get; private set; }
 
         // ── Moon ──────────────────────────────────────────────────────────────
         /// Item icon for Majora's Moon. Null until moon_icon.png is added to the bundle.
@@ -547,19 +538,18 @@ namespace IssaPlugin.Items
                 SpriteAsset(p => MoonIcon = p, "moon_icon.png", optional: true),
                 HandheldPrefab(p => MoonHandheldPrefab = p, "moon_handheld.prefab", optional: true),
                 LocalVfxPrefab(p => MoonVfxPrefab = p, "moon.prefab"),
-                // ── CubeBall / SuperCubeBall ──────────────────────────────────
-                Prefab(p => CubeBallShapeCube = p, "golf_ball_cube.prefab"),
-                Prefab(p => CubeBallShapeDisk = p, "golf_ball_disk.prefab"),
-                Prefab(p => CubeBallShapeCylinder = p, "golf_ball_cylinder.prefab"),
-                Prefab(p => CubeBallShapeCone = p, "golf_ball_cone.prefab"),
-                Prefab(p => CubeBallShapePyramid = p, "golf_ball_pyramid.prefab"),
-                SpriteAsset(p => CubeBallIcon = p, "cube_ball_icon.png", optional: true),
-                SpriteAsset(p => SuperCubeBallIcon = p, "super_cube_ball_icon.png", optional: true),
+                // ── ShapeShifter / SuperShapeShifter ─────────────────────────
+                SpriteAsset(p => ShapeShifterIcon = p, "cube_ball_icon.png", optional: true),
+                SpriteAsset(
+                    p => SuperShapeShifterIcon = p,
+                    "super_cube_ball_icon.png",
+                    optional: true
+                ),
                 HandheldPrefab(
-                    p => CubeBallHandheldPrefab = p,
+                    p => ShapeShifterHandheldPrefab = p,
                     "rubixcube.prefab",
                     optional: true,
-                    fallback: BuildCubeBallHandheldFallback
+                    fallback: BuildShapeShifterHandheldFallback
                 ),
                 // ── Explosive Golf Balls ──────────────────────────────────────
                 SpriteAsset(
@@ -614,8 +604,8 @@ namespace IssaPlugin.Items
             SuperDonutIcon ??= DonutIcon;
             SuperDonutHandheldPrefab ??= DonutHandheldPrefab;
 
-            // SuperCubeBall icon falls back to CubeBall icon when the dedicated one is absent.
-            SuperCubeBallIcon ??= CubeBallIcon;
+            // SuperShapeShifter icon falls back to ShapeShifter icon when the dedicated one is absent.
+            SuperShapeShifterIcon ??= ShapeShifterIcon;
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -627,10 +617,10 @@ namespace IssaPlugin.Items
         //  all in one place.
         // ─────────────────────────────────────────────────────────────────────
 
-        private static GameObject BuildCubeBallHandheldFallback()
+        private static GameObject BuildShapeShifterHandheldFallback()
         {
             var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            go.name = "CubeBallHandheld_Fallback";
+            go.name = "ShapeShifterHandheld_Fallback";
             go.transform.localScale = Vector3.one * 0.15f;
             Object.DontDestroyOnLoad(go);
             go.SetActive(false);

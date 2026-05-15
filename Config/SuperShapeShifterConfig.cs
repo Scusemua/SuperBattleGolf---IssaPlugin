@@ -3,9 +3,9 @@ using UnityEngine.InputSystem;
 
 namespace IssaPlugin
 {
-    public class SuperCubeBallConfig
+    public class SuperShapeShifterConfig
     {
-        private const string Section = "SuperCubeBall";
+        private const string Section = "SuperShapeShifter";
 
         public ConfigEntry<Key> GiveKey { get; private set; }
         public ConfigEntry<float> Uses { get; private set; }
@@ -13,7 +13,7 @@ namespace IssaPlugin
         public ConfigEntry<float> SpawnWeight { get; private set; }
         public ConfigEntry<bool> AffectSelf { get; private set; }
 
-        public SuperCubeBallConfig(ConfigFile cfg, GlobalConfig global)
+        public SuperShapeShifterConfig(ConfigFile cfg, GlobalConfig global)
         {
             GiveKey = cfg.Bind(
                 Section,

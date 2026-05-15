@@ -5,8 +5,8 @@ namespace IssaPlugin.Items
     // ── Client → Server ──────────────────────────────────────────────────────
 
     /// Sent by the local client when the player selects a target from the
-    /// CubeBallOverlay chooser panel.
-    public struct CubeBallRequestMessage : NetworkMessage
+    /// ShapeShifterOverlay chooser panel.
+    public struct ShapeShifterRequestMessage : NetworkMessage
     {
         public uint TargetNetId;
 
@@ -16,20 +16,22 @@ namespace IssaPlugin.Items
         public int EquippedSlotIndex;
     }
 
-    public static class CubeBallRequestMessageSerialization
+    public static class ShapeShifterRequestMessageSerialization
     {
-        public static void WriteCubeBallRequestMessage(
+        public static void WriteShapeShifterRequestMessage(
             NetworkWriter writer,
-            CubeBallRequestMessage msg
+            ShapeShifterRequestMessage msg
         )
         {
             writer.WriteUInt(msg.TargetNetId);
             writer.WriteInt(msg.EquippedSlotIndex);
         }
 
-        public static CubeBallRequestMessage ReadCubeBallRequestMessage(NetworkReader reader)
+        public static ShapeShifterRequestMessage ReadShapeShifterRequestMessage(
+            NetworkReader reader
+        )
         {
-            return new CubeBallRequestMessage
+            return new ShapeShifterRequestMessage
             {
                 TargetNetId = reader.ReadUInt(),
                 EquippedSlotIndex = reader.ReadInt(),
@@ -37,53 +39,56 @@ namespace IssaPlugin.Items
         }
     }
 
-    /// Sent by the local client when the Super Cube Ball item is used
+    /// Sent by the local client when the Super Shape Shifter item is used
     /// (no target selection needed — affects every other player).
-    public struct SuperCubeBallRequestMessage : NetworkMessage
+    public struct SuperShapeShifterRequestMessage : NetworkMessage
     {
         public int EquippedSlotIndex;
     }
 
-    public static class SuperCubeBallRequestMessageSerialization
+    public static class SuperShapeShifterRequestMessageSerialization
     {
-        public static void WriteSuperCubeBallRequestMessage(
+        public static void WriteSuperShapeShifterRequestMessage(
             NetworkWriter writer,
-            SuperCubeBallRequestMessage msg
+            SuperShapeShifterRequestMessage msg
         )
         {
             writer.WriteInt(msg.EquippedSlotIndex);
         }
 
-        public static SuperCubeBallRequestMessage ReadSuperCubeBallRequestMessage(
+        public static SuperShapeShifterRequestMessage ReadSuperShapeShifterRequestMessage(
             NetworkReader reader
         )
         {
-            return new SuperCubeBallRequestMessage { EquippedSlotIndex = reader.ReadInt() };
+            return new SuperShapeShifterRequestMessage { EquippedSlotIndex = reader.ReadInt() };
         }
     }
 
     // ── Server → All Clients ─────────────────────────────────────────────────
 
     /// Broadcast by the server when a player's ball begins (or has its duration
-    /// extended for) the cube effect. Shared by both CubeBall and SuperCubeBall.
+    /// extended for) the cube effect. Shared by both ShapeShifter and SuperShapeShifter.
     /// Duration is the remaining time in seconds so clients can drive a timer bar.
-    public struct CubeBallBeginMessage : NetworkMessage
+    public struct ShapeShifterBeginMessage : NetworkMessage
     {
         public uint TargetNetId;
         public float Duration;
     }
 
-    public static class CubeBallBeginMessageSerialization
+    public static class ShapeShifterBeginMessageSerialization
     {
-        public static void WriteCubeBallBeginMessage(NetworkWriter writer, CubeBallBeginMessage msg)
+        public static void WriteShapeShifterBeginMessage(
+            NetworkWriter writer,
+            ShapeShifterBeginMessage msg
+        )
         {
             writer.WriteUInt(msg.TargetNetId);
             writer.WriteFloat(msg.Duration);
         }
 
-        public static CubeBallBeginMessage ReadCubeBallBeginMessage(NetworkReader reader)
+        public static ShapeShifterBeginMessage ReadShapeShifterBeginMessage(NetworkReader reader)
         {
-            return new CubeBallBeginMessage
+            return new ShapeShifterBeginMessage
             {
                 TargetNetId = reader.ReadUInt(),
                 Duration = reader.ReadFloat(),
@@ -92,21 +97,24 @@ namespace IssaPlugin.Items
     }
 
     /// Broadcast by the server when the cube effect on a player's ball ends.
-    public struct CubeBallEndMessage : NetworkMessage
+    public struct ShapeShifterEndMessage : NetworkMessage
     {
         public uint TargetNetId;
     }
 
-    public static class CubeBallEndMessageSerialization
+    public static class ShapeShifterEndMessageSerialization
     {
-        public static void WriteCubeBallEndMessage(NetworkWriter writer, CubeBallEndMessage msg)
+        public static void WriteShapeShifterEndMessage(
+            NetworkWriter writer,
+            ShapeShifterEndMessage msg
+        )
         {
             writer.WriteUInt(msg.TargetNetId);
         }
 
-        public static CubeBallEndMessage ReadCubeBallEndMessage(NetworkReader reader)
+        public static ShapeShifterEndMessage ReadShapeShifterEndMessage(NetworkReader reader)
         {
-            return new CubeBallEndMessage { TargetNetId = reader.ReadUInt() };
+            return new ShapeShifterEndMessage { TargetNetId = reader.ReadUInt() };
         }
     }
 }

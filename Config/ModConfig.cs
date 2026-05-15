@@ -42,8 +42,8 @@ namespace IssaPlugin
         public static HunterDroneConfig HunterDrone { get; private set; }
         public static UfoAbductionConfig UfoAbduction { get; private set; }
         public static MoonConfig Moon { get; private set; }
-        public static CubeBallConfig CubeBall { get; private set; }
-        public static SuperCubeBallConfig SuperCubeBall { get; private set; }
+        public static ShapeShifterConfig ShapeShifter { get; private set; }
+        public static SuperShapeShifterConfig SuperShapeShifter { get; private set; }
         public static ExplosiveGolfBallsConfig ExplosiveGolfBalls { get; private set; }
 
         public static void Initialize(ConfigFile cfg)
@@ -83,8 +83,8 @@ namespace IssaPlugin
             HunterDrone = new HunterDroneConfig(cfg, Global);
             UfoAbduction = new UfoAbductionConfig(cfg, Global);
             Moon = new MoonConfig(cfg, Global);
-            CubeBall = new CubeBallConfig(cfg, Global);
-            SuperCubeBall = new SuperCubeBallConfig(cfg, Global);
+            ShapeShifter = new ShapeShifterConfig(cfg, Global);
+            SuperShapeShifter = new SuperShapeShifterConfig(cfg, Global);
             ExplosiveGolfBalls = new ExplosiveGolfBallsConfig(cfg, Global);
         }
 

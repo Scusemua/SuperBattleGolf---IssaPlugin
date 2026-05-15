@@ -6,9 +6,9 @@ namespace IssaPlugin.Items
     /// Attached to every player object via NetworkBridgePatches.
     ///
     /// On activation, cubes every other player's golf ball simultaneously by
-    /// calling CubeBallHelper.ServerApplyCube for each non-self target.
+    /// calling ShapeShifterHelper.ServerApplyCube for each non-self target.
     /// No interactive session — the effect fires instantly.
-    public class SuperCubeBallNetworkBridge : NetworkBridgeBase
+    public class SuperShapeShifterNetworkBridge : NetworkBridgeBase
     {
         private PlayerInventory _inventory;
 
@@ -16,7 +16,7 @@ namespace IssaPlugin.Items
 
         // ================================================================
         //  Server-side request handler
-        //  Called from NetworkManagerPatches when SuperCubeBallRequestMessage arrives.
+        //  Called from NetworkManagerPatches when SuperShapeShifterRequestMessage arrives.
         // ================================================================
 
         public void ServerHandleRequest(int equippedSlotIndex)
@@ -29,18 +29,18 @@ namespace IssaPlugin.Items
 
             if (
                 ItemRegistry.GetItemTypeAtSlot(_inventory, equippedSlotIndex)
-                != ItemRegistry.SuperCubeBallItemType
+                != ItemRegistry.SuperShapeShifterItemType
             )
             {
                 IssaPluginPlugin.Log.LogWarning(
-                    "[SuperCubeBall] ServerHandleRequest: item not at expected slot."
+                    "[SuperShapeShifter] ServerHandleRequest: item not at expected slot."
                 );
                 return;
             }
 
             ItemHelper.ConsumeItemAtSlot(_inventory, equippedSlotIndex);
 
-            float duration = ModConfig.SuperCubeBall.Duration.Value;
+            float duration = ModConfig.SuperShapeShifter.Duration.Value;
             int targetCount = 0;
 
             foreach (var conn in NetworkServer.connections.Values)
@@ -49,7 +49,7 @@ namespace IssaPlugin.Items
                 if (identity == null)
                     continue;
 
-                if (identity.netId == netId && !ModConfig.SuperCubeBall.AffectSelf.Value)
+                if (identity.netId == netId && !ModConfig.SuperShapeShifter.AffectSelf.Value)
                     continue;
 
                 var targetInventory = identity.GetComponent<PlayerInventory>();
@@ -60,12 +60,12 @@ namespace IssaPlugin.Items
                 if (targetInventory.PlayerInfo?.AsGolfer?.OwnBall == null)
                     continue;
 
-                CubeBallHelper.ServerApplyCube(identity.netId, duration);
+                ShapeShifterHelper.ServerApplyCube(identity.netId, duration);
                 targetCount++;
             }
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[SuperCubeBall] Cubed {targetCount} ball(s) for {duration:F1}s."
+                $"[SuperShapeShifter] Cubed {targetCount} ball(s) for {duration:F1}s."
             );
         }
 
