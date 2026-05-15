@@ -17,6 +17,15 @@ namespace IssaPlugin
         public ConfigEntry<float> PhysicsAngularDamping { get; private set; }
         public ConfigEntry<float> PhysicsHitSpinFactor { get; private set; }
 
+        // ── Per-shape enable/disable ──────────────────────────────────────────
+        public ConfigEntry<bool> ShapeCubeEnabled { get; private set; }
+        public ConfigEntry<bool> ShapeDiskEnabled { get; private set; }
+        public ConfigEntry<bool> ShapeCylinderEnabled { get; private set; }
+        public ConfigEntry<bool> ShapeConeEnabled { get; private set; }
+        public ConfigEntry<bool> ShapePyramidEnabled { get; private set; }
+        public ConfigEntry<bool> ShapeAcornEnabled { get; private set; }
+        public ConfigEntry<bool> ShapeIsosphereEnabled { get; private set; }
+
         public ShapeShifterConfig(ConfigFile cfg, GlobalConfig global)
         {
             GiveKey = cfg.Bind(
@@ -80,6 +89,17 @@ namespace IssaPlugin
                     new AcceptableValueRange<float>(0.0f, 20.0f)
                 )
             );
+
+            const string shapeSection = "ShapeShifter.Shapes";
+            const string shapeDesc =
+                "Whether this shape can be randomly selected by the Shape Shifter and Super Shape Shifter.";
+            ShapeCubeEnabled = cfg.Bind(shapeSection, "Cube", true, shapeDesc);
+            ShapeDiskEnabled = cfg.Bind(shapeSection, "Disk", true, shapeDesc);
+            ShapeCylinderEnabled = cfg.Bind(shapeSection, "Cylinder", true, shapeDesc);
+            ShapeConeEnabled = cfg.Bind(shapeSection, "Cone", true, shapeDesc);
+            ShapePyramidEnabled = cfg.Bind(shapeSection, "Pyramid", true, shapeDesc);
+            ShapeAcornEnabled = cfg.Bind(shapeSection, "Acorn", true, shapeDesc);
+            ShapeIsosphereEnabled = cfg.Bind(shapeSection, "Isosphere", true, shapeDesc);
         }
     }
 }

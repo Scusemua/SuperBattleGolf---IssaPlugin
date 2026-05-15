@@ -49,7 +49,7 @@ namespace IssaPlugin.Items
 
         public void Apply()
         {
-            Shape = (BallShape)Random.Range(0, System.Enum.GetValues(typeof(BallShape)).Length);
+            Shape = PickRandomShape();
 
             // ── Size from SphereCollider radius ───────────────────────────────
             // Using MeshRenderer.bounds is unstable (varies with rotation/animation).
@@ -143,6 +143,58 @@ namespace IssaPlugin.Items
             }
 
             Destroy(this);
+        }
+
+        private static BallShape PickRandomShape()
+        {
+            var cfg = ModConfig.ShapeShifter;
+            // Build the pool of enabled shapes inline — avoids allocation on the hot path
+            // only when shapes are actually disabled.
+            BallShape[] all =
+            {
+                BallShape.Cube,
+                BallShape.Disk,
+                BallShape.Cylinder,
+                BallShape.Cone,
+                BallShape.Pyramid,
+                BallShape.Acorn,
+                BallShape.Isosphere,
+            };
+            bool[] enabled =
+            {
+                cfg.ShapeCubeEnabled.Value,
+                cfg.ShapeDiskEnabled.Value,
+                cfg.ShapeCylinderEnabled.Value,
+                cfg.ShapeConeEnabled.Value,
+                cfg.ShapePyramidEnabled.Value,
+                cfg.ShapeAcornEnabled.Value,
+                cfg.ShapeIsosphereEnabled.Value,
+            };
+
+            int poolSize = 0;
+            for (int i = 0; i < enabled.Length; i++)
+                if (enabled[i])
+                    poolSize++;
+
+            if (poolSize == 0)
+            {
+                IssaPluginPlugin.Log.LogWarning(
+                    "[ShapeShifter] All shapes are disabled in config — picking from full pool."
+                );
+                return all[Random.Range(0, all.Length)];
+            }
+
+            int pick = Random.Range(0, poolSize);
+            int seen = 0;
+            for (int i = 0; i < all.Length; i++)
+            {
+                if (!enabled[i])
+                    continue;
+                if (seen == pick)
+                    return all[i];
+                seen++;
+            }
+            return BallShape.Cube; // unreachable
         }
 
         private static GameObject GetShapePrefab(BallShape shape) =>
