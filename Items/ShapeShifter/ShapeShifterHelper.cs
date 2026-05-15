@@ -32,29 +32,36 @@ namespace IssaPlugin.Items
         /// If it is already cubed: silently extends the end time to the later of
         /// the current end time and the new end time; no second begin message is
         /// sent (the ball is already a cube on all clients).
-        public static void ServerApplyCube(uint targetNetId, float duration)
+        public static void ServerApplyCube(uint targetNetId, float duration, bool reroll = false)
         {
             float newEnd = Time.time + duration;
 
             if (_cubeEndTimes.TryGetValue(targetNetId, out float existingEnd))
             {
-                // Already cubed — extend if the new end is later.
+                // Already active — extend if the new end is later.
                 if (newEnd > existingEnd)
                     _cubeEndTimes[targetNetId] = newEnd;
 
-                // Always re-send begin with the updated remaining time so clients
-                // can reset their timer bar. The client apply-guard in HandleShapeShifterBegin
-                // prevents a double collider/mesh swap.
                 float remaining = _cubeEndTimes[targetNetId] - Time.time;
                 NetworkServer.SendToAll(
-                    new ShapeShifterBeginMessage { TargetNetId = targetNetId, Duration = remaining }
+                    new ShapeShifterBeginMessage
+                    {
+                        TargetNetId = targetNetId,
+                        Duration = remaining,
+                        Reroll = reroll,
+                    }
                 );
                 return;
             }
 
             _cubeEndTimes[targetNetId] = newEnd;
             NetworkServer.SendToAll(
-                new ShapeShifterBeginMessage { TargetNetId = targetNetId, Duration = duration }
+                new ShapeShifterBeginMessage
+                {
+                    TargetNetId = targetNetId,
+                    Duration = duration,
+                    Reroll = false,
+                }
             );
 
             var manager = ShapeShifterManager.Instance;
@@ -135,13 +142,20 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            // Apply collider/mesh swap only on first begin; extension messages skip this.
-            if (ball.GetComponent<ShapeShifterState>() == null)
+            var existing = ball.GetComponent<ShapeShifterState>();
+            if (existing != null && msg.Reroll)
+            {
+                // Re-randomize: revert the current shape then apply a new one.
+                existing.Revert();
+                existing = null;
+            }
+
+            if (existing == null)
             {
                 var state = ball.gameObject.AddComponent<ShapeShifterState>();
                 state.Apply();
                 IssaPluginPlugin.Log.LogInfo(
-                    $"[ShapeShifter] Cube applied to ball owned by netId={msg.TargetNetId}."
+                    $"[ShapeShifter] Shape applied to ball owned by netId={msg.TargetNetId} (shape={state.Shape})."
                 );
             }
 

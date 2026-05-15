@@ -60,7 +60,7 @@ namespace IssaPlugin.Items
                 if (targetInventory.PlayerInfo?.AsGolfer?.OwnBall == null)
                     continue;
 
-                ShapeShifterHelper.ServerApplyCube(identity.netId, duration);
+                ShapeShifterHelper.ServerApplyCube(identity.netId, duration, reroll: true);
                 targetCount++;
             }
 

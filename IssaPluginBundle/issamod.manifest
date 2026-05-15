@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 3576967108
+CRC: 533726524
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 86b77f28b4be786be1e68755f3cb3a72
+    Hash: 3c31b363e13e7a10c45c5206e3cadc77
   TypeTreeHash:
     serializedVersion: 2
     Hash: 82d52513d6b19822b87b688cdb5147d6
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 94dee312b07fcfbcd651bfffd1e4de99
+    Hash: 61b529f55bd7d76e773a42cefc20dde0
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -166,6 +166,7 @@ Assets:
 - Assets/Assets/gravity_remote_icon.png
 - Assets/Assets/teleporter_icon.png
 - Assets/Assets/sniper_scope.png
+- Assets/Assets/GolfBalls/golf_ball_acorn.prefab
 - Assets/Assets/nuclear_bomb.prefab
 - Assets/Assets/posion_bottle.prefab
 - Assets/Assets/booby_trap_handheld.prefab

@@ -144,6 +144,17 @@ namespace IssaPlugin.Items
         /// Handheld model shown in the player's hand. Null until explosive_golf_balls_handheld.prefab is added.
         public static GameObject ExplosiveGolfBallsHandheldPrefab { get; private set; }
 
+        // ── ShapeShifter shape prefabs ────────────────────────────────────────
+        /// Visual-only shape prefabs spawned as children of the golf ball.
+        /// Each must contain MeshFilter + MeshRenderer + MeshCollider (convex).
+        public static GameObject ShapeShifterShapeCube { get; private set; }
+        public static GameObject ShapeShifterShapeDisk { get; private set; }
+        public static GameObject ShapeShifterShapeCylinder { get; private set; }
+        public static GameObject ShapeShifterShapeCone { get; private set; }
+        public static GameObject ShapeShifterShapeAcorn { get; private set; }
+        public static GameObject ShapeShifterShapeTriangularPrism { get; private set; }
+        public static GameObject ShapeShifterShapePyramid { get; private set; }
+
         /// Item icon for Shape Shifter. Null until cube_ball_icon.png is added to the bundle.
         public static Sprite ShapeShifterIcon { get; private set; }
 
@@ -539,6 +550,16 @@ namespace IssaPlugin.Items
                 HandheldPrefab(p => MoonHandheldPrefab = p, "moon_handheld.prefab", optional: true),
                 LocalVfxPrefab(p => MoonVfxPrefab = p, "moon.prefab"),
                 // ── ShapeShifter / SuperShapeShifter ─────────────────────────
+                Prefab(p => ShapeShifterShapeCube = p, "golf_ball_cube.prefab"),
+                Prefab(p => ShapeShifterShapeDisk = p, "golf_ball_disk.prefab"),
+                Prefab(p => ShapeShifterShapeCylinder = p, "golf_ball_cylinder.prefab"),
+                Prefab(p => ShapeShifterShapeCone = p, "golf_ball_cone.prefab"),
+                Prefab(p => ShapeShifterShapeAcorn = p, "golf_ball_acorn.prefab"),
+                Prefab(
+                    p => ShapeShifterShapeTriangularPrism = p,
+                    "cube_ball_shape_triangular_prism.prefab"
+                ),
+                Prefab(p => ShapeShifterShapePyramid = p, "golf_ball_pyramid.prefab"),
                 SpriteAsset(p => ShapeShifterIcon = p, "cube_ball_icon.png", optional: true),
                 SpriteAsset(
                     p => SuperShapeShifterIcon = p,

@@ -73,6 +73,10 @@ namespace IssaPlugin.Items
     {
         public uint TargetNetId;
         public float Duration;
+
+        /// When true the client should re-randomize the shape even if the effect
+        /// is already active (used by Super Shape Shifter re-use).
+        public bool Reroll;
     }
 
     public static class ShapeShifterBeginMessageSerialization
@@ -84,6 +88,7 @@ namespace IssaPlugin.Items
         {
             writer.WriteUInt(msg.TargetNetId);
             writer.WriteFloat(msg.Duration);
+            writer.WriteBool(msg.Reroll);
         }
 
         public static ShapeShifterBeginMessage ReadShapeShifterBeginMessage(NetworkReader reader)
@@ -92,6 +97,7 @@ namespace IssaPlugin.Items
             {
                 TargetNetId = reader.ReadUInt(),
                 Duration = reader.ReadFloat(),
+                Reroll = reader.ReadBool(),
             };
         }
     }
