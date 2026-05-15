@@ -23,20 +23,24 @@ namespace IssaPlugin.Items
     /// its scale is correct — moving it to the root would break the sizing.
     ///
     /// On Apply():
-    ///   • Disables the GolfBall's SphereCollider.
+    ///   • Shrinks the GolfBall's SphereCollider to near-zero rather than
+    ///     disabling it.  The game holds a direct reference to it internally
+    ///     (IgnoreCollision, OverlapSphere, penetration resolution) and silently
+    ///     breaks if it is disabled — leaving collisions permanently ignored and
+    ///     causing the rare fall-through bug.
     ///   • Instantiates the shape prefab as a scaled child; its MeshCollider
     ///     (convex) is used directly by the parent Rigidbody.
     ///   • Applies high-friction physics to that collider.
     ///   • Hides the original MeshRenderers and inherits the ball's material.
     ///
     /// On Revert():
-    ///   • Re-enables the SphereCollider, destroys the shape child (and its
-    ///     collider with it).
+    ///   • Restores the SphereCollider radius, destroys the shape child.
     ///   • Restores original MeshRenderer visibility.
     ///   • Destroys this component.
     public class ShapeShifterState : MonoBehaviour
     {
         private SphereCollider _sphere;
+        private float _originalRadius;
         private PhysicsMaterial _shapeMaterial;
         private MeshRenderer[] _originalRenderers;
         private GameObject _shapeChild;
@@ -47,34 +51,31 @@ namespace IssaPlugin.Items
         {
             Shape = (BallShape)Random.Range(0, System.Enum.GetValues(typeof(BallShape)).Length);
 
-            // ── Measure visual size from rendered bounds ───────────────────────
-            var primaryRenderer = GetComponentInChildren<MeshRenderer>();
-            float worldSide = 0f;
-            Vector3 worldCenter = transform.position;
-
-            if (primaryRenderer != null)
-            {
-                var b = primaryRenderer.bounds;
-                worldSide = Mathf.Max(b.size.x, b.size.y, b.size.z);
-                worldCenter = b.center;
-            }
-
-            float uniformScale = transform.lossyScale.x;
-            float localSide =
-                worldSide > 0f ? (uniformScale > 0f ? worldSide / uniformScale : worldSide) : 0f;
-            if (localSide <= 0f)
-                localSide = 1f;
-
-            Vector3 localCenter = transform.InverseTransformPoint(worldCenter);
-
-            // ── Disable sphere collider ───────────────────────────────────────
+            // ── Size from SphereCollider radius ───────────────────────────────
+            // Using MeshRenderer.bounds is unstable (varies with rotation/animation).
+            // The SphereCollider radius is the authoritative visual size of the ball.
             _sphere = GetComponent<SphereCollider>();
-            if (_sphere != null)
-                _sphere.enabled = false;
-            else
+            if (_sphere == null)
+            {
                 IssaPluginPlugin.Log.LogWarning(
                     "[ShapeShifter] ShapeShifterState.Apply: no SphereCollider found on ball."
                 );
+            }
+
+            // localSide = the diameter of the ball in local space.
+            float localSide = _sphere != null ? _sphere.radius * 2f : 1f;
+            Vector3 localCenter = _sphere != null ? _sphere.center : Vector3.zero;
+
+            // ── Shrink sphere collider to near-zero ───────────────────────────
+            // Do NOT disable it — GolfBall keeps a direct reference and calls
+            // Physics.IgnoreCollision / OverlapSphere on it every frame.
+            // Disabling it prevents those re-enable calls from working, leaving
+            // our shape collider permanently ignored by terrain (fall-through bug).
+            if (_sphere != null)
+            {
+                _originalRadius = _sphere.radius;
+                _sphere.radius = 0.001f;
+            }
 
             // ── Hide original renderers ───────────────────────────────────────
             var all = GetComponentsInChildren<MeshRenderer>(includeInactive: true);
@@ -115,8 +116,9 @@ namespace IssaPlugin.Items
             if (_shapeChild.GetComponentInChildren<Collider>() is { } col)
                 col.sharedMaterial = _shapeMaterial;
 
-            // Inherit the ball's cosmetic material.
-            if (primaryRenderer?.sharedMaterial is { } mat)
+            // Inherit the ball's cosmetic material from any still-enabled renderer on the ball root.
+            var ballRenderer = GetComponentInChildren<MeshRenderer>(includeInactive: false);
+            if (ballRenderer?.sharedMaterial is { } mat)
                 if (_shapeChild.GetComponentInChildren<MeshRenderer>() is { } mr)
                     mr.sharedMaterial = mat;
         }
@@ -124,7 +126,7 @@ namespace IssaPlugin.Items
         public void Revert()
         {
             if (_sphere != null)
-                _sphere.enabled = true;
+                _sphere.radius = _originalRadius;
 
             if (_shapeMaterial != null)
                 Destroy(_shapeMaterial);
