@@ -10,6 +10,7 @@ namespace IssaPlugin.Items
         Cone,
         Pyramid,
         Acorn,
+        Isosphere,
     }
 
     /// Applied to a GolfBall's GameObject when the shape-shifter effect is active.
@@ -151,6 +152,7 @@ namespace IssaPlugin.Items
                 BallShape.Cone => AssetLoader.ShapeShifterShapeCone,
                 BallShape.Pyramid => AssetLoader.ShapeShifterShapePyramid,
                 BallShape.Acorn => AssetLoader.ShapeShifterShapeAcorn,
+                BallShape.Isosphere => AssetLoader.ShapeShifterShapeIsosphere,
                 _ => null,
             };
 

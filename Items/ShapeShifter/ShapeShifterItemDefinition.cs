@@ -6,7 +6,7 @@ namespace IssaPlugin.Items
     public class ShapeShifterItemDefinition : CustomItemDefinition
     {
         public override ItemType ItemType => ItemRegistry.ShapeShifterItemType;
-        public override string DisplayName => "Cube Ball";
+        public override string DisplayName => "Shape Shifter";
         public override string[] ConsoleAliases => new[] { "cubeball", "cube_ball" };
         public override Sprite Icon => AssetLoader.ShapeShifterIcon;
         public override GameObject HeldModelPrefab => AssetLoader.ShapeShifterHandheldPrefab;

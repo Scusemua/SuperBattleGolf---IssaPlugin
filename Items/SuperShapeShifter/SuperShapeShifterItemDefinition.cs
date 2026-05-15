@@ -7,8 +7,15 @@ namespace IssaPlugin.Items
     public class SuperShapeShifterItemDefinition : CustomItemDefinition
     {
         public override ItemType ItemType => ItemRegistry.SuperShapeShifterItemType;
-        public override string DisplayName => "Super Cube Ball";
-        public override string[] ConsoleAliases => new[] { "supercubeball", "super_cube_ball" };
+        public override string DisplayName => "Super Shape Shifter";
+        public override string[] ConsoleAliases =>
+            new[]
+            {
+                "supercubeball",
+                "super_cube_ball",
+                "supershapeshifter",
+                "super_shape_shifter",
+            };
         public override Sprite Icon =>
             AssetLoader.SuperShapeShifterIcon ?? AssetLoader.ShapeShifterIcon;
 

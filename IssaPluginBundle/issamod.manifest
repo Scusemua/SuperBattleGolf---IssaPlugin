@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 533726524
+CRC: 3601883896
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 3c31b363e13e7a10c45c5206e3cadc77
+    Hash: feedf474e5ae66ff84cf5dc5d84f51f1
   TypeTreeHash:
     serializedVersion: 2
     Hash: 82d52513d6b19822b87b688cdb5147d6
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 61b529f55bd7d76e773a42cefc20dde0
+    Hash: 043962c49843c294f53dc03a8ec4cd53
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -163,6 +163,7 @@ Assets:
 - Assets/Assets/GolfBalls/golf_ball_cylinder.prefab
 - Assets/Assets/smoke_prefab.prefab
 - Assets/Assets/player_linker_rocket.prefab
+- Assets/Assets/GolfBalls/golf_ball_isosphere.prefab
 - Assets/Assets/gravity_remote_icon.png
 - Assets/Assets/teleporter_icon.png
 - Assets/Assets/sniper_scope.png

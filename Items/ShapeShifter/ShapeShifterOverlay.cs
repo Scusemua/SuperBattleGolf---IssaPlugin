@@ -162,7 +162,7 @@ namespace IssaPlugin.Items
             };
             GUI.Label(
                 new Rect(barX, barY, barW, barH),
-                $"Cube Ball Time Remaining:  {remaining:F1}s",
+                $"Shape Shifter Time Remaining:  {remaining:F1}s",
                 _barLabelStyle
             );
         }
@@ -235,7 +235,7 @@ namespace IssaPlugin.Items
 
             GUI.Label(
                 new Rect(px, cy, PanelWidth, HeaderH),
-                "Cube Ball — Choose Target",
+                "Shape Shifter — Choose Target",
                 _titleStyle
             );
             cy += HeaderH;

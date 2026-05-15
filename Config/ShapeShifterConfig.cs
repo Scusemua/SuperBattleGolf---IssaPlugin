@@ -23,9 +23,9 @@ namespace IssaPlugin
                 Section,
                 "GiveKey",
                 Key.None,
-                "Hotkey to give yourself a Cube Ball (debug/testing)."
+                "Hotkey to give yourself a Shape Shifter (debug/testing)."
             );
-            Uses = cfg.Bind(Section, "Uses", 1f, "Number of uses per Cube Ball pickup.");
+            Uses = cfg.Bind(Section, "Uses", 1f, "Number of uses per Shape Shifter pickup.");
             Duration = cfg.Bind(
                 Section,
                 "Duration",
@@ -36,7 +36,7 @@ namespace IssaPlugin
                 Section,
                 "SpawnWeight",
                 5f,
-                "Relative spawn weight for the Cube Ball item in the item pool."
+                "Relative spawn weight for the Shape Shifter item in the item pool."
             );
             PhysicsStaticFriction = cfg.Bind(
                 Section,

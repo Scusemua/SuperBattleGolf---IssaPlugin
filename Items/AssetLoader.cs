@@ -154,6 +154,7 @@ namespace IssaPlugin.Items
         public static GameObject ShapeShifterShapeAcorn { get; private set; }
         public static GameObject ShapeShifterShapeTriangularPrism { get; private set; }
         public static GameObject ShapeShifterShapePyramid { get; private set; }
+        public static GameObject ShapeShifterShapeIsosphere { get; private set; }
 
         /// Item icon for Shape Shifter. Null until cube_ball_icon.png is added to the bundle.
         public static Sprite ShapeShifterIcon { get; private set; }
@@ -555,6 +556,7 @@ namespace IssaPlugin.Items
                 Prefab(p => ShapeShifterShapeCylinder = p, "golf_ball_cylinder.prefab"),
                 Prefab(p => ShapeShifterShapeCone = p, "golf_ball_cone.prefab"),
                 Prefab(p => ShapeShifterShapeAcorn = p, "golf_ball_acorn.prefab"),
+                Prefab(p => ShapeShifterShapeIsosphere = p, "golf_ball_isosphere.prefab"),
                 Prefab(
                     p => ShapeShifterShapeTriangularPrism = p,
                     "cube_ball_shape_triangular_prism.prefab"

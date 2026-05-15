@@ -19,9 +19,9 @@ namespace IssaPlugin
                 Section,
                 "GiveKey",
                 Key.None,
-                "Hotkey to give yourself a Super Cube Ball (debug/testing)."
+                "Hotkey to give yourself a Super Shape Shifter (debug/testing)."
             );
-            Uses = cfg.Bind(Section, "Uses", 1f, "Number of uses per Super Cube Ball pickup.");
+            Uses = cfg.Bind(Section, "Uses", 1f, "Number of uses per Super Shape Shifter pickup.");
             Duration = cfg.Bind(
                 Section,
                 "Duration",
@@ -32,7 +32,7 @@ namespace IssaPlugin
                 Section,
                 "SpawnWeight",
                 3f,
-                "Relative spawn weight for the Super Cube Ball item in the item pool."
+                "Relative spawn weight for the Super Shape Shifter item in the item pool."
             );
             AffectSelf = cfg.Bind(
                 Section,
