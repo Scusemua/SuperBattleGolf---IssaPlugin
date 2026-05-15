@@ -136,7 +136,16 @@ namespace IssaPlugin.Items
         /// Client-only UFO VFX that flies over and abducts the victim. Null until ufo_abduction.prefab is added.
         public static GameObject UfoAbductionUfoPrefab { get; private set; }
 
-        // ── CubeBall / SuperCubeBall ──────────────────────────────────────────
+        // ── CubeBall / SuperCubeBall shape prefabs ────────────────────────────
+        /// Visual-only shape prefabs spawned as children of the golf ball.
+        /// Each prefab must contain a MeshFilter + MeshRenderer + MeshCollider (convex).
+        /// No Rigidbody, NetworkIdentity, or NetworkTransform needed.
+        public static GameObject CubeBallShapeCube { get; private set; }
+        public static GameObject CubeBallShapeDisk { get; private set; }
+        public static GameObject CubeBallShapeCylinder { get; private set; }
+        public static GameObject CubeBallShapeCone { get; private set; }
+        public static GameObject CubeBallShapePyramid { get; private set; }
+
         // ── Explosive Golf Balls ──────────────────────────────────────────────
         /// Item icon for Explosive Golf Balls. Null until explosive_golf_balls_icon.png is added to the bundle.
         public static Sprite ExplosiveGolfBallsIcon { get; private set; }
@@ -539,6 +548,11 @@ namespace IssaPlugin.Items
                 HandheldPrefab(p => MoonHandheldPrefab = p, "moon_handheld.prefab", optional: true),
                 LocalVfxPrefab(p => MoonVfxPrefab = p, "moon.prefab"),
                 // ── CubeBall / SuperCubeBall ──────────────────────────────────
+                Prefab(p => CubeBallShapeCube = p, "golf_ball_cube.prefab"),
+                Prefab(p => CubeBallShapeDisk = p, "golf_ball_disk.prefab"),
+                Prefab(p => CubeBallShapeCylinder = p, "golf_ball_cylinder.prefab"),
+                Prefab(p => CubeBallShapeCone = p, "golf_ball_cone.prefab"),
+                Prefab(p => CubeBallShapePyramid = p, "golf_ball_pyramid.prefab"),
                 SpriteAsset(p => CubeBallIcon = p, "cube_ball_icon.png", optional: true),
                 SpriteAsset(p => SuperCubeBallIcon = p, "super_cube_ball_icon.png", optional: true),
                 HandheldPrefab(

@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 4065499055
+CRC: 3576967108
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: b7f1c1c76665b7b77157baf04fb93367
+    Hash: 86b77f28b4be786be1e68755f3cb3a72
   TypeTreeHash:
     serializedVersion: 2
     Hash: 82d52513d6b19822b87b688cdb5147d6
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: d1cc687be7f867662fb8e545acef06c6
+    Hash: 94dee312b07fcfbcd651bfffd1e4de99
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -82,13 +82,16 @@ Assets:
 - Assets/Assets/gravity_gun_icon.png
 - Assets/Assets/ConfettiBlastRainbow.prefab
 - Assets/Assets/warning_particle.prefab
+- Assets/Assets/GolfBalls/golf_ball_cone.prefab
 - Assets/Assets/donut_icon.png
 - Assets/Assets/hunter_drone_icon.png
 - Assets/Assets/weather_remote.prefab
+- Assets/Assets/GolfBalls/golf_ball_disk.prefab
 - Assets/Assets/teleporter_handheld.prefab
 - Assets/Assets/bear.prefab
 - Assets/Assets/super_donut_icon.png
 - Assets/Assets/wind_storm_icon.png
+- Assets/Assets/GolfBalls/golf_ball_pyramid.prefab
 - Assets/Assets/bat_icon.png
 - Assets/Assets/spinach.prefab
 - Assets/Assets/super_cube_ball_icon.png
@@ -111,6 +114,7 @@ Assets:
 - Assets/Assets/spinach_icon.png
 - Assets/Assets/flamethrower_victim_fire.prefab
 - Assets/Assets/rocket_tether_grenade_icon.png
+- Assets/Assets/GolfBalls/golf_ball_cube.prefab
 - Assets/Assets/bomber_icon.png
 - Assets/Assets/redbull.prefab
 - Assets/Assets/gold_star.prefab
@@ -156,6 +160,7 @@ Assets:
 - Assets/Assets/freeze_effect_icon.png
 - Assets/Assets/DroppedCustomItem.prefab
 - Assets/Assets/rubixcube.prefab
+- Assets/Assets/GolfBalls/golf_ball_cylinder.prefab
 - Assets/Assets/smoke_prefab.prefab
 - Assets/Assets/player_linker_rocket.prefab
 - Assets/Assets/gravity_remote_icon.png
