@@ -6,8 +6,9 @@ namespace IssaPlugin.Items
     public class CubeBallItemDefinition : CustomItemDefinition
     {
         public override ItemType ItemType => ItemRegistry.CubeBallItemType;
-        public override string DisplayName => "Cube Ball";
-        public override string[] ConsoleAliases => new[] { "cubeball", "cube_ball" };
+        public override string DisplayName => "Shape Shifter";
+        public override string[] ConsoleAliases =>
+            new[] { "cubeball", "cube_ball", "shapeshifter", "shape_shifter" };
         public override Sprite Icon => AssetLoader.CubeBallIcon;
         public override GameObject HeldModelPrefab => AssetLoader.CubeBallHandheldPrefab;
         public override int MaxUses => (int)ModConfig.CubeBall.Uses.Value;
