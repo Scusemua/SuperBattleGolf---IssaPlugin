@@ -15,26 +15,27 @@ namespace IssaPlugin.Items
     ///
     /// Picks a random shape each time it is applied.  Each shape is loaded from
     /// the asset bundle as a prefab containing MeshFilter + MeshRenderer +
-    /// MeshCollider (convex).  The MeshCollider is moved to the ball root so it
-    /// sits alongside the SphereCollider (which is disabled for the duration).
+    /// MeshCollider (convex).  The child is parented to the ball and scaled to
+    /// match the ball's visual size.  Unity's Rigidbody automatically picks up
+    /// colliders on child objects, so the MeshCollider stays on the child where
+    /// its scale is correct — moving it to the root would break the sizing.
     ///
     /// On Apply():
     ///   • Disables the GolfBall's SphereCollider.
-    ///   • Instantiates the shape prefab as a child, transfers its MeshCollider
-    ///     to the ball root, and applies high-friction physics.
-    ///   • Hides the original MeshRenderers; the shape child provides the visual.
-    ///   • Inherits the ball's cosmetic material.
+    ///   • Instantiates the shape prefab as a scaled child; its MeshCollider
+    ///     (convex) is used directly by the parent Rigidbody.
+    ///   • Applies high-friction physics to that collider.
+    ///   • Hides the original MeshRenderers and inherits the ball's material.
     ///
     /// On Revert():
-    ///   • Re-enables the SphereCollider, destroys the shape collider and child.
+    ///   • Re-enables the SphereCollider, destroys the shape child (and its
+    ///     collider with it).
     ///   • Restores original MeshRenderer visibility.
     ///   • Destroys this component.
     public class CubeBallState : MonoBehaviour
     {
         private SphereCollider _sphere;
-        private MeshCollider _shapeCollider;
         private PhysicsMaterial _shapeMaterial;
-
         private MeshRenderer[] _originalRenderers;
         private GameObject _shapeChild;
 
@@ -64,7 +65,7 @@ namespace IssaPlugin.Items
 
             Vector3 localCenter = transform.InverseTransformPoint(worldCenter);
 
-            // ── Collider swap ─────────────────────────────────────────────────
+            // ── Disable sphere collider ───────────────────────────────────────
             _sphere = GetComponent<SphereCollider>();
             if (_sphere != null)
                 _sphere.enabled = false;
@@ -73,7 +74,7 @@ namespace IssaPlugin.Items
                     "[CubeBall] CubeBallState.Apply: no SphereCollider found on ball."
                 );
 
-            // ── Visual: hide original renderers, spawn shape child ────────────
+            // ── Hide original renderers ───────────────────────────────────────
             var all = GetComponentsInChildren<MeshRenderer>(includeInactive: true);
             int count = 0;
             for (int i = 0; i < all.Length; i++)
@@ -87,100 +88,55 @@ namespace IssaPlugin.Items
             for (int i = 0; i < _originalRenderers.Length; i++)
                 _originalRenderers[i].enabled = false;
 
+            // ── Spawn shape child ─────────────────────────────────────────────
             var prefab = GetShapePrefab(Shape);
             _shapeChild = prefab != null ? Instantiate(prefab) : FallbackShapeObject(Shape);
 
-            // Transfer the MeshCollider from the child to the ball root so it
-            // lives alongside the (disabled) SphereCollider and is driven by the
-            // ball's own Rigidbody.  The child provides only the visual.
-            var childCollider = _shapeChild.GetComponentInChildren<MeshCollider>();
-            if (childCollider != null)
-            {
-                _shapeCollider = gameObject.AddComponent<MeshCollider>();
-                _shapeCollider.sharedMesh = childCollider.sharedMesh;
-                _shapeCollider.convex = true;
-                Destroy(childCollider);
-            }
-            else
-            {
-                IssaPluginPlugin.Log.LogWarning(
-                    $"[CubeBall] Shape prefab for {Shape} has no MeshCollider — falling back to BoxCollider."
-                );
-                // Fallback: box collider approximation
-                var box = gameObject.AddComponent<BoxCollider>();
-                box.size = Vector3.one * localSide;
-                box.center = localCenter;
-                _shapeCollider = null; // handled separately; see Revert()
-                // Store as a plain Collider so Revert can clean it up.
-                // (We reuse _shapeCollider only for MeshCollider; store the box differently.)
-                _fallbackBoxCollider = box;
-            }
-
-            if (_shapeCollider != null)
-            {
-                _shapeMaterial = new PhysicsMaterial("CubeBallMat")
-                {
-                    staticFriction = ModConfig.CubeBall.PhysicsStaticFriction.Value,
-                    dynamicFriction = ModConfig.CubeBall.PhysicsDynamicFriction.Value,
-                    bounciness = ModConfig.CubeBall.PhysicsBounciness.Value,
-                    frictionCombine = PhysicsMaterialCombine.Maximum,
-                    bounceCombine = PhysicsMaterialCombine.Minimum,
-                };
-                _shapeCollider.sharedMaterial = _shapeMaterial;
-            }
-            else if (_fallbackBoxCollider != null)
-            {
-                _shapeMaterial = new PhysicsMaterial("CubeBallMat")
-                {
-                    staticFriction = ModConfig.CubeBall.PhysicsStaticFriction.Value,
-                    dynamicFriction = ModConfig.CubeBall.PhysicsDynamicFriction.Value,
-                    bounciness = ModConfig.CubeBall.PhysicsBounciness.Value,
-                    frictionCombine = PhysicsMaterialCombine.Maximum,
-                    bounceCombine = PhysicsMaterialCombine.Minimum,
-                };
-                _fallbackBoxCollider.sharedMaterial = _shapeMaterial;
-            }
-
+            // Parent and scale the child to match the ball's visual size.
+            // The MeshCollider stays on the child — Unity's Rigidbody picks up
+            // colliders on children automatically, and keeping the collider here
+            // means its scale is driven by localScale, which is exactly localSide.
             _shapeChild.transform.SetParent(transform, worldPositionStays: false);
             _shapeChild.transform.localPosition = localCenter;
             _shapeChild.transform.localScale = Vector3.one * localSide;
             _shapeChild.transform.localRotation = Quaternion.identity;
 
+            // Apply high-friction physics to whatever collider the child has.
+            _shapeMaterial = new PhysicsMaterial("CubeBallMat")
+            {
+                staticFriction = ModConfig.CubeBall.PhysicsStaticFriction.Value,
+                dynamicFriction = ModConfig.CubeBall.PhysicsDynamicFriction.Value,
+                bounciness = ModConfig.CubeBall.PhysicsBounciness.Value,
+                frictionCombine = PhysicsMaterialCombine.Maximum,
+                bounceCombine = PhysicsMaterialCombine.Minimum,
+            };
+            if (_shapeChild.GetComponentInChildren<Collider>() is { } col)
+                col.sharedMaterial = _shapeMaterial;
+
+            // Inherit the ball's cosmetic material.
             var mat = primaryRenderer?.sharedMaterial;
             if (mat != null)
-                if (_shapeChild.GetComponent<MeshRenderer>() is { } mr)
+                if (_shapeChild.GetComponentInChildren<MeshRenderer>() is { } mr)
                     mr.sharedMaterial = mat;
-
-            IssaPluginPlugin.Log.LogWarning($"[CubeBall] Applied shape {Shape}.");
         }
-
-        // Fallback box collider used only when the prefab has no MeshCollider.
-        private BoxCollider _fallbackBoxCollider;
 
         public void Revert()
         {
             if (_sphere != null)
                 _sphere.enabled = true;
 
-            if (_shapeCollider != null)
-                Destroy(_shapeCollider);
-
-            if (_fallbackBoxCollider != null)
-                Destroy(_fallbackBoxCollider);
-
             if (_shapeMaterial != null)
                 Destroy(_shapeMaterial);
 
+            // Destroying the child also destroys its MeshCollider and MeshRenderer.
             if (_shapeChild != null)
                 Destroy(_shapeChild);
 
             if (_originalRenderers != null)
             {
                 for (int i = 0; i < _originalRenderers.Length; i++)
-                {
                     if (_originalRenderers[i] != null)
                         _originalRenderers[i].enabled = true;
-                }
             }
 
             Destroy(this);
@@ -197,8 +153,9 @@ namespace IssaPlugin.Items
                 _ => null,
             };
 
-        // Returns a simple GameObject when the bundle prefab is absent, so the
-        // effect still works visually during development.
+        // Returns a primitive fallback when the bundle prefab is absent.
+        // The fallback has no collider — the disabled SphereCollider on the root
+        // means the ball will be collisonless, which is acceptable for dev/testing.
         private static GameObject FallbackShapeObject(BallShape shape)
         {
             IssaPluginPlugin.Log.LogWarning(
@@ -211,7 +168,6 @@ namespace IssaPlugin.Items
                 ),
                 _ => GameObject.CreatePrimitive(PrimitiveType.Cube),
             };
-            // Remove collider; it will be handled by the fallback BoxCollider path above.
             var col = go.GetComponent<Collider>();
             if (col != null)
                 Destroy(col);
