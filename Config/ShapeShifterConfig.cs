@@ -11,9 +11,6 @@ namespace IssaPlugin
         public ConfigEntry<float> Uses { get; private set; }
         public ConfigEntry<float> Duration { get; private set; }
         public ConfigEntry<float> SpawnWeight { get; private set; }
-        public ConfigEntry<float> PhysicsStaticFriction { get; private set; }
-        public ConfigEntry<float> PhysicsDynamicFriction { get; private set; }
-        public ConfigEntry<float> PhysicsBounciness { get; private set; }
         public ConfigEntry<float> PhysicsAngularDamping { get; private set; }
         public ConfigEntry<float> PhysicsHitSpinFactor { get; private set; }
 
@@ -46,27 +43,6 @@ namespace IssaPlugin
                 "SpawnWeight",
                 5f,
                 "Relative spawn weight for the Shape Shifter item in the item pool."
-            );
-            PhysicsStaticFriction = cfg.Bind(
-                Section,
-                "PhysicsStaticFriction",
-                3f,
-                "Static friction of the cube's physics material. Higher = more grip, more tumbling."
-            );
-            PhysicsDynamicFriction = cfg.Bind(
-                Section,
-                "PhysicsDynamicFriction",
-                2f,
-                "Dynamic friction of the cube's physics material. Higher = more resistance while sliding."
-            );
-            PhysicsBounciness = cfg.Bind(
-                Section,
-                "PhysicsBounciness",
-                1.0f,
-                new ConfigDescription(
-                    "Bounciness of the cube's physics material (0 = no bounce, 1 = full bounce).",
-                    new AcceptableValueRange<float>(0.0f, 1.0f)
-                )
             );
             PhysicsAngularDamping = cfg.Bind(
                 Section,

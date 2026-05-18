@@ -152,7 +152,6 @@ namespace IssaPlugin.Items
         public static GameObject ShapeShifterShapeCylinder { get; private set; }
         public static GameObject ShapeShifterShapeCone { get; private set; }
         public static GameObject ShapeShifterShapeAcorn { get; private set; }
-        public static GameObject ShapeShifterShapeTriangularPrism { get; private set; }
         public static GameObject ShapeShifterShapePyramid { get; private set; }
         public static GameObject ShapeShifterShapeIsosphere { get; private set; }
 
@@ -557,10 +556,6 @@ namespace IssaPlugin.Items
                 Prefab(p => ShapeShifterShapeCone = p, "golf_ball_cone.prefab"),
                 Prefab(p => ShapeShifterShapeAcorn = p, "golf_ball_acorn.prefab"),
                 Prefab(p => ShapeShifterShapeIsosphere = p, "golf_ball_isosphere.prefab"),
-                Prefab(
-                    p => ShapeShifterShapeTriangularPrism = p,
-                    "cube_ball_shape_triangular_prism.prefab"
-                ),
                 Prefab(p => ShapeShifterShapePyramid = p, "golf_ball_pyramid.prefab"),
                 SpriteAsset(p => ShapeShifterIcon = p, "cube_ball_icon.png", optional: true),
                 SpriteAsset(

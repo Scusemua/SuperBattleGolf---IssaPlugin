@@ -41,9 +41,9 @@ namespace IssaPlugin.Items
     {
         private SphereCollider _sphere;
         private float _originalRadius;
-        private PhysicsMaterial _shapeMaterial;
         private MeshRenderer[] _originalRenderers;
         private GameObject _shapeChild;
+        private int _shapeColliderId;
 
         public BallShape Shape { get; private set; }
 
@@ -104,17 +104,20 @@ namespace IssaPlugin.Items
             _shapeChild.transform.localScale = Vector3.one * localSide;
             _shapeChild.transform.localRotation = Quaternion.identity;
 
-            // Apply high-friction physics to whatever collider the child has.
-            _shapeMaterial = new PhysicsMaterial("ShapeShifterMat")
-            {
-                staticFriction = ModConfig.ShapeShifter.PhysicsStaticFriction.Value,
-                dynamicFriction = ModConfig.ShapeShifter.PhysicsDynamicFriction.Value,
-                bounciness = ModConfig.ShapeShifter.PhysicsBounciness.Value,
-                frictionCombine = PhysicsMaterialCombine.Maximum,
-                bounceCombine = PhysicsMaterialCombine.Minimum,
-            };
+            // Use the game's own BallMaterial on the shape collider.
+            // A custom high-friction material would apply to player contacts too,
+            // causing even a slow-rolling shape ball to generate enough impulse to
+            // knock the player down.  Terrain friction is overridden per-contact by
+            // PhysicsManager.ApplyCollisionSettings regardless of sharedMaterial,
+            // so the game material is correct for all contact types.
+            // Also register the collider ID so PhysicsManager classifies it as Ball,
+            // matching the treatment the SphereCollider gets via GolfBall.Start().
             if (_shapeChild.GetComponentInChildren<Collider>() is { } col)
-                col.sharedMaterial = _shapeMaterial;
+            {
+                col.sharedMaterial = PhysicsManager.Settings?.BallMaterial;
+                _shapeColliderId = col.GetInstanceID();
+                PhysicsManager.RegisterBallColliderId(_shapeColliderId);
+            }
 
             // Inherit the ball's cosmetic material from any still-enabled renderer on the ball root.
             var ballRenderer = GetComponentInChildren<MeshRenderer>(includeInactive: false);
@@ -125,11 +128,14 @@ namespace IssaPlugin.Items
 
         public void Revert()
         {
+            if (_shapeColliderId != 0)
+            {
+                PhysicsManager.DeregisterBallColliderId(_shapeColliderId);
+                _shapeColliderId = 0;
+            }
+
             if (_sphere != null)
                 _sphere.radius = _originalRadius;
-
-            if (_shapeMaterial != null)
-                Destroy(_shapeMaterial);
 
             // Destroying the child also destroys its MeshCollider and MeshRenderer.
             if (_shapeChild != null)
