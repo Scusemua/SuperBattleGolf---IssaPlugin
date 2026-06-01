@@ -115,8 +115,38 @@ namespace IssaPlugin.Items
             if (_shapeChild.GetComponentInChildren<Collider>() is { } col)
             {
                 col.sharedMaterial = PhysicsManager.Settings?.BallMaterial;
+                // Match the SphereCollider's layer so Physics layer collision matrix
+                // and PhysicsManager contact modify event apply identically.
+                col.gameObject.layer = _sphere != null ? _sphere.gameObject.layer : gameObject.layer;
+                // Required for Physics.ContactModifyEvent to fire for this collider.
+                col.hasModifiableContacts = true;
                 _shapeColliderId = col.GetInstanceID();
                 PhysicsManager.RegisterBallColliderId(_shapeColliderId);
+
+                IssaPluginPlugin.Log.LogInfo(
+                    $"[ShapeShifter][DEBUG] Shape collider registered:" +
+                    $" type={col.GetType().Name}" +
+                    $" instanceId={_shapeColliderId}" +
+                    $" hasModifiableContacts={col.hasModifiableContacts}" +
+                    $" layer={col.gameObject.layer} ({LayerMask.LayerToName(col.gameObject.layer)})" +
+                    $" PhysicsManager.HasInstance={SingletonBehaviour<PhysicsManager>.HasInstance}" +
+                    $" BallMaterial={(PhysicsManager.Settings?.BallMaterial != null ? PhysicsManager.Settings.BallMaterial.name : "NULL")}"
+                );
+            }
+            else
+            {
+                IssaPluginPlugin.Log.LogWarning("[ShapeShifter][DEBUG] No collider found on shape child — nothing registered.");
+            }
+
+            // Also log the SphereCollider's ID so we can compare in the contact event logs.
+            if (_sphere != null)
+            {
+                IssaPluginPlugin.Log.LogInfo(
+                    $"[ShapeShifter][DEBUG] SphereCollider (shrunk):" +
+                    $" instanceId={_sphere.GetInstanceID()}" +
+                    $" hasModifiableContacts={_sphere.hasModifiableContacts}" +
+                    $" layer={_sphere.gameObject.layer} ({LayerMask.LayerToName(_sphere.gameObject.layer)})"
+                );
             }
 
             // Inherit the ball's cosmetic material from any still-enabled renderer on the ball root.

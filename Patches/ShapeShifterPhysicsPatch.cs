@@ -2,6 +2,7 @@ using System.Reflection;
 using HarmonyLib;
 using IssaPlugin.Items;
 using Mirror;
+using Unity.Collections;
 using UnityEngine;
 
 namespace IssaPlugin.Patches
@@ -47,6 +48,100 @@ namespace IssaPlugin.Patches
             var rb = __instance.GetComponent<Rigidbody>();
             if (rb != null)
                 rb.angularDamping = ModConfig.ShapeShifter.PhysicsAngularDamping.Value;
+        }
+    }
+
+    /// Logs contact pairs involving the active shape collider so we can see
+    /// what collider types PhysicsManager assigns and whether the zero-mass
+    /// override actually fires for Ball vs LocalPlayer contacts.
+    ///
+    /// Remove once the knockdown bug is diagnosed.
+    [HarmonyPatch]
+    static class ShapeShifterContactDebugPatch
+    {
+        private static readonly MethodBase TargetMb;
+
+        static ShapeShifterContactDebugPatch()
+        {
+            var type = AccessTools.TypeByName("PhysicsManager");
+            TargetMb = type != null
+                ? AccessTools.Method(type, "ModifyContactsInternal")
+                : null;
+            if (TargetMb == null)
+                IssaPluginPlugin.Log.LogWarning(
+                    "[ShapeShifter][DEBUG] PhysicsManager.ModifyContactsInternal not found — contact debug patch skipped."
+                );
+        }
+
+        static MethodBase TargetMethod() => TargetMb;
+
+        // Runs after ModifyContactsInternal so mass overrides are already applied.
+        static void Postfix(NativeArray<ModifiableContactPair> contactPairs)
+        {
+            // Find any ball currently shape-shifted on this client.
+            // We read the registered collider ID directly from ShapeShifterState.
+            // Using a static field on ShapeShifterState would be cleaner, but a
+            // find is fine for debug purposes.
+            int shapeId = ShapeShifterContactDebugPatch.GetActiveShapeColliderId();
+            if (shapeId == 0)
+                return;
+
+            int localPlayerRbId = GetLocalPlayerRigidbodyId();
+
+            for (int i = 0; i < contactPairs.Length; i++)
+            {
+                var pair = contactPairs[i];
+                int cA = pair.colliderInstanceID;
+                int cB = pair.otherColliderInstanceID;
+
+                if (cA != shapeId && cB != shapeId)
+                    continue;
+
+                int rbA = pair.bodyInstanceID;
+                int rbB = pair.otherBodyInstanceID;
+                bool involvedLocalPlayer = (rbA == localPlayerRbId || rbB == localPlayerRbId);
+
+                var massProps = pair.massProperties;
+
+                IssaPluginPlugin.Log.LogInfo(
+                    $"[ShapeShifter][DEBUG] Contact pair involving shape collider:" +
+                    $" colliderA={cA} colliderB={cB}" +
+                    $" rbA={rbA} rbB={rbB}" +
+                    $" localPlayerRbId={localPlayerRbId}" +
+                    $" involvedLocalPlayer={involvedLocalPlayer}" +
+                    $" inverseMassScale={massProps.inverseMassScale:F4}" +
+                    $" otherInverseMassScale={massProps.otherInverseMassScale:F4}" +
+                    $" contacts={pair.contactCount}"
+                );
+            }
+        }
+
+        private static int GetActiveShapeColliderId()
+        {
+            // Walk all active ShapeShifterState components to find the local player's.
+            var states = UnityEngine.Object.FindObjectsByType<ShapeShifterState>(
+                UnityEngine.FindObjectsSortMode.None
+            );
+            foreach (var s in states)
+            {
+                // ShapeColliderId is private — expose it via a public property or
+                // just use reflection here since this is debug-only code.
+                var field = typeof(ShapeShifterState).GetField(
+                    "_shapeColliderId",
+                    BindingFlags.NonPublic | BindingFlags.Instance
+                );
+                if (field == null) return 0;
+                return (int)field.GetValue(s);
+            }
+            return 0;
+        }
+
+        private static int GetLocalPlayerRigidbodyId()
+        {
+            var lp = NetworkClient.localPlayer;
+            if (lp == null) return 0;
+            var rb = lp.GetComponent<Rigidbody>();
+            return rb != null ? rb.GetInstanceID() : 0;
         }
     }
 
