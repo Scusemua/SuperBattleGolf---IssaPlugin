@@ -34,13 +34,20 @@ namespace IssaPlugin.Items
         public uint PlayerNetId;
     }
 
-    /// <summary>Thruster particle state changed on a specific player.</summary>
-    public struct IronManThrusterBeginMessage : NetworkMessage
+    /// <summary>Client → Server: local player started thrusting.</summary>
+    public struct IronManThrusterBeginMessage : NetworkMessage { }
+
+    /// <summary>Client → Server: local player stopped thrusting.</summary>
+    public struct IronManThrusterEndMessage : NetworkMessage { }
+
+    /// <summary>Server → All Clients: show thruster particles on a specific player.</summary>
+    public struct IronManThrusterBroadcastBeginMessage : NetworkMessage
     {
         public uint PlayerNetId;
     }
 
-    public struct IronManThrusterEndMessage : NetworkMessage
+    /// <summary>Server → All Clients: hide thruster particles on a specific player.</summary>
+    public struct IronManThrusterBroadcastEndMessage : NetworkMessage
     {
         public uint PlayerNetId;
     }
@@ -99,17 +106,27 @@ namespace IssaPlugin.Items
         public static IronManSuitEndMessage ReadSuitEnd(NetworkReader r) =>
             new IronManSuitEndMessage { PlayerNetId = r.ReadUInt() };
 
-        // ── IronManThrusterBeginMessage ───────────────────────────────────────
-        public static void WriteThrusterBegin(NetworkWriter w, IronManThrusterBeginMessage msg) =>
-            w.WriteUInt(msg.PlayerNetId);
+        // ── IronManThrusterBeginMessage (client→server, no payload) ──────────
+        public static void WriteThrusterBegin(NetworkWriter w, IronManThrusterBeginMessage msg) { }
         public static IronManThrusterBeginMessage ReadThrusterBegin(NetworkReader r) =>
-            new IronManThrusterBeginMessage { PlayerNetId = r.ReadUInt() };
+            new IronManThrusterBeginMessage();
 
-        // ── IronManThrusterEndMessage ─────────────────────────────────────────
-        public static void WriteThrusterEnd(NetworkWriter w, IronManThrusterEndMessage msg) =>
-            w.WriteUInt(msg.PlayerNetId);
+        // ── IronManThrusterEndMessage (client→server, no payload) ────────────
+        public static void WriteThrusterEnd(NetworkWriter w, IronManThrusterEndMessage msg) { }
         public static IronManThrusterEndMessage ReadThrusterEnd(NetworkReader r) =>
-            new IronManThrusterEndMessage { PlayerNetId = r.ReadUInt() };
+            new IronManThrusterEndMessage();
+
+        // ── IronManThrusterBroadcastBeginMessage (server→all clients) ─────────
+        public static void WriteThrusterBroadcastBegin(NetworkWriter w, IronManThrusterBroadcastBeginMessage msg) =>
+            w.WriteUInt(msg.PlayerNetId);
+        public static IronManThrusterBroadcastBeginMessage ReadThrusterBroadcastBegin(NetworkReader r) =>
+            new IronManThrusterBroadcastBeginMessage { PlayerNetId = r.ReadUInt() };
+
+        // ── IronManThrusterBroadcastEndMessage (server→all clients) ───────────
+        public static void WriteThrusterBroadcastEnd(NetworkWriter w, IronManThrusterBroadcastEndMessage msg) =>
+            w.WriteUInt(msg.PlayerNetId);
+        public static IronManThrusterBroadcastEndMessage ReadThrusterBroadcastEnd(NetworkReader r) =>
+            new IronManThrusterBroadcastEndMessage { PlayerNetId = r.ReadUInt() };
 
         // ── IronManRocketFiredMessage ─────────────────────────────────────────
         public static void WriteRocketFired(NetworkWriter w, IronManRocketFiredMessage msg)

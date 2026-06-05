@@ -1824,6 +1824,75 @@ namespace IssaPlugin.Patches
                     msg.Position
                 );
             });
+
+            // ── Iron Man ──────────────────────────────────────────────────────────
+
+            // Client → Server
+            Writer<IronManActivateMessage>.write = IronManMessageSerialization.WriteActivate;
+            Reader<IronManActivateMessage>.read  = IronManMessageSerialization.ReadActivate;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<IronManActivateMessage>(
+                    (conn, msg) => GetBridge<IronManNetworkBridge>(conn)?.ServerHandleActivate()
+                );
+
+            // Flight input is client-authoritative (force applied locally); the server
+            // only needs the serialization wired up for the message bus to function.
+            Writer<IronManFlightInputMessage>.write = IronManMessageSerialization.WriteFlightInput;
+            Reader<IronManFlightInputMessage>.read  = IronManMessageSerialization.ReadFlightInput;
+
+            Writer<IronManFireMessage>.write = IronManMessageSerialization.WriteFire;
+            Reader<IronManFireMessage>.read  = IronManMessageSerialization.ReadFire;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<IronManFireMessage>(
+                    (conn, msg) =>
+                        GetBridge<IronManNetworkBridge>(conn)?.ServerHandleFire(msg.AimDirection)
+                );
+
+            // Server → All Clients
+            Writer<IronManSuitBeginMessage>.write = IronManMessageSerialization.WriteSuitBegin;
+            Reader<IronManSuitBeginMessage>.read  = IronManMessageSerialization.ReadSuitBegin;
+            NetworkClient.RegisterHandler<IronManSuitBeginMessage>(IronManNetworkBridge.HandleSuitBegin);
+
+            Writer<IronManSuitEndMessage>.write = IronManMessageSerialization.WriteSuitEnd;
+            Reader<IronManSuitEndMessage>.read  = IronManMessageSerialization.ReadSuitEnd;
+            NetworkClient.RegisterHandler<IronManSuitEndMessage>(IronManNetworkBridge.HandleSuitEnd);
+
+            // Client → Server: bare thruster notifications (server adds netId and broadcasts)
+            Writer<IronManThrusterBeginMessage>.write = IronManMessageSerialization.WriteThrusterBegin;
+            Reader<IronManThrusterBeginMessage>.read  = IronManMessageSerialization.ReadThrusterBegin;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<IronManThrusterBeginMessage>(
+                    (conn, msg) => GetBridge<IronManNetworkBridge>(conn)?.ServerHandleThrusterBegin()
+                );
+
+            Writer<IronManThrusterEndMessage>.write = IronManMessageSerialization.WriteThrusterEnd;
+            Reader<IronManThrusterEndMessage>.read  = IronManMessageSerialization.ReadThrusterEnd;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<IronManThrusterEndMessage>(
+                    (conn, msg) => GetBridge<IronManNetworkBridge>(conn)?.ServerHandleThrusterEnd()
+                );
+
+            // Server → All Clients: broadcast with PlayerNetId
+            Writer<IronManThrusterBroadcastBeginMessage>.write = IronManMessageSerialization.WriteThrusterBroadcastBegin;
+            Reader<IronManThrusterBroadcastBeginMessage>.read  = IronManMessageSerialization.ReadThrusterBroadcastBegin;
+            NetworkClient.RegisterHandler<IronManThrusterBroadcastBeginMessage>(IronManNetworkBridge.HandleThrusterBroadcastBegin);
+
+            Writer<IronManThrusterBroadcastEndMessage>.write = IronManMessageSerialization.WriteThrusterBroadcastEnd;
+            Reader<IronManThrusterBroadcastEndMessage>.read  = IronManMessageSerialization.ReadThrusterBroadcastEnd;
+            NetworkClient.RegisterHandler<IronManThrusterBroadcastEndMessage>(IronManNetworkBridge.HandleThrusterBroadcastEnd);
+
+            Writer<IronManRocketFiredMessage>.write = IronManMessageSerialization.WriteRocketFired;
+            Reader<IronManRocketFiredMessage>.read  = IronManMessageSerialization.ReadRocketFired;
+            NetworkClient.RegisterHandler<IronManRocketFiredMessage>(IronManNetworkBridge.HandleRocketFired);
+
+            // Server → Owning Client only
+            Writer<IronManConfigMessage>.write = IronManMessageSerialization.WriteConfig;
+            Reader<IronManConfigMessage>.read  = IronManMessageSerialization.ReadConfig;
+            NetworkClient.RegisterHandler<IronManConfigMessage>(IronManNetworkBridge.HandleConfig);
+
+            Writer<IronManAmmoMessage>.write = IronManMessageSerialization.WriteAmmo;
+            Reader<IronManAmmoMessage>.read  = IronManMessageSerialization.ReadAmmo;
+            NetworkClient.RegisterHandler<IronManAmmoMessage>(IronManNetworkBridge.HandleAmmo);
         }
 
         public static void ResetRegistration() => _prefabsRegistered = false;

@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Reflection;
 using Mirror;
 using UnityEngine;
 
@@ -12,29 +11,25 @@ namespace IssaPlugin.Items
     ///   - Validate IronManActivateMessage (one session at a time per player).
     ///   - Run the session timer and end the session when it expires.
     ///   - Spawn rockets on IronManFireMessage.
-    ///   - Broadcast suit and thruster VFX messages to all clients.
+    ///   - Receive thruster-state notifications from the client and broadcast
+    ///     VFX messages to all clients (mirrors Jetpack pattern).
     ///
     /// Client responsibilities:
-    ///   - Show/hide the suit prefab on the owning player.
+    ///   - Show/hide the suit prefab on remote players.
     ///   - Show/hide thruster particle effects.
     ///   - Drive IronManItem.StartSession / EndSession on the local player.
     /// </summary>
     public class IronManNetworkBridge : NetworkBridgeBase
     {
-        private static readonly MethodInfo ServerExplodeMethod = typeof(Rocket).GetMethod(
-            "ServerExplode",
-            BindingFlags.NonPublic | BindingFlags.Instance
-        );
-
         // ── Server state ──────────────────────────────────────────────────────
         private bool      _serverSessionActive;
         private int       _serverRocketsRemaining;
         private Coroutine _serverTimerCoroutine;
+        private bool      _serverThrusting;
 
         // ── Client state ─────────────────────────────────────────────────────
         private GameObject _suitInstance;
         private GameObject _thrusterParticles;
-        private bool       _clientThrusterOn;
 
         // ================================================================
         //  Client → Server: activation
@@ -48,14 +43,14 @@ namespace IssaPlugin.Items
             var inv = GetComponent<PlayerInventory>();
             if (inv == null) return;
 
-            // Consume the item slot.
             int slotIndex = ItemRegistry.FindSlotIndex(inv, ItemRegistry.IronManItemType);
             if (slotIndex < 0) return;
 
             _serverSessionActive    = true;
             _serverRocketsRemaining = ModConfig.IronMan.MaxRockets.Value;
 
-            // Send config to the wielder only.
+            // Send authoritative config to the wielder so the local flight loop
+            // and HUD use server values, not local defaults.
             connectionToClient?.Send(new IronManConfigMessage
             {
                 Duration             = ModConfig.IronMan.Duration.Value,
@@ -64,10 +59,8 @@ namespace IssaPlugin.Items
                 RocketExplosionScale = ModConfig.IronMan.RocketExplosionScale.Value,
             });
 
-            // Send ammo update to wielder.
             connectionToClient?.Send(new IronManAmmoMessage { RocketsRemaining = _serverRocketsRemaining });
 
-            // Tell all clients to show the suit.
             NetworkServer.SendToAll(new IronManSuitBeginMessage { PlayerNetId = netId });
 
             ItemHelper.DecrementAndRemove(inv, slotIndex);
@@ -93,20 +86,36 @@ namespace IssaPlugin.Items
                 _serverTimerCoroutine = null;
             }
 
+            if (_serverThrusting)
+            {
+                _serverThrusting = false;
+                NetworkServer.SendToAll(new IronManThrusterBroadcastEndMessage { PlayerNetId = netId });
+            }
+
             NetworkServer.SendToAll(new IronManSuitEndMessage { PlayerNetId = netId });
         }
 
         // ================================================================
-        //  Client → Server: flight input (authorise thruster VFX only)
+        //  Client → Server: thruster state (bare messages, server adds netId)
         // ================================================================
 
-        public void ServerHandleFlightInput(Vector3 moveDir)
+        public void ServerHandleThrusterBegin()
         {
             if (!isServer) return;
             if (!_serverSessionActive) return;
-            // No server-side movement — client applies force locally. Server only
-            // uses this to confirm the player is actively thrusting (VFX is handled
-            // via ClientNotifyThrusterChange to avoid double-broadcasting).
+            if (_serverThrusting) return;
+
+            _serverThrusting = true;
+            NetworkServer.SendToAll(new IronManThrusterBroadcastBeginMessage { PlayerNetId = netId });
+        }
+
+        public void ServerHandleThrusterEnd()
+        {
+            if (!isServer) return;
+            if (!_serverThrusting) return;
+
+            _serverThrusting = false;
+            NetworkServer.SendToAll(new IronManThrusterBroadcastEndMessage { PlayerNetId = netId });
         }
 
         // ================================================================
@@ -119,29 +128,36 @@ namespace IssaPlugin.Items
             if (!_serverSessionActive) return;
             if (_serverRocketsRemaining <= 0) return;
 
+            // Capture use index before decrement so IDs count down naturally.
+            int useIndex = _serverRocketsRemaining;
             _serverRocketsRemaining--;
             connectionToClient?.Send(new IronManAmmoMessage { RocketsRemaining = _serverRocketsRemaining });
 
-            // Spawn the rocket from slightly in front of the player.
-            var playerInfo = GetComponent<PlayerInfo>();
-            var spawnPos   = transform.position + Vector3.up * 1.2f + aimDir * 0.5f;
-            var rotation   = Quaternion.LookRotation(aimDir);
+            var playerInfo  = GetComponent<PlayerInfo>();
+            var spawnPos    = transform.position + Vector3.up * 1.2f + aimDir * 0.5f;
+            var rotation    = Quaternion.LookRotation(aimDir);
 
             var rocketPrefab = GameManager.ItemSettings?.RocketPrefab;
-            if (rocketPrefab != null)
+            if (rocketPrefab != null && playerInfo != null)
             {
+                var itemUseId = new ItemUseId(
+                    playerInfo.PlayerId.Guid,
+                    useIndex,
+                    ItemType.RocketLauncher
+                );
+
                 var rocket = Object.Instantiate(rocketPrefab, spawnPos, rotation);
                 rocket.gameObject.AddComponent<CustomSpawnedRocket>();
-                if (playerInfo != null)
-                    rocket.ServerInitialize(playerInfo, null, 0);
-                NetworkServer.Spawn(rocket.gameObject);
+                rocket.ServerInitialize(playerInfo, null, itemUseId);
+                // Explicit null connection — required by all other items to avoid
+                // Mirror assigning an unexpected owner that breaks isServer on the rocket.
+                NetworkServer.Spawn(rocket.gameObject, (NetworkConnectionToClient)null);
 
                 float scale = ModConfig.IronMan.RocketExplosionScale.Value;
                 if (scale != 1f)
                     ExplosionScaler.Register(rocket, scale);
             }
 
-            // Broadcast VFX to all clients.
             NetworkServer.SendToAll(new IronManRocketFiredMessage
             {
                 Origin    = spawnPos,
@@ -153,18 +169,20 @@ namespace IssaPlugin.Items
         }
 
         // ================================================================
-        //  Client notifies of thruster state change
+        //  Local client notifies server of thruster state change
         // ================================================================
 
         public void ClientNotifyThrusterChange(bool on)
         {
             if (on)
-                NetworkClient.Send(new IronManThrusterBeginMessage { PlayerNetId = netId });
+                NetworkClient.Send(new IronManThrusterBeginMessage());
             else
-                NetworkClient.Send(new IronManThrusterEndMessage { PlayerNetId = netId });
+                NetworkClient.Send(new IronManThrusterEndMessage());
         }
 
-        // ── Server handlers called by NetworkManagerPatches ────────────────────
+        // ================================================================
+        //  Static client-side message handlers (called by NetworkManagerPatches)
+        // ================================================================
 
         public static void HandleSuitBegin(IronManSuitBeginMessage msg)
         {
@@ -178,13 +196,13 @@ namespace IssaPlugin.Items
             identity.GetComponent<IronManNetworkBridge>()?.ClientHideSuit();
         }
 
-        public static void HandleThrusterBegin(IronManThrusterBeginMessage msg)
+        public static void HandleThrusterBroadcastBegin(IronManThrusterBroadcastBeginMessage msg)
         {
             if (!NetworkClient.spawned.TryGetValue(msg.PlayerNetId, out var identity)) return;
             identity.GetComponent<IronManNetworkBridge>()?.ClientShowThrusters();
         }
 
-        public static void HandleThrusterEnd(IronManThrusterEndMessage msg)
+        public static void HandleThrusterBroadcastEnd(IronManThrusterBroadcastEndMessage msg)
         {
             if (!NetworkClient.spawned.TryGetValue(msg.PlayerNetId, out var identity)) return;
             identity.GetComponent<IronManNetworkBridge>()?.ClientHideThrusters();
@@ -192,8 +210,7 @@ namespace IssaPlugin.Items
 
         public static void HandleConfig(IronManConfigMessage msg)
         {
-            // Only the owning client receives this; start the local session.
-            var inv = NetworkClient.localPlayer?.GetComponent<PlayerInventory>();
+            var inv    = NetworkClient.localPlayer?.GetComponent<PlayerInventory>();
             var bridge = NetworkClient.localPlayer?.GetComponent<IronManNetworkBridge>();
             if (inv == null || bridge == null) return;
 
@@ -209,7 +226,7 @@ namespace IssaPlugin.Items
 
         public static void HandleRocketFired(IronManRocketFiredMessage msg)
         {
-            // VFX only — future: spawn a muzzle flash at msg.Origin.
+            // Reserved for future muzzle-flash VFX at msg.Origin.
         }
 
         // ================================================================
@@ -220,29 +237,31 @@ namespace IssaPlugin.Items
         {
             ClientHideSuit();
 
-            if (isLocalPlayer)
+            // For the local player the overlay handles HUD; no suit mesh is attached
+            // (first-person). We still need this call to reach the local overlay
+            // via HandleSuitEnd → ClientHideSuit, so we do NOT return early here.
+            // Remote players get a physical suit prefab attached to their transform.
+            if (!isLocalPlayer && AssetLoader.IronManSuitPrefab != null)
             {
-                // Local player: flight loop is driven by IronManItem; no suit mesh needed
-                // (first-person view). The overlay handles HUD.
-                return;
+                _suitInstance = Object.Instantiate(AssetLoader.IronManSuitPrefab);
+                var rb = _suitInstance.GetComponent<Rigidbody>();
+                if (rb != null) { rb.isKinematic = true; rb.useGravity = false; }
+                _suitInstance.transform.SetParent(transform, false);
+                _suitInstance.transform.localPosition = Vector3.zero;
+                _suitInstance.transform.localRotation = Quaternion.identity;
             }
-
-            if (AssetLoader.IronManSuitPrefab == null) return;
-
-            _suitInstance = Object.Instantiate(AssetLoader.IronManSuitPrefab);
-            var rb = _suitInstance.GetComponent<Rigidbody>();
-            if (rb != null) { rb.isKinematic = true; rb.useGravity = false; }
-            _suitInstance.transform.SetParent(transform, false);
-            _suitInstance.transform.localPosition = Vector3.zero;
-            _suitInstance.transform.localRotation = Quaternion.identity;
         }
 
         private void ClientHideSuit()
         {
-            if (_suitInstance == null) return;
-            Object.Destroy(_suitInstance);
-            _suitInstance = null;
+            if (_suitInstance != null)
+            {
+                Object.Destroy(_suitInstance);
+                _suitInstance = null;
+            }
 
+            // Always run session/overlay cleanup for the local player, regardless of
+            // whether a suit prefab instance existed (it doesn't for first-person view).
             if (isLocalPlayer)
             {
                 var inv = GetComponent<PlayerInventory>();
@@ -253,9 +272,7 @@ namespace IssaPlugin.Items
 
         private void ClientShowThrusters()
         {
-            if (_clientThrusterOn) return;
-            _clientThrusterOn = true;
-            ClientHideThrusters(); // destroy any stale instance
+            ClientHideThrusters();
 
             if (AssetLoader.IronManThrusterParticlePrefab == null) return;
 
@@ -267,7 +284,6 @@ namespace IssaPlugin.Items
 
         private void ClientHideThrusters()
         {
-            _clientThrusterOn = false;
             if (_thrusterParticles == null) return;
             Object.Destroy(_thrusterParticles);
             _thrusterParticles = null;
@@ -296,6 +312,7 @@ namespace IssaPlugin.Items
         public override void OnStopServer()
         {
             _serverSessionActive = false;
+            _serverThrusting     = false;
             if (_serverTimerCoroutine != null)
             {
                 StopCoroutine(_serverTimerCoroutine);

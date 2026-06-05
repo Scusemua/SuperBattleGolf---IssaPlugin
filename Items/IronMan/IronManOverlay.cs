@@ -7,41 +7,38 @@ namespace IssaPlugin.Overlays
     /// HUD for the Iron Man suit: shows a session timer bar and remaining rocket count.
     /// Only visible on the local player's screen while the session is active.
     /// Added to the plugin's persistent GameObject in Plugin.cs.
+    ///
+    /// Visibility is driven entirely by IronManItem.SessionActive so the overlay
+    /// disappears as soon as the flight loop ends, regardless of whether
+    /// IronManSuitEndMessage has arrived yet.
     /// </summary>
     public class IronManOverlay : MonoBehaviour
     {
         public static IronManOverlay Instance { get; private set; }
 
-        // ── Push-based state ──────────────────────────────────────────────────
-        private static bool  _sessionActive;
+        // ── Push-based state (used for HUD values only, NOT for visibility) ───
         private static float _sessionDuration;
         private static int   _maxRockets;
-        private static int   _rocketsRemaining;
 
-        public static bool IsActive => _sessionActive;
+        // IsActive intentionally reads IronManItem directly so the overlay
+        // disappears the moment the local flight loop ends, without waiting for
+        // the server SuitEnd message to round-trip.
+        public static bool IsActive => IronManItem.SessionActive;
 
         public static void OnSessionStart(IronManConfigMessage cfg)
         {
-            _sessionActive    = true;
-            _sessionDuration  = cfg.Duration;
-            _maxRockets       = cfg.MaxRockets;
-            _rocketsRemaining = cfg.MaxRockets;
+            _sessionDuration = cfg.Duration;
+            _maxRockets      = cfg.MaxRockets;
         }
 
-        public static void OnSessionEnd()
-        {
-            _sessionActive = false;
-        }
+        public static void OnSessionEnd() { /* nothing — IsActive reads IronManItem */ }
 
-        public static void OnAmmoUpdate(int remaining)
-        {
-            _rocketsRemaining = remaining;
-        }
+        public static void OnAmmoUpdate(int _) { /* IronManItem.RocketsRemaining is authoritative */ }
 
         // ── Colours ───────────────────────────────────────────────────────────
-        private static readonly Color TimerFillColor = new Color(0.8f, 0.1f, 0.1f, 0.9f); // red
+        private static readonly Color TimerFillColor = new Color(0.8f, 0.1f, 0.1f, 0.9f);
         private static readonly Color BgColor        = new Color(0f,   0f,   0f,   0.55f);
-        private static readonly Color AmmoColor       = new Color(1.0f, 0.75f, 0.0f, 0.9f); // gold
+        private static readonly Color AmmoColor      = new Color(1.0f, 0.75f, 0.0f, 0.9f);
 
         // ── Textures (lazily built) ───────────────────────────────────────────
         private Texture2D _barBgTex;
@@ -65,23 +62,22 @@ namespace IssaPlugin.Overlays
 
         private void OnGUI()
         {
-            if (!_sessionActive) return;
+            if (!IsActive) return;
 
             int barWInt = (int)EffectBarLayout.GetBarWidth();
             if (barWInt != _cachedBarW) RebuildTextures(barWInt);
             if (_barBgTex == null) return;
 
-            float barW  = EffectBarLayout.GetBarWidth();
-            float barH  = EffectBarLayout.BarHeight;
-            float barX  = EffectBarLayout.GetBarX();
+            float barW = EffectBarLayout.GetBarWidth();
+            float barH = EffectBarLayout.BarHeight;
+            float barX = EffectBarLayout.GetBarX();
 
-            // Stack above any active world-effect bars.
             int slot =
-                (FreezeItem.IsFrozen     ? 1 : 0)
-                + (LowGravityItem.IsActive ? 1 : 0)
+                (FreezeItem.IsFrozen      ? 1 : 0)
+                + (LowGravityItem.IsActive  ? 1 : 0)
                 + (WindStormOverlay.IsActive ? 1 : 0);
 
-            // ── Timer bar (slot) ──────────────────────────────────────────────
+            // ── Timer bar ─────────────────────────────────────────────────────
             float timeRemaining = IronManItem.SessionTimeRemaining;
             float timeFraction  = _sessionDuration > 0f
                 ? Mathf.Clamp01(timeRemaining / _sessionDuration)
@@ -107,9 +103,10 @@ namespace IssaPlugin.Overlays
                 _labelStyle
             );
 
-            // ── Ammo bar (slot + 1) ───────────────────────────────────────────
+            // ── Ammo bar ──────────────────────────────────────────────────────
+            int  rocketsRemaining = IronManItem.RocketsRemaining;
             float ammoFraction = _maxRockets > 0
-                ? Mathf.Clamp01((float)_rocketsRemaining / _maxRockets)
+                ? Mathf.Clamp01((float)rocketsRemaining / _maxRockets)
                 : 0f;
 
             float ammoY = EffectBarLayout.GetBarY(slot + 1);
@@ -120,7 +117,7 @@ namespace IssaPlugin.Overlays
 
             GUI.Label(
                 new Rect(barX, ammoY, barW, barH),
-                $"Wrist Rockets  {_rocketsRemaining}/{_maxRockets}",
+                $"Wrist Rockets  {rocketsRemaining}/{_maxRockets}",
                 _labelStyle
             );
         }

@@ -66,6 +66,7 @@ namespace IssaPlugin
             gameObject.AddComponent<RocketTetherOverlay>();
             gameObject.AddComponent<UfoAbductionOverlay>();
             gameObject.AddComponent<JetpackOverlay>();
+            gameObject.AddComponent<IronManOverlay>();
             gameObject.AddComponent<TeleporterOverlay>();
             gameObject.AddComponent<SpinachOverlay>();
             gameObject.AddComponent<FirstPlaceStarOverlay>();

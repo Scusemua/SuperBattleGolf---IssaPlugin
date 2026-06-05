@@ -594,11 +594,7 @@ namespace IssaPlugin.Items
                     optional: true
                 ),
                 // ── Iron Man ─────────────────────────────────────────────────
-                SpriteAsset(
-                    p => IronManIcon = p,
-                    "ironman_icon.png",
-                    optional: true
-                ),
+                SpriteAsset(p => IronManIcon = p, "ironman_icon.png", optional: true),
                 HandheldPrefab(
                     p => IronManHandheldPrefab = p,
                     "ironman_handheld.prefab",
