@@ -144,6 +144,19 @@ namespace IssaPlugin.Items
         /// Handheld model shown in the player's hand. Null until explosive_golf_balls_handheld.prefab is added.
         public static GameObject ExplosiveGolfBallsHandheldPrefab { get; private set; }
 
+        // ── Iron Man ─────────────────────────────────────────────────────────
+        /// Item icon. Null until ironman_icon.png is added to the bundle.
+        public static Sprite IronManIcon { get; private set; }
+
+        /// Handheld model shown in the player's hand. Null until ironman_handheld.prefab is added.
+        public static GameObject IronManHandheldPrefab { get; private set; }
+
+        /// Suit prefab attached to remote players. Null until ironman_suit.prefab is added.
+        public static GameObject IronManSuitPrefab { get; private set; }
+
+        /// Thruster particle prefab shown during flight. Null until ironman_thrusters.prefab is added.
+        public static GameObject IronManThrusterParticlePrefab { get; private set; }
+
         // ── ShapeShifter shape prefabs ────────────────────────────────────────
         /// Visual-only shape prefabs spawned as children of the golf ball.
         /// Each must contain MeshFilter + MeshRenderer + MeshCollider (convex).
@@ -580,6 +593,19 @@ namespace IssaPlugin.Items
                     "bomb_for_exploding_balls.prefab",
                     optional: true
                 ),
+                // ── Iron Man ─────────────────────────────────────────────────
+                SpriteAsset(
+                    p => IronManIcon = p,
+                    "ironman_icon.png",
+                    optional: true
+                ),
+                HandheldPrefab(
+                    p => IronManHandheldPrefab = p,
+                    "ironman_handheld.prefab",
+                    optional: true
+                ),
+                LocalVfxPrefab(p => IronManSuitPrefab = p, "ironman_suit.prefab"),
+                LocalVfxPrefab(p => IronManThrusterParticlePrefab = p, "ironman_thrusters.prefab"),
                 // ── First Place Star ──────────────────────────────────────────
                 LocalVfxPrefab(p => GoldStarPrefab = p, "gold_star.prefab"),
             };

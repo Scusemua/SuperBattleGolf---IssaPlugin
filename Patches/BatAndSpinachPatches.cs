@@ -79,9 +79,10 @@ namespace IssaPlugin.Patches
                 return;
 
             var inv = hitter.PlayerInfo.Inventory;
+            bool spinachActive = hitter.isLocalPlayer && SpinachBehaviour.IsActive;
             if (
                 inv.GetEffectivelyEquippedItem(true) != ItemRegistry.BaseballBatItemType
-                && !SpinachBehaviour.IsActive
+                && !spinachActive
             )
                 return;
 
@@ -99,7 +100,7 @@ namespace IssaPlugin.Patches
                     extraPower = 1.0f;
             }
 
-            if (SpinachBehaviour.IsActive)
+            if (spinachActive)
             {
                 float spinachMultiplier = isGolfBall
                     ? ModConfig.Spinach.GolfBallPowerMultiplier.Value
@@ -140,7 +141,7 @@ namespace IssaPlugin.Patches
             }
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[BatSpinach Prefix] bat={BatActive} spinach={SpinachBehaviour.IsActive} rocketDriver={isRocketDriver} N={N:F2} power={power} isPutt={isPutt}"
+                $"[BatSpinach Prefix] bat={BatActive} spinach={spinachActive} rocketDriver={isRocketDriver} N={N:F2} power={power} isPutt={isPutt}"
             );
         }
 
