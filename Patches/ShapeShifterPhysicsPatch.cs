@@ -76,7 +76,7 @@ namespace IssaPlugin.Patches
         static MethodBase TargetMethod() => TargetMb;
 
         // Runs after ModifyContactsInternal so mass overrides are already applied.
-        static void Postfix(NativeArray<ModifiableContactPair> contactPairs)
+        static void Postfix(ref NativeArray<ModifiableContactPair> contactPairs)
         {
             // Find any ball currently shape-shifted on this client.
             // We read the registered collider ID directly from ShapeShifterState.

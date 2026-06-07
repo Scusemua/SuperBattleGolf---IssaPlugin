@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 3855324251
+CRC: 3594041208
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 4c15d0b5df7839279a87a55950e764c8
+    Hash: 36a82aa103c5dc2a7bc3bfc34b3b9941
   TypeTreeHash:
     serializedVersion: 2
     Hash: 82d52513d6b19822b87b688cdb5147d6
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 84d1890f6feb29a59fc8f7cd1d091403
+    Hash: c9e1e9d9df03d4b2a85600a99af41561
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -111,6 +111,7 @@ Assets:
 - Assets/Assets/rocket_tether_handheld.prefab
 - Assets/Assets/position_swap_orb.prefab
 - Assets/Assets/bomber_model.prefab
+- Assets/Assets/ironman_icon.png
 - Assets/Assets/spinach_icon.png
 - Assets/Assets/flamethrower_victim_fire.prefab
 - Assets/Assets/rocket_tether_grenade_icon.png

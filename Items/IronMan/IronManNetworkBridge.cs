@@ -24,6 +24,7 @@ namespace IssaPlugin.Items
         // ── Server state ──────────────────────────────────────────────────────
         private bool      _serverSessionActive;
         private int       _serverRocketsRemaining;
+        private int       _serverConsumeSlotIndex = -1;
         private Coroutine _serverTimerCoroutine;
         private bool      _serverThrusting;
 
@@ -48,9 +49,8 @@ namespace IssaPlugin.Items
 
             _serverSessionActive    = true;
             _serverRocketsRemaining = ModConfig.IronMan.MaxRockets.Value;
+            _serverConsumeSlotIndex = slotIndex;
 
-            // Send authoritative config to the wielder so the local flight loop
-            // and HUD use server values, not local defaults.
             connectionToClient?.Send(new IronManConfigMessage
             {
                 Duration             = ModConfig.IronMan.Duration.Value,
@@ -63,8 +63,9 @@ namespace IssaPlugin.Items
 
             NetworkServer.SendToAll(new IronManSuitBeginMessage { PlayerNetId = netId });
 
-            ItemHelper.DecrementAndRemove(inv, slotIndex);
-
+            // Item is consumed at session end, not here. Consuming immediately triggers
+            // TryDeselectItem on the host → hole cleanup fires → ClientHoleCleanup kills
+            // the flight coroutine before its first physics tick.
             _serverTimerCoroutine = StartCoroutine(ServerSessionTimer());
         }
 
@@ -90,6 +91,15 @@ namespace IssaPlugin.Items
             {
                 _serverThrusting = false;
                 NetworkServer.SendToAll(new IronManThrusterBroadcastEndMessage { PlayerNetId = netId });
+            }
+
+            // Consume the item now that the session is actually ending.
+            if (_serverConsumeSlotIndex >= 0)
+            {
+                var inv = GetComponent<PlayerInventory>();
+                if (inv != null)
+                    ItemHelper.DecrementAndRemove(inv, _serverConsumeSlotIndex);
+                _serverConsumeSlotIndex = -1;
             }
 
             NetworkServer.SendToAll(new IronManSuitEndMessage { PlayerNetId = netId });
@@ -311,8 +321,9 @@ namespace IssaPlugin.Items
 
         public override void OnStopServer()
         {
-            _serverSessionActive = false;
-            _serverThrusting     = false;
+            _serverSessionActive    = false;
+            _serverThrusting        = false;
+            _serverConsumeSlotIndex = -1;
             if (_serverTimerCoroutine != null)
             {
                 StopCoroutine(_serverTimerCoroutine);

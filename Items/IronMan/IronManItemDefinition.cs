@@ -28,9 +28,17 @@ namespace IssaPlugin.Items
         public override void OnUse(PlayerInventory inventory)
         {
             IssaPluginPlugin.Log.LogInfo(
-                $"[IronMan] Player {inventory.PlayerInfo.PlayerId.PlayerName} is activating Iron Man suit."
+                $"[IronMan] OnUse — NetworkClient.active={NetworkClient.active} NetworkServer.active={NetworkServer.active} Writer.write={(Writer<IronManActivateMessage>.write != null ? "OK" : "NULL")}"
             );
-            NetworkClient.Send(new IronManActivateMessage());
+            try
+            {
+                NetworkClient.Send(new IronManActivateMessage());
+                IssaPluginPlugin.Log.LogInfo("[IronMan] NetworkClient.Send completed");
+            }
+            catch (System.Exception e)
+            {
+                IssaPluginPlugin.Log.LogError($"[IronMan] NetworkClient.Send threw: {e}");
+            }
         }
     }
 }

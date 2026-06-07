@@ -601,7 +601,7 @@ namespace IssaPlugin.Items
                     optional: true
                 ),
                 LocalVfxPrefab(p => IronManSuitPrefab = p, "ironman_suit.prefab"),
-                LocalVfxPrefab(p => IronManThrusterParticlePrefab = p, "ironman_thrusters.prefab"),
+                LocalVfxPrefab(p => IronManThrusterParticlePrefab = p, "jetpack_particles.prefab"),
                 // ── First Place Star ──────────────────────────────────────────
                 LocalVfxPrefab(p => GoldStarPrefab = p, "gold_star.prefab"),
             };

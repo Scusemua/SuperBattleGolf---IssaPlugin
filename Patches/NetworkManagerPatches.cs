@@ -1827,26 +1827,25 @@ namespace IssaPlugin.Patches
 
             // ── Iron Man ──────────────────────────────────────────────────────────
 
-            // Client → Server
+            // Client → Server — registered unconditionally so they work even when
+            // NetworkServer.active is false at OnStartClient time (e.g. driving range).
+            // Mirror's RegisterHandler is safe to call before the server is active;
+            // it just overwrites the slot, which is idempotent.
             Writer<IronManActivateMessage>.write = IronManMessageSerialization.WriteActivate;
             Reader<IronManActivateMessage>.read  = IronManMessageSerialization.ReadActivate;
-            if (NetworkServer.active)
-                NetworkServer.RegisterHandler<IronManActivateMessage>(
-                    (conn, msg) => GetBridge<IronManNetworkBridge>(conn)?.ServerHandleActivate()
-                );
+            NetworkServer.RegisterHandler<IronManActivateMessage>(
+                (conn, msg) => GetBridge<IronManNetworkBridge>(conn)?.ServerHandleActivate()
+            );
 
-            // Flight input is client-authoritative (force applied locally); the server
-            // only needs the serialization wired up for the message bus to function.
+            // Flight input is client-authoritative; wiring serialization is enough.
             Writer<IronManFlightInputMessage>.write = IronManMessageSerialization.WriteFlightInput;
             Reader<IronManFlightInputMessage>.read  = IronManMessageSerialization.ReadFlightInput;
 
             Writer<IronManFireMessage>.write = IronManMessageSerialization.WriteFire;
             Reader<IronManFireMessage>.read  = IronManMessageSerialization.ReadFire;
-            if (NetworkServer.active)
-                NetworkServer.RegisterHandler<IronManFireMessage>(
-                    (conn, msg) =>
-                        GetBridge<IronManNetworkBridge>(conn)?.ServerHandleFire(msg.AimDirection)
-                );
+            NetworkServer.RegisterHandler<IronManFireMessage>(
+                (conn, msg) => GetBridge<IronManNetworkBridge>(conn)?.ServerHandleFire(msg.AimDirection)
+            );
 
             // Server → All Clients
             Writer<IronManSuitBeginMessage>.write = IronManMessageSerialization.WriteSuitBegin;
@@ -1857,20 +1856,18 @@ namespace IssaPlugin.Patches
             Reader<IronManSuitEndMessage>.read  = IronManMessageSerialization.ReadSuitEnd;
             NetworkClient.RegisterHandler<IronManSuitEndMessage>(IronManNetworkBridge.HandleSuitEnd);
 
-            // Client → Server: bare thruster notifications (server adds netId and broadcasts)
+            // Client → Server: bare thruster notifications
             Writer<IronManThrusterBeginMessage>.write = IronManMessageSerialization.WriteThrusterBegin;
             Reader<IronManThrusterBeginMessage>.read  = IronManMessageSerialization.ReadThrusterBegin;
-            if (NetworkServer.active)
-                NetworkServer.RegisterHandler<IronManThrusterBeginMessage>(
-                    (conn, msg) => GetBridge<IronManNetworkBridge>(conn)?.ServerHandleThrusterBegin()
-                );
+            NetworkServer.RegisterHandler<IronManThrusterBeginMessage>(
+                (conn, msg) => GetBridge<IronManNetworkBridge>(conn)?.ServerHandleThrusterBegin()
+            );
 
             Writer<IronManThrusterEndMessage>.write = IronManMessageSerialization.WriteThrusterEnd;
             Reader<IronManThrusterEndMessage>.read  = IronManMessageSerialization.ReadThrusterEnd;
-            if (NetworkServer.active)
-                NetworkServer.RegisterHandler<IronManThrusterEndMessage>(
-                    (conn, msg) => GetBridge<IronManNetworkBridge>(conn)?.ServerHandleThrusterEnd()
-                );
+            NetworkServer.RegisterHandler<IronManThrusterEndMessage>(
+                (conn, msg) => GetBridge<IronManNetworkBridge>(conn)?.ServerHandleThrusterEnd()
+            );
 
             // Server → All Clients: broadcast with PlayerNetId
             Writer<IronManThrusterBroadcastBeginMessage>.write = IronManMessageSerialization.WriteThrusterBroadcastBegin;
@@ -2008,4 +2005,5 @@ namespace IssaPlugin.Patches
             ItemConfigSyncer.BroadcastToConnection(connection);
         }
     }
+
 }
