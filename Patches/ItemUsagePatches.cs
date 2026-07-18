@@ -578,17 +578,17 @@ namespace IssaPlugin.Patches
     /// equippedItemHash parameter (which was reset by the controller change) and
     /// re-enable the upper body layer. This covers both the local player and remote
     /// clients (for whom SetEquippedItem is never called by the local-player code path).
-    [HarmonyPatch(typeof(PlayerInfo), "OnNetworkedEquippedItemChanged")]
+    [HarmonyPatch(typeof(PlayerAnimatorIo), "OnNetworkedEquippedItemChanged")]
     static class PlayerAnimatorOnEquippedChangedPatch
     {
-        static void Prefix(PlayerInfo __instance, ref ItemType previousItem, ref ItemType currentItem)
+        static void Prefix(PlayerAnimatorIo __instance, ref ItemType previousEquippedItem, ref ItemType currentEquippedItem)
         {
-            var originalItem = previousItem;
+            var originalItem = previousEquippedItem;
 
-            if (ItemRegistry.IsCustomItem(previousItem))
+            if (ItemRegistry.IsCustomItem(previousEquippedItem))
             {
-                previousItem = ItemRegistry
-                    .CustomItemDefinitionMap[(int)previousItem]
+                previousEquippedItem = ItemRegistry
+                    .CustomItemDefinitionMap[(int)previousEquippedItem]
                     .AnimatorChangedItemType;
                 return;
             }
@@ -596,7 +596,7 @@ namespace IssaPlugin.Patches
             // The game passes None when GetEffectivelyEquippedItem(false) suppresses a
             // custom item. Look up the actual equipped item and substitute so the correct
             // animator controller is set instead of resetting to the default controller.
-            if (previousItem != ItemType.None)
+            if (previousEquippedItem != ItemType.None)
             {
                 return;
             }
@@ -611,7 +611,7 @@ namespace IssaPlugin.Patches
             var actualDef = ItemRegistry.GetDefinition(actual);
             if (actualDef != null)
             {
-                currentItem = actualDef.AnimatorChangedItemType;
+                currentEquippedItem = actualDef.AnimatorChangedItemType;
             }
         }
 

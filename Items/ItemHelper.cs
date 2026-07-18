@@ -51,7 +51,7 @@ namespace IssaPlugin.Items
         public static void DecrementAndRemove(PlayerInventory inventory, int slotIndex)
         {
             DecrementMethod?.Invoke(inventory, new object[] { slotIndex });
-            RemoveMethod?.Invoke(inventory, new object[] { slotIndex });
+            RemoveMethod?.Invoke(inventory, new object[] { slotIndex, true });
         }
 
 
