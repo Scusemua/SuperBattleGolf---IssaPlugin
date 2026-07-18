@@ -149,7 +149,8 @@ namespace IssaPlugin.Items
             var itemUseId = new ItemUseId(
                 summoner.PlayerId.Guid,
                 NextUseIndex(),
-                ItemType.RocketLauncher
+                ItemType.RocketLauncher,
+                false
             );
 
             var behaviour = droneGo.AddComponent<DroneBehaviour>();

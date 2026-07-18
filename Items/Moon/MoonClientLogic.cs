@@ -746,9 +746,11 @@ namespace IssaPlugin.Items
             var useId = new ItemUseId(
                 wielderInfo.PlayerId.Guid,
                 MoonItem.NextUseIndex(),
-                ItemType.RocketLauncher
+                ItemType.RocketLauncher,
+                false
             );
             bool _;
+
             localInfo.Movement.TryKnockOut(
                 wielderInfo,
                 KnockoutType.Rocket,
@@ -756,10 +758,11 @@ namespace IssaPlugin.Items
                 localInfo.Movement.transform.InverseTransformPoint(state.MoonImpactPos),
                 Vector3.Distance(localInfo.transform.position, state.MoonImpactPos),
                 Vector3.zero,
-                true,
+                ElectromagnetShieldHitBlockType.FullyBlocked,
                 useId,
                 false,
                 true,
+                out _,
                 out _
             );
         }

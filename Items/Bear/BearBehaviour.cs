@@ -612,7 +612,8 @@ namespace IssaPlugin.Items
             var useId = new ItemUseId(
                 SummonerInfo.PlayerId.Guid,
                 BearItem.NextUseIndex(),
-                ItemType.ElephantGun
+                ItemType.ElephantGun,
+                false
             );
 
             hittable.HitWithItem(
@@ -625,7 +626,9 @@ namespace IssaPlugin.Items
                 SummonerInfo.Inventory,
                 false,
                 false,
-                false
+                false,
+                NetworkTime.time,
+                0UL
             );
 
             // Broadcast impact event for client-side sound / camera shake

@@ -70,7 +70,8 @@ namespace IssaPlugin.Items
             var itemUseId = new ItemUseId(
                 inventory.PlayerInfo.PlayerId.Guid,
                 _useIndex,
-                ItemType.RocketLauncher
+                ItemType.RocketLauncher,
+                false
             );
 
             // Offset along the fire direction so the rocket spawns outside the
@@ -128,7 +129,8 @@ namespace IssaPlugin.Items
             var itemUseId = new ItemUseId(
                 inventory.PlayerInfo.PlayerId.Guid,
                 _useIndex,
-                ItemType.RocketLauncher
+                ItemType.RocketLauncher,
+                false
             );
 
             var rocket = Object.Instantiate(

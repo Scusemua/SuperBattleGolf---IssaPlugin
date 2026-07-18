@@ -51,7 +51,7 @@ namespace IssaPlugin.Overlays
                 || matchState == MatchState.CountingDownToEnd
                 || matchState == MatchState.Overtime
                 || matchState == MatchState.Ended;
-            if (!activeState || CourseManager.CountActivePlayers() < 1)
+            if (!activeState || CourseManager.CountActivePlayers(out int redTeamCount, out int blueTeamCount) < 1)
             {
                 HideStar();
                 return;

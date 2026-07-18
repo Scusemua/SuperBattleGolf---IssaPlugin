@@ -95,7 +95,8 @@ namespace IssaPlugin.Items
             var itemUseId = new ItemUseId(
                 playerInfo.PlayerId.Guid,
                 NukeItem.NextUseIndex(),
-                ItemType.RocketLauncher
+                ItemType.RocketLauncher,
+                false
             );
 
             // Attach the server-side falling + detonation behaviour.
@@ -235,10 +236,11 @@ namespace IssaPlugin.Items
                 movement.transform.InverseTransformPoint(msg.Position), // localOrigin
                 toPlayer.magnitude, // distance
                 velocityChange, // used for unground check
-                true, // does not ignore electromagnetic shield
+                ElectromagnetShieldHitBlockType.FullyBlocked, // does not ignore electromagnetic shield
                 msg.ItemUseId,
                 false, // fromSpecialState
                 true, // canFallbackToUnground
+                out _,
                 out _
             );
 

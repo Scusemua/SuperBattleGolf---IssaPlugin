@@ -12,7 +12,7 @@ namespace IssaPlugin.Items
     /// so the preview exactly matches the actual throw.  The arc terminates early
     /// when a linecast hits terrain or static geometry (GroundLayerMask).
     ///
-    /// Added by UpdateEquipmentSwitchersPatch when StickyGrenade is equipped.
+    /// Added by LocalPlayerUpdateEquipmentSwitchers when StickyGrenade is equipped.
     /// Self-destructs when a different item is equipped.
     public class StickyGrenadeTrajectoryPreview : MonoBehaviour
     {

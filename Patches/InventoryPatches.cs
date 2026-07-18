@@ -67,7 +67,7 @@ namespace IssaPlugin.Patches
             // TryDeselectItem() failed — EquippedItemIndex still points at the removed slot.
             // Clear the use state so CanDeselectItem passes, then retry.
             ItemHelper.SetCurrentItemUse(__instance, ItemUseType.None);
-            __instance.TryDeselectItem();
+            __instance.TryDeselectItem(false, false);
         }
     }
 

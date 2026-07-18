@@ -715,7 +715,8 @@ namespace IssaPlugin.Items
             var itemUseId = new ItemUseId(
                 inventory.PlayerInfo.PlayerId.Guid,
                 _bomberUseIndex,
-                ItemType.RocketLauncher
+                ItemType.RocketLauncher,
+                false
             );
 
             IssaPluginPlugin.Log.LogInfo($"[Bomber] Spawning rocket at position={position}");

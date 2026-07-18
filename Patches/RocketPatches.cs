@@ -7,8 +7,8 @@ using UnityEngine;
 
 namespace IssaPlugin.Patches
 {
-    [HarmonyPatch(typeof(Rocket), "Start")]
-    static class RocketStartPatch
+    [HarmonyPatch(typeof(Rocket), "Awake")]
+    static class RocketAwakePatch
     {
         static void Postfix(Rocket __instance)
         {

@@ -445,7 +445,8 @@ namespace IssaPlugin.Items
             var useId = new ItemUseId(
                 wielderInfo.PlayerId.Guid,
                 UfoAbductionItem.NextUseIndex(),
-                ItemType.RocketLauncher
+                ItemType.RocketLauncher,
+                false
             );
             bool _;
             localInfo.Movement.TryKnockOut(
@@ -455,10 +456,11 @@ namespace IssaPlugin.Items
                 localInfo.Movement.transform.InverseTransformPoint(wielderInfo.transform.position),
                 Vector3.Distance(localInfo.transform.position, wielderInfo.transform.position),
                 Vector3.zero,
-                true,
+                ElectromagnetShieldHitBlockType.FullyBlocked,
                 useId,
                 false,
                 true,
+                out _,
                 out _
             );
         }
@@ -544,9 +546,12 @@ namespace IssaPlugin.Items
             // collapses to near-zero and the camera becomes too close. Smoothly zoom out
             // to 45 units over the transit phase so the full flight is visible.
             float abductionElapsed = elapsed - state.ApproachDuration;
-            float transitT = state.TransitDuration > 0f
-                ? Mathf.Clamp01((abductionElapsed - state.AbductionDuration) / state.TransitDuration)
-                : 0f;
+            float transitT =
+                state.TransitDuration > 0f
+                    ? Mathf.Clamp01(
+                        (abductionElapsed - state.AbductionDuration) / state.TransitDuration
+                    )
+                    : 0f;
             float minDist = Mathf.Lerp(12f, 45f, transitT);
 
             float camDist = Mathf.Max(separation * separationMultiplier, minDist);

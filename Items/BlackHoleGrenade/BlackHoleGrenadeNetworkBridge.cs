@@ -93,7 +93,8 @@ namespace IssaPlugin.Items
             var itemUseId = new ItemUseId(
                 playerInfo.PlayerId.Guid,
                 BlackHoleGrenadeItem.NextUseIndex(),
-                ItemType.RocketLauncher
+                ItemType.RocketLauncher,
+                false
             );
 
             var behaviour = grenadeGo.AddComponent<BlackHoleGrenadeBehaviour>();
@@ -284,10 +285,11 @@ namespace IssaPlugin.Items
                     movement.transform.InverseTransformPoint(msg.BlackHolePosition),
                     dist,
                     velocityChange,
-                    true,
+                    ElectromagnetShieldHitBlockType.FullyBlocked,
                     msg.ItemUseId,
                     false,
                     true,
+                    out _,
                     out _
                 );
             }
@@ -422,14 +424,16 @@ namespace IssaPlugin.Items
                         movement.transform.InverseTransformPoint(blackHolePos),
                         dist,
                         knockVelocity,
-                        true,
+                        ElectromagnetShieldHitBlockType.FullyBlocked,
                         new ItemUseId(
                             throwerInfo.PlayerId.Guid,
                             BlackHoleGrenadeItem.NextUseIndex(),
-                            ItemType.RocketLauncher
+                            ItemType.RocketLauncher,
+                            false
                         ),
                         false,
                         true,
+                        out _,
                         out _
                     );
 

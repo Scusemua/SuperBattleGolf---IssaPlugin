@@ -27,14 +27,16 @@ namespace IssaPlugin.Patches
             typeof(SwingHittableSettings),
             "<MaxPowerSwingHitSpeed>k__BackingField"
         );
-        private static readonly FieldInfo MinPowerRocketDriverSwingHitSpeedField = AccessTools.Field(
-            typeof(SwingHittableSettings),
-            "<MinPowerRocketDriverSwingHitSpeed>k__BackingField"
-        );
-        private static readonly FieldInfo MaxPowerRocketDriverSwingHitSpeedField = AccessTools.Field(
-            typeof(SwingHittableSettings),
-            "<MaxPowerRocketDriverSwingHitSpeed>k__BackingField"
-        );
+        private static readonly FieldInfo MinPowerRocketDriverSwingHitSpeedField =
+            AccessTools.Field(
+                typeof(SwingHittableSettings),
+                "<MinPowerRocketDriverSwingHitSpeed>k__BackingField"
+            );
+        private static readonly FieldInfo MaxPowerRocketDriverSwingHitSpeedField =
+            AccessTools.Field(
+                typeof(SwingHittableSettings),
+                "<MaxPowerRocketDriverSwingHitSpeed>k__BackingField"
+            );
         private static readonly FieldInfo MinPowerRocketDriverPuttHitSpeedField = AccessTools.Field(
             typeof(SwingHittableSettings),
             "<MinPowerRocketDriverPuttHitSpeed>k__BackingField"
@@ -62,18 +64,34 @@ namespace IssaPlugin.Patches
             TotalMultiplier = 1f;
         }
 
+        // public enum SwingType
+        // {
+        // 	// Token: 0x040010CF RID: 4303
+        // 	None,
+        // 	// Token: 0x040010D0 RID: 4304
+        // 	Regular,
+        // 	// Token: 0x040010D1 RID: 4305
+        // 	RocketDriver,
+        // 	// Token: 0x040010D2 RID: 4306
+        // 	JumboBurgerGiant
+        // }
+
+        // private void HitWithGolfSwingInternal(Vector3 localHitPosition, Vector3 localOrigin, Vector3 worldDirection, bool isPutt, float power, float sideSpin,
+        // SwingType swingType, PlayerGolfer hitter, Hittable homingTargetHittable)
         static void Prefix(
             Hittable __instance,
             PlayerGolfer hitter,
             float power,
             Vector3 worldDirection,
             bool isPutt,
-            bool isRocketDriver
+            SwingType swingType
         )
         {
             BatActive = false;
             WasRocketDriver = false;
             _pendingMultiplier = 1f;
+
+            bool isRocketDriver = (swingType == SwingType.RocketDriver);
 
             if (hitter == null)
                 return;
@@ -124,19 +142,42 @@ namespace IssaPlugin.Patches
             {
                 if (isRocketDriver)
                 {
-                    _originalMinPowerRocketDriverSwingHitSpeed = __instance.SwingSettings.MinPowerRocketDriverSwingHitSpeed;
-                    _originalMaxPowerRocketDriverSwingHitSpeed = __instance.SwingSettings.MaxPowerRocketDriverSwingHitSpeed;
-                    _originalMinPowerRocketDriverPuttHitSpeed = __instance.SwingSettings.MinPowerRocketDriverPuttHitSpeed;
-                    _originalMaxPowerRocketDriverPuttHitSpeed = __instance.SwingSettings.MaxPowerRocketDriverPuttHitSpeed;
-                    MinPowerRocketDriverSwingHitSpeedField.SetValue(__instance.SwingSettings, _originalMinPowerRocketDriverSwingHitSpeed * N);
-                    MaxPowerRocketDriverSwingHitSpeedField.SetValue(__instance.SwingSettings, _originalMaxPowerRocketDriverSwingHitSpeed * N);
-                    MinPowerRocketDriverPuttHitSpeedField.SetValue(__instance.SwingSettings, _originalMinPowerRocketDriverPuttHitSpeed * N);
-                    MaxPowerRocketDriverPuttHitSpeedField.SetValue(__instance.SwingSettings, _originalMaxPowerRocketDriverPuttHitSpeed * N);
+                    _originalMinPowerRocketDriverSwingHitSpeed = __instance
+                        .SwingSettings
+                        .MinPowerRocketDriverSwingHitSpeed;
+                    _originalMaxPowerRocketDriverSwingHitSpeed = __instance
+                        .SwingSettings
+                        .MaxPowerRocketDriverSwingHitSpeed;
+                    _originalMinPowerRocketDriverPuttHitSpeed = __instance
+                        .SwingSettings
+                        .MinPowerRocketDriverPuttHitSpeed;
+                    _originalMaxPowerRocketDriverPuttHitSpeed = __instance
+                        .SwingSettings
+                        .MaxPowerRocketDriverPuttHitSpeed;
+                    MinPowerRocketDriverSwingHitSpeedField.SetValue(
+                        __instance.SwingSettings,
+                        _originalMinPowerRocketDriverSwingHitSpeed * N
+                    );
+                    MaxPowerRocketDriverSwingHitSpeedField.SetValue(
+                        __instance.SwingSettings,
+                        _originalMaxPowerRocketDriverSwingHitSpeed * N
+                    );
+                    MinPowerRocketDriverPuttHitSpeedField.SetValue(
+                        __instance.SwingSettings,
+                        _originalMinPowerRocketDriverPuttHitSpeed * N
+                    );
+                    MaxPowerRocketDriverPuttHitSpeedField.SetValue(
+                        __instance.SwingSettings,
+                        _originalMaxPowerRocketDriverPuttHitSpeed * N
+                    );
                 }
                 else
                 {
                     _originalMaxPowerSwingHitSpeed = __instance.SwingSettings.MaxPowerSwingHitSpeed;
-                    MaxPowerSwingHitSpeedField.SetValue(__instance.SwingSettings, _originalMaxPowerSwingHitSpeed * N);
+                    MaxPowerSwingHitSpeedField.SetValue(
+                        __instance.SwingSettings,
+                        _originalMaxPowerSwingHitSpeed * N
+                    );
                 }
             }
 
@@ -152,14 +193,29 @@ namespace IssaPlugin.Patches
             {
                 if (WasRocketDriver)
                 {
-                    MinPowerRocketDriverSwingHitSpeedField.SetValue(__instance.SwingSettings, _originalMinPowerRocketDriverSwingHitSpeed);
-                    MaxPowerRocketDriverSwingHitSpeedField.SetValue(__instance.SwingSettings, _originalMaxPowerRocketDriverSwingHitSpeed);
-                    MinPowerRocketDriverPuttHitSpeedField.SetValue(__instance.SwingSettings, _originalMinPowerRocketDriverPuttHitSpeed);
-                    MaxPowerRocketDriverPuttHitSpeedField.SetValue(__instance.SwingSettings, _originalMaxPowerRocketDriverPuttHitSpeed);
+                    MinPowerRocketDriverSwingHitSpeedField.SetValue(
+                        __instance.SwingSettings,
+                        _originalMinPowerRocketDriverSwingHitSpeed
+                    );
+                    MaxPowerRocketDriverSwingHitSpeedField.SetValue(
+                        __instance.SwingSettings,
+                        _originalMaxPowerRocketDriverSwingHitSpeed
+                    );
+                    MinPowerRocketDriverPuttHitSpeedField.SetValue(
+                        __instance.SwingSettings,
+                        _originalMinPowerRocketDriverPuttHitSpeed
+                    );
+                    MaxPowerRocketDriverPuttHitSpeedField.SetValue(
+                        __instance.SwingSettings,
+                        _originalMaxPowerRocketDriverPuttHitSpeed
+                    );
                 }
                 else
                 {
-                    MaxPowerSwingHitSpeedField.SetValue(__instance.SwingSettings, _originalMaxPowerSwingHitSpeed);
+                    MaxPowerSwingHitSpeedField.SetValue(
+                        __instance.SwingSettings,
+                        _originalMaxPowerSwingHitSpeed
+                    );
                 }
             }
 
@@ -212,7 +268,6 @@ namespace IssaPlugin.Patches
             float normalizedHitSpeed,
             Hittable hitter,
             bool wasHoming,
-            bool wasSwungByRocketDriver,
             PlayerGolfer responsiblePlayer
         )
         {
@@ -242,8 +297,9 @@ namespace IssaPlugin.Patches
 
         static bool Prefix(
             Hittable __instance,
-            float linearAirDragFactor,
+            float defaultLinearAirDragFactor,
             float rocketDriverSwingLinearAirDragFactor,
+            float jumboBurgerGiantSwingLinearAirDragFactor,
             bool shouldApplyWind
         )
         {
@@ -264,7 +320,7 @@ namespace IssaPlugin.Patches
             // Mirror the base game's choice: rocket-driver hits use the rocket-driver drag factor.
             float kBase = HitWithGolfSwingInternalPatch.WasRocketDriver
                 ? rocketDriverSwingLinearAirDragFactor
-                : linearAirDragFactor;
+                : defaultLinearAirDragFactor;
             float kEff = kBase / (N * N);
             float dt = Time.fixedDeltaTime;
 

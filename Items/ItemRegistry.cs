@@ -168,8 +168,8 @@ namespace IssaPlugin.Items
             AccessTools.Property(t, "CanUsageAffectBalls").SetValue(data, false);
             AccessTools.Property(t, "HitTransfersToGolfCartPassengers").SetValue(data, false);
             AccessTools.Property(t, "FlourishFrames").SetValue(data, 0f);
-            AccessTools.Property(t, "ConsumptionEffectStartTime").SetValue(data, 0f);
-            AccessTools.Property(t, "PostConsumptionEffectStartTime").SetValue(data, 0f);
+            // AccessTools.Property(t, "ConsumptionEffectStartTime").SetValue(data, 0f);
+            // AccessTools.Property(t, "PostConsumptionEffectStartTime").SetValue(data, 0f);
             AccessTools.Property(t, "DroppedLocalRotationEuler").SetValue(data, Vector3.zero);
             data.Initialize();
 

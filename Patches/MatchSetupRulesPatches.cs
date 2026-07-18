@@ -28,7 +28,8 @@ namespace IssaPlugin.Patches
         [HarmonyPostfix]
         static void GetWeightPatch(int poolIndex, ItemType itemType, ref float __result)
         {
-            if (!ItemRegistry.IsCustomItem(itemType)) return;
+            if (!ItemRegistry.IsCustomItem(itemType))
+                return;
             if (EffectiveWeights.TryGetValue((poolIndex, itemType), out float w))
                 __result = w;
         }
@@ -52,7 +53,6 @@ namespace IssaPlugin.Patches
         static void ClearEffectiveWeightsPatch() => EffectiveWeights.Clear();
     }
 
-
     /// <summary>
     /// Prevents IndexOutOfRangeException in MatchSetupRules when custom items are present
     /// in item pools. The game's itemOrderLookup only covers vanilla ItemType values
@@ -60,16 +60,16 @@ namespace IssaPlugin.Patches
     /// via itemOrderLookup[item - ItemType.Coffee] crashes with an out-of-bounds index.
     ///
     /// Two crash sites:
-    /// 1. SpawnChanceUpdated — fires when the Pro Golf preset zeroes out all spawn weights.
+    /// 1. OnSpawnChanceWeightsChangedInItemPool — fires when the Pro Golf preset zeroes out all spawn weights.
     /// 2. Update — iterates pool SpawnChances every frame to refresh the percentage labels.
     /// </summary>
     [HarmonyPatch]
-    static class MatchSetupRulesSpawnChanceUpdatedPatch
+    static class MatchSetupRulesOnSpawnChanceWeightsChangedInItemPoolPatch
     {
         static MethodBase TargetMethod() =>
             AccessTools.Method(
                 typeof(MatchSetupRules),
-                "SpawnChanceUpdated",
+                "OnSpawnChanceWeightsChangedInItemPool",
                 new[] { typeof(MatchSetupRules.ItemPoolId) }
             );
 

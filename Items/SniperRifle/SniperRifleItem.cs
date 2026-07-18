@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Reflection;
+using Mirror;
 using UnityEngine;
 
 namespace IssaPlugin.Items
@@ -75,6 +76,8 @@ namespace IssaPlugin.Items
             float localYaw;
             float maxAimDist = ModConfig.SniperRifle.MaxAimingDistance.Value;
             Vector3 aimPoint = inventory.GetFirearmAimPoint(
+                barrelEnd,
+                inventory.GetElephantGunBarrelForward(),
                 maxAimDist,
                 GameManager.LayerSettings.GunHittablesMask,
                 out localYaw
@@ -85,6 +88,8 @@ namespace IssaPlugin.Items
             {
                 inventory.PlayerInfo.Movement.AlignWithCameraImmediately();
                 aimPoint = inventory.GetFirearmAimPoint(
+                    barrelEnd,
+                    inventory.GetElephantGunBarrelForward(),
                     ModConfig.SniperRifle.MaxAimingDistance.Value,
                     GameManager.LayerSettings.GunHittablesMask,
                     out _
@@ -175,7 +180,9 @@ namespace IssaPlugin.Items
                     inventory,
                     false,
                     false,
-                    false
+                    false,
+                    NetworkTime.time,
+                    0UL
                 );
             }
 

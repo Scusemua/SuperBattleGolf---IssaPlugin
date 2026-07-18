@@ -71,7 +71,8 @@ namespace IssaPlugin.Items
                     var useId = new ItemUseId(
                         (ulong)Hitter.PlayerInfo.PlayerId.Guid,
                         ExplosiveGolfBallsItem.NextUseIndex(),
-                        ItemType.RocketLauncher
+                        ItemType.RocketLauncher,
+                        false
                     );
                     tempRocket.ServerInitialize(Hitter.PlayerInfo, null, useId);
                     NetworkServer.Spawn(tempRocket.gameObject);

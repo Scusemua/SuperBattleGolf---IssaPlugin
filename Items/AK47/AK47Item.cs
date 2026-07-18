@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Reflection;
+using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -89,6 +90,8 @@ namespace IssaPlugin.Items
 
             float maxAimDist = ModConfig.AK47.MaxAimingDistance.Value;
             Vector3 aimPoint = inventory.GetFirearmAimPoint(
+                barrelEnd,
+                inventory.GetElephantGunBarrelForward(),
                 maxAimDist,
                 GameManager.LayerSettings.GunHittablesMask,
                 out float localYaw
@@ -98,6 +101,8 @@ namespace IssaPlugin.Items
             {
                 inventory.PlayerInfo.Movement.AlignWithCameraImmediately();
                 aimPoint = inventory.GetFirearmAimPoint(
+                    barrelEnd,
+                    inventory.GetElephantGunBarrelForward(),
                     maxAimDist,
                     GameManager.LayerSettings.GunHittablesMask,
                     out _
@@ -189,7 +194,9 @@ namespace IssaPlugin.Items
                     inventory,
                     false,
                     false,
-                    false
+                    false,
+                    NetworkTime.time,
+                    0UL
                 );
             }
 

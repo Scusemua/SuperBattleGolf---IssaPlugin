@@ -151,5 +151,10 @@ namespace IssaPlugin.Items
 
             return ItemRegistry.GetDefinition(type)?.HeldModelPrefab;
         }
+
+        public bool IsInteractionSuppressed()
+        {
+            return false;
+        }
     }
 }

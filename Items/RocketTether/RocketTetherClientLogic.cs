@@ -81,8 +81,8 @@ namespace IssaPlugin.Items
                 msg.Duration,
                 new TetherSpringParams
                 {
-                    SpringForce   = msg.SpringForce,
-                    MaxPullSpeed  = msg.MaxPullSpeed,
+                    SpringForce = msg.SpringForce,
+                    MaxPullSpeed = msg.MaxPullSpeed,
                     NaturalLength = msg.NaturalLength,
                 }
             );
@@ -102,8 +102,10 @@ namespace IssaPlugin.Items
         //  Public API
         // =====================================================================
 
-        internal static bool TryGetSessionForVictim(uint victimNetId, out TetherSessionState state) =>
-            s_activeSessions.TryGetValue(victimNetId, out state);
+        internal static bool TryGetSessionForVictim(
+            uint victimNetId,
+            out TetherSessionState state
+        ) => s_activeSessions.TryGetValue(victimNetId, out state);
 
         /// <summary>
         /// Called every frame from the local player's RocketTetherNetworkBridge.Update().
@@ -123,8 +125,7 @@ namespace IssaPlugin.Items
             {
                 var state = kvp.Value;
                 float elapsed = Time.time - state.StartTime;
-                Vector3 rocketPos =
-                    state.RocketStartPos + Vector3.up * state.RocketSpeed * elapsed;
+                Vector3 rocketPos = state.RocketStartPos + Vector3.up * state.RocketSpeed * elapsed;
 
                 if (state.RocketVfxInstance != null)
                     state.RocketVfxInstance.transform.SetPositionAndRotation(
@@ -168,12 +169,12 @@ namespace IssaPlugin.Items
 
             var state = new TetherSessionState
             {
-                WielderNetId   = wielderNetId,
+                WielderNetId = wielderNetId,
                 RocketStartPos = rocketStartPos,
-                RocketSpeed    = rocketSpeed,
-                StartTime      = Time.time,
-                Duration       = duration,
-                SpringParams   = spring,
+                RocketSpeed = rocketSpeed,
+                StartTime = Time.time,
+                Duration = duration,
+                SpringParams = spring,
             };
 
             // ── Rocket VFX ────────────────────────────────────────────────────
@@ -187,7 +188,7 @@ namespace IssaPlugin.Items
                 foreach (var rb in state.RocketVfxInstance.GetComponentsInChildren<Rigidbody>())
                 {
                     rb.isKinematic = true;
-                    rb.useGravity  = false;
+                    rb.useGravity = false;
                 }
                 Object.DontDestroyOnLoad(state.RocketVfxInstance);
             }
@@ -238,13 +239,14 @@ namespace IssaPlugin.Items
                 if (state != null && localNetId == victimNetId)
                 {
                     var wielderTransform = GetTransformByNetId(state.WielderNetId);
-                    var wielderInfo      = wielderTransform?.GetComponentInParent<PlayerInfo>();
+                    var wielderInfo = wielderTransform?.GetComponentInParent<PlayerInfo>();
                     if (wielderInfo != null)
                     {
                         var useId = new ItemUseId(
                             wielderInfo.PlayerId.Guid,
                             RocketTetherItem.NextUseIndex(),
-                            ItemType.RocketLauncher
+                            ItemType.RocketLauncher,
+                            false
                         );
                         bool _;
                         localInfo.Movement.TryKnockOut(
@@ -259,10 +261,11 @@ namespace IssaPlugin.Items
                                 wielderInfo.transform.position
                             ),
                             Vector3.zero,
-                            true,
+                            ElectromagnetShieldHitBlockType.FullyBlocked,
                             useId,
                             false,
                             true,
+                            out _,
                             out _
                         );
                     }
@@ -372,15 +375,15 @@ namespace IssaPlugin.Items
                         state.RocketStartPos + Vector3.up * state.RocketSpeed * elapsed;
 
                     Vector3 toRocket = rocketPos - rb.position;
-                    float   dist     = toRocket.magnitude;
+                    float dist = toRocket.magnitude;
 
                     if (dist > state.SpringParams.NaturalLength && dist > 0.05f)
                     {
-                        Vector3 dir         = toRocket / dist;
-                        float   stretch     = dist - state.SpringParams.NaturalLength;
-                        float   targetSpeed = stretch * state.SpringParams.SpringForce;
-                        float   currentComp = Vector3.Dot(rb.linearVelocity, dir);
-                        float   deficit     = Mathf.Min(
+                        Vector3 dir = toRocket / dist;
+                        float stretch = dist - state.SpringParams.NaturalLength;
+                        float targetSpeed = stretch * state.SpringParams.SpringForce;
+                        float currentComp = Vector3.Dot(rb.linearVelocity, dir);
+                        float deficit = Mathf.Min(
                             targetSpeed - currentComp,
                             state.SpringParams.MaxPullSpeed
                         );
@@ -404,13 +407,13 @@ namespace IssaPlugin.Items
         private static LineRenderer CreateTetherLine()
         {
             var lineGo = new GameObject("RocketTetherLine");
-            var lr     = lineGo.AddComponent<LineRenderer>();
+            var lr = lineGo.AddComponent<LineRenderer>();
             lr.positionCount = 2;
-            lr.startWidth    = 0.12f;
-            lr.endWidth      = 0.06f;
-            lr.material      = new Material(Shader.Find("Sprites/Default"));
-            lr.startColor    = new Color(1f, 0.55f, 0.1f, 0.9f); // orange (target end)
-            lr.endColor      = new Color(1f, 0.2f,  0.1f, 0.9f); // red (rocket end)
+            lr.startWidth = 0.12f;
+            lr.endWidth = 0.06f;
+            lr.material = new Material(Shader.Find("Sprites/Default"));
+            lr.startColor = new Color(1f, 0.55f, 0.1f, 0.9f); // orange (target end)
+            lr.endColor = new Color(1f, 0.2f, 0.1f, 0.9f); // red (rocket end)
             lr.useWorldSpace = true;
             Object.DontDestroyOnLoad(lineGo);
             return lr;
@@ -459,7 +462,8 @@ namespace IssaPlugin.Items
             {
                 foreach (var p in remotePlayers)
                 {
-                    if (p == null) continue;
+                    if (p == null)
+                        continue;
                     var pNetId = p.GetComponent<NetworkIdentity>()?.netId ?? 0u;
                     if (pNetId == netId)
                         return p.transform;

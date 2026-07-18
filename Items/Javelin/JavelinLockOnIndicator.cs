@@ -8,7 +8,7 @@ namespace IssaPlugin.Items
     /// moves/shows/hides the ground-target indicator accordingly.
     ///
     /// Lifecycle:
-    ///   Added by UpdateEquipmentSwitchersPatch when the local player equips Javelin.
+    ///   Added by LocalPlayerUpdateEquipmentSwitchers when the local player equips Javelin.
     ///   Self-destructs (and destroys the indicator object) once Javelin is unequipped.
     ///
     /// Indicator visibility rules:

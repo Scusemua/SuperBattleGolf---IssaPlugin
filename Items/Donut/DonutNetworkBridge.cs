@@ -296,7 +296,8 @@ namespace IssaPlugin.Items
             var itemUseId = new ItemUseId(
                 inventory.PlayerInfo.PlayerId.Guid,
                 int.MaxValue,
-                ItemType.RocketLauncher
+                ItemType.RocketLauncher,
+                false
             );
 
             rocket.ServerInitialize(inventory.PlayerInfo, null, itemUseId);
@@ -357,7 +358,8 @@ namespace IssaPlugin.Items
                     var itemUseId = new ItemUseId(
                         inventory.PlayerInfo.PlayerId.Guid,
                         ++_laserUseIndex,
-                        ItemType.OrbitalLaser
+                        ItemType.OrbitalLaser,
+                        false
                     );
                     OrbitalLaserManager.ServerActivateLaser(
                         null,

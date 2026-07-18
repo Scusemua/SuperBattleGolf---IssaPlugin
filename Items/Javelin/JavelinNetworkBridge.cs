@@ -160,7 +160,8 @@ namespace IssaPlugin.Items
             var itemUseId = new ItemUseId(
                 playerInfo.PlayerId.Guid,
                 useIndex,
-                ItemType.RocketLauncher
+                ItemType.RocketLauncher,
+                false
             );
 
             var rocket = Object.Instantiate(

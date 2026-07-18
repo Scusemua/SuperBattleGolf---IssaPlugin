@@ -131,8 +131,8 @@ namespace IssaPlugin.Patches
     //  is null, clears the indicator. Our GetTarget patch returns null for
     //  aircraft targets, so no reticle would appear. This prefix intercepts
     //  the method: when an aircraft with a LockOnTarget component is present
-    //  we feed it directly to SetLockOnTarget and skip the base method so the
-    //  standard lock-on reticle tracks the aircraft just like it would a player.
+    //  we feed it directly to LocalPlayerSetLockOnTarget and skip the base method
+    //  so the standard lock-on reticle tracks the aircraft just like it would a player.
     // ====================================================================
 
     [HarmonyPatch]
@@ -143,9 +143,9 @@ namespace IssaPlugin.Patches
                 .GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
                 .FirstOrDefault(m => m.Name.Contains("UpdateOrbitalLaserLockOnTarget"));
 
-        private static readonly MethodInfo _setLockOnTarget = AccessTools.Method(
+        private static readonly MethodInfo _localPlayerSetLockOnTarget = AccessTools.Method(
             typeof(PlayerInventory),
-            "SetLockOnTarget"
+            "LocalPlayerSetLockOnTarget"
         );
 
         static bool Prefix(PlayerInventory __instance)
@@ -199,7 +199,7 @@ namespace IssaPlugin.Patches
                 return true; // no aircraft — let base method run normally
 
             // Point the lock-on reticle at the aircraft and skip the base method.
-            _setLockOnTarget.Invoke(__instance, new object[] { bestLockOn });
+            _localPlayerSetLockOnTarget.Invoke(__instance, new object[] { bestLockOn });
             return false;
         }
     }

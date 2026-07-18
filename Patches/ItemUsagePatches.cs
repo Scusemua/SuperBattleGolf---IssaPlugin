@@ -39,7 +39,7 @@ namespace IssaPlugin.Patches
             var movement = __instance.PlayerInfo?.Movement;
             if (
                 (movement != null && movement.IsKnockedOutOrRecovering)
-                || __instance.PlayerInfo?.AsHittable?.IsFrozen == true
+                || __instance.PlayerInfo?.AsHittable?.FrozenState == FrozenState.Frozen
             )
             {
                 __result = false;
@@ -64,12 +64,12 @@ namespace IssaPlugin.Patches
     }
 
     [HarmonyPatch]
-    static class UpdateEquipmentSwitchersPatch
+    static class LocalPlayerUpdateEquipmentSwitchers
     {
         private static readonly Dictionary<PlayerInventory, CustomEquipState> _states = new();
 
         static MethodBase TargetMethod() =>
-            AccessTools.Method(typeof(PlayerInventory), "UpdateEquipmentSwitchers");
+            AccessTools.Method(typeof(PlayerInventory), "LocalPlayerUpdateEquipmentSwitchers");
 
         static void Postfix(PlayerInventory __instance)
         {
@@ -200,13 +200,13 @@ namespace IssaPlugin.Patches
 
     /// Handles custom model spawning for ALL players (local and remote).
     ///
-    /// UpdateEquipmentSwitchers — and therefore UpdateEquipmentSwitchersPatch — is only
+    /// UpdateEquipmentSwitchers — and therefore LocalPlayerUpdateEquipmentSwitchers — is only
     /// ever called from local-player methods (SelectItem, DeselectItem, OnStartLocalPlayer,
     /// etc.).  Remote players' equipment is driven exclusively by the NetworkequipmentType
     /// SyncVar hook, so this is the only place that reliably fires for remote clients.
     ///
     /// For the local player this fires synchronously inside the SetEquipment call made by
-    /// UpdateEquipmentSwitchersPatch, so EnsureCustomModel runs first here; the subsequent
+    /// LocalPlayerUpdateEquipmentSwitchers, so EnsureCustomModel runs first here; the subsequent
     /// EnsureCustomModel call in the Postfix is then a no-op (model already in _states).
     [HarmonyPatch]
     static class OnEquipmentTypeChangedPatch
@@ -229,11 +229,11 @@ namespace IssaPlugin.Patches
             if (!ItemRegistry.IsCustomItem(equipped))
             {
                 // Switched to a standard item — clear any stale custom model.
-                UpdateEquipmentSwitchersPatch.ClearCustomModel(inventory);
+                LocalPlayerUpdateEquipmentSwitchers.ClearCustomModel(inventory);
                 return;
             }
 
-            UpdateEquipmentSwitchersPatch.EnsureCustomModel(__instance, inventory, equipped);
+            LocalPlayerUpdateEquipmentSwitchers.EnsureCustomModel(__instance, inventory, equipped);
         }
     }
 
@@ -389,11 +389,11 @@ namespace IssaPlugin.Patches
         }
     }
 
-    /// Postfix on UpdateIsEquipmentForceHidden — the authoritative method the game
+    /// Postfix on LocalPlayerUpdateIsEquipmentForceHidden — the authoritative method the game
     /// calls (via TrySelectItemSlot) when the player equips an item.
     ///
     /// The base game calls AnimatorIo.SetEquippedItem(GetEffectivelyEquippedItem(false))
-    /// inside UpdateIsEquipmentForceHidden. For custom items GetEffectivelyEquippedItem(false)
+    /// inside LocalPlayerUpdateIsEquipmentForceHidden. For custom items GetEffectivelyEquippedItem(false)
     /// returns None, so PlayerAnimatorSetEquippedItemPatch.Case2 intercepts and fires
     /// TriggerReevaluateUpperBody once. That single trigger is sufficient when switching
     /// from the golf club (no upper body layer) to any custom item, but NOT when
@@ -404,14 +404,17 @@ namespace IssaPlugin.Patches
     /// selection (not every frame like UpdateEquipmentSwitchers), it does not interfere
     /// with golf swing animations.
     [HarmonyPatch]
-    static class UpdateIsEquipmentForceHiddenPatch
+    static class LocalPlayerUpdateIsEquipmentForceHiddenPatch
     {
         static MethodBase TargetMethod() =>
-            AccessTools.Method(typeof(PlayerInventory), "UpdateIsEquipmentForceHidden");
+            AccessTools.Method(typeof(PlayerInventory), "LocalPlayerUpdateIsEquipmentForceHidden");
+
+        private static readonly FieldInfo _localPlayerIsEquipmentForceHiddenField =
+            AccessTools.Field(typeof(PlayerInventory), "localPlayerIsEquipmentForceHidden");
 
         static void Postfix(PlayerInventory __instance)
         {
-            if (__instance.IsEquipmentForceHidden)
+            if ((bool)_localPlayerIsEquipmentForceHiddenField.GetValue(__instance))
             {
                 return;
             }
@@ -428,7 +431,8 @@ namespace IssaPlugin.Patches
             // SetEquippedItem only sets equippedItemHash; without the right controller, the hash
             // change has no visible effect.
             __instance.PlayerInfo.AnimatorIo.OnNetworkedEquippedItemChanged(
-                def.AnimatorChangedItemType
+                def.AnimatorChangedItemType,
+                equipped
             );
             __instance.PlayerInfo.AnimatorIo.SetEquippedItem(def.AnimatorItemType);
         }
@@ -574,17 +578,17 @@ namespace IssaPlugin.Patches
     /// equippedItemHash parameter (which was reset by the controller change) and
     /// re-enable the upper body layer. This covers both the local player and remote
     /// clients (for whom SetEquippedItem is never called by the local-player code path).
-    [HarmonyPatch(typeof(PlayerAnimatorIo), "OnNetworkedEquippedItemChanged")]
+    [HarmonyPatch(typeof(PlayerInfo), "OnNetworkedEquippedItemChanged")]
     static class PlayerAnimatorOnEquippedChangedPatch
     {
-        static void Prefix(PlayerAnimatorIo __instance, ref ItemType equippedItem)
+        static void Prefix(PlayerInfo __instance, ref ItemType previousItem, ref ItemType currentItem)
         {
-            var originalItem = equippedItem;
+            var originalItem = previousItem;
 
-            if (ItemRegistry.IsCustomItem(equippedItem))
+            if (ItemRegistry.IsCustomItem(previousItem))
             {
-                equippedItem = ItemRegistry
-                    .CustomItemDefinitionMap[(int)equippedItem]
+                previousItem = ItemRegistry
+                    .CustomItemDefinitionMap[(int)previousItem]
                     .AnimatorChangedItemType;
                 return;
             }
@@ -592,7 +596,7 @@ namespace IssaPlugin.Patches
             // The game passes None when GetEffectivelyEquippedItem(false) suppresses a
             // custom item. Look up the actual equipped item and substitute so the correct
             // animator controller is set instead of resetting to the default controller.
-            if (equippedItem != ItemType.None)
+            if (previousItem != ItemType.None)
             {
                 return;
             }
@@ -607,7 +611,7 @@ namespace IssaPlugin.Patches
             var actualDef = ItemRegistry.GetDefinition(actual);
             if (actualDef != null)
             {
-                equippedItem = actualDef.AnimatorChangedItemType;
+                currentItem = actualDef.AnimatorChangedItemType;
             }
         }
 
@@ -639,14 +643,18 @@ namespace IssaPlugin.Patches
                 // Bat shares EquipmentType.GolfClub with regular golf clubs, so
                 // OnEquipmentTypeChanged won't fire on remote clients when switching from a
                 // golf club to the bat. Use the ItemType-level hook — always fires.
-                UpdateEquipmentSwitchersPatch.EnsureCustomModel(rightSwitcher, inventory, equipped);
+                LocalPlayerUpdateEquipmentSwitchers.EnsureCustomModel(
+                    rightSwitcher,
+                    inventory,
+                    equipped
+                );
             }
-            else if (def == null && UpdateEquipmentSwitchersPatch.HasCustomModel(inventory))
+            else if (def == null && LocalPlayerUpdateEquipmentSwitchers.HasCustomModel(inventory))
             {
                 // Switching from a GolfClub custom item back to a standard golf club:
                 // same EquipmentType, so OnEquipmentTypeChangedPatch won't fire. Clear model.
-                UpdateEquipmentSwitchersPatch.ClearCustomModel(inventory);
-                UpdateEquipmentSwitchersPatch.ShowDefaultEquipment(rightSwitcher);
+                LocalPlayerUpdateEquipmentSwitchers.ClearCustomModel(inventory);
+                LocalPlayerUpdateEquipmentSwitchers.ShowDefaultEquipment(rightSwitcher);
             }
         }
     }

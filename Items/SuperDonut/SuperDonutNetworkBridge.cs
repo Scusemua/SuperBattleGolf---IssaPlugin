@@ -70,7 +70,8 @@ namespace IssaPlugin.Items
                 var itemUseId = new ItemUseId(
                     owner.PlayerInfo.PlayerId.Guid,
                     ++useIndex,
-                    ItemType.OrbitalLaser
+                    ItemType.OrbitalLaser,
+                    false
                 );
 
                 OrbitalLaserManager.ServerActivateLaser(hittable, Vector3.zero, owner, itemUseId);

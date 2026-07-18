@@ -211,10 +211,11 @@ namespace IssaPlugin.Items
                 localOrigin: Vector3.zero,
                 distance: 0f,
                 incomingVelocityChange: msg.KnockImpulse,
-                canBeBlockedByElectromagnetShield: false,
+                electromagnetShieldHitBlockType: ElectromagnetShieldHitBlockType.FullyBlocked,
                 itemUseId: default,
                 fromSpecialState: false,
                 canFallbackToUnground: true,
+                blockedByTeamProtection: out _,
                 isNewKnockout: out _
             );
         }

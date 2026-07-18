@@ -297,7 +297,8 @@ namespace IssaPlugin.Items
                     var useId = new ItemUseId(
                         (ulong)ThrowerInfo.PlayerId.Guid,
                         StickyGrenadeItem.NextUseIndex(),
-                        ItemType.RocketLauncher
+                        ItemType.RocketLauncher,
+                        false
                     );
                     tempRocket.ServerInitialize(ThrowerInfo, null, useId);
                     NetworkServer.Spawn(tempRocket.gameObject);

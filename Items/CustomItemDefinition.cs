@@ -109,7 +109,7 @@ namespace IssaPlugin.Items
         //       => inventory.StartCoroutine(StealthBomberItem.BomberRunRoutine(inventory));
         public abstract void OnUse(PlayerInventory inventory);
 
-        // Per-frame equip hook — called from UpdateEquipmentSwitchersPatch for the local player only.
+        // Per-frame equip hook — called from LocalPlayerUpdateEquipmentSwitchers for the local player only.
         // Must be idempotent (called every frame). Guard AddComponent with a null check:
         //   if (inventory.GetComponent<T>() == null) inventory.gameObject.AddComponent<T>();
         // Used for: JavelinLockOnIndicator, StickyGrenadeTrajectoryPreview.

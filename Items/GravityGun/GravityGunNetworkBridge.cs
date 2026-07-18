@@ -470,7 +470,8 @@ namespace IssaPlugin.Items
                     var useId = new ItemUseId(
                         wielderInfo.PlayerId.Guid,
                         GravityGunItem.NextUseIndex(),
-                        ItemType.RocketLauncher
+                        ItemType.RocketLauncher,
+                        false
                     );
                     bool _;
                     movement.TryKnockOut(
@@ -483,10 +484,11 @@ namespace IssaPlugin.Items
                             wielderInfo.transform.position
                         ),
                         Vector3.zero, // no extra velocity on connect
-                        true,
+                        ElectromagnetShieldHitBlockType.FullyBlocked,
                         useId,
                         false,
                         true,
+                        out _,
                         out _
                     );
                 }
