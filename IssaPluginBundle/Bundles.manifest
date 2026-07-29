@@ -1,9 +1,12 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 1102381340
+CRC: 678880173
 HashAppended: 0
 AssetBundleManifest:
   AssetBundleInfos:
     Info_0:
       Name: issamod
+      Dependencies: {}
+    Info_1:
+      Name: unifiedraytracing
       Dependencies: {}

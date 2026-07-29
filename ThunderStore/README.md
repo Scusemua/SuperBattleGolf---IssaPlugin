@@ -4,6 +4,8 @@ Adds **31 new items** to Super Battle Golf -- from an orbiting gunship you pilot
 
 For more information as well as the mod's source code, please see [the mod's GitHub repository](https://github.com/Scusemua/SuperBattleGolf---IssaPlugin/).
 
+**Note:** this has theoretically been updated to work with the major update released on July 16, 2027 as well as hotfix #6 (July 24, 2026); however, it has not yet been tested thoroughly, and there are definitely some visual quirks that have not been fixed yet.
+
 ## Bug Reports
 
 Found a bug? Please file a report on the [GitHub Issues page](https://github.com/Scusemua/SuperBattleGolf---IssaPlugin/issues) — it's the best way to make sure it gets tracked and fixed.
