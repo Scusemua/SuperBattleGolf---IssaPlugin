@@ -320,7 +320,9 @@ namespace IssaPlugin.Patches
                 return true;
 
             // Remove from inventory — mirrors the base game's first step.
-            RemoveItemAtMethod.Invoke(__instance, new object[] { index, false });
+            // Base game's RemoveItemAt now takes a 3rd param, dueToFinishedItemUse.
+            // Dropping isn't "due to finished item use", so pass false here too.
+            RemoveItemAtMethod.Invoke(__instance, new object[] { index, false, false });
 
             if (slot.remainingUses <= 0 || AssetLoader.DroppedCustomItemPrefab == null)
                 return false;
