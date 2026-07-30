@@ -4,7 +4,7 @@
 
 Adds **31 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
 
-To download and/or install the mod, please check out the GitHub releases or the mod's [ThunderStore page](https://thunderstore.io/c/super-battle-golf/p/TeamScusemua/IssaMod/).
+To download and/or install the mod, please check out [the GitHub releases](https://github.com/Scusemua/SuperBattleGolf---IssaPlugin/releases) or the mod's [ThunderStore page](https://thunderstore.io/c/super-battle-golf/p/TeamScusemua/IssaMod/).
 
 **Note:** this has theoretically been updated to work with the major update released on July 16, 2027 as well as hotfix #6 (July 24, 2026); however, it has not yet been tested thoroughly, and there are definitely some visual quirks that have not been fixed yet.
 
