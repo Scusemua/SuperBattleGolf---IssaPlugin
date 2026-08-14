@@ -52,6 +52,7 @@ namespace IssaPlugin
 
             gameObject.AddComponent<SpawnWeightsSyncer>();
             gameObject.AddComponent<ItemConfigSyncer>();
+            gameObject.AddComponent<NetworkTrafficDiagnostics>();
             gameObject.AddComponent<VoteManager>();
             gameObject.AddComponent<PlayerBoxOverlay>();
             gameObject.AddComponent<VoteOverlay>();
@@ -101,13 +102,21 @@ namespace IssaPlugin
         /// On a client this also fires while applying the host's own sync message,
         /// but ItemConfigSyncer.Broadcast() is a no-op off the server, so clearing
         /// the sentinel there is harmless and cannot feed back to the host.
-        private void OnConfigSettingChanged(object sender, SettingChangedEventArgs e) =>
+        private void OnConfigSettingChanged(object sender, SettingChangedEventArgs e)
+        {
             ItemConfigSyncer.ResetSyncState();
+
+            // A GiveKey may have changed, which would make the cached hotkey list stale.
+            ItemRegistry.InvalidateHotkeyItems();
+        }
 
         /// The config file was re-read from disk (BepInEx file watcher). Every entry
         /// may have changed at once, so invalidate the sync guard.
-        private void OnConfigReloaded(object sender, EventArgs e) =>
+        private void OnConfigReloaded(object sender, EventArgs e)
+        {
             ItemConfigSyncer.ResetSyncState();
+            ItemRegistry.InvalidateHotkeyItems();
+        }
 
         private void Update()
         {
@@ -118,10 +127,27 @@ namespace IssaPlugin
             if (keyboard == null)
                 return;
 
-            // Check if player used hotkey to give themself a custom item.
-            foreach (var def in ItemRegistry.AllItems)
-                if (def.GiveKey != Key.None && keyboard[def.GiveKey].wasPressedThisFrame)
-                    ItemHelper.GiveItemToLocalPlayer(def.ItemType, def.MaxUses, def.DisplayName);
+            // Hotkey polling is gated on anyKey so the common case — no key pressed
+            // this frame — costs a single check instead of one InputSystem device
+            // lookup per registered item. Only when something is actually pressed do
+            // we scan the (cached, pre-filtered) list of items that have a hotkey.
+            if (keyboard.anyKey.wasPressedThisFrame)
+            {
+                var hotkeyItems = ItemRegistry.HotkeyItems;
+                for (int i = 0; i < hotkeyItems.Count; i++)
+                {
+                    var def = hotkeyItems[i];
+                    if (keyboard[def.GiveKey].wasPressedThisFrame)
+                        ItemHelper.GiveItemToLocalPlayer(
+                            def.ItemType,
+                            def.MaxUses,
+                            def.DisplayName
+                        );
+                }
+
+                if (keyboard[Key.F10].wasPressedThisFrame)
+                    DebugDummies.ToggleDebugDummies();
+            }
 
             // Keep the Javelin lock-on target fresh every frame while equipped.
             var localInventory = GameManager.LocalPlayerInventory;
@@ -135,9 +161,6 @@ namespace IssaPlugin
                     javelinBridge?.ClientUpdateLockOn();
                 }
             }
-
-            if (keyboard[Key.F10].wasPressedThisFrame)
-                DebugDummies.ToggleDebugDummies();
         }
 
         private void OnMatchStateChanged(MatchState previousState, MatchState currentState)

@@ -288,6 +288,12 @@ namespace IssaPlugin.Items
 
         private void LateUpdate()
         {
+            // This body only ever concerns the local player, but the bridge exists on
+            // every player object — so without this guard the work runs once per
+            // player per frame instead of once per frame.
+            if (!isLocalPlayer)
+                return;
+
             var localInfo = GameManager.LocalPlayerInfo;
             bool flamethrowerEquipped =
                 localInfo?.Inventory != null

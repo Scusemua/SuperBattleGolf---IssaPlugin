@@ -174,9 +174,14 @@ namespace IssaPlugin.Items
 
         private void Update()
         {
+            // Neither block below applies to a remote player's bridge on a client.
+            // Without this the host runs the whole method once per player per frame.
+            if (!isServer && !isLocalPlayer)
+                return;
+
             if (isServer)
             {
-                var inv = GetComponent<PlayerInventory>();
+                var inv = CachedInventory;
                 bool equipped =
                     inv != null
                     && (
@@ -207,7 +212,7 @@ namespace IssaPlugin.Items
             if (!isLocalPlayer)
                 return;
 
-            var inventory = GetComponent<PlayerInventory>();
+            var inventory = CachedInventory;
 
             // Show the backpack prefab whenever the jetpack is the active item, or — when
             // UseJumpToActivate is on — whenever it is anywhere in the inventory.

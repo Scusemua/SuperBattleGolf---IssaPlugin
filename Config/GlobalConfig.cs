@@ -18,6 +18,11 @@ namespace IssaPlugin
         public ConfigEntry<bool> FirstPlaceStarEnabled { get; private set; }
         public ConfigEntry<float> FirstPlaceStarHeight { get; private set; }
 
+        // ── Diagnostics section ───────────────────────────────────────────────
+        public ConfigEntry<bool> NetworkDiagnosticsEnabled { get; private set; }
+        public ConfigEntry<float> NetworkDiagnosticsInterval { get; private set; }
+        public ConfigEntry<int> NetworkDiagnosticsTopMessages { get; private set; }
+
         // ── UI section ────────────────────────────────────────────────────────
         public ConfigEntry<Key> SpawnConfigUIKey { get; private set; }
 
@@ -131,6 +136,31 @@ namespace IssaPlugin
                 "FirstPlaceStarHeight",
                 1.5f,
                 "Height in Unity units above the player's origin at which the gold star appears."
+            );
+
+            // ── Diagnostics ────────────────────────────────────────────────────
+            NetworkDiagnosticsEnabled = cfg.Bind(
+                "Diagnostics",
+                "NetworkDiagnosticsEnabled",
+                false,
+                "Log a periodic summary of network traffic and latency to the BepInEx log. "
+                    + "Enable this if you are reporting lag so the log shows which messages "
+                    + "dominate bandwidth. Set to false for normal play."
+            );
+
+            NetworkDiagnosticsInterval = cfg.Bind(
+                "Diagnostics",
+                "NetworkDiagnosticsInterval",
+                30f,
+                "Seconds between network diagnostics summaries. Only used when "
+                    + "NetworkDiagnosticsEnabled is true."
+            );
+
+            NetworkDiagnosticsTopMessages = cfg.Bind(
+                "Diagnostics",
+                "NetworkDiagnosticsTopMessages",
+                8,
+                "How many of the heaviest message types to list in each diagnostics summary."
             );
 
             // ── UI ─────────────────────────────────────────────────────────────

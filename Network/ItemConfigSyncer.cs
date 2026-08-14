@@ -94,8 +94,13 @@ namespace IssaPlugin
             _lastSentKeys = keys;
             _lastSentValues = values;
 
-            IssaPluginPlugin.Log.LogDebug(
-                $"[ItemConfigSyncer] Broadcast {keys.Length} config entries to all clients."
+            // Info rather than Debug: BepInEx's default log filter drops Debug, and
+            // this line is the primary field evidence that the change guard is
+            // working. In steady state it should appear once and then stop; a log
+            // full of these means something is invalidating the guard every tick.
+            IssaPluginPlugin.Log.LogInfo(
+                $"[ItemConfigSyncer] Broadcast {keys.Length} config entries to all clients "
+                    + $"({EstimatePayloadBytes(keys, values) / 1024f:F1} KB)."
             );
         }
 
@@ -169,6 +174,20 @@ namespace IssaPlugin
         }
 
         /// <summary>
+        /// Approximate serialized size of a snapshot: each string costs its UTF-8
+        /// bytes plus Mirror's 2-byte length prefix. Used only for log output, so an
+        /// estimate that assumes single-byte characters is good enough — config keys
+        /// and serialized values are ASCII in practice.
+        /// </summary>
+        private static int EstimatePayloadBytes(string[] keys, string[] values)
+        {
+            int total = 0;
+            for (int i = 0; i < keys.Length; i++)
+                total += keys[i].Length + 2 + values[i].Length + 2;
+            return total;
+        }
+
+        /// <summary>
         /// True when the given snapshot is identical to the last one broadcast.
         /// Returns false when no previous snapshot exists, so a cleared sentinel
         /// always forces a send.
@@ -233,7 +252,11 @@ namespace IssaPlugin
                 cfg.SaveOnConfigSet = previousSaveOnConfigSet;
             }
 
-            IssaPluginPlugin.Log.LogDebug(
+            // Info rather than Debug so it appears in a player's log. On a client
+            // this should be rare — once on join, then only when the host actually
+            // changes something. Repeated lines every few seconds mean the host's
+            // change guard is not holding.
+            IssaPluginPlugin.Log.LogInfo(
                 $"[ItemConfigSyncer] Applied {applied}/{count} config entries from host."
             );
         }

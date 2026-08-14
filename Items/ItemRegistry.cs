@@ -7,6 +7,7 @@ using HarmonyLib;
 using IssaPlugin.Items;
 using Mirror;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace IssaPlugin.Items
 {
@@ -108,6 +109,41 @@ namespace IssaPlugin.Items
                 return _customItemDefinitionMap;
             }
         }
+
+        private static List<CustomItemDefinition> _hotkeyItems;
+
+        /// <summary>
+        /// The subset of <see cref="AllItems"/> that currently has a give-hotkey bound.
+        ///
+        /// Plugin.Update polls these every frame, so filtering out the (usually many)
+        /// items bound to Key.None once is worth more than it looks: each skipped item
+        /// is an InputSystem device lookup avoided on every frame.
+        ///
+        /// GiveKey reads from config on every access, so a user rebinding a key — or
+        /// binding one to an item that previously had none — must invalidate this.
+        /// InvalidateHotkeyItems() is called from the Config.SettingChanged hook in
+        /// Plugin.Awake.
+        /// </summary>
+        public static IReadOnlyList<CustomItemDefinition> HotkeyItems
+        {
+            get
+            {
+                if (_hotkeyItems == null)
+                {
+                    _hotkeyItems = new List<CustomItemDefinition>(AllItems.Count);
+                    foreach (var def in AllItems)
+                        if (def.GiveKey != Key.None)
+                            _hotkeyItems.Add(def);
+                }
+                return _hotkeyItems;
+            }
+        }
+
+        /// <summary>
+        /// Drops the cached <see cref="HotkeyItems"/> list so it is rebuilt on next
+        /// access. Call whenever a GiveKey config value may have changed.
+        /// </summary>
+        public static void InvalidateHotkeyItems() => _hotkeyItems = null;
 
         public static CustomItemDefinition GetDefinition(ItemType type) =>
             CustomItemDefinitionMap.TryGetValue((int)type, out var d) ? d : null;
