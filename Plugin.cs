@@ -127,27 +127,26 @@ namespace IssaPlugin
             if (keyboard == null)
                 return;
 
-            // Hotkey polling is gated on anyKey so the common case — no key pressed
-            // this frame — costs a single check instead of one InputSystem device
-            // lookup per registered item. Only when something is actually pressed do
-            // we scan the (cached, pre-filtered) list of items that have a hotkey.
-            if (keyboard.anyKey.wasPressedThisFrame)
+            // Scan every frame. An earlier version gated this on
+            // Keyboard.anyKey.wasPressedThisFrame, which was wrong: anyKey is a
+            // synthetic control that only reports a press on a 0->1 transition of the
+            // keyboard as a whole, so it stays false when a key goes down while any
+            // other key is already held. That silently dropped hotkeys pressed while
+            // moving. Do not reintroduce a whole-keyboard gate here.
+            //
+            // The remaining optimisation is safe and unconditional: iterate only those
+            // items that currently have a key bound, so items left at Key.None cost
+            // nothing. HotkeyItems is cached and invalidated on config change.
+            var hotkeyItems = ItemRegistry.HotkeyItems;
+            for (int i = 0; i < hotkeyItems.Count; i++)
             {
-                var hotkeyItems = ItemRegistry.HotkeyItems;
-                for (int i = 0; i < hotkeyItems.Count; i++)
-                {
-                    var def = hotkeyItems[i];
-                    if (keyboard[def.GiveKey].wasPressedThisFrame)
-                        ItemHelper.GiveItemToLocalPlayer(
-                            def.ItemType,
-                            def.MaxUses,
-                            def.DisplayName
-                        );
-                }
-
-                if (keyboard[Key.F10].wasPressedThisFrame)
-                    DebugDummies.ToggleDebugDummies();
+                var def = hotkeyItems[i];
+                if (keyboard[def.GiveKey].wasPressedThisFrame)
+                    ItemHelper.GiveItemToLocalPlayer(def.ItemType, def.MaxUses, def.DisplayName);
             }
+
+            if (keyboard[Key.F10].wasPressedThisFrame)
+                DebugDummies.ToggleDebugDummies();
 
             // Keep the Javelin lock-on target fresh every frame while equipped.
             var localInventory = GameManager.LocalPlayerInventory;
