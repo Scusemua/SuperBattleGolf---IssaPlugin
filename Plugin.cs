@@ -1,4 +1,6 @@
+using System;
 using BepInEx;
+using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
 using IssaPlugin.Items;
@@ -41,6 +43,13 @@ namespace IssaPlugin
 
             CourseManager.MatchStateChanged += OnMatchStateChanged;
 
+            // Any config change on the host must invalidate ItemConfigSyncer's
+            // change-guard so the next sync tick pushes it to clients. This covers
+            // changes the mod does not route through the in-game UI — most notably
+            // BepInEx re-reading the config file after it is edited on disk.
+            Config.SettingChanged += OnConfigSettingChanged;
+            Config.ConfigReloaded += OnConfigReloaded;
+
             gameObject.AddComponent<SpawnWeightsSyncer>();
             gameObject.AddComponent<ItemConfigSyncer>();
             gameObject.AddComponent<VoteManager>();
@@ -79,10 +88,26 @@ namespace IssaPlugin
         private void OnDestroy()
         {
             CourseManager.MatchStateChanged -= OnMatchStateChanged;
+            Config.SettingChanged -= OnConfigSettingChanged;
+            Config.ConfigReloaded -= OnConfigReloaded;
             _harmony?.UnpatchSelf();
             AssetLoader.Unload();
             Log.LogInfo("IssaPlugin unloaded.");
         }
+
+        /// A single config entry changed (in-game UI, another plugin, or BepInEx
+        /// applying a value). Invalidate the sync guard so the host re-broadcasts.
+        ///
+        /// On a client this also fires while applying the host's own sync message,
+        /// but ItemConfigSyncer.Broadcast() is a no-op off the server, so clearing
+        /// the sentinel there is harmless and cannot feed back to the host.
+        private void OnConfigSettingChanged(object sender, SettingChangedEventArgs e) =>
+            ItemConfigSyncer.ResetSyncState();
+
+        /// The config file was re-read from disk (BepInEx file watcher). Every entry
+        /// may have changed at once, so invalidate the sync guard.
+        private void OnConfigReloaded(object sender, EventArgs e) =>
+            ItemConfigSyncer.ResetSyncState();
 
         private void Update()
         {
