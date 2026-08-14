@@ -1939,4 +1939,20 @@ namespace IssaPlugin.Patches
             ItemConfigSyncer.BroadcastToConnection(connection);
         }
     }
+
+    /// Clears ItemConfigSyncer's change-guard sentinel on every server start and
+    /// stop so a new session never inherits the previous one's "already sent this"
+    /// state. Without this, hosting a second lobby in the same process could skip
+    /// the first broadcast because the config happened to be unchanged.
+    [HarmonyPatch]
+    static class BNetworkManagerServerLifecycleConfigSyncPatch
+    {
+        static IEnumerable<MethodBase> TargetMethods()
+        {
+            yield return AccessTools.Method(typeof(BNetworkManager), "OnStartServer");
+            yield return AccessTools.Method(typeof(BNetworkManager), "OnStopServer");
+        }
+
+        static void Postfix() => ItemConfigSyncer.ResetSyncState();
+    }
 }

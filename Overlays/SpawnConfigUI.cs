@@ -252,7 +252,8 @@ namespace IssaPlugin.Overlays
             // Immediately push all ConfigEntry values (including the new per-pool weights and
             // CustomItemSpawnRate) to clients so they don't need to wait for the next
             // 5-second ItemConfigSyncer tick before their local config reflects the change.
-            ItemConfigSyncer.Broadcast();
+            // ForceBroadcast bypasses the change guard so the edit always goes out now.
+            ItemConfigSyncer.ForceBroadcast();
         }
 
         // ── Rendering ─────────────────────────────────────────────────────────
