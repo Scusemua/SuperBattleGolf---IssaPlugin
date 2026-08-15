@@ -127,21 +127,19 @@ namespace IssaPlugin
             if (keyboard == null)
                 return;
 
-            // Scan every frame. An earlier version gated this on
-            // Keyboard.anyKey.wasPressedThisFrame, which was wrong: anyKey is a
-            // synthetic control that only reports a press on a 0->1 transition of the
-            // keyboard as a whole, so it stays false when a key goes down while any
-            // other key is already held. That silently dropped hotkeys pressed while
-            // moving. Do not reintroduce a whole-keyboard gate here.
+            // Scan every frame against pre-resolved KeyControl references.
             //
-            // The remaining optimisation is safe and unconditional: iterate only those
-            // items that currently have a key bound, so items left at Key.None cost
-            // nothing. HotkeyItems is cached and invalidated on config change.
-            var hotkeyItems = ItemRegistry.HotkeyItems;
-            for (int i = 0; i < hotkeyItems.Count; i++)
+            // Do NOT gate this on Keyboard.anyKey.wasPressedThisFrame: anyKey only
+            // reports a press on a 0->1 transition of the keyboard as a whole, so it
+            // stays false when a key goes down while another key is already held, which
+            // silently drops hotkeys pressed while moving. That gate was tried and
+            // measured to have no FPS benefit, so there is nothing to trade for it.
+            // Caching the controls removes the per-frame enum lookup without gating.
+            var hotkeyControls = ItemRegistry.GetHotkeyControls(keyboard);
+            for (int i = 0; i < hotkeyControls.Count; i++)
             {
-                var def = hotkeyItems[i];
-                if (keyboard[def.GiveKey].wasPressedThisFrame)
+                var (control, def) = hotkeyControls[i];
+                if (control.wasPressedThisFrame)
                     ItemHelper.GiveItemToLocalPlayer(def.ItemType, def.MaxUses, def.DisplayName);
             }
 

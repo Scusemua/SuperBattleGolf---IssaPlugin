@@ -8,6 +8,7 @@ using IssaPlugin.Items;
 using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
 
 namespace IssaPlugin.Items
 {
@@ -111,6 +112,8 @@ namespace IssaPlugin.Items
         }
 
         private static List<CustomItemDefinition> _hotkeyItems;
+        private static List<(KeyControl control, CustomItemDefinition def)> _hotkeyControls;
+        private static Keyboard _hotkeyControlsKeyboard;
 
         /// <summary>
         /// The subset of <see cref="AllItems"/> that currently has a give-hotkey bound.
@@ -140,10 +143,47 @@ namespace IssaPlugin.Items
         }
 
         /// <summary>
-        /// Drops the cached <see cref="HotkeyItems"/> list so it is rebuilt on next
-        /// access. Call whenever a GiveKey config value may have changed.
+        /// Hotkey items paired with their resolved <see cref="KeyControl"/>.
+        ///
+        /// keyboard[Key.X] resolves the control by enum on every call. Resolving once
+        /// and holding the control reference removes that lookup from the per-frame
+        /// path while still reading live input state, so — unlike a whole-keyboard
+        /// gate — no keypress can ever be missed.
+        ///
+        /// Rebuilt when the bound keys change (via <see cref="InvalidateHotkeyItems"/>)
+        /// or when the active keyboard device changes, e.g. on reconnect.
         /// </summary>
-        public static void InvalidateHotkeyItems() => _hotkeyItems = null;
+        public static List<(KeyControl control, CustomItemDefinition def)> GetHotkeyControls(
+            Keyboard keyboard
+        )
+        {
+            if (_hotkeyControls == null || !ReferenceEquals(_hotkeyControlsKeyboard, keyboard))
+            {
+                _hotkeyControlsKeyboard = keyboard;
+                _hotkeyControls = new List<(KeyControl, CustomItemDefinition)>(HotkeyItems.Count);
+
+                foreach (var def in HotkeyItems)
+                {
+                    var control = keyboard[def.GiveKey];
+                    if (control != null)
+                        _hotkeyControls.Add((control, def));
+                }
+            }
+
+            return _hotkeyControls;
+        }
+
+        /// <summary>
+        /// Drops the cached <see cref="HotkeyItems"/> list and resolved controls so both
+        /// are rebuilt on next access. Call whenever a GiveKey config value may have
+        /// changed.
+        /// </summary>
+        public static void InvalidateHotkeyItems()
+        {
+            _hotkeyItems = null;
+            _hotkeyControls = null;
+            _hotkeyControlsKeyboard = null;
+        }
 
         public static CustomItemDefinition GetDefinition(ItemType type) =>
             CustomItemDefinitionMap.TryGetValue((int)type, out var d) ? d : null;
