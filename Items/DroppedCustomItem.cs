@@ -76,7 +76,11 @@ namespace IssaPlugin.Items
         /// and make the Rigidbody kinematic so it doesn't fight the NetworkTransform.
         public override void OnStartClient()
         {
-            gameObject.layer = GameManager.LayerSettings.ItemsLayer;
+            // Recursive: the model child is spawned from a bundle prefab that carries
+            // its own authored layer (Default), and setting only the root would leave a
+            // collider on an unfiltered layer. On the host this also corrects the model
+            // added server-side in ServerDropCustomItemPatch.
+            SetLayerRecursive(gameObject, GameManager.LayerSettings.ItemsLayer);
 
             if (isServer)
                 return; // model present from server-side spawn; RB stays non-kinematic
@@ -102,7 +106,17 @@ namespace IssaPlugin.Items
             foreach (var col in model.GetComponentsInChildren<Collider>())
                 col.enabled = false;
 
+            // Instantiated after the recursive call above, so set its layer too.
+            SetLayerRecursive(model, GameManager.LayerSettings.ItemsLayer);
+
             model.SetActive(true);
+        }
+
+        private static void SetLayerRecursive(GameObject go, int layer)
+        {
+            go.layer = layer;
+            foreach (Transform child in go.transform)
+                SetLayerRecursive(child.gameObject, layer);
         }
 
         /// Called by PlayerInteractableTargeter on the local client.

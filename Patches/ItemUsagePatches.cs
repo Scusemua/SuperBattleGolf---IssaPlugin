@@ -372,22 +372,133 @@ namespace IssaPlugin.Patches
                 foreach (var col in model.GetComponentsInChildren<Collider>())
                     col.enabled = true;
 
+                // The model keeps the layer it was authored with in the asset bundle
+                // (Default) unless we set it explicitly. Its collider folds into this
+                // object's compound Rigidbody, so leaving it on Default puts a solid
+                // collider on a layer with no collision filtering — every dropped item
+                // then generates contact pairs against everything, which is very
+                // expensive once items pile up and a player walks over them.
+                SetLayerRecursive(model, go.layer);
+
                 model.SetActive(true);
             }
 
             var rb = go.GetComponent<Rigidbody>();
             if (rb != null)
             {
-                rb.linearVelocity = velocity;
-                rb.angularVelocity = angularVelocity;
+                // Clear isKinematic before assigning velocities. Writing velocity to a
+                // kinematic body logs "Setting linear/angular velocity of a kinematic
+                // body is not supported" — two warnings per drop. The values did still
+                // take effect (the object is inactive here, so they apply on SetActive),
+                // so this ordering is about removing the log noise, not fixing the throw.
                 rb.isKinematic = false;
                 rb.useGravity = true;
+                rb.linearVelocity = velocity;
+                rb.angularVelocity = angularVelocity;
             }
 
             go.SetActive(true);
             NetworkServer.Spawn(go);
 
+            LogDroppedItemPhysics(go, slot.itemType);
+
             return false; // skip base game (would log an error and return null)
+        }
+
+        private static void SetLayerRecursive(GameObject go, int layer)
+        {
+            go.layer = layer;
+            foreach (Transform child in go.transform)
+                SetLayerRecursive(child.gameObject, layer);
+        }
+
+        /// TEMPORARY DIAGNOSTIC — remove once the dropped-item FPS issue is resolved.
+        ///
+        /// Dumps the physics setup of a freshly dropped custom item: the layer and
+        /// collider of the root, and of the model child spawned above. The suspicion is
+        /// that the root gets ItemsLayer (assigned in DroppedCustomItem.OnStartClient)
+        /// while the model child keeps whatever layer it was authored with in the asset
+        /// bundle — leaving an enabled, non-trigger collider on a layer that collides
+        /// with everything, which would explain the frame cost when a player walks over
+        /// a pile of dropped items.
+        ///
+        /// Also reports whether the physics layer matrix lets each collider's layer
+        /// collide with the player's layer, which is the question that actually matters.
+        private static bool _loggedLayerReference;
+
+        private static void LogDroppedItemPhysics(GameObject root, ItemType itemType)
+        {
+            int playerLayer = GameManager.LayerSettings.PlayerLayer;
+
+            // Print the layer reference once so the per-item lines below can be read
+            // without cross-referencing the game's LayerSettings.
+            if (!_loggedLayerReference)
+            {
+                _loggedLayerReference = true;
+                var ls = GameManager.LayerSettings;
+                IssaPluginPlugin.Log.LogInfo(
+                    $"[DropDiag] Layers: Items={ls.ItemsLayer} Player={ls.PlayerLayer} "
+                        + $"Foliage={ls.FoliageLayer} Terrain={ls.TerrainLayer} "
+                        + $"Hittables={ls.HittablesLayer} Default=0 | "
+                        + $"Items-vs-Player collide="
+                        + $"{!Physics.GetIgnoreLayerCollision(ls.ItemsLayer, ls.PlayerLayer)} | "
+                        + $"Default-vs-Player collide="
+                        + $"{!Physics.GetIgnoreLayerCollision(0, ls.PlayerLayer)}"
+                );
+            }
+
+            var sb = new System.Text.StringBuilder(256);
+            sb.Append("[DropDiag] ")
+                .Append(itemType)
+                .Append(" (")
+                .Append((int)itemType)
+                .Append(") ");
+            sb.Append("root layer=")
+                .Append(LayerMask.LayerToName(root.layer))
+                .Append('(')
+                .Append(root.layer)
+                .Append(')');
+
+            var rootCols = root.GetComponents<Collider>();
+            sb.Append(" rootColliders=").Append(rootCols.Length);
+            foreach (var c in rootCols)
+                AppendCollider(sb, c, playerLayer);
+
+            // Children only — the root's own colliders are already listed above.
+            foreach (var c in root.GetComponentsInChildren<Collider>(true))
+            {
+                if (c.gameObject == root)
+                    continue;
+                sb.Append('\n')
+                    .Append("    child '")
+                    .Append(c.gameObject.name)
+                    .Append("' layer=")
+                    .Append(LayerMask.LayerToName(c.gameObject.layer))
+                    .Append('(')
+                    .Append(c.gameObject.layer)
+                    .Append(')');
+                AppendCollider(sb, c, playerLayer);
+            }
+
+            IssaPluginPlugin.Log.LogInfo(sb.ToString());
+        }
+
+        private static void AppendCollider(
+            System.Text.StringBuilder sb,
+            Collider c,
+            int playerLayer
+        )
+        {
+            sb.Append(" [")
+                .Append(c.GetType().Name)
+                .Append(c.enabled ? " enabled" : " DISABLED")
+                .Append(c.isTrigger ? " trigger" : " solid")
+                .Append(
+                    Physics.GetIgnoreLayerCollision(c.gameObject.layer, playerLayer)
+                        ? " ignoresPlayer"
+                        : " HITS_PLAYER"
+                )
+                .Append(']');
         }
     }
 
@@ -583,7 +694,11 @@ namespace IssaPlugin.Patches
     [HarmonyPatch(typeof(PlayerAnimatorIo), "OnNetworkedEquippedItemChanged")]
     static class PlayerAnimatorOnEquippedChangedPatch
     {
-        static void Prefix(PlayerAnimatorIo __instance, ref ItemType previousEquippedItem, ref ItemType currentEquippedItem)
+        static void Prefix(
+            PlayerAnimatorIo __instance,
+            ref ItemType previousEquippedItem,
+            ref ItemType currentEquippedItem
+        )
         {
             var originalItem = previousEquippedItem;
 
