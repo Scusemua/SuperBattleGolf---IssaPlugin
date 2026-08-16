@@ -1844,7 +1844,9 @@ namespace IssaPlugin.Patches
             RegisterPrefab(AssetLoader.FreezeModelPrefab);
             RegisterPrefab(AssetLoader.LowGravityModelPrefab);
             RegisterPrefab(AssetLoader.SniperRiflePrefab);
-            RegisterPrefab(AssetLoader.BloodSplatterPrefab);
+            // Raw accessor: Mirror registration must not depend on the VFX toggle, or
+            // enabling VFX mid-session would leave clients unable to spawn this.
+            RegisterPrefab(AssetLoader.BloodSplatterPrefabRaw);
             RegisterPrefab(AssetLoader.StickyGrenadePrefab);
             RegisterPrefab(AssetLoader.BearPrefab);
             RegisterPrefab(AssetLoader.TeddyBearPrefab);

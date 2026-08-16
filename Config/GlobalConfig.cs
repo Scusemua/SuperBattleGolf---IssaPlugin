@@ -24,6 +24,7 @@ namespace IssaPlugin
         public ConfigEntry<int> NetworkDiagnosticsTopMessages { get; private set; }
         public ConfigEntry<bool> BomberOverlayEnabled { get; private set; }
         public ConfigEntry<bool> PlayerBoxOverlayEnabled { get; private set; }
+        public ConfigEntry<bool> CustomVfxEnabled { get; private set; }
 
         // ── UI section ────────────────────────────────────────────────────────
         public ConfigEntry<Key> SpawnConfigUIKey { get; private set; }
@@ -176,6 +177,18 @@ namespace IssaPlugin
                     + "labels drawn during stealth bomber targeting, predator missile "
                     + "steering, and AC130 sessions. Purely cosmetic — use it to measure "
                     + "how much of the FPS drop during those items comes from this overlay."
+            );
+
+            CustomVfxEnabled = cfg.Bind(
+                "Diagnostics",
+                "CustomVfxEnabled",
+                true,
+                "A/B TEST. Set to false to disable all custom particle and trail VFX "
+                    + "(explosions, smoke/fire trails, Red Bull and Spinach trails, black "
+                    + "hole, drone explosions, blood splatter, and similar). Item mechanics "
+                    + "are unaffected — only the visuals are skipped. Use it to test whether "
+                    + "the mod's VFX prefabs, and the shaders they were converted to for "
+                    + "URP, are responsible for frame drops."
             );
 
             NetworkDiagnosticsTopMessages = cfg.Bind(

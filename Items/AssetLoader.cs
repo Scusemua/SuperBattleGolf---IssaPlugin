@@ -173,37 +173,89 @@ namespace IssaPlugin.Items
         public static GameObject MoonHandheldPrefab { get; private set; }
 
         /// Client-only moon VFX prefab that approaches the course. Null until moon.prefab is added.
-        public static GameObject MoonVfxPrefab { get; private set; }
+        private static GameObject _moonVfxPrefab;
+        public static GameObject MoonVfxPrefab => Vfx(_moonVfxPrefab);
 
         /// Networked droppable-item prefab; carries NetworkIdentity, NetworkTransform,
         /// Rigidbody (kinematic), SphereCollider (trigger), Entity, and DroppedCustomItem.
         public static GameObject DroppedCustomItemPrefab { get; private set; }
 
+        // ── Custom VFX kill switch ────────────────────────────────────────────
+        //
+        // A/B test hook. Every VFX prefab below is exposed through a property that
+        // returns null when Global.CustomVfxEnabled is false. Callers already handle
+        // a null prefab by skipping instantiation (they must, because assets can be
+        // missing from the bundle), so flipping this off disables all custom particle
+        // and trail effects at runtime with no other code changes.
+        //
+        // The point is to isolate whether the mod's own VFX — and the shaders they
+        // were converted to during the built-in-to-URP migration — are responsible for
+        // frame drops during items like the stealth bomber, predator missile, and any
+        // speed boost.
+        private static bool VfxOn => ModConfig.Global.CustomVfxEnabled.Value;
+
+        private static GameObject Vfx(GameObject prefab) => VfxOn ? prefab : null;
+
         // ── Local-only VFX prefabs (Mirror components stripped) ───────────────
-        public static GameObject BlackHoleVfxPrefab { get; private set; }
-        public static GameObject PositionSwapOrbPrefab { get; private set; }
-        public static GameObject PositionSwapSmokePrefab { get; private set; }
-        public static GameObject PoisonSplashPrefab { get; private set; }
-        public static GameObject DroneExplosionVfxPrefab { get; private set; }
-        public static GameObject RedBullTrailPrefab { get; private set; }
-        public static GameObject GravityGunTetherVfxPrefab { get; private set; }
-        public static GameObject WarningParticlePrefab { get; private set; }
-        public static GameObject MaydaySmokeTrailPrefab { get; private set; }
-        public static GameObject MaydayFireTrailPrefab { get; private set; }
-        public static GameObject ConfettiBlastRainbow { get; private set; }
-        public static GameObject BloodSplatterPrefab { get; private set; }
+        private static GameObject _blackHoleVfxPrefab;
+        public static GameObject BlackHoleVfxPrefab => Vfx(_blackHoleVfxPrefab);
+
+        private static GameObject _positionSwapOrbPrefab;
+        public static GameObject PositionSwapOrbPrefab => Vfx(_positionSwapOrbPrefab);
+
+        private static GameObject _positionSwapSmokePrefab;
+        public static GameObject PositionSwapSmokePrefab => Vfx(_positionSwapSmokePrefab);
+
+        private static GameObject _poisonSplashPrefab;
+        public static GameObject PoisonSplashPrefab => Vfx(_poisonSplashPrefab);
+
+        private static GameObject _droneExplosionVfxPrefab;
+        public static GameObject DroneExplosionVfxPrefab => Vfx(_droneExplosionVfxPrefab);
+
+        private static GameObject _redBullTrailPrefab;
+        public static GameObject RedBullTrailPrefab => Vfx(_redBullTrailPrefab);
+
+        private static GameObject _gravityGunTetherVfxPrefab;
+        public static GameObject GravityGunTetherVfxPrefab => Vfx(_gravityGunTetherVfxPrefab);
+
+        private static GameObject _warningParticlePrefab;
+        public static GameObject WarningParticlePrefab => Vfx(_warningParticlePrefab);
+
+        private static GameObject _maydaySmokeTrailPrefab;
+        public static GameObject MaydaySmokeTrailPrefab => Vfx(_maydaySmokeTrailPrefab);
+
+        private static GameObject _maydayFireTrailPrefab;
+        public static GameObject MaydayFireTrailPrefab => Vfx(_maydayFireTrailPrefab);
+
+        private static GameObject _confettiBlastRainbow;
+        public static GameObject ConfettiBlastRainbow => Vfx(_confettiBlastRainbow);
+
+        private static GameObject _bloodSplatterPrefab;
+        public static GameObject BloodSplatterPrefab => Vfx(_bloodSplatterPrefab);
+
+        /// The blood splatter prefab ignoring the VFX toggle.
+        ///
+        /// This one is registered with Mirror as a spawnable networked prefab, and that
+        /// registration has to happen regardless of the toggle: if it were skipped at
+        /// connect time, turning VFX back on mid-session would leave clients unable to
+        /// spawn the object. Only the instantiation path should honour the toggle.
+        public static GameObject BloodSplatterPrefabRaw => _bloodSplatterPrefab;
 
         // ── Shared VFX prefabs (used by multiple items) ───────────────────────
         /// Shared explosion VFX.  Used by Javelin, Nuke, and AC130 Mayday.
-        public static GameObject NukeVerticalExplosionVfxPrefab { get; private set; }
+        private static GameObject _nukeVerticalExplosionVfxPrefab;
+        public static GameObject NukeVerticalExplosionVfxPrefab =>
+            Vfx(_nukeVerticalExplosionVfxPrefab);
 
         /// Nuke-specific explosion VFX.  Falls back to NukeVerticalExplosionVfxPrefab
         /// if "nuclear_explosion.prefab" is absent from the bundle.
-        public static GameObject NukeExplosionVfxPrefab { get; private set; }
+        private static GameObject _nukeExplosionVfxPrefab;
+        public static GameObject NukeExplosionVfxPrefab => Vfx(_nukeExplosionVfxPrefab);
 
         // Javelin convenience aliases that point at the shared assets.
         public static GameObject JavelinExplosionVfxPrefab => NukeVerticalExplosionVfxPrefab;
-        public static GameObject JavelinTrailVfxPrefab { get; private set; }
+        private static GameObject _javelinTrailVfxPrefab;
+        public static GameObject JavelinTrailVfxPrefab => Vfx(_javelinTrailVfxPrefab);
 
         /// Explosion VFX for the AC130 Mayday crash.  Points at the shared
         /// NukeVerticalExplosionVfxPrefab.
@@ -212,23 +264,29 @@ namespace IssaPlugin.Items
         // ── Impact / crash VFX ────────────────────────────────────────────────
         /// Secondary debris/dust VFX spawned at a crash site (e.g. AC130 impact).
         /// Bundle asset name: <c>impact_vfx.prefab</c>  (fill in if different).
-        public static GameObject ImpactVfxPrefab { get; private set; }
+        private static GameObject _impactVfxPrefab;
+        public static GameObject ImpactVfxPrefab => Vfx(_impactVfxPrefab);
 
         // ── Teleporter ────────────────────────────────────────────────────────
         public static Sprite TeleporterIcon { get; private set; }
         public static GameObject TeleporterHandheldPrefab { get; private set; }
-        public static GameObject TeleporterVfxPrefab { get; private set; }
+        private static GameObject _teleporterVfxPrefab;
+        public static GameObject TeleporterVfxPrefab => Vfx(_teleporterVfxPrefab);
 
         // ── Flamethrower ──────────────────────────────────────────────────────
         public static Sprite FlamethrowerIcon { get; private set; }
         public static GameObject FlamethrowerPrefab { get; private set; }
-        public static GameObject FlamethrowerParticlePrefab { get; private set; }
-        public static GameObject FlamethrowerVictimFirePrefab { get; private set; }
+        private static GameObject _flamethrowerParticlePrefab;
+        public static GameObject FlamethrowerParticlePrefab => Vfx(_flamethrowerParticlePrefab);
+
+        private static GameObject _flamethrowerVictimFirePrefab;
+        public static GameObject FlamethrowerVictimFirePrefab => Vfx(_flamethrowerVictimFirePrefab);
 
         // ── Jetpack ───────────────────────────────────────────────────────────
         public static Sprite JetpackIcon { get; private set; }
         public static GameObject JetpackHandheldPrefab { get; private set; }
-        public static GameObject JetpackParticlePrefab { get; private set; }
+        private static GameObject _jetpackParticlePrefab;
+        public static GameObject JetpackParticlePrefab => Vfx(_jetpackParticlePrefab);
 
         /// The networked equipped-jetpack object visible on all clients.
         public static GameObject JetpackEquippedPrefab { get; private set; }
@@ -256,7 +314,8 @@ namespace IssaPlugin.Items
         public static GameObject SpinachPrefab { get; private set; }
 
         /// Local-only speed-boost trail VFX parented to the player.
-        public static GameObject SpinachTrailPrefab { get; private set; }
+        private static GameObject _spinachTrailPrefab;
+        public static GameObject SpinachTrailPrefab => Vfx(_spinachTrailPrefab);
 
         // ── First Place Star ──────────────────────────────────────────────────
         /// Local-only gold star VFX shown above the leading player.
@@ -474,21 +533,24 @@ namespace IssaPlugin.Items
                     0xD20D0001u
                 ),
                 // ── Shared VFX ────────────────────────────────────────────────
-                Prefab(p => NukeVerticalExplosionVfxPrefab = p, "NukeVerticalExplosionFire.prefab"),
+                Prefab(
+                    p => _nukeVerticalExplosionVfxPrefab = p,
+                    "NukeVerticalExplosionFire.prefab"
+                ),
                 // ── Local-only VFX (Mirror components stripped) ───────────────
-                LocalVfxPrefab(p => BlackHoleVfxPrefab = p, "black_hole.prefab"),
-                LocalVfxPrefab(p => PositionSwapOrbPrefab = p, "position_swap_orb.prefab"),
-                LocalVfxPrefab(p => PositionSwapSmokePrefab = p, "position_swap_smoke.prefab"),
-                LocalVfxPrefab(p => PoisonSplashPrefab = p, "poison_cloud_vfx.prefab"),
-                LocalVfxPrefab(p => DroneExplosionVfxPrefab = p, "drone_explosion.prefab"),
-                LocalVfxPrefab(p => RedBullTrailPrefab = p, "red_bull_trail.prefab"),
-                LocalVfxPrefab(p => GravityGunTetherVfxPrefab = p, "gravity_gun_vfx.prefab"),
-                LocalVfxPrefab(p => WarningParticlePrefab = p, "warning_particle.prefab"),
-                LocalVfxPrefab(p => MaydaySmokeTrailPrefab = p, "smoke_prefab.prefab"),
-                LocalVfxPrefab(p => MaydayFireTrailPrefab = p, "fire_torch_intense.prefab"),
-                LocalVfxPrefab(p => ConfettiBlastRainbow = p, "ConfettiBlastRainbow.prefab"),
-                LocalVfxPrefab(p => BloodSplatterPrefab = p, "blood_explosion_vfx.prefab"),
-                LocalVfxPrefab(p => JavelinTrailVfxPrefab = p, "javelin_trail.prefab"),
+                LocalVfxPrefab(p => _blackHoleVfxPrefab = p, "black_hole.prefab"),
+                LocalVfxPrefab(p => _positionSwapOrbPrefab = p, "position_swap_orb.prefab"),
+                LocalVfxPrefab(p => _positionSwapSmokePrefab = p, "position_swap_smoke.prefab"),
+                LocalVfxPrefab(p => _poisonSplashPrefab = p, "poison_cloud_vfx.prefab"),
+                LocalVfxPrefab(p => _droneExplosionVfxPrefab = p, "drone_explosion.prefab"),
+                LocalVfxPrefab(p => _redBullTrailPrefab = p, "red_bull_trail.prefab"),
+                LocalVfxPrefab(p => _gravityGunTetherVfxPrefab = p, "gravity_gun_vfx.prefab"),
+                LocalVfxPrefab(p => _warningParticlePrefab = p, "warning_particle.prefab"),
+                LocalVfxPrefab(p => _maydaySmokeTrailPrefab = p, "smoke_prefab.prefab"),
+                LocalVfxPrefab(p => _maydayFireTrailPrefab = p, "fire_torch_intense.prefab"),
+                LocalVfxPrefab(p => _confettiBlastRainbow = p, "ConfettiBlastRainbow.prefab"),
+                LocalVfxPrefab(p => _bloodSplatterPrefab = p, "blood_explosion_vfx.prefab"),
+                LocalVfxPrefab(p => _javelinTrailVfxPrefab = p, "javelin_trail.prefab"),
                 // ── Audio ─────────────────────────────────────────────────────
                 // AudioClips are addressed without file extensions — Unity compiles
                 // audio to an internal format at bundle-build time.
@@ -497,26 +559,26 @@ namespace IssaPlugin.Items
                 Audio(p => MaydayAlarmClip = p, "missile_locked"),
                 Audio(p => MaydayImpactClip = p, "etfx_explosion_nuke"),
                 // ── Impact VFX ────────────────────────────────────────────────
-                LocalVfxPrefab(p => ImpactVfxPrefab = p, "NukeVerticalExplosionFire.prefab"),
+                LocalVfxPrefab(p => _impactVfxPrefab = p, "NukeVerticalExplosionFire.prefab"),
                 // ── Teleporter ────────────────────────────────────────────────
                 // TODO: replace asset names with the real bundle names once known.
                 SpriteAsset(p => TeleporterIcon = p, "teleporter_icon.png"),
                 HandheldPrefab(p => TeleporterHandheldPrefab = p, "teleporter_handheld.prefab"),
-                LocalVfxPrefab(p => TeleporterVfxPrefab = p, "position_swap_smoke.prefab"),
+                LocalVfxPrefab(p => _teleporterVfxPrefab = p, "position_swap_smoke.prefab"),
                 // ── Flamethrower ──────────────────────────────────────────────
                 // TODO: replace asset names with the real bundle names once known.
                 SpriteAsset(p => FlamethrowerIcon = p, "flamethrower_icon.png"),
                 HandheldPrefab(p => FlamethrowerPrefab = p, "flamethrower.prefab"),
-                LocalVfxPrefab(p => FlamethrowerParticlePrefab = p, "flamethrower_vfx.prefab"),
+                LocalVfxPrefab(p => _flamethrowerParticlePrefab = p, "flamethrower_vfx.prefab"),
                 LocalVfxPrefab(
-                    p => FlamethrowerVictimFirePrefab = p,
+                    p => _flamethrowerVictimFirePrefab = p,
                     "flamethrower_victim_fire.prefab"
                 ),
                 // ── Jetpack ───────────────────────────────────────────────────
                 // TODO: replace asset names with the real bundle names once known.
                 SpriteAsset(p => JetpackIcon = p, "jetpack_icon.png"),
                 HandheldPrefab(p => JetpackHandheldPrefab = p, "jetpack_handheld.prefab"),
-                LocalVfxPrefab(p => JetpackParticlePrefab = p, "jetpack_particles.prefab"),
+                LocalVfxPrefab(p => _jetpackParticlePrefab = p, "jetpack_particles.prefab"),
                 NetworkedPrefab(p => JetpackEquippedPrefab = p, "jetpack.prefab", 0x00000000u), // TODO: assign a stable assetId
                 // ── Rocket Tether ─────────────────────────────────────────────
                 SpriteAsset(p => RocketTetherIcon = p, "rocket_tether_icon.png"),
@@ -536,7 +598,7 @@ namespace IssaPlugin.Items
                 // ── Spinach ───────────────────────────────────────────────────
                 SpriteAsset(p => SpinachIcon = p, "spinach_icon.png"),
                 HandheldPrefab(p => SpinachPrefab = p, "spinach.prefab"),
-                LocalVfxPrefab(p => SpinachTrailPrefab = p, "spinach_trail.prefab"),
+                LocalVfxPrefab(p => _spinachTrailPrefab = p, "spinach_trail.prefab"),
                 // ── UFO Abduction ─────────────────────────────────────────────
                 SpriteAsset(p => UfoAbductionIcon = p, "ufo_abduction_icon.png", optional: true),
                 HandheldPrefab(
@@ -548,7 +610,7 @@ namespace IssaPlugin.Items
                 // ── Moon ──────────────────────────────────────────────────────
                 SpriteAsset(p => MoonIcon = p, "moon_icon.png", optional: true),
                 HandheldPrefab(p => MoonHandheldPrefab = p, "moon_handheld.prefab", optional: true),
-                LocalVfxPrefab(p => MoonVfxPrefab = p, "moon.prefab"),
+                LocalVfxPrefab(p => _moonVfxPrefab = p, "moon.prefab"),
                 // ── ShapeShifter / SuperShapeShifter ─────────────────────────
                 Prefab(p => ShapeShifterShapeCube = p, "golf_ball_cube.prefab"),
                 Prefab(p => ShapeShifterShapeDisk = p, "golf_ball_disk.prefab"),
@@ -597,8 +659,12 @@ namespace IssaPlugin.Items
         {
             // NukeExplosionVfxPrefab prefers a dedicated asset; falls back to the
             // shared nuke-fire VFX that Javelin and Mayday already use.
-            NukeExplosionVfxPrefab =
-                LoadRaw<GameObject>("nuclear_explosion.prefab") ?? NukeVerticalExplosionVfxPrefab;
+            //
+            // Both sides use the raw backing fields: the public properties return null
+            // while the VFX toggle is off, so reading them here would resolve the
+            // fallback to null and permanently lose the reference for this session.
+            _nukeExplosionVfxPrefab =
+                LoadRaw<GameObject>("nuclear_explosion.prefab") ?? _nukeVerticalExplosionVfxPrefab;
 
             // DroppedCustomItemPrefab needs two components wired in code, and its
             // collider must be a trigger (so it doesn't block player movement).
