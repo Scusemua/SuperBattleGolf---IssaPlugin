@@ -83,8 +83,6 @@ namespace IssaPlugin.Items
 
         public static void HandleLowGravityBegin(LowGravityBeginMessage msg)
         {
-            IssaPluginPlugin.Log.LogInfo($"[LowGravity] HandleLowGravityBegin called: msg={msg}");
-
             // Only save render state if not already active — repeated sessions would
             // otherwise overwrite the saved state with the already-modified fog values.
             if (!LowGravityItem.IsActive)
@@ -108,8 +106,6 @@ namespace IssaPlugin.Items
 
         public static void HandleLowGravityEnd(LowGravityEndMessage msg)
         {
-            IssaPluginPlugin.Log.LogInfo($"[LowGravity] HandleLowGravityEnd called: msg={msg}");
-
             RenderSettings.fogColor = _savedFogColor;
             RenderSettings.fogDensity = _savedFogDensity;
             RenderSettings.ambientLight = _savedAmbientLight;

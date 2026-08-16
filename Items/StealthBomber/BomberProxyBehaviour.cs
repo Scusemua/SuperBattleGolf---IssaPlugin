@@ -57,8 +57,6 @@ namespace IssaPlugin.Items
         // OnTriggerEnter fires here when a rocket overlaps it.
         private void OnStealthBomberHit()
         {
-            IssaPluginPlugin.Log.LogInfo($"[BomberProxy] OnStealthBomberHit called.");
-
             if (!NetworkServer.active || _shotDown)
                 return;
 

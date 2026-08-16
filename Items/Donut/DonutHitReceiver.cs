@@ -15,8 +15,6 @@ namespace IssaPlugin.Items
 
         private void OnDonutHit()
         {
-            IssaPluginPlugin.Log.LogInfo($"[Donut] OnDonutHit called.");
-
             if (!NetworkServer.active)
                 return;
 

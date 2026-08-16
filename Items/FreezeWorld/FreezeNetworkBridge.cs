@@ -77,8 +77,6 @@ namespace IssaPlugin.Items
 
         public static void HandleFreezeBegin(FreezeBeginMessage msg)
         {
-            IssaPluginPlugin.Log.LogInfo($"[Freeze] HandleFreezeBegin called: msg={msg}");
-
             // Only save render state if not already frozen — repeated sessions would
             // otherwise overwrite the saved state with the already-modified fog values.
             if (!FreezeItem.IsFrozen)
@@ -113,8 +111,6 @@ namespace IssaPlugin.Items
 
         public static void HandleFreezeEnd(FreezeEndMessage msg)
         {
-            IssaPluginPlugin.Log.LogInfo($"[Freeze] HandleFreezeEnd called: msg={msg}");
-
             RenderSettings.fogColor = _savedFogColor;
             RenderSettings.fogDensity = _savedFogDensity;
             RenderSettings.ambientLight = _savedAmbientLight;

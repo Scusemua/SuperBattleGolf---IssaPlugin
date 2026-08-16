@@ -19,8 +19,6 @@ namespace IssaPlugin.Items
 
         private void OnAC130Hit()
         {
-            IssaPluginPlugin.Log.LogInfo($"[AC130] OnAC130Hit called.");
-
             if (!NetworkServer.active)
                 return;
 
