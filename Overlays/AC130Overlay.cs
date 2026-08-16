@@ -17,6 +17,9 @@ namespace IssaPlugin
         private GUIStyle _maydayStyle;
 
         private float _noiseTimer;
+
+        // UV offset into the static noise texture, reshuffled on the noise cadence.
+        private Vector2 _noiseOffset;
         private Color32[] _noisePixels;
 
         private static Vector3 _crosshairWorld;
@@ -100,6 +103,11 @@ namespace IssaPlugin
             if (!sessionActive && !maydayActive)
                 return;
 
+            // OnGUI runs at least twice per frame (Layout and Repaint). Everything
+            // below is pure drawing, which only takes effect during Repaint.
+            if (Event.current.type != EventType.Repaint)
+                return;
+
             float w = Screen.width;
             float h = Screen.height;
 
@@ -115,14 +123,22 @@ namespace IssaPlugin
             GUI.DrawTexture(new Rect(0, 0, w, h), _vignetteRingTex, ScaleMode.StretchToFill);
 
             // --- Noise ---
+            // Scroll a static noise texture rather than rebuilding its pixels. See
+            // BomberOverlay for the rationale: regenerating a screen-sized noise
+            // texture several times a second is significant per-frame CPU work and a
+            // GPU upload, and offsetting the UVs looks the same on screen.
             _noiseTimer += Time.deltaTime;
             if (_noiseTimer >= NoiseUpdateRate)
             {
-                RegenerateNoise();
+                _noiseOffset = new Vector2(Random.value, Random.value);
                 _noiseTimer = 0f;
             }
             GUI.color = new Color(1f, 1f, 1f, 0.04f);
-            GUI.DrawTexture(new Rect(0, 0, w, h), _noiseTex, ScaleMode.StretchToFill);
+            GUI.DrawTextureWithTexCoords(
+                new Rect(0, 0, w, h),
+                _noiseTex,
+                new Rect(_noiseOffset.x, _noiseOffset.y, 1f, 1f)
+            );
             GUI.color = Color.white;
 
             // --- Glitch bands ---
@@ -509,24 +525,22 @@ namespace IssaPlugin
         private Texture2D GenerateNoise(int w, int h)
         {
             var tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
-            _noisePixels = new Color32[w * h];
-            RegenerateNoise();
-            return tex;
-        }
+            // Repeat so the drawn UV rect can be offset and still tile.
+            tex.wrapMode = TextureWrapMode.Repeat;
 
-        private void RegenerateNoise()
-        {
+            // Fill the texture passed in rather than going through _noiseTex, which is
+            // not assigned until this method returns. The previous version called
+            // RegenerateNoise() here, whose null check on _noiseTex meant the initial
+            // texture was left blank until the first timer tick refilled it.
+            _noisePixels = new Color32[w * h];
             for (int i = 0; i < _noisePixels.Length; i++)
             {
                 byte v = (byte)Random.Range(0, 256);
                 _noisePixels[i] = new Color32(v, v, v, 255);
             }
-
-            if (_noiseTex != null)
-            {
-                _noiseTex.SetPixels32(_noisePixels);
-                _noiseTex.Apply(false, false);
-            }
+            tex.SetPixels32(_noisePixels);
+            tex.Apply(false, false);
+            return tex;
         }
 
         // ----------------------------------------------------------------

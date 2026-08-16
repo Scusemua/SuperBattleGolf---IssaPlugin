@@ -13,8 +13,11 @@ namespace IssaPlugin.Overlays
         private GUIStyle _instructionStyle;
         private GUIStyle _cornerStyle;
 
-        private Material _greyscaleMat;
         private float _noiseTimer;
+
+        // UV offset into the static noise texture. Reshuffled on the noise cadence to
+        // fake regeneration without touching pixel data.
+        private Vector2 _noiseOffset;
 
         private const float ScanlineSpacing = 3f;
         private const float NoiseUpdateRate = 0.04f;
@@ -38,32 +41,29 @@ namespace IssaPlugin.Overlays
 
         private bool LocalIsSteering => LocalMissileBridge != null && LocalMissileBridge.IsSteering;
 
-        private void Awake()
-        {
-            // Built-in Unity shader that lets us tint/recolour via Graphics.Blit.
-            _greyscaleMat = new Material(Shader.Find("Hidden/Internal-GUITextureClip"));
-        }
+        private bool ShouldShowOverlay() =>
+            ModConfig.Global.BomberOverlayEnabled.Value
+            && (StealthBomberItem.IsTargeting || LocalIsSteering);
 
-        private bool ShouldShowOverlay() => StealthBomberItem.IsTargeting || LocalIsSteering;
-
-        // ----------------------------------------------------------------
-        //  Greyscale full-screen pass
-        // ----------------------------------------------------------------
-        private void OnRenderImage(RenderTexture src, RenderTexture dest)
-        {
-            // Always a single blit. The old code ran a loop of src.height/2
-            // Graphics.Blit calls (540 at 1080p) into a temporary RenderTexture
-            // that was never actually used — the final output was still src->dest.
-            // That was 540 redundant full-screen GPU commands per frame.
-            Graphics.Blit(src, dest);
-        }
+        // The greyscale OnRenderImage pass that used to live here has been removed.
+        // This component is attached to the plugin's GameObject, which has no Camera,
+        // and Unity only invokes OnRenderImage on a Camera's GameObject — so the pass
+        // never ran. It had already been reduced to a plain src->dest copy that applied
+        // no effect, and the material it allocated in Awake was never used by anything.
 
         // ----------------------------------------------------------------
         //  Overlay elements drawn on top of the greyscale pass
         // ----------------------------------------------------------------
         private void OnGUI()
         {
-            if (!StealthBomberItem.IsTargeting && !LocalIsSteering)
+            if (!ShouldShowOverlay())
+                return;
+
+            // OnGUI runs at least twice per frame (Layout and Repaint). This overlay is
+            // pure drawing — including three fullscreen stretched textures — and
+            // GUI.DrawTexture only takes effect during Repaint, so the Layout pass was
+            // doubling the fill cost for no visible result.
+            if (Event.current.type != EventType.Repaint)
                 return;
 
             float w = Screen.width;
@@ -80,15 +80,25 @@ namespace IssaPlugin.Overlays
             GUI.color = Color.white;
             GUI.DrawTexture(new Rect(0, 0, w, h), _vignetteRingTex, ScaleMode.StretchToFill);
 
-            // Subtle random noise
+            // Subtle random noise.
+            //
+            // The texture is generated once and then scrolled by jumping to a random
+            // UV offset on the same cadence the old code used to rebuild it. Visually
+            // this reads the same — a full-screen field of static that reshuffles a few
+            // times a second — but it costs one Rect instead of regenerating ~130k
+            // pixels and re-uploading the texture to the GPU 25 times per second.
             _noiseTimer += Time.deltaTime;
             if (_noiseTimer >= NoiseUpdateRate)
             {
-                RegenerateNoise();
+                _noiseOffset = new Vector2(Random.value, Random.value);
                 _noiseTimer = 0f;
             }
             GUI.color = new Color(1f, 1f, 1f, 0.04f);
-            GUI.DrawTexture(new Rect(0, 0, w, h), _noiseTex, ScaleMode.StretchToFill);
+            GUI.DrawTextureWithTexCoords(
+                new Rect(0, 0, w, h),
+                _noiseTex,
+                new Rect(_noiseOffset.x, _noiseOffset.y, 1f, 1f)
+            );
             GUI.color = Color.white;
 
             // Horizontal glitch bands
@@ -302,15 +312,14 @@ namespace IssaPlugin.Overlays
         private static Texture2D GenerateNoise(int w, int h)
         {
             var tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
+            // Repeat so the drawn UV rect can be offset past 1.0 and still tile.
+            tex.wrapMode = TextureWrapMode.Repeat;
             RegenerateNoise(tex, w, h);
             return tex;
         }
 
-        private void RegenerateNoise() =>
-            RegenerateNoise(_noiseTex, _noiseTex.width, _noiseTex.height);
-
-        // Pre-allocated noise buffer — reused every regeneration to avoid
-        // a 129,600-element Color array allocation 25 times per second.
+        // Pre-allocated noise buffer — reused so the one-time generation does not
+        // allocate a second large array.
         private static Color32[] _noisePixels;
 
         private static void RegenerateNoise(Texture2D tex, int w, int h)

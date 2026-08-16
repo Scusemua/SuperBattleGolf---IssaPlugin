@@ -84,6 +84,9 @@ namespace IssaPlugin.Overlays
         // Color32 (4 bytes each) vs Color (16 bytes each) cuts the buffer 4x
         // and avoids float-to-byte conversion overhead inside Apply.
         private float _noiseTimer;
+
+        // UV offset into the static noise texture, reshuffled on the noise cadence.
+        private Vector2 _noiseOffset;
         private Color32[] _noisePixels;
         private const float NoiseUpdateRate = 0.05f;
 
@@ -155,11 +158,12 @@ namespace IssaPlugin.Overlays
             if (_flashAlpha > 0f)
                 _flashAlpha -= _deltaTime * FlashDecayRate;
 
-            // Noise update
+            // Noise update — offset the UVs into a static texture rather than
+            // rebuilding its pixels. See BomberOverlay for the rationale.
             _noiseTimer += _deltaTime;
             if (_noiseTimer >= NoiseUpdateRate)
             {
-                RegenerateNoise();
+                _noiseOffset = new Vector2(Random.value, Random.value);
                 _noiseTimer = 0f;
             }
 
@@ -184,6 +188,11 @@ namespace IssaPlugin.Overlays
             EnsureTextures();
             EnsureStyles();
 
+            // OnGUI runs at least twice per frame (Layout and Repaint). Everything
+            // below is pure drawing, which only takes effect during Repaint.
+            if (Event.current.type != EventType.Repaint)
+                return;
+
             // Guard: _sw/_sh are 0 on the very first frame before Update runs.
             float sw = _sw > 0 ? _sw : Screen.width;
             float sh = _sh > 0 ? _sh : Screen.height;
@@ -194,7 +203,11 @@ namespace IssaPlugin.Overlays
 
             // ── Subtle noise layer ────────────────────────────────────────
             GUI.color = new Color(1f, 0.3f, 0.8f, 0.035f);
-            GUI.DrawTexture(new Rect(0, 0, sw, sh), _noiseTex, ScaleMode.StretchToFill);
+            GUI.DrawTextureWithTexCoords(
+                new Rect(0, 0, sw, sh),
+                _noiseTex,
+                new Rect(_noiseOffset.x, _noiseOffset.y, 1f, 1f)
+            );
 
             // ── Scanlines ─────────────────────────────────────────────────
             GUI.color = new Color(0f, 0f, 0f, 0.12f);
@@ -558,14 +571,15 @@ namespace IssaPlugin.Overlays
                 _noisePixels = new Color32[w * h];
 
             var tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
+            // Repeat so the drawn UV rect can be offset and still tile.
+            tex.wrapMode = TextureWrapMode.Repeat;
             RegenerateNoise(tex);
             return tex;
         }
 
         /// Fills the pre-allocated Color32 buffer with pink-tinted noise and uploads it.
-        /// No heap allocation occurs after the first call.
-        private void RegenerateNoise() => RegenerateNoise(_noiseTex);
-
+        /// Called once when the texture is created; the runtime "static" effect comes
+        /// from offsetting the sampled UVs instead of refilling these pixels.
         private void RegenerateNoise(Texture2D tex)
         {
             for (int i = 0; i < _noisePixels.Length; i++)

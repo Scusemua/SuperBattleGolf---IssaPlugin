@@ -71,16 +71,26 @@ namespace IssaPlugin.Overlays
         }
 
         private bool ShouldShowGUI() =>
-            StealthBomberItem.IsTargeting
-            || (LocalMissileBridge != null && LocalMissileBridge.IsSteering)
-            || (
-                LocalAC130Bridge != null
-                && (LocalAC130Bridge.LocalSessionActive || LocalAC130Bridge.LocalMaydayActive)
+            ModConfig.Global.PlayerBoxOverlayEnabled.Value
+            && (
+                StealthBomberItem.IsTargeting
+                || (LocalMissileBridge != null && LocalMissileBridge.IsSteering)
+                || (
+                    LocalAC130Bridge != null
+                    && (LocalAC130Bridge.LocalSessionActive || LocalAC130Bridge.LocalMaydayActive)
+                )
             );
 
         private void OnGUI()
         {
             if (!ShouldShowGUI())
+                return;
+
+            // OnGUI runs at least twice per frame (Layout and Repaint). Everything
+            // below is pure drawing — GUI.DrawTexture and GUI.Label only take effect
+            // during Repaint — so running it on the Layout pass doubled the projection
+            // and draw-call cost for every player on screen for no visible result.
+            if (Event.current.type != EventType.Repaint)
                 return;
 
             // Use the gunship camera for WorldToScreenPoint when the local
@@ -111,16 +121,11 @@ namespace IssaPlugin.Overlays
                     _localPlayerLabel = localPlayerInfo.PlayerId.PlayerName + " (YOU)";
                 }
 
-                DrawTargetBox(
+                DrawTarget(
                     cam,
                     localPlayerInfo.transform.position + Vector3.up * 1f,
                     screenH,
-                    _greenTex
-                );
-                DrawTargetName(
-                    cam,
-                    localPlayerInfo.transform.position + Vector3.up * 1f,
-                    screenH,
+                    _greenTex,
                     _localPlayerLabel
                 );
             }
@@ -133,16 +138,11 @@ namespace IssaPlugin.Overlays
                 {
                     if (player == null)
                         continue;
-                    DrawTargetBox(
+                    DrawTarget(
                         cam,
                         player.transform.position + Vector3.up * 1f,
                         screenH,
-                        _redTex
-                    );
-                    DrawTargetName(
-                        cam,
-                        player.transform.position + Vector3.up * 1f,
-                        screenH,
+                        _redTex,
                         player.PlayerId.PlayerName
                     );
                 }
@@ -154,11 +154,11 @@ namespace IssaPlugin.Overlays
                 var dummy = DebugDummies.DebugDummiesList[i];
                 if (dummy == null)
                     continue;
-                DrawTargetBox(cam, dummy.transform.position + Vector3.up * 1f, screenH, _redTex);
-                DrawTargetName(
+                DrawTarget(
                     cam,
                     dummy.transform.position + Vector3.up * 1f,
                     screenH,
+                    _redTex,
                     _playerNames[i % _playerNames.Length]
                 );
             }
@@ -181,23 +181,18 @@ namespace IssaPlugin.Overlays
             }
         }
 
-        private static void DrawTargetName(Camera cam, Vector3 worldPos, float screenH, string name)
-        {
-            Vector3 screenPos = cam.WorldToScreenPoint(worldPos);
-            if (screenPos.z <= 0f)
-                return;
-
-            float x = screenPos.x - BoxWidth * 0.5f;
-            float y = screenH - screenPos.y - BoxHeight * 0.5f;
-
-            GUI.Label(new Rect(x, y - 20f, BoxWidth * 4f, 24f), name);
-        }
-
-        private static void DrawTargetBox(
+        /// Projects once and draws both the box and the label for one target.
+        ///
+        /// Previously DrawTargetBox and DrawTargetName each called
+        /// WorldToScreenPoint for the same world position, so every target was
+        /// projected twice per OnGUI pass. Combining them halves the projection work
+        /// and the behind-camera check.
+        private static void DrawTarget(
             Camera cam,
             Vector3 worldPos,
             float screenH,
-            Texture2D tex
+            Texture2D tex,
+            string name
         )
         {
             Vector3 screenPos = cam.WorldToScreenPoint(worldPos);
@@ -212,6 +207,8 @@ namespace IssaPlugin.Overlays
             GUI.DrawTexture(new Rect(x, y + BoxHeight - t, BoxWidth, t), tex);
             GUI.DrawTexture(new Rect(x, y, t, BoxHeight), tex);
             GUI.DrawTexture(new Rect(x + BoxWidth - t, y, t, BoxHeight), tex);
+
+            GUI.Label(new Rect(x, y - 20f, BoxWidth * 4f, 24f), name);
         }
     }
 }

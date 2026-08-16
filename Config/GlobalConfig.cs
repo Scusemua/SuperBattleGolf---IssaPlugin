@@ -22,6 +22,8 @@ namespace IssaPlugin
         public ConfigEntry<bool> NetworkDiagnosticsEnabled { get; private set; }
         public ConfigEntry<float> NetworkDiagnosticsInterval { get; private set; }
         public ConfigEntry<int> NetworkDiagnosticsTopMessages { get; private set; }
+        public ConfigEntry<bool> BomberOverlayEnabled { get; private set; }
+        public ConfigEntry<bool> PlayerBoxOverlayEnabled { get; private set; }
 
         // ── UI section ────────────────────────────────────────────────────────
         public ConfigEntry<Key> SpawnConfigUIKey { get; private set; }
@@ -154,6 +156,26 @@ namespace IssaPlugin
                 30f,
                 "Seconds between network diagnostics summaries. Only used when "
                     + "NetworkDiagnosticsEnabled is true."
+            );
+
+            BomberOverlayEnabled = cfg.Bind(
+                "Diagnostics",
+                "BomberOverlayEnabled",
+                true,
+                "A/B TEST. Set to false to disable the stealth bomber / predator missile "
+                    + "screen overlay (scanlines, vignette, noise, glitch bands) entirely. "
+                    + "Purely cosmetic — use it to measure how much of the FPS drop during "
+                    + "those items comes from the overlay."
+            );
+
+            PlayerBoxOverlayEnabled = cfg.Bind(
+                "Diagnostics",
+                "PlayerBoxOverlayEnabled",
+                true,
+                "A/B TEST. Set to false to disable the player target boxes and name "
+                    + "labels drawn during stealth bomber targeting, predator missile "
+                    + "steering, and AC130 sessions. Purely cosmetic — use it to measure "
+                    + "how much of the FPS drop during those items comes from this overlay."
             );
 
             NetworkDiagnosticsTopMessages = cfg.Bind(

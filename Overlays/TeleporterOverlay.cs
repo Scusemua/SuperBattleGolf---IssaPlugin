@@ -23,6 +23,9 @@ namespace IssaPlugin.Overlays
 
         // ── Animation state ───────────────────────────────────────────────────
         private float _noiseTimer;
+
+        // UV offset into the static noise texture, reshuffled on the noise cadence.
+        private Vector2 _noiseOffset;
         private const float NoiseUpdateRate = 0.04f;
         private const float VisualArtifactChance = 0.07f;
         private const float FullWidthScanlineSurgeChance = 0.03f;
@@ -48,15 +51,20 @@ namespace IssaPlugin.Overlays
             GUI.color = Color.white;
             GUI.DrawTexture(new Rect(0, 0, w, h), _vignetteRingTex, ScaleMode.StretchToFill);
 
-            // Random noise
+            // Random noise — offset the UVs into a static texture rather than
+            // rebuilding its pixels. See BomberOverlay for the rationale.
             _noiseTimer += Time.deltaTime;
             if (_noiseTimer >= NoiseUpdateRate)
             {
-                RegenerateNoise();
+                _noiseOffset = new Vector2(Random.value, Random.value);
                 _noiseTimer = 0f;
             }
             GUI.color = new Color(1f, 1f, 1f, 0.03f);
-            GUI.DrawTexture(new Rect(0, 0, w, h), _noiseTex, ScaleMode.StretchToFill);
+            GUI.DrawTextureWithTexCoords(
+                new Rect(0, 0, w, h),
+                _noiseTex,
+                new Rect(_noiseOffset.x, _noiseOffset.y, 1f, 1f)
+            );
             GUI.color = Color.white;
 
             // Glitch bands
@@ -207,24 +215,28 @@ namespace IssaPlugin.Overlays
             }
 
             if (_noiseTex == null)
+            {
                 _noiseTex = new Texture2D(256, 256);
+                // Repeat so the drawn UV rect can be offset and still tile.
+                _noiseTex.wrapMode = TextureWrapMode.Repeat;
+                FillNoise(_noiseTex);
+            }
         }
 
-        private void RegenerateNoise()
+        /// Fills the noise texture once. The animated "static" effect comes from
+        /// offsetting the sampled UVs each tick rather than refilling these pixels,
+        /// which previously allocated a 65k-element Color array 25 times a second.
+        private static void FillNoise(Texture2D tex)
         {
-            if (_noiseTex == null)
-                return;
-
-            int nw = _noiseTex.width,
-                nh = _noiseTex.height;
-            var pixels = new Color[nw * nh];
-            for (int i = 0; i < pixels.Length; i++)
+            int count = tex.width * tex.height;
+            var pixels = new Color32[count];
+            for (int i = 0; i < count; i++)
             {
-                float v = Random.value;
-                pixels[i] = new Color(v, v, v, Random.Range(0.01f, 0.06f));
+                byte v = (byte)(Random.value * 255f);
+                pixels[i] = new Color32(v, v, v, (byte)(Random.Range(0.01f, 0.06f) * 255f));
             }
-            _noiseTex.SetPixels(pixels);
-            _noiseTex.Apply();
+            tex.SetPixels32(pixels);
+            tex.Apply(false);
         }
 
         private void EnsureStyles()
