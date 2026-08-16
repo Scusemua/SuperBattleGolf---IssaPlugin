@@ -17,6 +17,13 @@ namespace IssaPlugin.Patches
     {
         static readonly Collider[] overlappingColliderBuffer = new Collider[100];
 
+        // Reused across explosions to avoid allocating a set per detonation. Explosions
+        // arrive in bursts (a stealth bomber run drops one every 0.75s, AC130 fires
+        // every 0.35s), so a fresh HashSet each time is steady GC pressure during
+        // exactly the moments the frame budget is tightest. ServerExplode is
+        // single-threaded on the server, so a shared instance is safe.
+        static readonly HashSet<Rigidbody> processedBuffer = new HashSet<Rigidbody>();
+
         static MethodBase TargetMethod() => AccessTools.Method(typeof(Rocket), "ServerExplode");
 
         static void Postfix(Rocket __instance, Vector3 worldPosition)
@@ -54,7 +61,8 @@ namespace IssaPlugin.Patches
             );
 
             float bonusForce = (scale - 1f) * 25f;
-            var processed = new HashSet<Rigidbody>();
+            var processed = processedBuffer;
+            processed.Clear();
 
             for (int i = 0; i < hitCount; i++)
             {
