@@ -789,7 +789,7 @@ namespace IssaPlugin.Items
             );
             session.Cooldown = session.FireCooldown;
             session.GunshipCam?.TriggerFireShake();
-            IssaPluginPlugin.Log.LogInfo($"[AC130] Rocket fired toward {crosshairWorld}.");
+            IssaPluginPlugin.Log.LogDebug($"[AC130] Rocket fired toward {crosshairWorld}.");
         }
 
         // ================================================================

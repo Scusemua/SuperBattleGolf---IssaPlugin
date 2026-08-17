@@ -719,7 +719,7 @@ namespace IssaPlugin.Items
                 false
             );
 
-            IssaPluginPlugin.Log.LogInfo($"[Bomber] Spawning rocket at position={position}");
+            IssaPluginPlugin.Log.LogDebug($"[Bomber] Spawning rocket at position={position}");
 
             var rocket = Object.Instantiate(
                 GameManager.ItemSettings.RocketPrefab,

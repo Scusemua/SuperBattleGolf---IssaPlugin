@@ -227,7 +227,7 @@ namespace IssaPlugin.Items
                 _localOffset = target.InverseTransformPoint(transform.position);
                 targetNetId = targetNetworkIdentity != null ? targetNetworkIdentity.netId : 0;
 
-                IssaPluginPlugin.Log.LogInfo(
+                IssaPluginPlugin.Log.LogDebug(
                     $"[StickyGrenade] Stuck to moving target netId={targetNetId} "
                         + $"localOffset={_localOffset}"
                 );
@@ -237,7 +237,7 @@ namespace IssaPlugin.Items
                 // Static geometry — just hold world position
                 _worldStuckPos = transform.position;
 
-                IssaPluginPlugin.Log.LogInfo(
+                IssaPluginPlugin.Log.LogDebug(
                     $"[StickyGrenade] Stuck to static geometry at {_worldStuckPos}"
                 );
             }
@@ -267,7 +267,7 @@ namespace IssaPlugin.Items
 
             Vector3 blastPos = transform.position;
 
-            IssaPluginPlugin.Log.LogInfo($"[StickyGrenade] Detonating at {blastPos}");
+            IssaPluginPlugin.Log.LogDebug($"[StickyGrenade] Detonating at {blastPos}");
 
             // Broadcast explosion event to all clients before destroying
             NetworkServer.SendToAll(new StickyGrenadeDetonatedMessage { WorldPosition = blastPos });

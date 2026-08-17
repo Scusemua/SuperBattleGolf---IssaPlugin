@@ -386,7 +386,7 @@ namespace IssaPlugin.Items
             if (_targetTransform != null)
                 pos.y = Mathf.Min(pos.y, _targetTransform.position.y + 0.5f);
 
-            IssaPluginPlugin.Log.LogInfo($"[HunterDrone] Detonating at {pos:F1}.");
+            IssaPluginPlugin.Log.LogDebug($"[HunterDrone] Detonating at {pos:F1}.");
 
             NetworkServer.SendToAll(new HunterDroneExplodedMessage { Position = pos });
 

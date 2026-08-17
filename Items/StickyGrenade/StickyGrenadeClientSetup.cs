@@ -103,10 +103,6 @@ namespace IssaPlugin.Items
                 _blinkLight.enabled = true;
             if (_blinkParticles != null)
                 _blinkParticles.Play();
-
-            IssaPluginPlugin.Log.LogInfo(
-                $"[StickyGrenade] Client: grenade stuck. FuseRemaining={fuseRemaining:F2}s"
-            );
         }
     }
 }

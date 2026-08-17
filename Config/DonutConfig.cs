@@ -26,6 +26,8 @@ namespace IssaPlugin
         public ConfigEntry<float> CrashTorque { get; private set; }
         public ConfigEntry<float> CrashExplosionScale { get; private set; }
 
+        public ConfigEntry<bool> OverlayEnabled { get; private set; }
+
         public DonutConfig(ConfigFile cfg, GlobalConfig global)
         {
             GiveKey = cfg.Bind(
@@ -35,6 +37,15 @@ namespace IssaPlugin
                 "Debug key to add the Donut to your inventory."
             );
             Uses = cfg.Bind(Section, "Uses", 1f, "Number of Donut uses per pickup.");
+
+            OverlayEnabled = cfg.Bind(
+                Section,
+                "OverlayEnabled",
+                true,
+                "Show the Donut screen overlay (vignette, scanlines, noise, crosshair, "
+                    + "and laser-use dots) while piloting. Purely cosmetic — turn it off "
+                    + "if the full-screen effects cost you frames."
+            );
             Speed = cfg.Bind(
                 Section,
                 "Speed",

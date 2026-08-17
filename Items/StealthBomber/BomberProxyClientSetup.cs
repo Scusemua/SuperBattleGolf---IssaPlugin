@@ -15,6 +15,10 @@ namespace IssaPlugin.Items
             if (gameObject.GetComponent<BomberMarker>() == null)
                 gameObject.AddComponent<BomberMarker>();
 
+            // See AC130ClientSetup: refresh the orbital laser's marker cache so this
+            // bomber is targetable immediately rather than after the rescan interval.
+            Patches.OrbitalLaserAircraftHelpers.Invalidate();
+
             if (gameObject.GetComponent<Entity>() == null)
                 gameObject.AddComponent<Entity>();
 

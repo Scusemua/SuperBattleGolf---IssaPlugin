@@ -103,16 +103,16 @@ namespace IssaPlugin.Patches
 
                 var massProps = pair.massProperties;
 
-                IssaPluginPlugin.Log.LogInfo(
-                    $"[ShapeShifter][DEBUG] Contact pair involving shape collider:" +
-                    $" colliderA={cA} colliderB={cB}" +
-                    $" rbA={rbA} rbB={rbB}" +
-                    $" localPlayerRbId={localPlayerRbId}" +
-                    $" involvedLocalPlayer={involvedLocalPlayer}" +
-                    $" inverseMassScale={massProps.inverseMassScale:F4}" +
-                    $" otherInverseMassScale={massProps.otherInverseMassScale:F4}" +
-                    $" contacts={pair.contactCount}"
-                );
+                // IssaPluginPlugin.Log.LogInfo(
+                //     $"[ShapeShifter][DEBUG] Contact pair involving shape collider:" +
+                //     $" colliderA={cA} colliderB={cB}" +
+                //     $" rbA={rbA} rbB={rbB}" +
+                //     $" localPlayerRbId={localPlayerRbId}" +
+                //     $" involvedLocalPlayer={involvedLocalPlayer}" +
+                //     $" inverseMassScale={massProps.inverseMassScale:F4}" +
+                //     $" otherInverseMassScale={massProps.otherInverseMassScale:F4}" +
+                //     $" contacts={pair.contactCount}"
+                // );
             }
         }
 

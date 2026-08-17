@@ -363,7 +363,7 @@ namespace IssaPlugin.Items
             if (_diveTargetTransform != null)
                 pos.y = Mathf.Min(pos.y, _diveTargetTransform.position.y + 0.5f);
 
-            IssaPluginPlugin.Log.LogInfo($"[Drone] Detonating at {pos:F1}.");
+            IssaPluginPlugin.Log.LogDebug($"[Drone] Detonating at {pos:F1}.");
 
             // Tell all clients to spawn the custom explosion VFX.
             NetworkServer.SendToAll(new DroneExplodedMessage { Position = pos });

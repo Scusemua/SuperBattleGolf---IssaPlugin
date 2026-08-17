@@ -15,6 +15,11 @@ namespace IssaPlugin.Items
             if (gameObject.GetComponent<AC130GunshipMarker>() == null)
                 gameObject.AddComponent<AC130GunshipMarker>();
 
+            // The orbital laser caches aircraft markers and only rescans on an
+            // interval. Tell it a marker just appeared so targeting picks this
+            // gunship up on the next frame rather than up to RescanInterval later.
+            Patches.OrbitalLaserAircraftHelpers.Invalidate();
+
             if (gameObject.GetComponent<Entity>() == null)
                 gameObject.AddComponent<Entity>();
 

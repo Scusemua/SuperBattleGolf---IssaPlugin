@@ -25,6 +25,10 @@ namespace IssaPlugin
         public ConfigEntry<bool> BomberOverlayEnabled { get; private set; }
         public ConfigEntry<bool> PlayerBoxOverlayEnabled { get; private set; }
         public ConfigEntry<bool> CustomVfxEnabled { get; private set; }
+        public ConfigEntry<bool> PerfDiagnosticsEnabled { get; private set; }
+        public ConfigEntry<bool> ModCpuProfilingEnabled { get; private set; }
+        public ConfigEntry<float> PerfDiagnosticsInterval { get; private set; }
+        public ConfigEntry<int> PerfDiagnosticsTopObjects { get; private set; }
 
         // ── UI section ────────────────────────────────────────────────────────
         public ConfigEntry<Key> SpawnConfigUIKey { get; private set; }
@@ -145,8 +149,10 @@ namespace IssaPlugin
             NetworkDiagnosticsEnabled = cfg.Bind(
                 "Diagnostics",
                 "NetworkDiagnosticsEnabled",
-                false,
-                "Log a periodic summary of network traffic and latency to the BepInEx log. "
+                true,
+                "DEFAULTED ON FOR THIS DEBUGGING RELEASE — set back to false once the "
+                    + "FPS investigation is finished. "
+                    + "Log a periodic summary of network traffic and latency to the BepInEx log. "
                     + "Enable this if you are reporting lag so the log shows which messages "
                     + "dominate bandwidth. Set to false for normal play."
             );
@@ -189,6 +195,48 @@ namespace IssaPlugin
                     + "are unaffected — only the visuals are skipped. Use it to test whether "
                     + "the mod's VFX prefabs, and the shaders they were converted to for "
                     + "URP, are responsible for frame drops."
+            );
+
+            PerfDiagnosticsEnabled = cfg.Bind(
+                "Diagnostics",
+                "PerfDiagnosticsEnabled",
+                true,
+                "DEFAULTED ON FOR THIS DEBUGGING RELEASE — set back to false once the "
+                    + "FPS investigation is finished. "
+                    + "Log a periodic performance report: frame timing, CPU/GPU counters, GC "
+                    + "allocation, a census of spawned network objects with per-type change "
+                    + "since the last report, and physics object counts. Enable this if you "
+                    + "are reporting FPS problems. Set to false for normal play."
+            );
+
+            ModCpuProfilingEnabled = cfg.Bind(
+                "Diagnostics",
+                "ModCpuProfilingEnabled",
+                true,
+                "DEFAULTED ON FOR THIS DEBUGGING RELEASE — set back to false once the "
+                    + "FPS investigation is finished. "
+                    + "Attribute main-thread CPU time to the mod's own subsystems (Harmony "
+                    + "patches, overlays, network bridges) and report it alongside the "
+                    + "performance report. Answers how much of the frame the mod itself "
+                    + "costs. Adds a small timing overhead to every patch, so enable it "
+                    + "only while investigating. REQUIRES A GAME RESTART to take effect, "
+                    + "because the timing wrappers are installed at startup."
+            );
+
+            PerfDiagnosticsInterval = cfg.Bind(
+                "Diagnostics",
+                "PerfDiagnosticsInterval",
+                30f,
+                "Seconds between performance reports. Only used when "
+                    + "PerfDiagnosticsEnabled is true."
+            );
+
+            PerfDiagnosticsTopObjects = cfg.Bind(
+                "Diagnostics",
+                "PerfDiagnosticsTopObjects",
+                15,
+                "How many of the most numerous spawned object types to list in each "
+                    + "performance report."
             );
 
             NetworkDiagnosticsTopMessages = cfg.Bind(

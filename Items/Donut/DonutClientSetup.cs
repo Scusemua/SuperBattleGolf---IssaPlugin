@@ -17,6 +17,10 @@ namespace IssaPlugin.Items
             if (gameObject.GetComponent<DonutMarker>() == null)
                 gameObject.AddComponent<DonutMarker>();
 
+            // See AC130ClientSetup: refresh the orbital laser's marker cache so this
+            // donut is targetable immediately rather than after the rescan interval.
+            Patches.OrbitalLaserAircraftHelpers.Invalidate();
+
             if (gameObject.GetComponent<Entity>() == null)
                 gameObject.AddComponent<Entity>();
 

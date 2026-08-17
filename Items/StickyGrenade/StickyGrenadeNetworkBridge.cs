@@ -107,7 +107,7 @@ namespace IssaPlugin.Items
 
             _serverThrowActive = false; // allow immediate re-throw (uses consumed)
 
-            IssaPluginPlugin.Log.LogInfo(
+            IssaPluginPlugin.Log.LogDebug(
                 $"[StickyGrenade] Grenade thrown from {throwOrigin} velocity={velocity.magnitude:F1} m/s"
             );
         }
@@ -150,7 +150,7 @@ namespace IssaPlugin.Items
                 }
             );
 
-            IssaPluginPlugin.Log.LogInfo(
+            IssaPluginPlugin.Log.LogDebug(
                 $"[StickyGrenade] Client throw: origin={throwOrigin} speed={velocity.magnitude:F1}"
             );
         }
@@ -214,10 +214,6 @@ namespace IssaPlugin.Items
             CameraModuleController.Shake(
                 GameManager.CameraGameplaySettings.RocketExplosionScreenshakeSettings,
                 msg.WorldPosition
-            );
-
-            IssaPluginPlugin.Log.LogInfo(
-                $"[StickyGrenade] Client: detonation VFX at {msg.WorldPosition}"
             );
         }
 

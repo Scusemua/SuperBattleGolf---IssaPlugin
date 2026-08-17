@@ -41,6 +41,18 @@ namespace IssaPlugin
             _harmony.PatchAll(typeof(IssaPluginPlugin).Assembly);
             Log.LogInfo("Harmony patches applied.");
 
+            // Must run after PatchAll: the profiler wraps our own patch methods, which
+            // only exist as Harmony patches once PatchAll has processed the assembly.
+            // Read once at startup rather than per call — the wrappers are installed
+            // or not for the lifetime of the process.
+            Network.ModCpuProfiler.CaptureMainThread();
+            Network.ModCpuProfiler.Enabled = ModConfig.Global.ModCpuProfilingEnabled.Value;
+            if (Network.ModCpuProfiler.Enabled)
+                Network.ModCpuProfilerInstaller.Install(
+                    _harmony,
+                    typeof(IssaPluginPlugin).Assembly
+                );
+
             CourseManager.MatchStateChanged += OnMatchStateChanged;
 
             // Any config change on the host must invalidate ItemConfigSyncer's
@@ -53,6 +65,7 @@ namespace IssaPlugin
             gameObject.AddComponent<SpawnWeightsSyncer>();
             gameObject.AddComponent<ItemConfigSyncer>();
             gameObject.AddComponent<NetworkTrafficDiagnostics>();
+            gameObject.AddComponent<PerfDiagnostics>();
             gameObject.AddComponent<VoteManager>();
             gameObject.AddComponent<PlayerBoxOverlay>();
             gameObject.AddComponent<VoteOverlay>();

@@ -35,6 +35,89 @@ namespace IssaPlugin.Patches
     {
         public static float XZDist(Vector3 p1, Vector3 p2) =>
             new Vector2(p1.x - p2.x, p1.z - p2.z).magnitude;
+
+        // ────────────────────────────────────────────────────────────────
+        //  Aircraft marker cache
+        //
+        //  These lookups sit on OrbitalLaserManager.GetTarget, which the base game
+        //  calls from PlayerInventory.OnBUpdate — every frame, for as long as the
+        //  local player holds a laser-targeting item. Resolving them with
+        //  FindFirstObjectByType meant three full scene walks per frame, which is
+        //  why holding the Donut or Orbital Laser cost frames regardless of what
+        //  was drawn on screen.
+        //
+        //  A live cached marker is returned directly. When none is cached, the scan
+        //  is rate-limited to RescanInterval so the common "no aircraft exists" case
+        //  costs a timestamp comparison per frame instead of three scene walks.
+        // ────────────────────────────────────────────────────────────────
+
+        private static AC130GunshipMarker _gunship;
+        private static BomberMarker _bomber;
+        private static DonutMarker _donut;
+
+        // Rescanning is rate-limited rather than done per frame. Markers appear only
+        // when someone activates an aircraft item, so the overwhelmingly common case is
+        // "none exist" — and that case must not pay for a scan every frame, which is
+        // exactly what the previous FindFirstObjectByType calls did.
+        private const float RescanInterval = 0.5f;
+
+        // One timer per marker type, indexed by TimerSlot<T>.Index. Sized generously;
+        // only three slots are used today.
+        private static readonly float[] _nextRescanTime = new float[8];
+        private static int _nextSlot = -1;
+
+        /// Forces the next lookup of every marker type to rescan immediately. Call when
+        /// an aircraft is known to have spawned so it is picked up without waiting out
+        /// the rescan interval.
+        public static void Invalidate()
+        {
+            for (int i = 0; i < _nextRescanTime.Length; i++)
+                _nextRescanTime[i] = 0f;
+        }
+
+        public static AC130GunshipMarker Gunship => Refresh(ref _gunship);
+
+        public static BomberMarker Bomber => Refresh(ref _bomber);
+
+        public static DonutMarker Donut => Refresh(ref _donut);
+
+        /// Returns the cached marker, rescanning for it only when the cache is empty
+        /// and the rescan interval has elapsed.
+        ///
+        /// Each marker type is tracked independently and on its own timer. The three
+        /// aircraft use separate GlobalSessionLock types, so a donut, an AC130 and a
+        /// stealth bomber can all be airborne at once, and one being active must never
+        /// suppress the search for the others — an earlier version early-returned when
+        /// any one marker was live, which meant an aircraft launched during another's
+        /// session was never picked up.
+        private static T Refresh<T>(ref T cached)
+            where T : Component
+        {
+            // Unity's fake-null makes a destroyed marker compare equal to null, so this
+            // also catches markers whose GameObject went away.
+            if (cached != null)
+                return cached;
+
+            // Rate-limit the miss path: with no aircraft airborne — the common case —
+            // this must not scan the scene every frame, which is the cost being removed.
+            int slot = TimerSlot<T>.Index;
+            if (Time.unscaledTime < _nextRescanTime[slot])
+                return null;
+
+            _nextRescanTime[slot] = Time.unscaledTime + RescanInterval;
+
+            cached = Object.FindFirstObjectByType<T>();
+            return cached;
+        }
+
+        /// Assigns each marker type a stable index into _nextRescanTime so the three
+        /// types back off independently rather than sharing one timer.
+        private static class TimerSlot<T>
+        {
+            internal static readonly int Index = System.Threading.Interlocked.Increment(
+                ref _nextSlot
+            );
+        }
     }
 
     // ====================================================================
@@ -67,7 +150,7 @@ namespace IssaPlugin.Patches
             Transform bestAircraft = null;
             float bestDist = float.MaxValue;
 
-            var gunshipMarker = Object.FindFirstObjectByType<AC130GunshipMarker>();
+            var gunshipMarker = OrbitalLaserAircraftHelpers.Gunship;
             if (gunshipMarker != null)
             {
                 float d = OrbitalLaserAircraftHelpers.XZDist(
@@ -81,7 +164,7 @@ namespace IssaPlugin.Patches
                 }
             }
 
-            var bomberMarker = Object.FindFirstObjectByType<BomberMarker>();
+            var bomberMarker = OrbitalLaserAircraftHelpers.Bomber;
             if (bomberMarker != null)
             {
                 float d = OrbitalLaserAircraftHelpers.XZDist(
@@ -95,7 +178,7 @@ namespace IssaPlugin.Patches
                 }
             }
 
-            var donutMarker = Object.FindFirstObjectByType<DonutMarker>();
+            var donutMarker = OrbitalLaserAircraftHelpers.Donut;
             if (donutMarker != null)
             {
                 float d = OrbitalLaserAircraftHelpers.XZDist(
@@ -159,7 +242,7 @@ namespace IssaPlugin.Patches
             LockOnTarget bestLockOn = null;
             float bestDist = float.MaxValue;
 
-            var gunshipMarker = Object.FindFirstObjectByType<AC130GunshipMarker>();
+            var gunshipMarker = OrbitalLaserAircraftHelpers.Gunship;
             if (gunshipMarker != null)
             {
                 var lot = gunshipMarker.GetComponent<LockOnTarget>();
@@ -177,7 +260,7 @@ namespace IssaPlugin.Patches
                 }
             }
 
-            var bomberMarker = Object.FindFirstObjectByType<BomberMarker>();
+            var bomberMarker = OrbitalLaserAircraftHelpers.Bomber;
             if (bomberMarker != null)
             {
                 var lot = bomberMarker.GetComponent<LockOnTarget>();
@@ -226,7 +309,7 @@ namespace IssaPlugin.Patches
             float bestDist = float.MaxValue;
 
             // AC130 gunship — AC130GunshipMarker is added server-side in AC130NetworkBridge.SpawnGunship.
-            var gunshipMarker = Object.FindFirstObjectByType<AC130GunshipMarker>();
+            var gunshipMarker = OrbitalLaserAircraftHelpers.Gunship;
             if (gunshipMarker != null)
             {
                 float d = OrbitalLaserAircraftHelpers.XZDist(

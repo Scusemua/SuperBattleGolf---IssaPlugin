@@ -22,4 +22,15 @@ $pic = Get-Content $pluginInfo -Raw
 $pic = $pic -replace 'PLUGIN_VERSION = "[^"]*"', "PLUGIN_VERSION = `"$new`""
 Set-Content $pluginInfo $pic -NoNewline
 
-Write-Host "Bumped version $current -> $new"
+# The Thunderstore manifest was previously updated by hand and had drifted behind
+# the other two files, which publishes the package under the wrong version.
+$manifest = "ThunderStore/manifest.json"
+if (Test-Path $manifest) {
+    $mf = Get-Content $manifest -Raw
+    $mf = $mf -replace '"version_number"\s*:\s*"[^"]*"', "`"version_number`": `"$new`""
+    Set-Content $manifest $mf -NoNewline
+} else {
+    Write-Warning "manifest.json not found at $manifest - Thunderstore version NOT updated"
+}
+
+Write-Host "Bumped version $current -> $new (csproj, PluginInfo.cs, manifest.json)"

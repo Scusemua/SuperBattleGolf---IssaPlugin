@@ -90,6 +90,10 @@ namespace IssaPlugin.Overlays
         private Color32[] _noisePixels;
         private const float NoiseUpdateRate = 0.05f;
 
+        /// Rows per scanline cycle: one opaque row followed by two transparent ones.
+        /// Also the height of the tiled scanline texture.
+        private const int ScanlinePeriod = 3;
+
         // ── Recharge state ────────────────────────────────────────────────
         private int _prevRemainingUses = -1;
         private float _rechargeFlashTimer;
@@ -185,13 +189,18 @@ namespace IssaPlugin.Overlays
 
         private void OnGUI()
         {
-            EnsureTextures();
-            EnsureStyles();
+            // Checked before EnsureTextures so a disabled overlay never generates the
+            // screen-sized vignette texture either.
+            if (!ModConfig.Donut.OverlayEnabled.Value)
+                return;
 
             // OnGUI runs at least twice per frame (Layout and Repaint). Everything
             // below is pure drawing, which only takes effect during Repaint.
             if (Event.current.type != EventType.Repaint)
                 return;
+
+            EnsureTextures();
+            EnsureStyles();
 
             // Guard: _sw/_sh are 0 on the very first frame before Update runs.
             float sw = _sw > 0 ? _sw : Screen.width;
@@ -210,8 +219,15 @@ namespace IssaPlugin.Overlays
             );
 
             // ── Scanlines ─────────────────────────────────────────────────
+            // Tiled from a 1x3 strip: the UV rect repeats once per ScanlinePeriod
+            // screen pixels, so one opaque row lands every third row exactly as the
+            // old screen-sized texture did.
             GUI.color = new Color(0f, 0f, 0f, 0.12f);
-            GUI.DrawTexture(new Rect(0, 0, sw, sh), _scanlineTex, ScaleMode.StretchToFill);
+            GUI.DrawTextureWithTexCoords(
+                new Rect(0, 0, sw, sh),
+                _scanlineTex,
+                new Rect(0f, 0f, 1f, sh / ScanlinePeriod)
+            );
             GUI.color = Color.white;
 
             // ── Corner brackets ───────────────────────────────────────────
@@ -221,9 +237,6 @@ namespace IssaPlugin.Overlays
             DrawCornerBracket(sw - bSize, 0, bSize, bThick, false, true);
             DrawCornerBracket(0, sh - bSize, bSize, bThick, true, false);
             DrawCornerBracket(sw - bSize, sh - bSize, bSize, bThick, false, false);
-
-            // ── Donut-ring crosshair (centre screen) ──────────────────────
-            // DrawDonutCrosshair(sw / 2f, sh / 2f);
 
             // ── Top-left telemetry ────────────────────────────────────────
             int flavourIndex = (int)(_time / 2.5f) % FlavourLines.Length;
@@ -275,91 +288,6 @@ namespace IssaPlugin.Overlays
         // ----------------------------------------------------------------
         //  Draw helpers
         // ----------------------------------------------------------------
-
-        /// Donut-ring crosshair: outer ring approximated with tick marks + guide lines.
-        ///
-        /// The previous version used DrawLine() which walked each tick pixel-by-pixel
-        /// with a DrawTexture per step (~16 calls per tick × 8 ticks = 128 calls).
-        /// This version uses at most 2 DrawTexture calls per tick (20 total),
-        /// matching the visual with none of the overhead.
-        private void DrawDonutCrosshair(float cx, float cy)
-        {
-            float outerR = 36f;
-            float tickLen = 8f;
-            float lineLen = 20f;
-            float innerR = 14f;
-            float thick = 2f;
-
-            float pulse = 0.65f + 0.25f * Mathf.Sin(_time * 4f);
-            GUI.color = new Color(PinkMain.r, PinkMain.g, PinkMain.b, pulse);
-
-            // Cardinal ticks — single rect each
-            float ti = outerR + tickLen;
-            GUI.DrawTexture(
-                new Rect(cx - thick * 0.5f, cy - ti, thick, tickLen),
-                Texture2D.whiteTexture
-            ); // N
-            GUI.DrawTexture(
-                new Rect(cx - thick * 0.5f, cy + outerR, thick, tickLen),
-                Texture2D.whiteTexture
-            ); // S
-            GUI.DrawTexture(
-                new Rect(cx + outerR, cy - thick * 0.5f, tickLen, thick),
-                Texture2D.whiteTexture
-            ); // E
-            GUI.DrawTexture(
-                new Rect(cx - ti, cy - thick * 0.5f, tickLen, thick),
-                Texture2D.whiteTexture
-            ); // W
-
-            // Diagonal ticks — two small squares suggesting a dash at 45°
-            float d = outerR * 0.707f;
-            float dt = tickLen * 0.707f;
-            DrawDiagTick(cx + d, cy - d, 1f, -1f, dt, thick); // NE
-            DrawDiagTick(cx - d, cy - d, -1f, -1f, dt, thick); // NW
-            DrawDiagTick(cx + d, cy + d, 1f, 1f, dt, thick); // SE
-            DrawDiagTick(cx - d, cy + d, -1f, 1f, dt, thick); // SW
-
-            // Outer guide lines (beyond the ticks)
-            float ext = ti + 4f;
-            GUI.DrawTexture(
-                new Rect(cx - lineLen - ext, cy - thick * 0.5f, lineLen, thick),
-                Texture2D.whiteTexture
-            );
-            GUI.DrawTexture(
-                new Rect(cx + ext, cy - thick * 0.5f, lineLen, thick),
-                Texture2D.whiteTexture
-            );
-            GUI.DrawTexture(
-                new Rect(cx - thick * 0.5f, cy - lineLen - ext, thick, lineLen),
-                Texture2D.whiteTexture
-            );
-            GUI.DrawTexture(
-                new Rect(cx - thick * 0.5f, cy + ext, thick, lineLen),
-                Texture2D.whiteTexture
-            );
-
-            // Inner gap stubs
-            float ig = (innerR + 4f) * 0.3f;
-            GUI.DrawTexture(
-                new Rect(cx - innerR - ig * 2f, cy - thick * 0.5f, ig, thick),
-                Texture2D.whiteTexture
-            );
-            GUI.DrawTexture(
-                new Rect(cx + innerR + ig * 0.3f, cy - thick * 0.5f, ig, thick),
-                Texture2D.whiteTexture
-            );
-            GUI.DrawTexture(
-                new Rect(cx - thick * 0.5f, cy - innerR - ig * 2f, thick, ig),
-                Texture2D.whiteTexture
-            );
-            GUI.DrawTexture(
-                new Rect(cx - thick * 0.5f, cy + innerR + ig * 0.3f, thick, ig),
-                Texture2D.whiteTexture
-            );
-
-            GUI.color = Color.white;
-        }
 
         /// Two overlapping squares that imply a short diagonal dash.
         /// Replaces the old per-pixel DrawLine loop entirely.
@@ -523,7 +451,7 @@ namespace IssaPlugin.Overlays
                 _noiseTex = GenerateNoise((int)(sw / 4), (int)(sh / 4));
 
             if (_scanlineTex == null)
-                _scanlineTex = GenerateScanlines((int)sw, (int)sh);
+                _scanlineTex = GenerateScanlines();
         }
 
         private static Texture2D GeneratePinkVignette(int w, int h)
@@ -549,18 +477,28 @@ namespace IssaPlugin.Overlays
             return tex;
         }
 
-        private static Texture2D GenerateScanlines(int w, int h)
+        /// Builds the scanline pattern as a 1x3 strip rather than a screen-sized
+        /// texture.
+        ///
+        /// The pattern only varies along Y — every pixel in a row is identical — so a
+        /// full-resolution texture stored the same three rows a few hundred times over.
+        /// At 1440p that was a ~3.7M pixel allocation and upload, two thirds of it
+        /// fully transparent. Drawn with DrawTextureWithTexCoords and a UV height of
+        /// (screenHeight / 3), this tiles to a pixel-identical result.
+        private static Texture2D GenerateScanlines()
         {
-            var tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
-            var pixels = new Color[w * h];
-            for (int y = 0; y < h; y++)
+            var tex = new Texture2D(1, ScanlinePeriod, TextureFormat.RGBA32, false)
             {
-                float a = (y % 3 == 0) ? 1f : 0f;
-                for (int x = 0; x < w; x++)
-                    pixels[y * w + x] = new Color(0f, 0f, 0f, a);
-            }
-            tex.SetPixels(pixels);
-            tex.Apply();
+                wrapMode = TextureWrapMode.Repeat,
+                filterMode = FilterMode.Point,
+            };
+
+            var pixels = new Color32[ScanlinePeriod];
+            for (int y = 0; y < ScanlinePeriod; y++)
+                pixels[y] = new Color32(0, 0, 0, (byte)(y == 0 ? 255 : 0));
+
+            tex.SetPixels32(pixels);
+            tex.Apply(false);
             return tex;
         }
 
