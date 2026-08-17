@@ -12,6 +12,7 @@ AutoInstaller/ModFiles
 private_key.xml
 IssaMod*.zip
 release-staging/
+player_logs/
 .VSCodeCounter/
 
 ## Ignore Visual Studio temporary files, build results, and
