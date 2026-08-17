@@ -123,15 +123,15 @@ namespace IssaPlugin.Items
                 _shapeColliderId = col.GetInstanceID();
                 PhysicsManager.RegisterBallColliderId(_shapeColliderId);
 
-                IssaPluginPlugin.Log.LogInfo(
-                    $"[ShapeShifter][DEBUG] Shape collider registered:" +
-                    $" type={col.GetType().Name}" +
-                    $" instanceId={_shapeColliderId}" +
-                    $" hasModifiableContacts={col.hasModifiableContacts}" +
-                    $" layer={col.gameObject.layer} ({LayerMask.LayerToName(col.gameObject.layer)})" +
-                    $" PhysicsManager.HasInstance={SingletonBehaviour<PhysicsManager>.HasInstance}" +
-                    $" BallMaterial={(PhysicsManager.Settings?.BallMaterial != null ? PhysicsManager.Settings.BallMaterial.name : "NULL")}"
-                );
+                // IssaPluginPlugin.Log.LogInfo(
+                //     $"[ShapeShifter][DEBUG] Shape collider registered:" +
+                //     $" type={col.GetType().Name}" +
+                //     $" instanceId={_shapeColliderId}" +
+                //     $" hasModifiableContacts={col.hasModifiableContacts}" +
+                //     $" layer={col.gameObject.layer} ({LayerMask.LayerToName(col.gameObject.layer)})" +
+                //     $" PhysicsManager.HasInstance={SingletonBehaviour<PhysicsManager>.HasInstance}" +
+                //     $" BallMaterial={(PhysicsManager.Settings?.BallMaterial != null ? PhysicsManager.Settings.BallMaterial.name : "NULL")}"
+                // );
             }
             else
             {
@@ -139,15 +139,15 @@ namespace IssaPlugin.Items
             }
 
             // Also log the SphereCollider's ID so we can compare in the contact event logs.
-            if (_sphere != null)
-            {
-                IssaPluginPlugin.Log.LogInfo(
-                    $"[ShapeShifter][DEBUG] SphereCollider (shrunk):" +
-                    $" instanceId={_sphere.GetInstanceID()}" +
-                    $" hasModifiableContacts={_sphere.hasModifiableContacts}" +
-                    $" layer={_sphere.gameObject.layer} ({LayerMask.LayerToName(_sphere.gameObject.layer)})"
-                );
-            }
+            // if (_sphere != null)
+            // {
+            //     IssaPluginPlugin.Log.LogInfo(
+            //         $"[ShapeShifter][DEBUG] SphereCollider (shrunk):" +
+            //         $" instanceId={_sphere.GetInstanceID()}" +
+            //         $" hasModifiableContacts={_sphere.hasModifiableContacts}" +
+            //         $" layer={_sphere.gameObject.layer} ({LayerMask.LayerToName(_sphere.gameObject.layer)})"
+            //     );
+            // }
 
             // Inherit the ball's cosmetic material from any still-enabled renderer on the ball root.
             var ballRenderer = GetComponentInChildren<MeshRenderer>(includeInactive: false);
