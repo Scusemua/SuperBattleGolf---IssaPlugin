@@ -104,6 +104,12 @@ namespace IssaPlugin.Items
             // Fly-out destination: continue beyond the hover point in the same direction.
             Vector3 flyOutPos = hoverPos + approachDir * (approachDist * 1.5f);
 
+            // Raise the whole path if any terrain along it out-tops the hover altitude,
+            // then re-derive the endpoints from the corrected hover height.
+            hoverPos.y = TerrainHeight.ClearPath(spawnPos, hoverPos, flyOutPos, altitude);
+            spawnPos = hoverPos + approachDir * approachDist;
+            flyOutPos = hoverPos + approachDir * (approachDist * 1.5f);
+
             // ── Spawn harrier ────────────────────────────────────────────
             GameObject harrierGo = SpawnHarrierObject(spawnPos, hoverPos);
             if (harrierGo == null)
@@ -292,7 +298,13 @@ namespace IssaPlugin.Items
         // ================================================================
 
         /// <summary>
-        /// Returns the centroid of all connected players at ground level (y = 0).
+        /// Returns the centroid of all connected players, with y set to the ground
+        /// height beneath that centroid. Altitude is added separately by the caller.
+        ///
+        /// Ground height is sampled rather than assumed to be y = 0: on hilly maps (the
+        /// ice maps especially) the terrain sits well above the world origin, so a fixed
+        /// y = 0 base put the Harrier's hover point underground.
+        ///
         /// Falls back to world origin if no players are found.
         /// </summary>
         private static Vector3 ComputeMapCenter()
@@ -306,7 +318,10 @@ namespace IssaPlugin.Items
                 sum += p.transform.position;
 
             Vector3 centroid = sum / players.Length;
-            centroid.y = 0f; // Altitude is added separately.
+
+            // If no ground is found under the centroid, the players' own average height
+            // stands in — a far better estimate than the world origin.
+            centroid.y = TerrainHeight.GroundHeightAt(centroid, centroid.y);
             return centroid;
         }
 

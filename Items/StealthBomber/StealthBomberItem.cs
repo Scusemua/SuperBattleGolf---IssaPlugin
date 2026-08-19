@@ -377,8 +377,13 @@ namespace IssaPlugin.Items
 
             Vector3 spawnPos = stripStart - direction * approachDist;
             Vector3 exitPos = stripEnd + direction * approachDist;
-            spawnPos.y = strip.Center.y + altitude;
-            exitPos.y = strip.Center.y + altitude;
+
+            // Fly the run at a height that clears terrain along the entire strip, not
+            // just under its centre — on hilly maps the bombing run can otherwise pass
+            // straight through a ridge between the two ends.
+            float runY = TerrainHeight.ClearPath(spawnPos, strip.Center, exitPos, altitude);
+            spawnPos.y = runY;
+            exitPos.y = runY;
 
             float exitBufferDist = ModConfig.StealthBomber.Speed.Value * waitTime;
             float dropEndDist = Vector3.Distance(spawnPos, exitPos) - exitBufferDist;

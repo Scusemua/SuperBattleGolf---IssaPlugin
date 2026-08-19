@@ -167,6 +167,17 @@ namespace IssaPlugin.Items
             // ----------------------------------------------------------------
             Vector3 playerPos = inventory.PlayerInfo.transform.position;
             Vector3 orbitCenter = AC130Helpers.ComputeMapCenter(playerPos);
+
+            // Raise the orbit base so the whole ring clears terrain. The centre comes
+            // from the hole/tee landmarks, which carry a real ground height, but the
+            // gunship flies at OrbitRadius away from it — on hilly maps the ring can
+            // cross ground much higher than the centre sits. OrbitPosition adds the
+            // configured altitude to centre.y, so centre.y must stay a ground height.
+            orbitCenter.y = TerrainHeight.HighestGroundOnRing(
+                orbitCenter,
+                ModConfig.AC130.OrbitRadius.Value
+            );
+
             GameObject gunshipGo = SpawnGunship(orbitCenter);
 
             if (gunshipGo == null)

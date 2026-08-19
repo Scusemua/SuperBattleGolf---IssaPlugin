@@ -276,7 +276,14 @@ namespace IssaPlugin.Items
         // ── Helpers ───────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Returns the centroid of all connected players at the given altitude.
+        /// Returns the centroid of all connected players, lifted to the given altitude
+        /// above the ground beneath them.
+        ///
+        /// The altitude is measured from sampled ground rather than from the world
+        /// origin: drones roam a fixed altitude band around this centre and never
+        /// terrain-follow, so on maps whose terrain sits above y = 0 (the ice maps) a
+        /// world-origin base spawned the whole swarm underground.
+        ///
         /// Falls back to world origin if no players are found.
         /// </summary>
         private static Vector3 ComputeOrbitCenter(float altitude)
@@ -289,9 +296,7 @@ namespace IssaPlugin.Items
             foreach (var p in players)
                 sum += p.transform.position;
 
-            Vector3 centroid = sum / players.Length;
-            centroid.y = altitude;
-            return centroid;
+            return TerrainHeight.AboveGround(sum / players.Length, altitude);
         }
 
         // ── Static NetworkClient message handlers ─────────────────────────────
