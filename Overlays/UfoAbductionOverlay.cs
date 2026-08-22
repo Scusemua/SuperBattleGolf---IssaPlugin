@@ -36,6 +36,14 @@ namespace IssaPlugin.Overlays
         private static Texture2D _targetingScanlineTex;
         private static Texture2D _targetingNoiseTex;
         private float _targetingNoiseTimer;
+
+        /// UV offset into the static targeting-noise texture, reshuffled on the noise
+        /// cadence to fake regeneration without touching pixel data.
+        private Vector2 _targetingNoiseOffset;
+
+        /// Rows per scanline cycle: one tinted row followed by two transparent ones.
+        /// Also the height of the tiled scanline texture.
+        private const int ScanlinePeriod = 3;
         private const float TargetingNoiseUpdateRate = 0.04f;
 
         // ── Session state ─────────────────────────────────────────────────────
@@ -214,24 +222,39 @@ namespace IssaPlugin.Overlays
             if (_sw <= 0f || _sh <= 0f)
                 return;
 
+            // Cheap state flags first. Everything below this point only matters when
+            // something is actually on screen, and this overlay is idle for the vast
+            // majority of a match — so the idle path must not touch styles, query the
+            // inventory, or look up the PiP texture.
+            var pipTex = UfoAbductionClientLogic.GetActivePipTexture();
+            bool hasPip = pipTex != null && pipTex.IsCreated();
+
+            bool sessionActive =
+                _victimSessionActive
+                || _wielderSessionActive
+                || _beingTargeted
+                || _time < _abortedUntil
+                || _time < _busyUntil
+                || _hasTarget;
+
+            // GetEffectivelyEquippedItem walks the inventory, so only ask when no
+            // cheaper flag already tells us we have something to draw.
+            bool equipped =
+                sessionActive
+                || localInfo.Inventory.GetEffectivelyEquippedItem(true)
+                    == ItemRegistry.UfoAbductionItemType;
+
+            if (!hasPip && !equipped)
+                return;
+
+            // Styles are only needed once we know something will be drawn.
             EnsureStyles();
 
             // PiP is shown to every client whenever any abduction session is active.
-            var pipTex = UfoAbductionClientLogic.GetActivePipTexture();
-            if (pipTex != null && pipTex.IsCreated())
+            if (hasPip)
                 DrawPipView(pipTex);
 
-            bool equipped =
-                localInfo.Inventory.GetEffectivelyEquippedItem(true)
-                == ItemRegistry.UfoAbductionItemType;
-
-            if (
-                !equipped
-                && !_victimSessionActive
-                && !_wielderSessionActive
-                && !_beingTargeted
-                && _time >= _abortedUntil
-            )
+            if (!equipped && !sessionActive)
                 return;
 
             if (UfoAbductionTargeting.IsSelectingDropoff)
@@ -282,23 +305,35 @@ namespace IssaPlugin.Overlays
         {
             EnsureTargetingTextures();
 
-            // Scanlines — alien green tint
+            // Scanlines — alien green tint. Tiled from a 1x3 strip: the UV rect repeats
+            // once per ScanlinePeriod screen pixels, placing one tinted row every third
+            // row exactly as the old screen-sized texture did.
             GUI.color = new Color(0f, 0.4f, 0f, 0.12f);
-            GUI.DrawTexture(
+            GUI.DrawTextureWithTexCoords(
                 new Rect(0, 0, _sw, _sh),
                 _targetingScanlineTex,
-                ScaleMode.StretchToFill
+                new Rect(0f, 0f, 1f, _sh / ScanlinePeriod)
             );
 
-            // Noise
+            // Noise — offset the UVs into a static texture rather than rebuilding its
+            // pixels. Regenerating a 256x256 texture several times a second means 65k
+            // Random calls plus a GPU upload on the main thread; scrolling looks the
+            // same at 3% alpha and costs one Rect. Same approach as BomberOverlay.
             _targetingNoiseTimer += Time.deltaTime;
             if (_targetingNoiseTimer >= TargetingNoiseUpdateRate)
             {
-                RegenerateTargetingNoise();
+                _targetingNoiseOffset = new Vector2(
+                    UnityEngine.Random.value,
+                    UnityEngine.Random.value
+                );
                 _targetingNoiseTimer = 0f;
             }
             GUI.color = new Color(1f, 1f, 1f, 0.03f);
-            GUI.DrawTexture(new Rect(0, 0, _sw, _sh), _targetingNoiseTex, ScaleMode.StretchToFill);
+            GUI.DrawTextureWithTexCoords(
+                new Rect(0, 0, _sw, _sh),
+                _targetingNoiseTex,
+                new Rect(_targetingNoiseOffset.x, _targetingNoiseOffset.y, 1f, 1f)
+            );
             GUI.color = Color.white;
 
             // Corner brackets
@@ -614,9 +649,6 @@ namespace IssaPlugin.Overlays
 
         private void EnsureTargetingTextures()
         {
-            int wi = Mathf.Max(1, (int)_sw);
-            int hi = Mathf.Max(1, (int)_sh);
-
             if (_targetingBgTex == null)
             {
                 _targetingBgTex = new Texture2D(1, 1);
@@ -624,44 +656,53 @@ namespace IssaPlugin.Overlays
                 _targetingBgTex.Apply();
             }
 
-            if (_targetingScanlineTex == null || _targetingScanlineTex.width != wi)
+            // Scanlines are a 1x3 strip, not a screen-sized texture: the pattern only
+            // varies along Y, so a full-resolution copy stored the same three rows a
+            // few hundred times over and was rebuilt on every resolution change.
+            // Drawn tiled in DrawDropoffTargetingOverlay for a pixel-identical result.
+            if (_targetingScanlineTex == null)
             {
-                _targetingScanlineTex = new Texture2D(wi, hi);
-                var pixels = new Color[wi * hi];
-                for (int py = 0; py < hi; py++)
+                _targetingScanlineTex = new Texture2D(1, ScanlinePeriod)
                 {
-                    Color lineColor =
-                        (py % 3 == 0) ? new Color(0f, 0.5f, 0.1f, 0.15f) : Color.clear;
-                    for (int px = 0; px < wi; px++)
-                        pixels[py * wi + px] = lineColor;
-                }
-                _targetingScanlineTex.SetPixels(pixels);
-                _targetingScanlineTex.Apply();
+                    wrapMode = TextureWrapMode.Repeat,
+                    filterMode = FilterMode.Point,
+                };
+                var pixels = new Color32[ScanlinePeriod];
+                for (int py = 0; py < ScanlinePeriod; py++)
+                    pixels[py] = py == 0 ? new Color32(0, 128, 26, 38) : new Color32(0, 0, 0, 0);
+                _targetingScanlineTex.SetPixels32(pixels);
+                _targetingScanlineTex.Apply(false);
             }
 
-            _targetingNoiseTex ??= new Texture2D(256, 256);
+            if (_targetingNoiseTex == null)
+            {
+                _targetingNoiseTex = new Texture2D(256, 256);
+                // Repeat so the drawn UV rect can be offset and still tile.
+                _targetingNoiseTex.wrapMode = TextureWrapMode.Repeat;
+                FillTargetingNoise(_targetingNoiseTex);
+            }
         }
 
-        private void RegenerateTargetingNoise()
+        /// Fills the targeting noise texture once. The animated "static" comes from
+        /// offsetting the sampled UVs each tick rather than refilling these pixels,
+        /// which previously allocated a 65k-element Color array and re-uploaded the
+        /// texture several times a second.
+        private static void FillTargetingNoise(Texture2D tex)
         {
-            if (_targetingNoiseTex == null)
-                return;
-
-            int nw = _targetingNoiseTex.width,
-                nh = _targetingNoiseTex.height;
-            var pixels = new Color[nw * nh];
-            for (int i = 0; i < pixels.Length; i++)
+            int count = tex.width * tex.height;
+            var pixels = new Color32[count];
+            for (int i = 0; i < count; i++)
             {
-                float v = UnityEngine.Random.value;
-                pixels[i] = new Color(
-                    v * 0.3f,
+                byte v = (byte)(UnityEngine.Random.value * 255f);
+                pixels[i] = new Color32(
+                    (byte)(v * 0.3f),
                     v,
-                    v * 0.4f,
-                    UnityEngine.Random.Range(0.01f, 0.06f)
+                    (byte)(v * 0.4f),
+                    (byte)(UnityEngine.Random.Range(0.01f, 0.06f) * 255f)
                 );
             }
-            _targetingNoiseTex.SetPixels(pixels);
-            _targetingNoiseTex.Apply();
+            tex.SetPixels32(pixels);
+            tex.Apply(false);
         }
     }
 }

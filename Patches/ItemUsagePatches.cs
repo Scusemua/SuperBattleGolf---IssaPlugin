@@ -617,9 +617,14 @@ namespace IssaPlugin.Patches
     /// elephant gun: IsAimingItem becomes true naturally and the character faces the
     /// camera's aim direction rather than the swing direction.
     ///
-    /// The recursive call to GetEffectivelyEquippedItem(true) inside the Postfix is
-    /// safe: the Postfix exits immediately when ignoreEquipmentHiding is true, so
-    /// there is no infinite recursion.
+    /// This is the most frequently invoked patch in the mod — the base game calls
+    /// GetEffectivelyEquippedItem from several per-frame paths — so the Postfix body
+    /// is kept to a dictionary lookup and a comparison.
+    ///
+    /// The re-entrant call to GetEffectivelyEquippedItem(true) is safe: the Postfix
+    /// exits immediately when ignoreEquipmentHiding is true, bounding recursion at one
+    /// level. It is made once and cached rather than twice, because each call re-enters
+    /// the patched method and so pays the Harmony dispatch cost again.
     /// </summary>
     [HarmonyPatch(typeof(PlayerInventory), "GetEffectivelyEquippedItem")]
     static class GetEffectivelyEquippedItemPatch
@@ -632,12 +637,15 @@ namespace IssaPlugin.Patches
         {
             if (ignoreEquipmentHiding)
                 return;
-            if (!ignoreEquipmentHiding && ItemRegistry.IsCustomItem(__result))
+
+            if (ItemRegistry.IsCustomItem(__result))
                 __result = ItemType.None;
-            if (
-                __instance.GetEffectivelyEquippedItem(true) == ItemRegistry.SniperRifleItemType
-                || __instance.GetEffectivelyEquippedItem(true) == ItemRegistry.AK47ItemType
-            )
+
+            // Resolve the unhidden item once. The previous version called this twice,
+            // tripling the invocation count of a method already called ~6 times per
+            // frame, with both calls returning the same value.
+            var actual = __instance.GetEffectivelyEquippedItem(true);
+            if (actual == ItemRegistry.SniperRifleItemType || actual == ItemRegistry.AK47ItemType)
                 __result = ItemType.ElephantGun;
         }
     }
@@ -660,15 +668,19 @@ namespace IssaPlugin.Patches
 
         static void Postfix(PlayerInventory __instance)
         {
+            // Resolve once: this runs every frame, and each call re-enters the patched
+            // GetEffectivelyEquippedItem, paying Harmony dispatch again.
+            var equipped = __instance.GetEffectivelyEquippedItem(true);
             if (
-                __instance.GetEffectivelyEquippedItem(true) != ItemRegistry.SniperRifleItemType
-                && __instance.GetEffectivelyEquippedItem(true) != ItemRegistry.AK47ItemType
+                equipped != ItemRegistry.SniperRifleItemType
+                && equipped != ItemRegistry.AK47ItemType
             )
                 return;
 
+            // Everything below is gated behind the equipped check above, so the
+            // reflective property read only happens while a custom gun is held.
             bool shouldAim = Mouse.current?.rightButton.isPressed ?? false;
             bool currentlyAiming = (bool)(IsAimingItemProp?.GetValue(__instance) ?? false);
-            bool isHoldingAimSwing = __instance.PlayerInfo?.Input?.IsHoldingAimSwing ?? false;
 
             if (currentlyAiming == shouldAim)
                 return;
