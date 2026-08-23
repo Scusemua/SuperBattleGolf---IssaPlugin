@@ -149,7 +149,7 @@ namespace IssaPlugin
             NetworkDiagnosticsEnabled = cfg.Bind(
                 "Diagnostics",
                 "NetworkDiagnosticsEnabled",
-                false,
+                true,
                 "Log a periodic summary of network traffic and latency to the BepInEx log. "
                     + "Enable this if you are reporting lag so the log shows which messages "
                     + "dominate bandwidth. Set to false for normal play."
@@ -198,7 +198,7 @@ namespace IssaPlugin
             PerfDiagnosticsEnabled = cfg.Bind(
                 "Diagnostics",
                 "PerfDiagnosticsEnabled",
-                false,
+                true,
                 "Log a periodic performance report: frame timing, CPU/GPU counters, GC "
                     + "allocation, a census of spawned network objects with per-type change "
                     + "since the last report, and physics object counts. Enable this if you "
@@ -208,7 +208,7 @@ namespace IssaPlugin
             ModCpuProfilingEnabled = cfg.Bind(
                 "Diagnostics",
                 "ModCpuProfilingEnabled",
-                false,
+                true,
                 "Attribute main-thread CPU time to the mod's own subsystems (Harmony "
                     + "patches, overlays, network bridges) and report it alongside the "
                     + "performance report. Answers how much of the frame the mod itself "
