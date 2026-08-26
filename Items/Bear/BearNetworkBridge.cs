@@ -145,6 +145,20 @@ namespace IssaPlugin.Items
                 Quaternion.Euler(0f, Random.Range(0f, 360f), 0f)
             );
 
+            // The bear's NetworkTransform must be server-authoritative. Mirror's
+            // default for NetworkTransformBase is SyncDirection.ClientToServer,
+            // and the prefab carries that default — on a host (server + client in
+            // one process) the local client then owns the transform and its
+            // snapshot interpolation overwrites the server AI's MovePosition
+            // every tick. The bear animates and rotates but never travels.
+            // Must be set before NetworkServer.Spawn so the first sync is correct.
+            foreach (var nt in bearGo.GetComponentsInChildren<NetworkTransformBase>(true))
+            {
+                nt.syncDirection = SyncDirection.ServerToClient;
+                nt.syncPosition = true;
+                nt.syncRotation = true;
+            }
+
             // Hit receiver must be added before BearBehaviour so that
             // BearBehaviour.Start() can wire its event subscriptions
             var hitReceiver = bearGo.AddComponent<BearHitReceiver>();

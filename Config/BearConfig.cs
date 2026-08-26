@@ -44,6 +44,7 @@ namespace IssaPlugin
         public ConfigEntry<float> AggroDuration { get; private set; }
         public ConfigEntry<float> MeleeHitRange { get; private set; }
         public ConfigEntry<bool> FriendlyFire { get; private set; }
+        public ConfigEntry<bool> LogMovementDiagnostics { get; private set; }
         public ConfigEntry<bool> AttackFinishedPlayers { get; private set; }
 
         public BearConfig(ConfigFile cfg, GlobalConfig global)
@@ -259,6 +260,13 @@ namespace IssaPlugin
                 "FriendlyFire",
                 false,
                 "If false, bears will not target or attack the player who summoned them."
+            );
+            LogMovementDiagnostics = cfg.Bind(
+                Section,
+                "LogMovementDiagnostics",
+                false,
+                "Logs once per second how far each bear intended to move versus how far it "
+                    + "actually moved. Use to diagnose bears that animate but stay in place."
             );
             AttackFinishedPlayers = cfg.Bind(
                 Section,
