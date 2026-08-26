@@ -364,6 +364,10 @@ namespace IssaPlugin.Items
             if (toHover.sqrMagnitude > 0.01f)
                 harrierGo.transform.rotation = Quaternion.LookRotation(toHover.normalized);
 
+            // Server AI drives this object's position; make sure the prefab's
+            // NetworkTransform can't overwrite it from the local client.
+            ServerAuthoritativeTransform.Apply(harrierGo, "Harrier");
+
             NetworkServer.Spawn(harrierGo);
             return harrierGo;
         }

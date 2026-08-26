@@ -173,6 +173,10 @@ namespace IssaPlugin.Items
             behaviour.FriendlyFire = ModConfig.DroneSwarm.FriendlyFire.Value;
             behaviour.AttackFinishedPlayers = ModConfig.DroneSwarm.AttackFinishedPlayers.Value;
 
+            // Server AI drives this object's position; make sure the prefab's
+            // NetworkTransform can't overwrite it from the local client.
+            ServerAuthoritativeTransform.Apply(droneGo, "DroneSwarm");
+
             // Spawn AFTER full setup so Mirror calls Start() post-Spawn.
             NetworkServer.Spawn(droneGo);
 

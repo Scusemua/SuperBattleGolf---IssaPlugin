@@ -171,6 +171,10 @@ namespace IssaPlugin.Items
             behaviour.ArmDelay = ModConfig.HunterDrone.ArmDelay.Value;
             behaviour.SetFallbackAimPoint(aimPoint);
 
+            // Server AI drives this object's position; make sure the prefab's
+            // NetworkTransform can't overwrite it from the local client.
+            ServerAuthoritativeTransform.Apply(droneGo, "HunterDrone");
+
             NetworkServer.Spawn(droneGo);
 
             _activeDrones.Add(droneGo);

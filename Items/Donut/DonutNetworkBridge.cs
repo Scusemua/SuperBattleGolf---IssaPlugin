@@ -169,6 +169,10 @@ namespace IssaPlugin.Items
                 ServerDonutShotDown();
             };
 
+            // Server AI drives this object's position; make sure the prefab's
+            // NetworkTransform can't overwrite it from the local client.
+            ServerAuthoritativeTransform.Apply(donutGo, "Donut");
+
             NetworkServer.Spawn(donutGo);
 
             var ni = donutGo.GetComponent<NetworkIdentity>();
