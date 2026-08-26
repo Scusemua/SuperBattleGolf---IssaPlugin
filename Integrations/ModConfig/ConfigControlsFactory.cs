@@ -67,7 +67,7 @@ namespace IssaPlugin.Integrations.ModConfigUI
                 "ISSA_CONTROL_STRIP",
                 typeof(RectTransform),
                 typeof(VerticalLayoutGroup),
-                typeof(LayoutElement));
+                typeof(ContentSizeFitter));
 
             strip.transform.SetParent(content, false);
 
@@ -90,6 +90,12 @@ namespace IssaPlugin.Integrations.ModConfigUI
             layout.childControlHeight = true;
             layout.childForceExpandWidth = true;
             layout.childForceExpandHeight = false;
+
+            // The page content uses childControlHeight, so it sizes the strip by the
+            // strip's own preferred height. Without a fitter that reports 0 and every
+            // control inside collapses onto the rows below it.
+            strip.GetComponent<ContentSizeFitter>().verticalFit =
+                ContentSizeFitter.FitMode.PreferredSize;
 
             return strip;
         }
@@ -181,6 +187,7 @@ namespace IssaPlugin.Integrations.ModConfigUI
 
             var row = UnityEngine.Object.Instantiate(UICloner.dropdown, parent);
             row.name = "ISSA_FILTER";
+            SetRowHeight(row);
 
             Transform label = row.transform.Find("Label Text");
             if (label != null)
@@ -238,7 +245,7 @@ namespace IssaPlugin.Integrations.ModConfigUI
             layout.childForceExpandHeight = false;
             layout.childAlignment = TextAnchor.MiddleCenter;
 
-            rowObj.GetComponent<LayoutElement>().preferredHeight = 55f;
+            SetRowHeight(rowObj);
 
             CreateButton(rowObj.transform, "Expand All", onExpandAll);
             CreateButton(rowObj.transform, "Collapse All", onCollapseAll);
@@ -272,6 +279,7 @@ namespace IssaPlugin.Integrations.ModConfigUI
 
             var row = UnityEngine.Object.Instantiate(UICloner.slider, parent);
             row.name = name;
+            SetRowHeight(row);
 
             Transform labelText = row.transform.Find("Label Text");
             if (labelText != null)
@@ -311,6 +319,26 @@ namespace IssaPlugin.Integrations.ModConfigUI
             target.anchorMax = Vector2.one;
             target.offsetMin = new Vector2(padding.x, padding.y);
             target.offsetMax = new Vector2(padding.z, padding.w);
+        }
+
+        /// <summary>
+        /// Height of one control row, matching the game's own option rows.
+        /// </summary>
+        private const float RowHeight = 55f;
+
+        /// <summary>
+        /// Pins a row to <see cref="RowHeight"/>. The cloned templates are normally laid
+        /// out by the game's own option container; inside our strip nothing else supplies
+        /// a height, so without this they collapse and overlap each other.
+        /// </summary>
+        private static void SetRowHeight(GameObject row, float height = RowHeight)
+        {
+            var element = row.GetComponent<LayoutElement>();
+            if (element == null) element = row.AddComponent<LayoutElement>();
+
+            element.minHeight = height;
+            element.preferredHeight = height;
+            element.flexibleHeight = 0f;
         }
 
         /// <summary>Copies the font styling from a template label onto a new one.</summary>
