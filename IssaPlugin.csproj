@@ -97,5 +97,22 @@
     <Reference Include="Unity.Localization">
       <HintPath>Assembly\Unity.Localization.dll</HintPath>
     </Reference>
+    <!-- UI assemblies used by the ModConfig integration's config UI enhancements. -->
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>Assembly\Unity.TextMeshPro.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>Assembly\UnityEngine.UI.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>Assembly\UnityEngine.UIModule.dll</HintPath>
+    </Reference>
+    <!-- Optional soft dependency: ModConfig in-game config UI.
+         Private=false so we never ship their DLL; every code path that touches
+         it is gated behind a Chainloader presence check. -->
+    <Reference Include="com.atomic.modconfig">
+      <HintPath>Assembly\com.atomic.modconfig.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
   </ItemGroup>
 </Project>

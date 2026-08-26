@@ -41,6 +41,10 @@ namespace IssaPlugin
             _harmony.PatchAll(typeof(IssaPluginPlugin).Assembly);
             Log.LogInfo("Harmony patches applied.");
 
+            // Optional: adds search, per-item filtering, and collapsible sections to the
+            // ModConfig settings UI. No-ops when ModConfig is not installed.
+            Integrations.ModConfigUI.ModConfigIntegration.TryApply(_harmony);
+
             // Must run after PatchAll: the profiler wraps our own patch methods, which
             // only exist as Harmony patches once PatchAll has processed the assembly.
             // Read once at startup rather than per call — the wrappers are installed
