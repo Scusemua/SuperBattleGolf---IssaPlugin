@@ -114,8 +114,10 @@ namespace IssaPlugin
             AttackCooldown = cfg.Bind(
                 Section,
                 "AttackCooldown",
-                1.8f,
-                "Seconds between the end of one attack and the start of the next pursuit."
+                0.7f,
+                "Seconds of recovery after an attack before the bear can swipe again. "
+                    + "The bear keeps tracking its target during this window rather than "
+                    + "standing still."
             );
             AttackAnimationDuration = cfg.Bind(
                 Section,

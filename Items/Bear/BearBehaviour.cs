@@ -72,6 +72,11 @@ namespace IssaPlugin.Items
         /// instead of rooting in place and spinning.
         private const float MinTurnThrottle = 0.45f;
 
+        /// Fraction of walk speed used to close distance during attack recovery.
+        /// Slow enough to read as a stalking reset, fast enough that the bear
+        /// doesn't lose a retreating player during the cooldown.
+        private const float AttackCooldownSpeedScale = 0.6f;
+
         // Layer masks (cached)
         private int _obstacleMask;
 
@@ -630,8 +635,7 @@ namespace IssaPlugin.Items
                     break;
 
                 case BearAIState.AttackCooldown:
-                    if (_stateTimer <= 0f)
-                        TransitionTo(BearAIState.Pursuing);
+                    UpdateAttackCooldown();
                     break;
 
                 case BearAIState.Stunned:
@@ -739,6 +743,47 @@ namespace IssaPlugin.Items
             // (gives the bear that scary committed feel — it will go over things)
             Vector3 dir = GetDesiredDirection(_currentTarget.transform.position);
             MoveInDirection(dir, ModConfig.Bear.ChargeSpeed.Value);
+        }
+
+        /// <summary>
+        /// Recovery window after a swipe. The bear keeps facing its target and
+        /// closes any gap at a stalking pace rather than standing frozen — a
+        /// fully rooted bear reads as broken, and the target usually walks out
+        /// of range during the pause.
+        /// Re-enters the attack as soon as the cooldown expires and the target
+        /// is still in reach, so repeat swipes don't require a full re-pursuit.
+        /// </summary>
+        private void UpdateAttackCooldown()
+        {
+            if (_currentTarget == null)
+            {
+                if (_stateTimer <= 0f)
+                    TransitionTo(BearAIState.Pursuing);
+                return;
+            }
+
+            Vector3 toTarget = _currentTarget.transform.position - transform.position;
+            toTarget.y = 0f;
+            float dist = toTarget.magnitude;
+
+            if (_stateTimer <= 0f)
+            {
+                // Still in reach — swipe again without a pursuit round-trip.
+                if (dist <= ModConfig.Bear.AttackRange.Value)
+                    TransitionTo(BearAIState.Attacking);
+                else
+                    TransitionTo(BearAIState.Pursuing);
+                return;
+            }
+
+            // Track the target through the recovery window. Creep forward only
+            // when out of range so the bear doesn't shove a player it is already
+            // standing on top of.
+            Vector3 dir = GetDesiredDirection(_currentTarget.transform.position);
+            if (dist > ModConfig.Bear.AttackRange.Value)
+                MoveInDirection(dir, ModConfig.Bear.WalkSpeed.Value * AttackCooldownSpeedScale);
+            else
+                MoveInDirection(dir, 0f); // rotate to keep facing, don't advance
         }
 
         private void UpdateAttacking()
@@ -1249,7 +1294,10 @@ namespace IssaPlugin.Items
 
                 case BearAIState.AttackCooldown:
                     _stateTimer = ModConfig.Bear.AttackCooldown.Value;
-                    _currentTarget = null;
+                    // Keep the current target. Clearing it here forced a full
+                    // re-selection after every swipe, so the bear stood still
+                    // through the cooldown and then spent extra time
+                    // re-acquiring and re-orienting before moving again.
                     ZeroVelocity();
                     break;
 
