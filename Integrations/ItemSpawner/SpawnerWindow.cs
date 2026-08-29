@@ -28,13 +28,29 @@ namespace IssaPlugin.Integrations.SpawnerUI
         private const float CellSpacing = 6f;
         private const float CaptionHeight = 26f;
         private const float MinCellWidth = 90f;
+        private const float PlayerRowHeight = 30f;
 
-        /// <summary>Window chrome plus the scroll view's scrollbar.</summary>
-        private const float GridPadding = 48f;
+        /// <summary>Fixed window size. Constants, so the layout can never feed back into it.</summary>
+        private const float WindowWidth = 720f;
+        private const float WindowHeight = 520f;
+
+        /// <summary>Roughly the width we want a cell to be; drives the column count.</summary>
+        private const float TargetCellWidth = 140f;
+
+        /// <summary>
+        /// Width budget the grid gives up to window chrome and the vertical scrollbar.
+        /// Deliberately generous: under-reserving leaves a stray horizontal scrollbar,
+        /// while over-reserving only costs a little unused margin.
+        /// </summary>
+        private const float GridPadding = 60f;
+
+        /// <summary>Footer summary, rebuilt only when the filter changes.</summary>
+        private string _footerText = string.Empty;
 
         private bool _open;
-        private Rect _windowRect = new Rect(120, 120, 770, 520);
+        private Rect _windowRect = new Rect(120, 120, WindowWidth, WindowHeight);
         private Vector2 _scroll;
+        private Vector2 _playerScroll;
 
         private string _search = string.Empty;
         private int _sourceIndex;
@@ -230,6 +246,7 @@ namespace IssaPlugin.Integrations.SpawnerUI
                 : SpawnerItemCatalog.AllSources;
 
             _filtered = SpawnerItemCatalog.Filter(_catalog, source, _search);
+            _footerText = $"{_filtered.Count} of {_catalog.Count} items";
         }
 
         private void OnGUI()
@@ -237,7 +254,27 @@ namespace IssaPlugin.Integrations.SpawnerUI
             if (!_open) return;
 
             EnsureStyles();
-            _windowRect = GUILayout.Window(WindowId, _windowRect, DrawWindow, "Item Spawner", _windowStyle);
+
+            // Pin the size. GUILayout.Window otherwise auto-sizes to its content and
+            // writes the result back into _windowRect, so any row even slightly too wide
+            // grows the window, which widens the grid, which grows the window again --
+            // the window visibly creeps rightward every frame. The size always comes from
+            // constants, never from _windowRect, so no measured value can feed back in.
+            _windowRect.width = WindowWidth;
+            _windowRect.height = WindowHeight;
+
+            _windowRect = GUILayout.Window(
+                WindowId,
+                _windowRect,
+                DrawWindow,
+                "Item Spawner",
+                _windowStyle,
+                GUILayout.Width(WindowWidth),
+                GUILayout.Height(WindowHeight));
+
+            // Keep it on screen: with a fixed size it can otherwise be dragged mostly off.
+            _windowRect.x = Mathf.Clamp(_windowRect.x, -WindowWidth + 80f, Screen.width - 80f);
+            _windowRect.y = Mathf.Clamp(_windowRect.y, 0f, Screen.height - 40f);
         }
 
         private void DrawWindow(int id)
@@ -296,14 +333,31 @@ namespace IssaPlugin.Integrations.SpawnerUI
             if (_players.Count == 0)
             {
                 GUILayout.Label("No players found.", _labelStyle);
+                GUILayout.FlexibleSpace();
             }
             else
             {
+                // Player pills scale with the lobby size and with name length, so this
+                // row can exceed the window. Scroll it horizontally rather than letting
+                // it dictate the window's width.
+                _playerScroll = GUILayout.BeginScrollView(
+                    _playerScroll,
+                    false,
+                    false,
+                    GUI.skin.horizontalScrollbar,
+                    GUIStyle.none,
+                    GUIStyle.none,
+                    GUILayout.Height(PlayerRowHeight));
+
+                GUILayout.BeginHorizontal();
                 for (int i = 0; i < _players.Count; i++)
                 {
                     GUIStyle style = i == _playerIndex ? _pillActiveStyle : _pillStyle;
                     if (GUILayout.Button(_players[i].Name, style)) _playerIndex = i;
                 }
+                GUILayout.EndHorizontal();
+
+                GUILayout.EndScrollView();
             }
 
             if (GUILayout.Button("Refresh", _pillStyle, GUILayout.Width(70))) RefreshPlayers();
@@ -317,14 +371,29 @@ namespace IssaPlugin.Integrations.SpawnerUI
         /// </summary>
         private void DrawGrid()
         {
-            int columns = Mathf.Clamp(Mathf.FloorToInt((_windowRect.width - 40f) / 140f), 1, 6);
+            // Derive the viewport from the window rect, which is stable. Measuring the
+            // scroll view's own inner width with an ExpandWidth probe fed back into
+            // itself: the content width set the measurement and the measurement set the
+            // content width, so the grid grew a little every frame.
+            float viewport = WindowWidth - GridPadding;
+
+            int columns = Mathf.Clamp(Mathf.FloorToInt(viewport / TargetCellWidth), 1, 6);
 
             // Cells must be an explicit, uniform width or IMGUI sizes each one to its own
             // label and the "grid" ends up as ragged columns that do not line up.
-            float available = _windowRect.width - GridPadding;
-            float cellWidth = Mathf.Max(MinCellWidth, (available / columns) - CellSpacing);
+            // Rows lay out as (columns - 1) gaps between columns cells, so only the gaps
+            // are subtracted -- charging every cell for a trailing gap overshoots the
+            // viewport by one CellSpacing and reintroduces the horizontal scrollbar.
+            float gaps = CellSpacing * (columns - 1);
+            float cellWidth = Mathf.Max(MinCellWidth, (viewport - gaps) / columns);
 
-            _scroll = GUILayout.BeginScrollView(_scroll, GUILayout.ExpandHeight(true));
+            _scroll = GUILayout.BeginScrollView(
+                _scroll,
+                false,
+                false,
+                GUIStyle.none,
+                GUI.skin.verticalScrollbar,
+                GUILayout.ExpandHeight(true));
 
             if (_filtered.Count == 0)
             {
@@ -343,12 +412,16 @@ namespace IssaPlugin.Integrations.SpawnerUI
                 for (int column = 0; column < columns; column++)
                 {
                     int index = i + column;
+
+                    // Gap between columns only -- never after the last one.
+                    if (column > 0) GUILayout.Space(CellSpacing);
+
                     if (index >= _filtered.Count)
                     {
                         // Reserve a real cell-sized gap so the last row lines up with the
                         // rows above. A FlexibleSpace would instead absorb all remaining
                         // width and stretch the row's real cells out of alignment.
-                        GUILayout.Space(cellWidth + CellSpacing);
+                        GUILayout.Space(cellWidth);
                         continue;
                     }
 
@@ -401,14 +474,15 @@ namespace IssaPlugin.Integrations.SpawnerUI
 
             GUILayout.Label(entry.DisplayName, _cellLabelStyle, GUILayout.Width(width), GUILayout.Height(CaptionHeight));
             GUILayout.EndVertical();
-
-            GUILayout.Space(CellSpacing);
         }
 
         private void DrawFooter()
         {
             GUILayout.BeginHorizontal();
-            GUILayout.Label($"{_filtered.Count} of {_catalog.Count} items", _labelStyle);
+            // Cached: OnGUI runs several times per frame (layout + repaint + input
+            // events), and this is the one string that would otherwise be rebuilt on
+            // every one of them while the window is open.
+            GUILayout.Label(_footerText, _labelStyle);
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("Close", GUILayout.Width(90), GUILayout.Height(26))) Close();
             GUILayout.EndHorizontal();
