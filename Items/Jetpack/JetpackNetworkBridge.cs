@@ -1,4 +1,4 @@
-using IssaPlugin.Overlays;
+﻿using IssaPlugin.Overlays;
 using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -245,10 +245,18 @@ namespace IssaPlugin.Items
             }
 
             // Jump-trigger: activate the jetpack via Space even when it isn't the equipped item.
+            // This path never goes through PlayerInventory.TryUseItem, so it must repeat the
+            // tee-off gate that TryUseItemPatch applies to every other custom item — otherwise
+            // the jetpack can be flown during the pre-hit countdown while all other movement
+            // and item use is locked out.
             if (
                 ModConfig.Jetpack.UseJumpToActivate.Value
                 && !JetpackItem.IsFlying
                 && inventory != null
+                && (
+                    SingletonBehaviour<DrivingRangeManager>.HasInstance
+                    || CourseManager.MatchState > MatchState.TeeOff
+                )
                 && Keyboard.current?.spaceKey.wasPressedThisFrame == true
             )
             {
