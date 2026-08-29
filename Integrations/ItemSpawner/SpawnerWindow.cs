@@ -33,7 +33,7 @@ namespace IssaPlugin.Integrations.SpawnerUI
         private const float GridPadding = 48f;
 
         private bool _open;
-        private Rect _windowRect = new Rect(120, 120, 720, 520);
+        private Rect _windowRect = new Rect(120, 120, 770, 520);
         private Vector2 _scroll;
 
         private string _search = string.Empty;
