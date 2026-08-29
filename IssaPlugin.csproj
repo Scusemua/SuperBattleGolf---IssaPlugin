@@ -114,5 +114,14 @@
       <HintPath>Assembly\com.atomic.modconfig.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <!-- Optional interop: ItemSpawner. Referenced only to suppress its window when
+         present; our spawner does not depend on it. Private=false so we never ship it. -->
+    <Reference Include="com.atomic.itemspawner">
+      <HintPath>Assembly\com.atomic.itemspawner.dll</HintPath>
+      <Private>false</Private>
+      <!-- Aliased: the mod's root namespace "ItemSpawner" collides with the base game's
+           ItemSpawner type in GameAssembly. -->
+      <Aliases>ItemSpawnerMod</Aliases>
+    </Reference>
   </ItemGroup>
 </Project>

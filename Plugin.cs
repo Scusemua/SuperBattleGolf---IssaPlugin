@@ -45,6 +45,11 @@ namespace IssaPlugin
             // ModConfig settings UI. No-ops when ModConfig is not installed.
             Integrations.ModConfigUI.ModConfigIntegration.TryApply(_harmony);
 
+            // Optional: hides the ItemSpawner mod's window when it is installed, so only
+            // our spawner (grid + search + source filter) appears. Our window itself is
+            // standalone and does not require that mod.
+            Integrations.SpawnerUI.ItemSpawnerIntegration.TryApply(_harmony);
+
             // Must run after PatchAll: the profiler wraps our own patch methods, which
             // only exist as Harmony patches once PatchAll has processed the assembly.
             // Read once at startup rather than per call — the wrappers are installed
@@ -71,6 +76,7 @@ namespace IssaPlugin
             gameObject.AddComponent<NetworkTrafficDiagnostics>();
             gameObject.AddComponent<PerfDiagnostics>();
             gameObject.AddComponent<VoteManager>();
+            gameObject.AddComponent<Integrations.SpawnerUI.SpawnerWindow>();
             gameObject.AddComponent<PlayerBoxOverlay>();
             gameObject.AddComponent<VoteOverlay>();
             gameObject.AddComponent<BomberOverlay>();

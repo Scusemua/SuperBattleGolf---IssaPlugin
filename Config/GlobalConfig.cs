@@ -32,6 +32,8 @@ namespace IssaPlugin
 
         // ── UI section ────────────────────────────────────────────────────────
         public ConfigEntry<Key> SpawnConfigUIKey { get; private set; }
+        public ConfigEntry<Key> SpawnerToggleKey { get; private set; }
+        public ConfigEntry<bool> SpawnerSuppressItemSpawner { get; private set; }
 
         // ── Warnings section ──────────────────────────────────────────────────
         public ConfigEntry<bool> WarningsEnabled { get; private set; }
@@ -247,6 +249,24 @@ namespace IssaPlugin
                 Key.M,
                 "Hotkey that opens/closes the Spawn Config GUI panel. "
                     + "The panel lets the host adjust per-pool spawn weights at runtime."
+            );
+
+            SpawnerToggleKey = cfg.Bind(
+                "UI",
+                "SpawnerToggleKey",
+                Key.H,
+                "Hotkey that opens/closes the item spawner window, which lets the host give "
+                    + "any item to any player. Defaults to H to match the ItemSpawner mod. "
+                    + "Set to None to disable the window entirely."
+            );
+
+            SpawnerSuppressItemSpawner = cfg.Bind(
+                "UI",
+                "SpawnerSuppressItemSpawner",
+                true,
+                "When the ItemSpawner mod is also installed, hide its window so only our "
+                    + "spawner (with search, source filtering, and a grid layout) appears. "
+                    + "Set to false to show both."
             );
 
             // ── ItemEnabled flags ──────────────────────────────────────────────
