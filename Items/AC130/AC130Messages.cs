@@ -89,6 +89,46 @@ namespace IssaPlugin.Items
         }
     }
 
+    /// <summary>
+    /// Broadcast to every client when an AC130 session starts and again when it ends,
+    /// naming the player whose rockets are being fired from the gunship.
+    ///
+    /// Rockets carry no NetworkTransform: each peer simulates them locally from the
+    /// spawn state Mirror replicates, so the AC130 rocket speed override has to be
+    /// applied identically everywhere. Peers therefore need to recognise an AC130
+    /// rocket, and the only identity that reaches them is the rocket's launcher
+    /// SyncVar. This message tells them which launcher currently counts.
+    /// </summary>
+    public struct AC130ShooterStateMessage : NetworkMessage
+    {
+        /// netId of the firing player's object (the AC130NetworkBridge's netId).
+        public uint ShooterNetId;
+
+        /// True when the session begins, false when it ends.
+        public bool Active;
+    }
+
+    public static class AC130ShooterStateMessageSerialization
+    {
+        public static void WriteAC130ShooterStateMessage(
+            NetworkWriter writer,
+            AC130ShooterStateMessage msg
+        )
+        {
+            writer.WriteUInt(msg.ShooterNetId);
+            writer.WriteBool(msg.Active);
+        }
+
+        public static AC130ShooterStateMessage ReadAC130ShooterStateMessage(NetworkReader reader)
+        {
+            return new AC130ShooterStateMessage
+            {
+                ShooterNetId = reader.ReadUInt(),
+                Active = reader.ReadBool(),
+            };
+        }
+    }
+
     // ── [Command] replacements (client→server) ──────────────────────────────
 
     public struct AC130StartMessage : NetworkMessage { }
