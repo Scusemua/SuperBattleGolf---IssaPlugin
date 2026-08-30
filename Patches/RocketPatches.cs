@@ -24,6 +24,23 @@ namespace IssaPlugin.Patches
         }
     }
 
+    /// <summary>
+    /// Applies the AC130 rocket speed override on every peer.
+    ///
+    /// Hooked on OnStartClient rather than Awake because the rocket's launcher SyncVar —
+    /// which is how an AC130 rocket is recognised — is only populated once Mirror has
+    /// applied the spawn payload, which happens after Awake. OnStartClient still runs
+    /// before the first physics step, and fires on the host as well as remote clients.
+    /// </summary>
+    [HarmonyPatch(typeof(Rocket), "OnStartClient")]
+    static class RocketStartClientSpeedPatch
+    {
+        static void Postfix(Rocket __instance)
+        {
+            AC130RocketSpeed.TryApply(__instance);
+        }
+    }
+
     [HarmonyPatch(typeof(Rocket), "ServerExplode")]
     class Patch_Rocket_ServerExplode
     {

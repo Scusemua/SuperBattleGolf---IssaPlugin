@@ -328,6 +328,14 @@ namespace IssaPlugin.Patches
 
             // ------------------------
             // ---- AC130 Messages ----
+            NetworkClient.RegisterHandler<AC130ShooterStateMessage>(
+                AC130RocketSpeed.HandleShooterState
+            );
+            Writer<AC130ShooterStateMessage>.write =
+                AC130ShooterStateMessageSerialization.WriteAC130ShooterStateMessage;
+            Reader<AC130ShooterStateMessage>.read =
+                AC130ShooterStateMessageSerialization.ReadAC130ShooterStateMessage;
+
             NetworkClient.RegisterHandler<AC130SoundMessage>(AC130ClientHandlers.HandleAC130Sound);
             Writer<AC130SoundMessage>.write = AC130SoundMessageSerialization.WriteAC130SoundMessage;
             Reader<AC130SoundMessage>.read = AC130SoundMessageSerialization.ReadAC130SoundMessage;

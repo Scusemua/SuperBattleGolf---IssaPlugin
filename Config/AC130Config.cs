@@ -18,6 +18,15 @@ namespace IssaPlugin
         public ConfigEntry<float> CameraDistance { get; private set; }
         public ConfigEntry<float> FireCooldown { get; private set; }
         public ConfigEntry<float> RocketAngularJitter { get; private set; }
+        public ConfigEntry<float> RocketSpeedMultiplier { get; private set; }
+        public ConfigEntry<bool> AimAssistEnabled { get; private set; }
+        public ConfigEntry<float> AimAssistStrength { get; private set; }
+        public ConfigEntry<float> AimAssistMaxAngle { get; private set; }
+        public ConfigEntry<float> AimAssistMaxDistance { get; private set; }
+        public ConfigEntry<bool> AimAssistAffectsHeavy { get; private set; }
+        public ConfigEntry<bool> AimAssistTargetsSelf { get; private set; }
+        public ConfigEntry<bool> AimAssistTargetsFinishedPlayers { get; private set; }
+        public ConfigEntry<float> AimAssistTargetHeightOffset { get; private set; }
         public ConfigEntry<float> BoostMultiplier { get; private set; }
         public ConfigEntry<float> AltitudeOffsetMax { get; private set; }
         public ConfigEntry<float> AltitudeAdjustSpeed { get; private set; }
@@ -129,6 +138,68 @@ namespace IssaPlugin
                 "RocketAngularJitter",
                 0.5f,
                 "Random angular jitter in degrees applied to each rocket fired from the AC130."
+            );
+            RocketSpeedMultiplier = cfg.Bind(
+                Section,
+                "RocketSpeedMultiplier",
+                1.75f,
+                "Multiplier applied to the speed of rockets fired from the AC130. 1 = the game's "
+                    + "default rocket velocity. Higher values shorten the travel time from the "
+                    + "gunship to the ground."
+            );
+            AimAssistEnabled = cfg.Bind(
+                Section,
+                "AimAssistEnabled",
+                true,
+                "Whether AC130 rockets drift subtly toward the player the shot was aimed most "
+                    + "closely at."
+            );
+            AimAssistStrength = cfg.Bind(
+                Section,
+                "AimAssistStrength",
+                0.35f,
+                "How strongly the rocket is nudged toward the assisted target, from 0 (no "
+                    + "correction) to 1 (fire directly at the target). Values around 0.3 give a "
+                    + "subtle drift that still rewards aiming."
+            );
+            AimAssistMaxAngle = cfg.Bind(
+                Section,
+                "AimAssistMaxAngle",
+                7f,
+                "Half-angle in degrees of the cone around the aim direction that is searched for "
+                    + "an aim-assist target. Shots aimed further off than this are not corrected."
+            );
+            AimAssistMaxDistance = cfg.Bind(
+                Section,
+                "AimAssistMaxDistance",
+                400f,
+                "Maximum distance in units from the gunship at which a player can be picked as an "
+                    + "aim-assist target."
+            );
+            AimAssistAffectsHeavy = cfg.Bind(
+                Section,
+                "AimAssistAffectsHeavy",
+                true,
+                "Whether heavy (big shot) rockets also receive aim assist."
+            );
+            AimAssistTargetsSelf = cfg.Bind(
+                Section,
+                "AimAssistTargetsSelf",
+                false,
+                "Whether aim assist may pick the AC130 user's own golfer as a target."
+            );
+            AimAssistTargetsFinishedPlayers = cfg.Bind(
+                Section,
+                "AimAssistTargetsFinishedPlayers",
+                false,
+                "Whether aim assist may pick players who have already holed out."
+            );
+            AimAssistTargetHeightOffset = cfg.Bind(
+                Section,
+                "AimAssistTargetHeightOffset",
+                1f,
+                "Height in units above a player's origin that aim assist aims at, so rockets are "
+                    + "pulled toward the body rather than the feet."
             );
             BoostMultiplier = cfg.Bind(
                 Section,

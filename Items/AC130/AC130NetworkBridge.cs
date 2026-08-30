@@ -41,6 +41,10 @@ namespace IssaPlugin.Items
         private float _serverLastFireTime;
         private float _serverLastHeavyFireTime;
 
+        /// Distance ahead of the gunship at which rockets are spawned, far enough that a
+        /// rocket does not self-collide with the gunship mesh on its first physics step.
+        private const float RocketMuzzleOffset = 15f;
+
         /// <summary>
         /// Set by CmdPrepareGunshipRocket when the owning client has the gunship
         /// locked on. Consumed by RocketHomingPatch when the next rocket spawns.
@@ -236,6 +240,8 @@ namespace IssaPlugin.Items
 
             var gunshipIdentity = gunshipGo.GetComponent<NetworkIdentity>();
 
+            ServerBroadcastShooterState(true);
+
             NetworkServer.SendToAll(new AC130SoundMessage());
             ItemWarningBroadcaster.Broadcast(
                 inventory.PlayerInfo.PlayerId.PlayerName,
@@ -291,10 +297,22 @@ namespace IssaPlugin.Items
 
             // Use the server's authoritative gunship position rather than the
             // client-provided one, which may be a stale approximation.
+            Vector3 gunshipPos = _serverGunship.transform.position;
+
+            // Nudge the shot toward whichever player it was aimed most closely at.
+            // Applied before the jitter so the random spread is added on top of the
+            // corrected direction rather than being partly corrected away.
+            aimDirection = AC130AimAssist.Apply(
+                gunshipPos,
+                aimDirection,
+                inventory.PlayerInfo,
+                isHeavy
+            );
+
             // Offset along the aim direction so the rocket spawns outside the
             // gunship mesh — otherwise it immediately self-collides and explodes.
             Quaternion fireRotation = Quaternion.LookRotation(aimDirection, Vector3.up);
-            Vector3 spawnPos = _serverGunship.transform.position + aimDirection * 15f;
+            Vector3 spawnPos = gunshipPos + aimDirection * RocketMuzzleOffset;
             float explosionScale = isHeavy
                 ? ModConfig.AC130.HeavyRocketExplosionScale.Value
                 : ModConfig.AC130.ExplosionScale.Value;
@@ -1134,6 +1152,14 @@ namespace IssaPlugin.Items
         {
             if (LocalSessionActive)
                 _forceEnd = true;
+
+            // Belt and braces for the AC130 rocket-speed tracking, which is global
+            // rather than per-player state. Every server path that ends a session already
+            // broadcasts the shooter as inactive, but a client that joined mid-session,
+            // or one whose end-broadcast was lost, could still hold a stale entry. A hole
+            // change ends all sessions, so the set is empty by definition here. This
+            // method runs once per hole on the local player's bridge on every peer.
+            AC130RocketSpeed.Clear();
         }
 
         private void ForceServerCleanup()
@@ -1156,7 +1182,32 @@ namespace IssaPlugin.Items
             ReleaseGlobalLock();
         }
 
-        private static void ReleaseGlobalLock() => GlobalSessionLock<AC130NetworkBridge>.Release();
+        /// <summary>
+        /// Tells every peer whether this player's rockets should currently be treated as
+        /// AC130 rockets, which is how the per-peer speed override recognises them.
+        /// See <see cref="AC130RocketSpeed"/>.
+        ///
+        /// The host does not receive its own SendToAll, so the local set is updated
+        /// directly as well.
+        /// </summary>
+        private void ServerBroadcastShooterState(bool active)
+        {
+            AC130RocketSpeed.SetShooterActive(netId, active);
+            NetworkServer.SendToAll(
+                new AC130ShooterStateMessage { ShooterNetId = netId, Active = active }
+            );
+        }
+
+        /// Releases the global one-at-a-time session lock. Every server-side path that
+        /// ends a session funnels through here, so the shooter-state broadcast that
+        /// closes out the speed override is sent from here too — that way a session
+        /// ended by timeout, mayday, early exit, or hole cleanup cannot leave a stale
+        /// entry behind on any peer.
+        private void ReleaseGlobalLock()
+        {
+            ServerBroadcastShooterState(false);
+            GlobalSessionLock<AC130NetworkBridge>.Release();
+        }
 
         public static void ForceReleaseGlobalLock()
         {
