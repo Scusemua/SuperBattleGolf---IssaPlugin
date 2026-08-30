@@ -91,22 +91,15 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            // Authoritative target selection — the client already ran the same check to
-            // avoid wasting the item, but the server decides who actually gets hunted.
+            // Authoritative target selection. May be null, which is not a failure — the
+            // player simply wasn't aiming near anyone, and the drone flies toward their
+            // aim point instead of hunting.
             var target = HunterDroneTargeting.SelectTarget(
                 aimOrigin,
                 aimDirection,
                 inventory.PlayerInfo,
                 _targetScratch
             );
-
-            if (target == null)
-            {
-                IssaPluginPlugin.Log.LogInfo(
-                    "[HunterDrone] Launch rejected — player is not aiming at any valid target."
-                );
-                return;
-            }
 
             ItemHelper.ConsumeEquippedItem(inventory);
             ItemWarningBroadcaster.Broadcast(
