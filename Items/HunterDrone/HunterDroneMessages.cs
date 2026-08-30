@@ -8,7 +8,15 @@ namespace IssaPlugin.Items
     /// <summary>Sent when the local player activates the Hunter Drone item.</summary>
     public struct HunterDroneLaunchMessage : NetworkMessage
     {
+        /// World point the player was aiming at; used as the drone's launch direction.
         public Vector3 AimPoint;
+
+        /// Origin of the player's aim ray (their camera), used by the server to
+        /// re-run target selection authoritatively.
+        public Vector3 AimOrigin;
+
+        /// Direction of the player's aim ray.
+        public Vector3 AimDirection;
     }
 
     public static class HunterDroneLaunchMessageSerialization
@@ -19,10 +27,17 @@ namespace IssaPlugin.Items
         )
         {
             writer.WriteVector3(msg.AimPoint);
+            writer.WriteVector3(msg.AimOrigin);
+            writer.WriteVector3(msg.AimDirection);
         }
 
         public static HunterDroneLaunchMessage ReadHunterDroneLaunchMessage(NetworkReader reader) =>
-            new HunterDroneLaunchMessage { AimPoint = reader.ReadVector3() };
+            new HunterDroneLaunchMessage
+            {
+                AimPoint = reader.ReadVector3(),
+                AimOrigin = reader.ReadVector3(),
+                AimDirection = reader.ReadVector3(),
+            };
     }
 
     /// <summary>

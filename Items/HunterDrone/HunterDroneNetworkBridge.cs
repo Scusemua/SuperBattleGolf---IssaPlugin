@@ -27,6 +27,10 @@ namespace IssaPlugin.Items
 
         private readonly List<GameObject> _activeDrones = new();
 
+        // Reused across launches so server-side target selection allocates nothing.
+        private readonly List<(PlayerInfo player, float angle, float sqDist)> _targetScratch =
+            new List<(PlayerInfo, float, float)>();
+
         private static int _useIndex;
 
         private static int NextUseIndex() => Interlocked.Increment(ref _useIndex);
@@ -49,7 +53,7 @@ namespace IssaPlugin.Items
         /// <summary>
         /// Called on the server when the client sends HunterDroneLaunchMessage.
         /// </summary>
-        public void ServerLaunchDrone(Vector3 aimPoint)
+        public void ServerLaunchDrone(Vector3 aimPoint, Vector3 aimOrigin, Vector3 aimDirection)
         {
             if (!isServer)
                 return;
@@ -87,6 +91,23 @@ namespace IssaPlugin.Items
                 return;
             }
 
+            // Authoritative target selection — the client already ran the same check to
+            // avoid wasting the item, but the server decides who actually gets hunted.
+            var target = HunterDroneTargeting.SelectTarget(
+                aimOrigin,
+                aimDirection,
+                inventory.PlayerInfo,
+                _targetScratch
+            );
+
+            if (target == null)
+            {
+                IssaPluginPlugin.Log.LogInfo(
+                    "[HunterDrone] Launch rejected — player is not aiming at any valid target."
+                );
+                return;
+            }
+
             ItemHelper.ConsumeEquippedItem(inventory);
             ItemWarningBroadcaster.Broadcast(
                 inventory.PlayerInfo.PlayerId.PlayerName,
@@ -95,7 +116,7 @@ namespace IssaPlugin.Items
                 senderNetId: netId
             );
 
-            SpawnDrone(inventory.PlayerInfo, aimPoint);
+            SpawnDrone(inventory.PlayerInfo, aimPoint, target);
         }
 
         /// <summary>
@@ -126,7 +147,7 @@ namespace IssaPlugin.Items
 
         // ── Server internals ──────────────────────────────────────────────────
 
-        private void SpawnDrone(PlayerInfo summoner, Vector3 aimPoint)
+        private void SpawnDrone(PlayerInfo summoner, Vector3 aimPoint, PlayerInfo target)
         {
             // Spawn slightly above and in front of the player so the drone doesn't
             // immediately collide with the thrower.
@@ -170,6 +191,7 @@ namespace IssaPlugin.Items
             behaviour.AttackFinishedPlayers = ModConfig.HunterDrone.AttackFinishedPlayers.Value;
             behaviour.ArmDelay = ModConfig.HunterDrone.ArmDelay.Value;
             behaviour.SetFallbackAimPoint(aimPoint);
+            behaviour.SetTarget(target);
 
             // Server AI drives this object's position; make sure the prefab's
             // NetworkTransform can't overwrite it from the local client.

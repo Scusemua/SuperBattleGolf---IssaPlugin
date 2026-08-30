@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Reflection;
 using Mirror;
 using UnityEngine;
@@ -9,8 +8,13 @@ namespace IssaPlugin.Items
     /// Server-only homing behaviour added to the hunter drone after NetworkServer.Spawn.
     ///
     /// Unlike DroneBehaviour (which has a circling phase), HunterDroneBehaviour skips
-    /// straight to homing: it finds the closest valid enemy the moment it starts and
-    /// flies directly at them.  Once within ArrivalRadius the drone detonates.
+    /// straight to homing: the bridge assigns the player the thrower was aiming at
+    /// (see <see cref="HunterDroneTargeting"/>) and the drone flies directly at them.
+    /// Once within ArrivalRadius the drone detonates.
+    ///
+    /// The target is chosen once, at launch. If it later becomes invalid (the player holed
+    /// out, disconnected) the drone flies on in its launch direction rather than re-acquiring
+    /// someone the thrower never aimed at.
     ///
     /// The drone can also be destroyed mid-flight by any projectile (bullet or rocket);
     /// the <see cref="ShootDown"/> method handles that path.
@@ -73,6 +77,7 @@ namespace IssaPlugin.Items
 
         private Rigidbody _rb;
         private Transform _targetTransform;
+        private PlayerInfo _targetInfo;
         private Vector3 _homingTarget;
         private bool _homingActive;
         private float _currentSpeed;
@@ -81,17 +86,14 @@ namespace IssaPlugin.Items
         private bool _exploded;
         private float _distanceTraveled;
 
-        // How long to wait before retrying target selection when no valid targets exist.
-        private const float NoTargetRetryInterval = 0.5f;
-        private float _retryTimer;
+        // How often the assigned target is re-checked for validity, in seconds.
+        private const float TargetValidateInterval = 0.5f;
+        private float _validateTimer;
 
         private static readonly MethodInfo ServerExplodeMethod = typeof(Rocket).GetMethod(
             "ServerExplode",
             BindingFlags.NonPublic | BindingFlags.Instance
         );
-
-        // Per-instance scratch list for target selection (not static — multiple drones may exist).
-        private readonly List<(Transform t, float sqDist)> _candidateScratch = new();
 
         // Per-instance buffer for the self-filtered collision check.
         private readonly Collider[] _collisionBuffer = new Collider[8];
@@ -99,6 +101,21 @@ namespace IssaPlugin.Items
         // ----------------------------------------------------------------
         //  Unity lifecycle
         // ----------------------------------------------------------------
+
+        /// <summary>
+        /// Assigns the player this drone hunts. Called by the bridge before the drone's
+        /// first FixedUpdate, using the target the thrower was aiming at.
+        /// </summary>
+        public void SetTarget(PlayerInfo target)
+        {
+            if (target == null)
+                return;
+
+            _targetInfo = target;
+            _targetTransform = target.transform;
+            _homingTarget = _targetTransform.position;
+            _homingActive = true;
+        }
 
         public void SetFallbackAimPoint(Vector3 worldPoint)
         {
@@ -122,7 +139,6 @@ namespace IssaPlugin.Items
 
             _currentSpeed = LaunchSpeed;
             _armTimer = ArmDelay;
-            _retryTimer = NoTargetRetryInterval;
 
             // Invoke HandleHit on any hit — the drone is destroyed in one hit.
             OnHit += HandleHit;
@@ -135,9 +151,6 @@ namespace IssaPlugin.Items
                 ps.gameObject.SetActive(true);
                 ps.Play();
             }
-
-            // Select initial target immediately so the drone starts homing on spawn.
-            TrySelectTarget();
         }
 
         private void FixedUpdate()
@@ -154,30 +167,26 @@ namespace IssaPlugin.Items
                     _armed = true;
             }
 
-            // Re-validate the locked target every frame so AttackFinishedPlayers and
-            // similar config flags are respected even after lock-on.
-            if (_targetTransform != null)
+            // Re-validate the assigned target periodically so AttackFinishedPlayers and
+            // similar config flags are respected after lock-on. Checked on an interval
+            // rather than every physics step — the flags change rarely and this runs for
+            // every drone in flight. Once dropped the target is not re-acquired; the
+            // drone continues along its launch direction.
+            if (_targetInfo != null)
             {
-                var player = _targetTransform.GetComponent<PlayerInfo>();
-                if (!IsValidTarget(player))
+                _validateTimer -= Time.fixedDeltaTime;
+                if (_validateTimer <= 0f)
                 {
-                    IssaPluginPlugin.Log.LogInfo(
-                        "[HunterDrone] Locked target is no longer valid — re-selecting."
-                    );
-                    _targetTransform = null;
-                    _homingActive = false;
-                    _retryTimer = 0f;
-                }
-            }
-
-            // Retry target selection if we don't have one yet.
-            if (_targetTransform == null)
-            {
-                _retryTimer -= Time.fixedDeltaTime;
-                if (_retryTimer <= 0f)
-                {
-                    TrySelectTarget();
-                    _retryTimer = NoTargetRetryInterval;
+                    _validateTimer = TargetValidateInterval;
+                    if (!IsValidTarget(_targetInfo))
+                    {
+                        IssaPluginPlugin.Log.LogInfo(
+                            "[HunterDrone] Target is no longer valid — flying on without one."
+                        );
+                        _targetInfo = null;
+                        _targetTransform = null;
+                        _homingActive = false;
+                    }
                 }
             }
 
@@ -282,68 +291,13 @@ namespace IssaPlugin.Items
             return false;
         }
 
-        // ----------------------------------------------------------------
-        //  Target selection — picks the CLOSEST valid enemy
-        // ----------------------------------------------------------------
-
-        private void TrySelectTarget()
-        {
-            _candidateScratch.Clear();
-
-            var local = GameManager.LocalPlayerInfo;
-            if (local != null && IsValidTarget(local))
-            {
-                float sq = (local.transform.position - transform.position).sqrMagnitude;
-                _candidateScratch.Add((local.transform, sq));
-            }
-
-            var remotes = GameManager.RemotePlayers;
-            if (remotes != null)
-            {
-                foreach (var p in remotes)
-                {
-                    if (!IsValidTarget(p))
-                        continue;
-                    float sq = (p.transform.position - transform.position).sqrMagnitude;
-                    _candidateScratch.Add((p.transform, sq));
-                }
-            }
-
-            if (_candidateScratch.Count == 0)
-                return;
-
-            // Pick the closest.
-            int bestIdx = 0;
-            for (int i = 1; i < _candidateScratch.Count; i++)
-                if (_candidateScratch[i].sqDist < _candidateScratch[bestIdx].sqDist)
-                    bestIdx = i;
-
-            _targetTransform = _candidateScratch[bestIdx].t;
-            _homingTarget = _targetTransform.position;
-            _homingActive = true;
-
-            IssaPluginPlugin.Log.LogInfo(
-                $"[HunterDrone] Locked on to {_targetTransform.name} at "
-                    + $"{_targetTransform.position:F1}."
+        private bool IsValidTarget(PlayerInfo player) =>
+            HunterDroneTargeting.IsValidTarget(
+                player,
+                ThrowerInfo,
+                FriendlyFire,
+                AttackFinishedPlayers
             );
-        }
-
-        private bool IsValidTarget(PlayerInfo player)
-        {
-            if (player == null || !player.gameObject.activeInHierarchy)
-                return false;
-
-            if (!FriendlyFire && player.PlayerId.Guid == ThrowerInfo.PlayerId.Guid)
-                return false;
-
-            if (
-                !AttackFinishedPlayers
-                && player.AsGolfer?.MatchResolution == PlayerMatchResolution.Scored
-            )
-                return false;
-
-            return true;
-        }
 
         // ----------------------------------------------------------------
         //  Hit / shot-down handling (CustomHittable callback)

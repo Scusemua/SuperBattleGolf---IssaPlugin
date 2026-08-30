@@ -1733,7 +1733,8 @@ namespace IssaPlugin.Patches
             if (NetworkServer.active)
                 NetworkServer.RegisterHandler<HunterDroneLaunchMessage>(
                     (conn, msg) =>
-                        GetBridge<HunterDroneNetworkBridge>(conn)?.ServerLaunchDrone(msg.AimPoint)
+                        GetBridge<HunterDroneNetworkBridge>(conn)
+                            ?.ServerLaunchDrone(msg.AimPoint, msg.AimOrigin, msg.AimDirection)
                 );
 
             Writer<HunterDroneShotMessage>.write =

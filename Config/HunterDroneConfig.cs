@@ -20,6 +20,8 @@ namespace IssaPlugin
         public ConfigEntry<float> MaxFlightDistance { get; private set; }
         public ConfigEntry<float> MaxSpeed { get; private set; }
         public ConfigEntry<float> MaxActiveDrones { get; private set; }
+        public ConfigEntry<float> MaxAimAngle { get; private set; }
+        public ConfigEntry<float> MaxTargetDistance { get; private set; }
 
         public HunterDroneConfig(ConfigFile cfg, GlobalConfig global)
         {
@@ -101,6 +103,21 @@ namespace IssaPlugin
                 "MaxActiveDrones",
                 5f,
                 "Maximum number of hunter drones a single player may have in flight at once."
+            );
+            MaxAimAngle = cfg.Bind(
+                Section,
+                "MaxAimAngle",
+                20f,
+                "Maximum angle in degrees between where the player is aiming and a player, for "
+                    + "that player to be considered a target. If nobody is within this cone, the "
+                    + "drone is not thrown and the item is not consumed."
+            );
+            MaxTargetDistance = cfg.Bind(
+                Section,
+                "MaxTargetDistance",
+                500f,
+                "Maximum distance in metres a player may be from the thrower and still be "
+                    + "targetable by the Hunter Drone."
             );
         }
     }
