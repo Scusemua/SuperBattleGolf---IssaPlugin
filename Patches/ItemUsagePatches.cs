@@ -53,6 +53,23 @@ namespace IssaPlugin.Patches
             //     return false; // block custom items while the world is frozen
             // }
 
+            // Aimed weapons only fire while aimed in. The base game applies this in
+            // TryUseItem via ItemData.NonAimUse, but that check sits after this prefix
+            // returns, so it is reproduced here for items that opt in.
+            //
+            // shouldEatInput mirrors the base game exactly: swallow the input only while
+            // the aim button is held, so a press that arrives just before aim-in is not
+            // re-delivered, while an ordinary click still falls through to the golf swing.
+            if (def.RequiresAimToUse && !__instance.IsAimingItem && !isAirhornReaction)
+            {
+                // Null-conditional to match the guards above: an exception thrown from a
+                // Harmony prefix would propagate into the game's input handling. Falling
+                // back to false simply lets the input through to the golf swing.
+                shouldEatInput = __instance.PlayerInfo?.Input?.IsHoldingAimSwing ?? false;
+                __result = false;
+                return false;
+            }
+
             shouldEatInput = def.ShouldEatInputOnUse;
             __result = def.UseResult;
             IssaPluginPlugin.Log.LogDebug(

@@ -44,10 +44,12 @@ namespace IssaPlugin.Patches
                 return;
             }
 
-            // Pass ignoreEquipmentHiding: false to match the base method, so the
-            // reticle disappears while equipment is force-hidden (emotes, cutscenes).
+            // ignoreEquipmentHiding: true is required here. The mod force-hides default
+            // equipment for custom items, so GetEffectivelyEquippedItem(false) reports
+            // None while the launcher is actually equipped — matching the base method's
+            // argument would make this check never pass and leave the crosshair missing.
             if (
-                __instance.GetEffectivelyEquippedItem(false)
+                __instance.GetEffectivelyEquippedItem(true)
                 != ItemRegistry.GolfCartLauncherItemType
             )
             {

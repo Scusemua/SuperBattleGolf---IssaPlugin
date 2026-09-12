@@ -62,6 +62,12 @@ namespace IssaPlugin.Items
                     )
                         break;
 
+                    // Releasing the aim button mid-burst stops the burst. TryUseItem only
+                    // gates the first shot, so without this the loop would keep firing
+                    // from the hip once it had started.
+                    if (!inventory.IsAimingItem)
+                        break;
+
                     int slot = inventory.EquippedItemIndex;
                     Fire(inventory, bridge);
                     ItemHelper.DecrementAndRemove(inventory, slot);

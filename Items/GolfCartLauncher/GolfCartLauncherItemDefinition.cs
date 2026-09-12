@@ -36,6 +36,9 @@ namespace IssaPlugin.Items
         public override ItemType AnimatorItemType => ItemType.RocketLauncher;
         public override ItemType AnimatorChangedItemType => ItemType.RocketLauncher;
 
+        // Fires only while aimed in, like the base game's rocket launcher.
+        public override bool RequiresAimToUse => true;
+
         public override void OnUse(PlayerInventory inventory) =>
             inventory.StartCoroutine(GolfCartLauncherItem.FireLoop(inventory));
     }

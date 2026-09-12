@@ -101,6 +101,17 @@ namespace IssaPlugin.Items
         public virtual bool ShouldEatInputOnUse => true;
         public virtual bool UseResult => true;
 
+        /// When true, the item only fires while the player is aimed in (right-click held),
+        /// matching base-game aimed weapons such as the rocket launcher.
+        ///
+        /// The base game enforces this in PlayerInventory.TryUseItem via
+        /// <c>ItemData.NonAimUse == ItemNonAimingUse.None</c>, but TryUseItemPatch takes
+        /// over before that check is reached, so custom items opt in here instead.
+        ///
+        /// Defaults to false: most custom items (Nuke, Teleporter, Freeze World, ...) are
+        /// instant-use and must stay usable without aiming.
+        public virtual bool RequiresAimToUse => false;
+
         // Called from TryUseItemPatch.Prefix with the local PlayerInventory.
         // Items that need a coroutine call inventory.StartCoroutine(...) here directly —
         // PlayerInventory is a MonoBehaviour so StartCoroutine is available.
