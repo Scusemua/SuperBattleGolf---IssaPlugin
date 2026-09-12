@@ -1,4 +1,4 @@
-// SpawnConfigUI.cs
+﻿// SpawnConfigUI.cs
 // An IMGUI overlay that lets the host edit all spawn configuration at runtime.
 //
 // ── Opening the panel ─────────────────────────────────────────────────────────
@@ -51,8 +51,74 @@ namespace IssaPlugin.Overlays
         // ── UI state ──────────────────────────────────────────────────────────
         private Vector2 _scrollPos;
 
+        // ── Resolution scaling ────────────────────────────────────────────────
+        // Every dimension in this file is authored against a 1080p-tall screen and
+        // multiplied by the current scale at use, so the panel keeps the same apparent
+        // size on a 1440p or 4K display instead of shrinking to unreadable pixels.
+        //
+        // Scaled per-dimension rather than through a GUI.matrix transform because the
+        // panel is interactive: GUI.Window's drag, the text-field carets, and the scroll
+        // view all hit-test in unscaled screen space, and a matrix scale would draw the
+        // controls away from their own hitboxes.
+        private const float ReferenceHeight = 1080f;
+
+        // Window size at the reference height.
+        private const float WindowWidth = 1360f;
+        private const float WindowHeight = 740f;
+
+        // Column widths. The item rows and the tier headers have to line up, so these
+        // are shared rather than repeated as literals at each call site.
+        private const float ColIconWidth = 28f;
+        private const float ColNameWidth = 128f;
+        private const float ColToggleWidth = 20f;
+        private const float ColWeightWidth = 50f;
+        private const float ColHeaderWeightWidth = 58f;
+        private const float ItemRowHeight = 36f;
+        private const float TierRowHeight = 32f;
+        private const float ControlHeight = 28f;
+        private const float TierControlHeight = 26f;
+
+        // Font sizes, also at the reference height.
+        private const int HeaderFontSize = 15;
+        private const int ColHeaderFontSize = 11;
+        private const int TooltipFontSize = 12;
+
+        /// <summary>
+        /// Scale from the reference layout to this screen. Shares
+        /// ModConfig.Global.SpawnerUiScale with the item spawner window so both panels
+        /// size consistently: a configured value wins, 0 (the default) derives it from
+        /// screen height.
+        ///
+        /// Only height is considered, on purpose. An ultra-wide monitor is wide but no
+        /// taller than an ordinary one of the same vertical resolution, so scaling by
+        /// width would inflate the panel past the screen height on a 32:9 display.
+        /// Never scales below 1: the layout has hand-tuned column widths that stop
+        /// lining up when shrunk.
+        /// </summary>
+        private static float CurrentScale
+        {
+            get
+            {
+                float configured = ModConfig.Global.SpawnerUiScale.Value;
+                if (configured > 0f)
+                    return configured;
+
+                return Mathf.Max(1f, Screen.height / ReferenceHeight);
+            }
+        }
+
+        /// <summary>
+        /// The scale for the frame being drawn. Sampled once per OnGUI so every pass of
+        /// an IMGUI frame (layout, repaint, input) uses an identical value -- if layout
+        /// and repaint disagreed, controls would be drawn off their own hitboxes.
+        /// </summary>
+        private float _scale = 1f;
+
+        /// <summary>Scale the styles were last built at; a change rebuilds them.</summary>
+        private float _styleScale;
+
         // Window rect — draggable
-        private Rect _windowRect = new Rect(40, 40, 1360, 740);
+        private Rect _windowRect = new Rect(40, 40, WindowWidth, WindowHeight);
 
         // Column display order: (gamePoolIndex, header label)
         // Matches the base game pause menu order (Lead, Beh50, Beh125, Beh200, Ahead, Mob).
@@ -93,6 +159,14 @@ namespace IssaPlugin.Overlays
         private GUIStyle _styleReadOnly;
         private GUIStyle _styleColHeader;
         private GUIStyle _styleTooltip;
+
+        // Scaled copies of the bare skin styles, for the controls that previously used
+        // GUI.skin.* implicitly. Held here rather than mutating the shared skin, which
+        // every other IMGUI overlay in the mod also draws from.
+        private GUIStyle _styleButton;
+        private GUIStyle _styleTextField;
+        private GUIStyle _styleLabel;
+        private GUIStyle _styleToggle;
         private bool _stylesInitialised;
 
         // ── Unity lifecycle ───────────────────────────────────────────────────
@@ -263,14 +337,30 @@ namespace IssaPlugin.Overlays
             if (!_visible || _workingItemEnabled == null)
                 return;
 
-            if (!_stylesInitialised)
+            // One sample per frame, used by every pass. Reading the scale separately in
+            // layout and repaint would let a mid-frame resolution change split them.
+            _scale = CurrentScale;
+
+            if (!_stylesInitialised || !Mathf.Approximately(_styleScale, _scale))
                 InitStyles();
 
             // Block game input while the panel is open.
             if (Event.current.type == EventType.KeyDown || Event.current.type == EventType.KeyUp)
                 Event.current.Use();
 
+            // Cap at the screen. This panel is already 1360x740 at 1x, so on a 1080p
+            // display a 2x scale would run well off both edges; clamping keeps the
+            // bottom action bar (Cancel / Reset / Apply) reachable.
+            _windowRect.width = Mathf.Min(WindowWidth * _scale, Screen.width);
+            _windowRect.height = Mathf.Min(WindowHeight * _scale, Screen.height);
+
             _windowRect = GUI.Window(0xCA7C0, _windowRect, DrawWindow, "");
+
+            // Keep it on screen: it can otherwise be dragged almost entirely off.
+            float edge = 80f * _scale;
+            _windowRect.x = Mathf.Clamp(
+                _windowRect.x, -_windowRect.width + edge, Screen.width - edge);
+            _windowRect.y = Mathf.Clamp(_windowRect.y, 0f, Screen.height - (40f * _scale));
         }
 
         private void DrawWindow(int id)
@@ -283,13 +373,13 @@ namespace IssaPlugin.Overlays
             GUILayout.FlexibleSpace();
             if (!isHost)
                 GUILayout.Label("  ⚠ Read-only (host controls config)", _styleReadOnly);
-            if (GUILayout.Button("✕ Close", GUILayout.Width(80)))
+            if (GUILayout.Button("✕ Close", _styleButton, GUILayout.Width(80f * _scale)))
                 Close();
             GUILayout.EndHorizontal();
 
-            GUILayout.Space(4);
-            GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.Height(1));
-            GUILayout.Space(4);
+            GUILayout.Space(4f * _scale);
+            GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.Height(1f * _scale));
+            GUILayout.Space(4f * _scale);
 
             // ── Global toggles row ────────────────────────────────────────────
             GUILayout.BeginHorizontal();
@@ -301,40 +391,43 @@ namespace IssaPlugin.Overlays
                     " Custom items enabled",
                     "Master switch for all custom items. When off, no custom items will appear in the item pool."
                 ),
-                GUILayout.Width(200)
+                _styleToggle,
+                GUILayout.Width(200f * _scale)
             );
             if (isHost)
                 _workingEnabled = newEnabled;
 
-            GUILayout.Space(20);
+            GUILayout.Space(20f * _scale);
             GUILayout.Label(
                 new GUIContent(
                     "Global rate multiplier:",
                     "Scales the spawn weight of ALL custom items. 1.0 = normal, 0.5 = half as frequent."
                 ),
-                GUILayout.Width(160)
+                _styleLabel,
+                GUILayout.Width(160f * _scale)
             );
-            _workingRate = DrawFloatField("rate", _workingRate, isHost, 0f, 10f, 70);
+            _workingRate = DrawFloatField("rate", _workingRate, isHost, 0f, 10f, 70f * _scale);
 
             GUI.enabled = true;
             GUILayout.EndHorizontal();
 
-            GUILayout.Space(8);
-            GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.Height(1));
-            GUILayout.Space(4);
+            GUILayout.Space(8f * _scale);
+            GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.Height(1f * _scale));
+            GUILayout.Space(4f * _scale);
 
             // ── Column header row ─────────────────────────────────────────────
             GUILayout.BeginHorizontal();
-            GUILayout.Label("Item Name", _styleColHeader, GUILayout.Width(160));
-            GUILayout.Label("On", _styleColHeader, GUILayout.Width(30));
-            GUILayout.Space(4);
+            GUILayout.Label("Item Name", _styleColHeader, GUILayout.Width(160f * _scale));
+            GUILayout.Label("On", _styleColHeader, GUILayout.Width(30f * _scale));
+            GUILayout.Space(4f * _scale);
             foreach (var (_, label) in PoolColumns)
-                GUILayout.Label(label, _styleColHeader, GUILayout.Width(58));
+                GUILayout.Label(
+                    label, _styleColHeader, GUILayout.Width(ColHeaderWeightWidth * _scale));
             GUILayout.EndHorizontal();
 
-            GUILayout.Space(2);
-            GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.Height(1));
-            GUILayout.Space(2);
+            GUILayout.Space(2f * _scale);
+            GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.Height(1f * _scale));
+            GUILayout.Space(2f * _scale);
 
             // ── Item rows grouped by tier (scrollable) ────────────────────────
             _scrollPos = GUILayout.BeginScrollView(_scrollPos);
@@ -364,9 +457,9 @@ namespace IssaPlugin.Overlays
             GUILayout.EndScrollView();
 
             // ── Bottom action bar ─────────────────────────────────────────────
-            GUILayout.Space(4);
-            GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.Height(1));
-            GUILayout.Space(4);
+            GUILayout.Space(4f * _scale);
+            GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.Height(1f * _scale));
+            GUILayout.Space(4f * _scale);
 
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
@@ -374,13 +467,14 @@ namespace IssaPlugin.Overlays
             if (
                 GUILayout.Button(
                     new GUIContent("Cancel", "Discard unsaved changes and close."),
-                    GUILayout.Width(100),
-                    GUILayout.Height(28)
+                    _styleButton,
+                    GUILayout.Width(100f * _scale),
+                    GUILayout.Height(ControlHeight * _scale)
                 )
             )
                 Close();
 
-            GUILayout.Space(10);
+            GUILayout.Space(10f * _scale);
 
             GUI.enabled = isHost;
             GUI.backgroundColor = isHost ? new Color(0.9f, 0.6f, 0.2f) : Color.white;
@@ -392,14 +486,15 @@ namespace IssaPlugin.Overlays
                             ? "Reset all weights, enabled flags, and global rate to their coded defaults. Does not save until you click Apply & Sync."
                             : "Only the host can reset values."
                     ),
-                    GUILayout.Width(160),
-                    GUILayout.Height(28)
+                    _styleButton,
+                    GUILayout.Width(160f * _scale),
+                    GUILayout.Height(ControlHeight * _scale)
                 )
             )
                 ResetToDefaults();
             GUI.backgroundColor = Color.white;
 
-            GUILayout.Space(10);
+            GUILayout.Space(10f * _scale);
 
             GUI.enabled = isHost;
             GUI.backgroundColor = isHost ? new Color(0.3f, 0.9f, 0.3f) : Color.white;
@@ -411,8 +506,9 @@ namespace IssaPlugin.Overlays
                             ? "Save changes and broadcast to all clients."
                             : "Only the host can apply changes."
                     ),
-                    GUILayout.Width(140),
-                    GUILayout.Height(28)
+                    _styleButton,
+                    GUILayout.Width(140f * _scale),
+                    GUILayout.Height(ControlHeight * _scale)
                 )
             )
             {
@@ -424,7 +520,12 @@ namespace IssaPlugin.Overlays
 
             GUILayout.EndHorizontal();
 
-            GUI.DragWindow();
+            // Declared after every control on purpose: IMGUI hands an event to controls
+            // in declaration order, so a drag region declared earlier would consume
+            // clicks before the controls under it ever run. Bounded to the header strip
+            // rather than the whole window so a drag started on empty space below cannot
+            // fight the scroll view.
+            GUI.DragWindow(new Rect(0, 0, _windowRect.width, HeaderFontSize * 2f * _scale));
             DrawTooltipInWindow();
         }
 
@@ -432,34 +533,35 @@ namespace IssaPlugin.Overlays
 
         private void DrawItemRow(int i, CustomItemDefinition def, bool isHost)
         {
-            GUILayout.BeginHorizontal(_styleItemRow, GUILayout.Height(36));
+            GUILayout.BeginHorizontal(_styleItemRow, GUILayout.Height(ItemRowHeight * _scale));
 
             // Icon
             if (def.Icon != null)
                 GUILayout.Box(
                     new GUIContent(def.Icon.texture, def.DisplayName),
                     _styleIconBox,
-                    GUILayout.Width(28),
-                    GUILayout.Height(28)
+                    GUILayout.Width(ColIconWidth * _scale),
+                    GUILayout.Height(ControlHeight * _scale)
                 );
             else
                 GUILayout.Box(
                     new GUIContent("?", def.DisplayName),
                     _styleIconBox,
-                    GUILayout.Width(28),
-                    GUILayout.Height(28)
+                    GUILayout.Width(ColIconWidth * _scale),
+                    GUILayout.Height(ControlHeight * _scale)
                 );
 
-            GUILayout.Space(4);
+            GUILayout.Space(4f * _scale);
 
             // Name
             GUILayout.Label(
                 new GUIContent(def.DisplayName, $"ItemType {(int)def.ItemType}"),
-                GUILayout.Width(128),
-                GUILayout.Height(28)
+                _styleLabel,
+                GUILayout.Width(ColNameWidth * _scale),
+                GUILayout.Height(ControlHeight * _scale)
             );
 
-            GUILayout.Space(4);
+            GUILayout.Space(4f * _scale);
 
             // Enabled toggle
             GUI.enabled = isHost;
@@ -469,14 +571,15 @@ namespace IssaPlugin.Overlays
                     "",
                     $"When off, {def.DisplayName} never spawns regardless of pool weights."
                 ),
-                GUILayout.Width(20),
-                GUILayout.Height(28)
+                _styleToggle,
+                GUILayout.Width(ColToggleWidth * _scale),
+                GUILayout.Height(ControlHeight * _scale)
             );
             if (isHost)
                 _workingItemEnabled[i] = newEn;
             GUI.enabled = true;
 
-            GUILayout.Space(10);
+            GUILayout.Space(10f * _scale);
 
             // Pool weight fields in display order
             foreach (var (p, _) in PoolColumns)
@@ -487,9 +590,9 @@ namespace IssaPlugin.Overlays
                     isHost,
                     0f,
                     999f,
-                    50
+                    ColWeightWidth * _scale
                 );
-                GUILayout.Space(4);
+                GUILayout.Space(4f * _scale);
             }
 
             GUILayout.EndHorizontal();
@@ -503,20 +606,27 @@ namespace IssaPlugin.Overlays
             bool isHost
         )
         {
-            GUILayout.BeginHorizontal(_styleTierHeader, GUILayout.Height(32));
+            GUILayout.BeginHorizontal(_styleTierHeader, GUILayout.Height(TierRowHeight * _scale));
 
             // ── Expand/collapse ───────────────────────────────────────────────
             string arrow = _tierExpanded[t] ? "▼" : "▶";
-            if (GUILayout.Button(arrow, GUILayout.Width(28), GUILayout.Height(26)))
+            if (
+                GUILayout.Button(
+                    arrow,
+                    _styleButton,
+                    GUILayout.Width(ColIconWidth * _scale),
+                    GUILayout.Height(TierControlHeight * _scale)
+                )
+            )
                 _tierExpanded[t] = !_tierExpanded[t];
 
-            GUILayout.Space(4);
+            GUILayout.Space(4f * _scale);
 
             // ── Tier name — matches column widths used in item rows ───────────
             // Item row: [28 icon][4 sp][128 name] = 160 before "On" column.
             // Header:   [24 btn][4 sp][128 label] = 156, then 4 sp to reach 160.
-            GUILayout.Label(TierDefs[t].label, _styleHeader, GUILayout.Width(128));
-            GUILayout.Space(4);
+            GUILayout.Label(TierDefs[t].label, _styleHeader, GUILayout.Width(ColNameWidth * _scale));
+            GUILayout.Space(4f * _scale);
 
             // ── Batch enabled toggle ──────────────────────────────────────────
             GUI.enabled = isHost;
@@ -531,8 +641,9 @@ namespace IssaPlugin.Overlays
             bool newAll = GUILayout.Toggle(
                 allOn,
                 new GUIContent("", $"Enable / disable all {TierDefs[t].label} items at once."),
-                GUILayout.Width(20),
-                GUILayout.Height(26)
+                _styleToggle,
+                GUILayout.Width(ColToggleWidth * _scale),
+                GUILayout.Height(TierControlHeight * _scale)
             );
             if (isHost && newAll != allOn)
                 for (int i = 0; i < items.Count; i++)
@@ -540,7 +651,7 @@ namespace IssaPlugin.Overlays
                         _workingItemEnabled[i] = newAll;
             GUI.enabled = true;
 
-            GUILayout.Space(10);
+            GUILayout.Space(10f * _scale);
 
             // ── Batch pool-weight fields ──────────────────────────────────────
             // Editing any field immediately updates every item in this tier
@@ -554,7 +665,8 @@ namespace IssaPlugin.Overlays
                 if (isHost)
                 {
                     string prev = _textBuffers[key];
-                    string next = GUILayout.TextField(prev, GUILayout.Width(50));
+                    string next = GUILayout.TextField(
+                        prev, _styleTextField, GUILayout.Width(ColWeightWidth * _scale));
                     if (next != prev)
                     {
                         _textBuffers[key] = next;
@@ -573,10 +685,14 @@ namespace IssaPlugin.Overlays
                 }
                 else
                 {
-                    GUILayout.Label(_textBuffers[key], _styleReadOnly, GUILayout.Width(50));
+                    GUILayout.Label(
+                        _textBuffers[key],
+                        _styleReadOnly,
+                        GUILayout.Width(ColWeightWidth * _scale)
+                    );
                 }
 
-                GUILayout.Space(4);
+                GUILayout.Space(4f * _scale);
             }
 
             GUILayout.EndHorizontal();
@@ -591,11 +707,11 @@ namespace IssaPlugin.Overlays
                 return;
 
             Vector2 mouse = Event.current.mousePosition;
-            float maxWidth = 320f;
+            float maxWidth = 320f * _scale;
             GUIContent content = new GUIContent(tip);
-            float height = _styleTooltip.CalcHeight(content, maxWidth) + 10f;
-            float x = Mathf.Min(mouse.x + 14f, _windowRect.width - maxWidth - 8f);
-            float y = Mathf.Min(mouse.y + 18f, _windowRect.height - height - 8f);
+            float height = _styleTooltip.CalcHeight(content, maxWidth) + (10f * _scale);
+            float x = Mathf.Min(mouse.x + (14f * _scale), _windowRect.width - maxWidth - (8f * _scale));
+            float y = Mathf.Min(mouse.y + (18f * _scale), _windowRect.height - height - (8f * _scale));
             GUI.Box(new Rect(x, y, maxWidth, height), tip, _styleTooltip);
         }
 
@@ -607,7 +723,7 @@ namespace IssaPlugin.Overlays
             bool editable,
             float min,
             float max,
-            int width
+            float width
         )
         {
             if (!_textBuffers.ContainsKey(key))
@@ -615,7 +731,8 @@ namespace IssaPlugin.Overlays
 
             if (editable)
             {
-                string newText = GUILayout.TextField(_textBuffers[key], GUILayout.Width(width));
+                string newText = GUILayout.TextField(
+                    _textBuffers[key], _styleTextField, GUILayout.Width(width));
                 if (newText != _textBuffers[key])
                 {
                     _textBuffers[key] = newText;
@@ -635,33 +752,57 @@ namespace IssaPlugin.Overlays
 
         private void InitStyles()
         {
+            // Font sizes and padding bake the scale in, so a resolution change or a
+            // config edit has to rebuild them -- otherwise every box grows while the
+            // text inside it stays at its original size.
+            int pad2 = Mathf.RoundToInt(2f * _scale);
+            int pad4 = Mathf.RoundToInt(4f * _scale);
+            int pad6 = Mathf.RoundToInt(6f * _scale);
+            int pad8 = Mathf.RoundToInt(8f * _scale);
+
+            // Controls that were previously drawn with the bare skin (buttons, text
+            // fields, plain labels) need scaled copies of their own. Mutating
+            // GUI.skin.* directly would be simpler but writes to the skin every other
+            // IMGUI overlay in the mod shares, so the change would leak out of this
+            // panel and resize unrelated HUD elements.
+            int baseFont = GUI.skin.label.fontSize > 0 ? GUI.skin.label.fontSize : 12;
+            int scaledFont = Mathf.RoundToInt(baseFont * _scale);
+
+            _styleButton = new GUIStyle(GUI.skin.button) { fontSize = scaledFont };
+            _styleTextField = new GUIStyle(GUI.skin.textField) { fontSize = scaledFont };
+            _styleLabel = new GUIStyle(GUI.skin.label) { fontSize = scaledFont };
+            _styleToggle = new GUIStyle(GUI.skin.toggle);
+
             _styleHeader = new GUIStyle(GUI.skin.label)
             {
-                fontSize = 15,
+                fontSize = Mathf.RoundToInt(HeaderFontSize * _scale),
                 fontStyle = FontStyle.Bold,
             };
 
             _styleColHeader = new GUIStyle(GUI.skin.label)
             {
                 fontStyle = FontStyle.Bold,
-                fontSize = 11,
+                fontSize = Mathf.RoundToInt(ColHeaderFontSize * _scale),
                 alignment = TextAnchor.MiddleCenter,
             };
 
             _styleItemRow = new GUIStyle(GUI.skin.box)
             {
-                padding = new RectOffset(4, 4, 2, 2),
-                margin = new RectOffset(0, 0, 1, 1),
+                padding = new RectOffset(pad4, pad4, pad2, pad2),
+                margin = new RectOffset(0, 0, Mathf.RoundToInt(1f * _scale), Mathf.RoundToInt(1f * _scale)),
             };
 
             _styleTierHeader = new GUIStyle(GUI.skin.box)
             {
-                padding = new RectOffset(4, 4, 2, 2),
-                margin = new RectOffset(0, 0, 3, 1),
+                padding = new RectOffset(pad4, pad4, pad2, pad2),
+                margin = new RectOffset(0, 0, Mathf.RoundToInt(3f * _scale), Mathf.RoundToInt(1f * _scale)),
                 normal = { background = MakeTex(2, 2, new Color(0.22f, 0.22f, 0.28f, 1f)) },
             };
 
-            _styleIconBox = new GUIStyle(GUI.skin.box) { padding = new RectOffset(2, 2, 2, 2) };
+            _styleIconBox = new GUIStyle(GUI.skin.box)
+            {
+                padding = new RectOffset(pad2, pad2, pad2, pad2),
+            };
 
             _styleReadOnly = new GUIStyle(GUI.skin.label)
             {
@@ -671,8 +812,8 @@ namespace IssaPlugin.Overlays
             _styleTooltip = new GUIStyle(GUI.skin.box)
             {
                 wordWrap = true,
-                padding = new RectOffset(8, 8, 6, 6),
-                fontSize = 12,
+                padding = new RectOffset(pad8, pad8, pad6, pad6),
+                fontSize = Mathf.RoundToInt(TooltipFontSize * _scale),
                 alignment = TextAnchor.UpperLeft,
                 normal =
                 {
@@ -681,6 +822,7 @@ namespace IssaPlugin.Overlays
                 },
             };
 
+            _styleScale = _scale;
             _stylesInitialised = true;
         }
 
