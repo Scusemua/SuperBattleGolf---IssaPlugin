@@ -60,6 +60,11 @@ namespace IssaPlugin.Items
         /// so the drone can clear the thrower's body before arming.
         public float ArmDelay = 0.4f;
 
+        /// Seconds after spawning during which the thrower's own colliders cannot trigger
+        /// detonation. Unlike ArmDelay this suppresses only the thrower, so the drone still
+        /// detonates normally on terrain and other players while it clears its owner.
+        public float ThrowerIgnoreDuration = 1.5f;
+
         /// Maximum distance (metres) the drone may travel before self-detonating.
         public float MaxFlightDistance = 500f;
 
@@ -89,6 +94,17 @@ namespace IssaPlugin.Items
         // How often the assigned target is re-checked for validity, in seconds.
         private const float TargetValidateInterval = 0.5f;
         private float _validateTimer;
+
+        // Countdown for the thrower-collision grace period, and the thrower's transform
+        // cached at Start so the per-frame check is a cheap IsChildOf rather than a
+        // GetComponentInParent walk.
+        private float _throwerIgnoreTimer;
+        private Transform _throwerTransform;
+
+        // Distance from the thrower beyond which the grace period is ended early. Once the
+        // drone is this far clear, keeping the exemption alive would only let it pass
+        // harmlessly through its owner, so we drop it as soon as it is no longer needed.
+        private const float ThrowerClearDistance = 4f;
 
         private static readonly MethodInfo ServerExplodeMethod = typeof(Rocket).GetMethod(
             "ServerExplode",
@@ -139,6 +155,8 @@ namespace IssaPlugin.Items
 
             _currentSpeed = LaunchSpeed;
             _armTimer = ArmDelay;
+            _throwerIgnoreTimer = ThrowerIgnoreDuration;
+            _throwerTransform = ThrowerInfo != null ? ThrowerInfo.transform : null;
 
             // Invoke HandleHit on any hit — the drone is destroyed in one hit.
             OnHit += HandleHit;
@@ -199,6 +217,29 @@ namespace IssaPlugin.Items
 
         private void UpdateHoming()
         {
+            // Thrower grace period: expires on a timer, or early once the drone has put
+            // ThrowerClearDistance between itself and its owner. The early exit matters
+            // because a player with a speed boost can otherwise stay inside the drone's
+            // collision sphere for the whole window.
+            if (_throwerIgnoreTimer > 0f)
+            {
+                _throwerIgnoreTimer -= Time.fixedDeltaTime;
+
+                if (_throwerTransform == null)
+                {
+                    _throwerIgnoreTimer = 0f;
+                }
+                else
+                {
+                    float sqToThrower = (
+                        _throwerTransform.position - transform.position
+                    ).sqrMagnitude;
+
+                    if (sqToThrower > ThrowerClearDistance * ThrowerClearDistance)
+                        _throwerIgnoreTimer = 0f;
+                }
+            }
+
             // Collision check (armed only). Uses a self-filtering helper so the
             // drone's own colliders — placed on HittablesLayer for bullet detection —
             // do not trigger a false detonation every frame.
@@ -267,7 +308,8 @@ namespace IssaPlugin.Items
         /// (i.e. not a collider belonging to this drone's own hierarchy).
         /// Using OverlapSphereNonAlloc + self-exclusion instead of CheckSphere prevents the drone
         /// from detecting its own physics colliders (which are on HittablesLayer, a layer included
-        /// in RocketHittablesMask).
+        /// in RocketHittablesMask). The thrower is likewise excluded while the grace period
+        /// set by <see cref="ThrowerIgnoreDuration"/> is still running.
         /// </summary>
         private bool DetectExternalCollision()
         {
@@ -285,6 +327,14 @@ namespace IssaPlugin.Items
                     continue;
                 // Skip other hunter drones — drone-on-drone contact is not a detonation trigger.
                 if (_collisionBuffer[i].GetComponentInParent<HunterDroneBehaviour>() != null)
+                    continue;
+                // Skip the thrower during the grace period, so launching while running or
+                // jumping forward doesn't detonate the drone inside its own owner.
+                if (
+                    _throwerIgnoreTimer > 0f
+                    && _throwerTransform != null
+                    && _collisionBuffer[i].transform.IsChildOf(_throwerTransform)
+                )
                     continue;
                 return true;
             }

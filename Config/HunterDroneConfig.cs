@@ -15,6 +15,7 @@ namespace IssaPlugin
         public ConfigEntry<float> ArrivalRadius { get; private set; }
         public ConfigEntry<float> ExplosionScale { get; private set; }
         public ConfigEntry<float> ArmDelay { get; private set; }
+        public ConfigEntry<float> ThrowerIgnoreDuration { get; private set; }
         public ConfigEntry<bool> FriendlyFire { get; private set; }
         public ConfigEntry<bool> AttackFinishedPlayers { get; private set; }
         public ConfigEntry<float> MaxFlightDistance { get; private set; }
@@ -71,6 +72,16 @@ namespace IssaPlugin
                 "Seconds after launch before the drone starts checking for collision. "
                     + "Prevents the drone from detonating on the thrower immediately after "
                     + "being thrown."
+            );
+            ThrowerIgnoreDuration = cfg.Bind(
+                Section,
+                "ThrowerIgnoreDuration",
+                1.5f,
+                "Seconds after launch during which the drone cannot detonate on the player who "
+                    + "threw it. Prevents the drone exploding inside its owner when thrown while "
+                    + "running or jumping forward. Unlike ArmDelay, the drone still detonates "
+                    + "normally on terrain and other players during this window, and the grace "
+                    + "period ends early once the drone is clear of the thrower."
             );
             FriendlyFire = cfg.Bind(
                 Section,

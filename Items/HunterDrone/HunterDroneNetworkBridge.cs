@@ -183,6 +183,7 @@ namespace IssaPlugin.Items
             behaviour.FriendlyFire = ModConfig.HunterDrone.FriendlyFire.Value;
             behaviour.AttackFinishedPlayers = ModConfig.HunterDrone.AttackFinishedPlayers.Value;
             behaviour.ArmDelay = ModConfig.HunterDrone.ArmDelay.Value;
+            behaviour.ThrowerIgnoreDuration = ModConfig.HunterDrone.ThrowerIgnoreDuration.Value;
             behaviour.SetFallbackAimPoint(aimPoint);
             behaviour.SetTarget(target);
 
