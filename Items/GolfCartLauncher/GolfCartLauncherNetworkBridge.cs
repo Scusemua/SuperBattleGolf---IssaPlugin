@@ -207,6 +207,13 @@ namespace IssaPlugin.Items
             _serverLaunchedCarts.RemoveAll(c => c == null);
             _serverLaunchedCarts.Add(cart.gameObject);
 
+            // Bleed off leftover spin once the cart touches down, so a launched cart
+            // settles and can be driven away instead of tumbling. Attached for Joyride
+            // too — a rider landing in a cart that will not stop rolling is the worst
+            // version of this — and the settler itself stands down for a remote driver,
+            // who owns their own cart's physics.
+            cart.gameObject.AddComponent<LaunchedGolfCartSettler>().Initialize(cart);
+
             // The timer lives on the cart, not on this bridge, so it keeps running if
             // the shooter disconnects while their cart is still in the air.
             float lifetime = ModConfig.GolfCartLauncher.Lifetime.Value;
@@ -341,6 +348,12 @@ namespace IssaPlugin.Items
             float requiredMax = msg.AngularVelocity.magnitude;
             if (requiredMax > rb.maxAngularVelocity)
                 rb.maxAngularVelocity = requiredMax;
+
+            // This client owns the cart's physics, so the server-side settler cannot
+            // damp it — run one here instead, or the rider lands in a cart that never
+            // stops rolling.
+            if (cart.GetComponent<LaunchedGolfCartSettler>() == null)
+                cart.gameObject.AddComponent<LaunchedGolfCartSettler>().Initialize(cart);
         }
 
         /// <summary>Driver is always seat 0 (see GolfCartInfo.ServerTryAssignPassengerToSeat).</summary>

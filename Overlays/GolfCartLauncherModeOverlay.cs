@@ -40,8 +40,8 @@ namespace IssaPlugin.Overlays
         private const float PanelHeight = 150f;
         private const float MarginX = 28f;
         private const float MarginY = 110f;
-        private const int ModeFontSize = 28;
-        private const int HintFontSize = 22;
+        private const int ModeFontSize = 32;
+        private const int HintFontSize = 26;
 
         /// <summary>Scale factor from the 1080p reference layout to this screen.</summary>
         private static float UiScale => Mathf.Max(1f, Screen.height / ReferenceHeight);

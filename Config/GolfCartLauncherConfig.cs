@@ -66,6 +66,23 @@ namespace IssaPlugin
         /// <summary>Speed (m/s) of a cart launched in Joyride mode, with the player aboard.</summary>
         public ConfigEntry<float> JoyrideLaunchSpeed { get; private set; }
 
+        /// <summary>
+        /// How sharply a landed cart's leftover spin is bled off. Higher settles faster;
+        /// 0 disables settling entirely (carts tumble until physics stops them).
+        /// </summary>
+        public ConfigEntry<float> SettleDamping { get; private set; }
+
+        /// <summary>
+        /// Seconds of ground contact after which a landed cart's spin is zeroed outright.
+        /// </summary>
+        public ConfigEntry<float> SettleDuration { get; private set; }
+
+        /// <summary>
+        /// Spin (radians/sec) below which a landed cart counts as settled, so ordinary
+        /// driving turns are never damped.
+        /// </summary>
+        public ConfigEntry<float> SettleAngularThreshold { get; private set; }
+
         public GolfCartLauncherConfig(ConfigFile cfg, GlobalConfig global)
         {
             GiveKey = cfg.Bind(
@@ -218,6 +235,38 @@ namespace IssaPlugin
                     "Fraction of the standard spin (SpinPitch/SpinYaw/SpinRoll) applied in Joyride mode. "
                         + "0 = the cart flies level so the ride stays readable, 1 = the full standard tumble with you aboard.",
                     new AcceptableValueRange<float>(0f, 1f)
+                )
+            );
+
+            SettleDamping = cfg.Bind(
+                Section,
+                "SettleDamping",
+                14f,
+                new ConfigDescription(
+                    "How sharply a launched cart's leftover spin is bled off once it lands. "
+                        + "Higher settles faster and more abruptly; 0 disables settling so carts tumble freely.",
+                    new AcceptableValueRange<float>(0f, 40f)
+                )
+            );
+
+            SettleDuration = cfg.Bind(
+                Section,
+                "SettleDuration",
+                0.75f,
+                new ConfigDescription(
+                    "Seconds of ground contact after which a landed cart's remaining spin is zeroed outright.",
+                    new AcceptableValueRange<float>(0.1f, 10f)
+                )
+            );
+
+            SettleAngularThreshold = cfg.Bind(
+                Section,
+                "SettleAngularThreshold",
+                0.35f,
+                new ConfigDescription(
+                    "Spin (radians/second) below which a landed cart counts as settled. "
+                        + "Keeps ordinary driving turns from being damped.",
+                    new AcceptableValueRange<float>(0.01f, 5f)
                 )
             );
         }
