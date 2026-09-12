@@ -59,6 +59,7 @@ namespace IssaPlugin.Integrations.SpawnerUI
         private const int LabelFontSize = 11;
         private const int CellLabelFontSize = 10;
         private const int SearchFontSize = 12;
+        private const int TitleFontSize = 12;
 
         /// <summary>
         /// Scale from the reference layout to this screen. A configured value wins;
@@ -86,6 +87,13 @@ namespace IssaPlugin.Integrations.SpawnerUI
         /// rebuilds the font sizes rather than leaving them at the old size.
         /// </summary>
         private float _styleScale;
+
+        /// <summary>
+        /// Height of the draggable title bar, taken from the window style's own top
+        /// padding when the styles are built. Read from the style rather than scaled
+        /// independently so the drag strip can never cover a control row.
+        /// </summary>
+        private float _titleBarHeight = 20f;
 
         /// <summary>
         /// The scale for the frame being drawn. Sampled once per OnGUI so every pass of
@@ -349,13 +357,19 @@ namespace IssaPlugin.Integrations.SpawnerUI
 
         private void DrawWindow(int id)
         {
-            GUI.DragWindow(new Rect(0, 0, 100000, 28f * _scale));
-
             DrawControls();
             GUILayout.Space(6f * _scale);
             DrawGrid();
             GUILayout.Space(6f * _scale);
             DrawFooter();
+
+            // Declared last on purpose. IMGUI hands an event to controls in declaration
+            // order, so a drag strip declared first consumes clicks inside its bounds
+            // before the controls under it ever run -- which is exactly what killed the
+            // search box and the filter pills once the strip grew with the scale. Last,
+            // it only picks up clicks no control claimed. The height comes from the
+            // window style's own title-bar padding, so the two cannot drift apart.
+            GUI.DragWindow(new Rect(0, 0, _windowRect.width, _titleBarHeight));
         }
 
         private void DrawControls()
@@ -640,8 +654,38 @@ namespace IssaPlugin.Integrations.SpawnerUI
             // their own. Safe on the first pass: the list is empty.
             ReleaseTextures();
 
-            _windowStyle = new GUIStyle(GUI.skin.window);
+            _windowStyle = new GUIStyle(GUI.skin.window)
+            {
+                fontSize = Mathf.RoundToInt(TitleFontSize * _scale),
+            };
             _windowStyle.normal.background = MakeTexture(new Color(0.10f, 0.10f, 0.12f, 0.94f));
+
+            // The skin's window padding reserves the title bar (its .top) and the frame
+            // inset. Left unscaled it stays at the stock ~20px while everything else
+            // grows, so the title text overflows its bar and the first control row rides
+            // up under it. Scale it with the rest of the layout.
+            RectOffset skinPad = GUI.skin.window.padding;
+            _windowStyle.padding = new RectOffset(
+                Mathf.RoundToInt(skinPad.left * _scale),
+                Mathf.RoundToInt(skinPad.right * _scale),
+                Mathf.RoundToInt(skinPad.top * _scale),
+                Mathf.RoundToInt(skinPad.bottom * _scale));
+
+            // Border drives how the 9-slice background is stretched; scaling it keeps the
+            // frame's corners proportional instead of leaving a hairline edge at 2x.
+            RectOffset skinBorder = GUI.skin.window.border;
+            _windowStyle.border = new RectOffset(
+                Mathf.RoundToInt(skinBorder.left * _scale),
+                Mathf.RoundToInt(skinBorder.right * _scale),
+                Mathf.RoundToInt(skinBorder.top * _scale),
+                Mathf.RoundToInt(skinBorder.bottom * _scale));
+
+            // The draggable strip must match the title bar the padding just reserved.
+            // Deriving it here rather than scaling a separate constant is the whole fix
+            // for the dead controls: an independently scaled drag rect grew taller than
+            // the title bar and swallowed the entire search/filter row, because
+            // GUI.DragWindow consumes those clicks before any control sees them.
+            _titleBarHeight = _windowStyle.padding.top;
 
             int cellPad = Mathf.RoundToInt(4f * _scale);
             _cellStyle = new GUIStyle(GUI.skin.button)
