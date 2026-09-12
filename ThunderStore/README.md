@@ -1,6 +1,6 @@
 # IssaMod
 
-Adds **31 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
+Adds **36 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
 
 For more information as well as the mod's source code, please see [the mod's GitHub repository](https://github.com/Scusemua/SuperBattleGolf---IssaPlugin/).
 
@@ -106,6 +106,9 @@ Unleash a continuous stream of fire in front of you. Enemies caught in the flame
 ### 🚀💣 Rocket Tether Grenade
 Throw a toy rocket at the ground, causing a small spark. Anybody within range will be tethered to a rocket - like the rocket tether item, but somehow even more chaotic.
 
+### 🚁 Hunter Drone
+Aim and fire an explosive drone. If you are pointing at or near another player it locks on and hunts them down, chasing until it connects. If nobody is in your sights it flies straight along your aim instead, detonating on the first thing it hits or when it runs out of range.
+
 ### 💨 Wind Storm
 Create a wind storm with extremely high speed winds and dynamically-changing directions. These winds will blow away players and golf balls alike!
 
@@ -123,6 +126,11 @@ The AOE variant of Shape Shifter. No target selection — activating it instantl
 
 ### 💥 Explosive Golf Balls
 A passive item — just having it in your inventory is enough. Every swing launches an explosive charge: the ball detonates on its first collision with anything — terrain, walls, structures, or another player. One use is consumed per swing. Optionally configurable to only trigger on overcharge (lock-on) shots, keeping normal putts clean.
+
+### 🛺 Golf Cart Launcher
+A shoulder-fired launcher that shoots golf carts instead of rockets. Aim in with right-click like the rocket launcher, then fire to hurl a real golf cart down range. Anyone it hits gets run over and sent flying. Launch speed, fire rate, accuracy, and how wildly the cart tumbles in flight are all configurable.
+
+Holding a full launcher lets you flip it into **Joy Ride** mode (press `V` by default). Fire in that mode and you are strapped into the driver's seat as the cart launches, riding it wherever it lands. It costs the entire item, so you get one trip.
 
 ---
 
