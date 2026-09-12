@@ -74,7 +74,7 @@ Trigger an orbital laser on all other players at the same time.
 Like the icon weapon from the Half Life franchise, use the Gravity Gun to throw players and golf carts around with ease!
 
 ### ✈️ Harrier Jet
-Calls in an autonomous Harrier jet that flies in from off-map, hovers over the course, and fires rockets at players on its own. No steering required after activation — you just point and watch. Can be shot down with a rocket launcher before it finishes its run.
+Calls in an autonomous Harrier jet that flies in from off-map, hovers over the course, and fires rockets at players on its own. No steering required after activation; you just point and watch. Can be shot down with a rocket launcher before it finishes its run.
 
 ### 🚀 Rocket Tether
 Targets another player and fires a rocket that spawns directly above them, then launches straight up. The target is tethered to the rocket by a spring force and gets dragged skyward with it. When the timer runs out, the rocket detonates at altitude. 
@@ -101,7 +101,7 @@ Aim and fire an explosive drone. If you are pointing at or near another player i
 Create a wind storm with extremely high speed winds and dynamically-changing directions. These winds will blow away players and golf balls alike!
 
 ### 🛸 UFO Abduction
-Aim at another player and fire. A flying saucer swoops in from off-map and locks on. When it arrives, a tractor beam engages — the victim gets knocked off their feet and hauled upward, suspended helplessly in the beam while the UFO hovers. After a few seconds the ship begins its escape, dragging the victim up with it in an erratic, spiraling climb before they're finally pulled inside and the whole thing detonates at altitude. A picture-in-picture camera appears on every player's screen for the full duration so nobody misses a second of it.
+Aim at another player and fire. A flying saucer swoops in from off-map and locks on. When it arrives, a tractor beam engages, and the victim gets knocked off their feet and hauled upward, suspended helplessly in the beam while the UFO hovers. After a few seconds the ship begins its escape, dragging the victim up with it in an erratic, spiraling climb before they're finally pulled inside and the whole thing detonates at altitude. A picture-in-picture camera appears on every player's screen for the full duration so nobody misses a second of it.
 
 ### 🌕 Majora's Moon
 Use this item and a giant moon appears on the horizon, slowly descending toward the course. A countdown warning fills every player's screen as it approaches. When the moon reaches the hole, everyone is knocked off their feet and pulled skyward, helplessly dragged upward as gravity stops working. Once the moon slams into the course it detonates in a massive explosion, sending anything nearby flying. There is no defending against it. There is no escape. The moon will fall.
@@ -113,7 +113,7 @@ Pick a target from the chooser overlay and their golf ball transforms into a cub
 The AOE variant of Shape Shifter. No target selection: activating it instantly cubes every other player's ball simultaneously. Each ball reverts independently after the duration. Great for chaos, terrible for anyone mid-putt.
 
 ### 💥 Explosive Golf Balls
-A passive item — just having it in your inventory is enough. Every swing launches an explosive charge: the ball detonates on its first collision with anything — terrain, walls, structures, or another player. One use is consumed per swing. Optionally configurable to only trigger on overcharge (lock-on) shots, keeping normal putts clean.
+A passive item, so just having it in your inventory is enough. Every swing launches an explosive charge: the ball detonates on its first collision with anything: terrain, walls, structures, or another player. One use is consumed per swing. Optionally configurable to only trigger on overcharge (lock-on) shots, keeping normal putts clean.
 
 ### 🛺 Golf Cart Launcher
 A shoulder-fired launcher that shoots golf carts instead of rockets. Aim in with right-click like the rocket launcher, then fire to hurl a real golf cart down range. Anyone it hits gets run over and sent flying. Launch speed, fire rate, accuracy, and how wildly the cart tumbles in flight are all configurable.
