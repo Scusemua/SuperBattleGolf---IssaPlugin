@@ -1449,12 +1449,21 @@ namespace IssaPlugin.Patches
             Reader<GolfCartLaunchRequestMessage>.read =
                 GolfCartLauncherMessageSerialization.ReadLaunchRequest;
 
+            Writer<GolfCartJoyrideLaunchMessage>.write =
+                GolfCartLauncherMessageSerialization.WriteJoyrideLaunch;
+            Reader<GolfCartJoyrideLaunchMessage>.read =
+                GolfCartLauncherMessageSerialization.ReadJoyrideLaunch;
+
+            NetworkClient.RegisterHandler<GolfCartJoyrideLaunchMessage>(
+                GolfCartLauncherNetworkBridge.HandleJoyrideLaunch
+            );
+
             if (NetworkServer.active)
             {
                 NetworkServer.RegisterHandler<GolfCartLaunchRequestMessage>(
                     (conn, msg) =>
                         GetBridge<GolfCartLauncherNetworkBridge>(conn)
-                            ?.ServerHandleLaunchRequest(msg.Direction)
+                            ?.ServerHandleLaunchRequest(msg.Direction, msg.Joyride)
                 );
             }
 

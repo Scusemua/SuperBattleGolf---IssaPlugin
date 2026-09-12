@@ -1,4 +1,5 @@
 using System.Collections;
+using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -25,6 +26,57 @@ namespace IssaPlugin.Items
         // one local player fires at a time.
         private static bool _isFiring;
 
+        // ── Joyride mode ─────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// When true, the next shot seats the shooter in the launched cart and consumes
+        /// the entire item. Local-only UI state: the server is told per shot, so this
+        /// never needs syncing.
+        /// </summary>
+        public static bool JoyrideArmed { get; private set; }
+
+        /// <summary>
+        /// Joyride may only be armed while the equipped launcher is at full uses, since
+        /// firing consumes every remaining use. Also the condition the HUD greys out on.
+        /// </summary>
+        public static bool CanArmJoyride(PlayerInventory inventory)
+        {
+            if (inventory == null)
+                return false;
+
+            if (
+                inventory.GetEffectivelyEquippedItem(true)
+                != ItemRegistry.GolfCartLauncherItemType
+            )
+                return false;
+
+            inventory.GetUsesForSlot(
+                inventory.EquippedItemIndex,
+                out int remainingUses,
+                out int maxUses
+            );
+
+            return maxUses > 0 && remainingUses >= maxUses;
+        }
+
+        /// <summary>
+        /// Flips Joyride mode. Ignored (and disarms) when the launcher is not at full
+        /// uses, so the mode can never be left armed in a state that cannot fire it.
+        /// </summary>
+        public static void ToggleJoyride(PlayerInventory inventory)
+        {
+            if (!CanArmJoyride(inventory))
+            {
+                JoyrideArmed = false;
+                return;
+            }
+
+            JoyrideArmed = !JoyrideArmed;
+        }
+
+        /// <summary>Disarms Joyride. Called on hole cleanup and after a joyride shot.</summary>
+        public static void DisarmJoyride() => JoyrideArmed = false;
+
         /// <summary>True while the local player is mid burst.</summary>
         public static bool IsFiring => _isFiring;
 
@@ -32,7 +84,11 @@ namespace IssaPlugin.Items
         /// Clears the firing flag. Called from hole cleanup so a hole transition
         /// mid-burst cannot leave the loop permanently blocked.
         /// </summary>
-        public static void ResetFiringState() => _isFiring = false;
+        public static void ResetFiringState()
+        {
+            _isFiring = false;
+            JoyrideArmed = false;
+        }
 
         /// <summary>
         /// Fires carts while the button is held, one every FireRate seconds.
@@ -81,7 +137,28 @@ namespace IssaPlugin.Items
                         break;
 
                     int slot = inventory.EquippedItemIndex;
-                    Fire(inventory, bridge);
+
+                    // Latch the mode for this shot: a Joyride shot consumes the whole
+                    // item and ends the burst, so it can only ever be the first one.
+                    bool joyride = JoyrideArmed && CanArmJoyride(inventory);
+
+                    Fire(inventory, bridge, joyride);
+
+                    if (joyride)
+                    {
+                        // The whole item is spent riding the cart.
+                        inventory.GetUsesForSlot(slot, out int remainingUses, out _);
+                        for (int i = 0; i < remainingUses; i++)
+                            ItemHelper.DecrementAndRemove(inventory, slot);
+
+                        // CanEnterGolfCart() refuses while IsUsingItemAtAll is true, and
+                        // the server seats the player as part of handling this shot — so
+                        // the use state has to be cleared now, not in the finally below.
+                        ItemHelper.SetCurrentItemUse(inventory, ItemUseType.None);
+                        DisarmJoyride();
+                        break;
+                    }
+
                     ItemHelper.DecrementAndRemove(inventory, slot);
 
                     // Stop once uses are exhausted (the item left the inventory).
@@ -103,7 +180,11 @@ namespace IssaPlugin.Items
 
         // ── Single cart launch ───────────────────────────────────────────────────
 
-        private static void Fire(PlayerInventory inventory, GolfCartLauncherNetworkBridge bridge)
+        private static void Fire(
+            PlayerInventory inventory,
+            GolfCartLauncherNetworkBridge bridge,
+            bool joyride
+        )
         {
             Vector3 barrelEnd = inventory.GetRocketLauncherBarrelFrontEndPosition();
             Vector3 barrelForward = inventory.GetRocketLauncherBarrelForward();
@@ -145,7 +226,7 @@ namespace IssaPlugin.Items
             PlayFireEffects(inventory);
 
             // The cart is a networked object — only the server may spawn it.
-            bridge?.ClientRequestLaunch(dir.normalized);
+            bridge?.ClientRequestLaunch(dir.normalized, joyride);
         }
 
         // ── Firing effects ───────────────────────────────────────────────────────
@@ -159,11 +240,13 @@ namespace IssaPlugin.Items
         /// (which this item already uses for aiming), so they line up with the weapon
         /// without any manual placement.
         ///
-        /// PlayRocketLaunchLocalOnly itself is deliberately NOT used: it only plays on
-        /// the caller's machine (the base game reaches remote clients through its own
-        /// private, rocket-specific RpcInformShotRocket path). ClientPlayPooledVfxForAllClients
-        /// sends to every client INCLUDING the sender, so calling both would play the
-        /// muzzle flash twice on the shooter's screen.
+        /// Broadcasting has to pick the right entry point for where this runs:
+        ///   - On a pure client, ClientPlayPooledVfxForAllClients plays locally and
+        ///     Cmds the rest. Calling it on the server instead LOGS AN ERROR AND DOES
+        ///     NOTHING ("On the server, ServerPlayPooledVfxForAllClients should be
+        ///     called instead"), which is why the host saw no effect at all.
+        ///   - On the host, ServerPlayPooledVfxForAllClients RPCs the other clients but
+        ///     does not play locally, so the host also plays it itself.
         ///
         /// PlayerAudio.PlayRocketLauncherShotForAllClients handles its own networking.
         /// It is server-rate-limited to 5 calls per 0.5s; the default FireRate of 0.75s
@@ -178,17 +261,39 @@ namespace IssaPlugin.Items
             Quaternion backBlastRotation =
                 Quaternion.AngleAxis(180f, inventory.transform.up) * muzzleRotation;
 
-            VfxManager.ClientPlayPooledVfxForAllClients(
+            PlayShotVfx(
                 VfxType.RocketLauncherMuzzle,
                 inventory.GetRocketLauncherBarrelFrontEndPosition(),
                 muzzleRotation
             );
 
-            VfxManager.ClientPlayPooledVfxForAllClients(
+            PlayShotVfx(
                 VfxType.RocketLauncherBackBlast,
                 inventory.GetRocketLauncherBarrelBackEndPosition(),
                 backBlastRotation
             );
+        }
+
+        /// <summary>
+        /// Plays one pooled VFX for every player, from either a host or a pure client.
+        /// </summary>
+        private static void PlayShotVfx(VfxType vfxType, Vector3 position, Quaternion rotation)
+        {
+            if (NetworkServer.active)
+            {
+                // Host: RPC reaches the other clients only, so play it here too.
+                VfxManager.PlayPooledVfxLocalOnly(vfxType, position, rotation);
+                VfxManager.ServerPlayPooledVfxForAllClients(
+                    vfxType,
+                    position,
+                    rotation,
+                    connectionToSkip: NetworkServer.localConnection
+                );
+                return;
+            }
+
+            // Pure client: plays locally and forwards to everyone else.
+            VfxManager.ClientPlayPooledVfxForAllClients(vfxType, position, rotation);
         }
     }
 }

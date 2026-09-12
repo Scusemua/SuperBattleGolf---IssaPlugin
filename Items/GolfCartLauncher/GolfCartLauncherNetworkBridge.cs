@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using HarmonyLib;
 using IssaPlugin.Network;
 using Mirror;
 using UnityEngine;
@@ -45,8 +46,10 @@ namespace IssaPlugin.Items
         /// Asks the server to launch a cart along <paramref name="direction"/>.
         /// Called by GolfCartLauncherItem.Fire on the shooter's client.
         /// </summary>
-        public void ClientRequestLaunch(Vector3 direction) =>
-            NetworkClient.Send(new GolfCartLaunchRequestMessage { Direction = direction });
+        public void ClientRequestLaunch(Vector3 direction, bool joyride = false) =>
+            NetworkClient.Send(
+                new GolfCartLaunchRequestMessage { Direction = direction, Joyride = joyride }
+            );
 
         // ================================================================
         //  Server
@@ -55,7 +58,7 @@ namespace IssaPlugin.Items
         /// <summary>
         /// Spawns and launches one golf cart. Registered in NetworkManagerPatches.
         /// </summary>
-        public void ServerHandleLaunchRequest(Vector3 direction)
+        public void ServerHandleLaunchRequest(Vector3 direction, bool joyride = false)
         {
             if (!isServer)
                 return;
@@ -108,7 +111,33 @@ namespace IssaPlugin.Items
             // so the SyncVar property is set directly instead.
             cart.NetworkresponsiblePlayer = shooter;
 
-            ServerApplyLaunchImpulse(cart, direction);
+            // Seat the shooter BEFORE the impulse: ServerTryAssignPassengerToSeat can
+            // reassign network authority over the cart, and doing that after setting
+            // velocity would hand a moving cart to a client mid-flight.
+            bool ownedByRemoteRider = false;
+            if (joyride)
+                ownedByRemoteRider = ServerSeatShooter(cart, shooter);
+
+            ServerApplyLaunchImpulse(cart, direction, joyride);
+
+            // A remote rider now owns the cart's physics, so the velocity written above
+            // would be overwritten by their client. Ask the owner to apply it instead.
+            //
+            // Same ownership split the Black Hole Grenade uses: the server drives carts
+            // with nobody aboard, and the occupant's own client drives the one they are
+            // sitting in (see BlackHoleGrenadeBehaviour, which skips occupied carts, and
+            // BlackHoleGrenadeNetworkBridge, which applies force to seat.golfCart).
+            if (ownedByRemoteRider)
+            {
+                float speed = ModConfig.GolfCartLauncher.JoyrideLaunchSpeed.Value;
+                shooter.connectionToClient?.Send(
+                    new GolfCartJoyrideLaunchMessage
+                    {
+                        CartNetId = cart.netId,
+                        Velocity = direction * speed,
+                    }
+                );
+            }
 
             // Drop entries whose cart is already gone (despawned by lifetime, driven
             // out of bounds, or destroyed by the game) so a long hole with heavy
@@ -126,7 +155,11 @@ namespace IssaPlugin.Items
         /// <summary>
         /// Gives the freshly spawned cart its flight velocity and tumble.
         /// </summary>
-        private static void ServerApplyLaunchImpulse(GolfCartInfo cart, Vector3 direction)
+        private static void ServerApplyLaunchImpulse(
+            GolfCartInfo cart,
+            Vector3 direction,
+            bool joyride
+        )
         {
             var rb = cart.AsEntity != null ? cart.AsEntity.Rigidbody : null;
             if (rb == null)
@@ -136,16 +169,23 @@ namespace IssaPlugin.Items
             // ignore the launch entirely.
             rb.isKinematic = false;
 
-            rb.linearVelocity = direction * ModConfig.GolfCartLauncher.LaunchSpeed.Value;
+            float speed = joyride
+                ? ModConfig.GolfCartLauncher.JoyrideLaunchSpeed.Value
+                : ModConfig.GolfCartLauncher.LaunchSpeed.Value;
+            rb.linearVelocity = direction * speed;
 
             // Spin is authored in degrees/second about the cart's own axes, which is
             // how a user thinks about "rotation on the golf carts"; Rigidbody wants
             // radians/second in world space.
-            Vector3 localSpinDeg = new Vector3(
-                ModConfig.GolfCartLauncher.SpinPitch.Value,
-                ModConfig.GolfCartLauncher.SpinYaw.Value,
-                ModConfig.GolfCartLauncher.SpinRoll.Value
-            );
+            // A rider gets no tumble — spinning the cart with a player aboard fights the
+            // seat attachment and just looks broken.
+            Vector3 localSpinDeg = joyride
+                ? Vector3.zero
+                : new Vector3(
+                    ModConfig.GolfCartLauncher.SpinPitch.Value,
+                    ModConfig.GolfCartLauncher.SpinYaw.Value,
+                    ModConfig.GolfCartLauncher.SpinRoll.Value
+                );
 
             rb.angularVelocity = cart.transform.TransformDirection(localSpinDeg * Mathf.Deg2Rad);
 
@@ -155,6 +195,86 @@ namespace IssaPlugin.Items
             if (requiredMax > rb.maxAngularVelocity)
                 rb.maxAngularVelocity = requiredMax;
         }
+
+        /// <summary>
+        /// Puts the shooter in the launched cart's driver seat (Joyride mode).
+        ///
+        /// Uses the base game's own GolfCartInfo.ServerTryAssignPassengerToSeat — the
+        /// same method a player entering a parked cart goes through — so seat state,
+        /// network authority and the driver's input mode are all set up exactly as the
+        /// game expects. It is private, hence the cached reflection.
+        ///
+        /// The driver-seat RESERVATION path (ServerReserveDriverSeatPreNetworkSpawn) is
+        /// deliberately not used: it validates a base-game item-use hash that a custom
+        /// item never registers, so GolfCartInfo.OnStartClient would destroy the cart,
+        /// and it also schedules the "destroy if nobody boards" timer.
+        ///
+        /// fromReservation is false so the cart is NOT teleported back to the player —
+        /// it stays where it spawned, in front of them, and they are placed into it.
+        /// </summary>
+        /// <returns>
+        /// True when the seated rider is a REMOTE client that now owns the cart's
+        /// physics, meaning the launch velocity has to be applied on their machine.
+        /// </returns>
+        private static bool ServerSeatShooter(GolfCartInfo cart, PlayerInfo shooter)
+        {
+            if (AssignPassengerToSeatMethod == null)
+            {
+                IssaPluginPlugin.Log.LogWarning(
+                    "[GolfCartLauncher] GolfCartInfo.ServerTryAssignPassengerToSeat not found; "
+                        + "launching without a rider."
+                );
+                return false;
+            }
+
+            try
+            {
+                object result = AssignPassengerToSeatMethod.Invoke(
+                    cart,
+                    new object[] { shooter, DriverSeatIndex, false }
+                );
+
+                if (result is bool seated && !seated)
+                    return false;
+
+                // Seating seat 0 gives a non-host driver client authority over the cart
+                // (see GolfCartInfo.ServerTryAssignPassengerToSeat).
+                return shooter.connectionToClient != NetworkServer.localConnection;
+            }
+            catch (System.Exception ex)
+            {
+                // Never let a reflection failure take down the launch: the cart is
+                // already spawned, so the shot still happens, just without the rider.
+                IssaPluginPlugin.Log.LogError(
+                    $"[GolfCartLauncher] Failed to seat the shooter in the launched cart: {ex}"
+                );
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Applies the launch velocity to a cart this client owns. Registered as the
+        /// GolfCartJoyrideLaunchMessage handler in NetworkManagerPatches.
+        /// </summary>
+        public static void HandleJoyrideLaunch(GolfCartJoyrideLaunchMessage msg)
+        {
+            if (!NetworkClient.spawned.TryGetValue(msg.CartNetId, out var identity))
+                return;
+
+            var cart = identity.GetComponent<GolfCartInfo>();
+            var rb = cart != null && cart.AsEntity != null ? cart.AsEntity.Rigidbody : null;
+            if (rb == null)
+                return;
+
+            rb.isKinematic = false;
+            rb.linearVelocity = msg.Velocity;
+        }
+
+        /// <summary>Driver is always seat 0 (see GolfCartInfo.ServerTryAssignPassengerToSeat).</summary>
+        private const int DriverSeatIndex = 0;
+
+        private static readonly System.Reflection.MethodInfo AssignPassengerToSeatMethod =
+            AccessTools.Method(typeof(GolfCartInfo), "ServerTryAssignPassengerToSeat");
 
         private static bool IsFinite(Vector3 v) =>
             !float.IsNaN(v.x)

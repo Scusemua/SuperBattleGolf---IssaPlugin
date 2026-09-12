@@ -48,6 +48,18 @@ namespace IssaPlugin
         /// <summary>Intensity of the screen shake applied when firing. 0 disables it.</summary>
         public ConfigEntry<float> ScreenShakeIntensity { get; private set; }
 
+        /// <summary>
+        /// Key that toggles Joyride mode (ride the launched cart). Only has an effect
+        /// while the equipped launcher is at full uses.
+        /// </summary>
+        public ConfigEntry<Key> JoyrideToggleKey { get; private set; }
+
+        /// <summary>Whether the Joyride HUD indicator is drawn while the launcher is equipped.</summary>
+        public ConfigEntry<bool> ShowJoyrideHud { get; private set; }
+
+        /// <summary>Speed (m/s) of a cart launched in Joyride mode, with the player aboard.</summary>
+        public ConfigEntry<float> JoyrideLaunchSpeed { get; private set; }
+
         public GolfCartLauncherConfig(ConfigFile cfg, GlobalConfig global)
         {
             GiveKey = cfg.Bind(
@@ -139,6 +151,27 @@ namespace IssaPlugin
                 "ScreenShakeIntensity",
                 0.425f,
                 "Intensity of the screen shake when firing the Golf Cart Launcher. 0 disables it."
+            );
+
+            JoyrideToggleKey = cfg.Bind(
+                Section,
+                "JoyrideToggleKey",
+                Key.V,
+                "Key that toggles Joyride mode, where firing seats you in the launched cart and consumes the whole item. Only selectable while the launcher is at full uses."
+            );
+
+            ShowJoyrideHud = cfg.Bind(
+                Section,
+                "ShowJoyrideHud",
+                true,
+                "Show the firing-mode indicator on the HUD while the Golf Cart Launcher is equipped."
+            );
+
+            JoyrideLaunchSpeed = cfg.Bind(
+                Section,
+                "JoyrideLaunchSpeed",
+                35f,
+                "Speed (metres/second) of a cart launched in Joyride mode. Lower than LaunchSpeed by default, since you are riding it."
             );
         }
     }

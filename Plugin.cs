@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
@@ -90,6 +90,7 @@ namespace IssaPlugin
             gameObject.AddComponent<BearOverlay>();
             gameObject.AddComponent<BearHealthBarOverlay>();
             gameObject.AddComponent<GunCrosshairOverlay>();
+            gameObject.AddComponent<GolfCartLauncherModeOverlay>();
             gameObject.AddComponent<HitNotificationOverlay>();
             gameObject.AddComponent<ItemWarningOverlay>();
             gameObject.AddComponent<PositionSwapOverlay>();
