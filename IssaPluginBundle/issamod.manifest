@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 3598046742
+CRC: 1863676753
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 67a2d5e344f3b9c0d0c8b3d6bf551353
+    Hash: 5f90bf112d9389d76c0cf92a6b48bb5d
   TypeTreeHash:
     serializedVersion: 2
     Hash: 5a8cce00eebcad12dd14cf3a32c3a8ad
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: f2a68321e197f31fd1dc2053be37de0d
+    Hash: aa7f43f7587f29c1d0520be98916e598
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -118,8 +118,8 @@ Assets:
 - Assets/Assets/ironman_icon.png
 - Assets/Assets/spinach_icon.png
 - Assets/Assets/flamethrower_victim_fire.prefab
-- Assets/Assets/rocket_tether_grenade_icon.png
 - Assets/Assets/GolfBalls/golf_ball_cube.prefab
+- Assets/Assets/rocket_tether_grenade_icon.png
 - Assets/Assets/bomber_icon.png
 - Assets/Assets/redbull.prefab
 - Assets/Assets/gold_star.prefab
@@ -132,6 +132,7 @@ Assets:
 - Assets/Assets/moon_handheld.prefab
 - Assets/Assets/spinach_trail.prefab
 - Assets/Assets/ufo_abduction_icon.png
+- Assets/Assets/golf_cart_launcher.prefab
 - Assets/Assets/NukeVerticalExplosionFire.prefab
 - Assets/Assets/rocket_tether_grenade_explosion_vfx.prefab
 - Assets/Assets/nuke_icon.png
@@ -196,8 +197,9 @@ Assets:
 - Assets/Assets/jetpack_handheld.prefab
 - Assets/Assets/black_hole_grenade.prefab
 - Assets/Assets/bear_icon.png
-- Assets/Assets/blood_splatter_critical.prefab
+- Assets/Assets/golf_cart_launcher_icon.png
 - Assets/Assets/nuclear_detonator.prefab
+- Assets/Assets/blood_splatter_critical.prefab
 - Assets/Assets/rocket_tether_icon.png
 - Assets/Assets/donut_vehicle.prefab
 - Assets/Assets/black_hole_grenade_icon.png

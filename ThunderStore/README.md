@@ -296,6 +296,10 @@ Assets used in the project:
     (https://skfb.ly/6WTA9) by Jason Rumpff
     Licensed under [Creative Commons Attribution](http://creativecommons.org/licenses/by/4.0/).
 
+-   "MCTF2 Rocket Launcher" \
+    (https://skfb.ly/6SzGQ) by welormit 
+    Licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
+
 ---
 
 *IssaPlugin is a fan-made mod and is not affiliated with Brimstone or Oro Interactive.*

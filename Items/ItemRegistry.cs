@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -50,6 +50,7 @@ namespace IssaPlugin.Items
         public static readonly ItemType ShapeShifterItemType = (ItemType)132;
         public static readonly ItemType SuperShapeShifterItemType = (ItemType)133;
         public static readonly ItemType ExplosiveGolfBallsItemType = (ItemType)134;
+        public static readonly ItemType GolfCartLauncherItemType = (ItemType)135;
 
         // Static initialization order note: AllItems is a static field initializer that only
         // instantiates the definition objects; it does not call any abstract members. Properties like
@@ -93,6 +94,7 @@ namespace IssaPlugin.Items
                 new ShapeShifterItemDefinition(),
                 new SuperShapeShifterItemDefinition(),
                 new ExplosiveGolfBallsItemDefinition(),
+                new GolfCartLauncherItemDefinition(),
             };
 
         private static IReadOnlyDictionary<int, CustomItemDefinition> _customItemDefinitionMap;

@@ -1,4 +1,4 @@
-using HarmonyLib;
+﻿using HarmonyLib;
 using IssaPlugin.Items;
 using Mirror;
 using UnityEngine;
@@ -70,6 +70,8 @@ namespace IssaPlugin.Patches
                 __instance.gameObject.AddComponent<WindStormNetworkBridge>();
             if (!__instance.GetComponent<HunterDroneNetworkBridge>())
                 __instance.gameObject.AddComponent<HunterDroneNetworkBridge>();
+            if (!__instance.GetComponent<GolfCartLauncherNetworkBridge>())
+                __instance.gameObject.AddComponent<GolfCartLauncherNetworkBridge>();
             if (!__instance.GetComponent<UfoAbductionNetworkBridge>())
                 __instance.gameObject.AddComponent<UfoAbductionNetworkBridge>();
             if (!__instance.GetComponent<MoonNetworkBridge>())

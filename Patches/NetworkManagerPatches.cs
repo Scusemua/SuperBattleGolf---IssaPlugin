@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
@@ -1440,6 +1440,21 @@ namespace IssaPlugin.Patches
                     (conn, msg) =>
                         GetBridge<FlamethrowerNetworkBridge>(conn)
                             ?.ServerHandleBurnRequest(conn, msg.VictimNetId)
+                );
+            }
+
+            // ── Golf Cart Launcher ────────────────────────────────────────────────
+            Writer<GolfCartLaunchRequestMessage>.write =
+                GolfCartLauncherMessageSerialization.WriteLaunchRequest;
+            Reader<GolfCartLaunchRequestMessage>.read =
+                GolfCartLauncherMessageSerialization.ReadLaunchRequest;
+
+            if (NetworkServer.active)
+            {
+                NetworkServer.RegisterHandler<GolfCartLaunchRequestMessage>(
+                    (conn, msg) =>
+                        GetBridge<GolfCartLauncherNetworkBridge>(conn)
+                            ?.ServerHandleLaunchRequest(msg.Direction)
                 );
             }
 

@@ -1,4 +1,4 @@
-using BepInEx.Configuration;
+﻿using BepInEx.Configuration;
 using IssaPlugin.Items;
 
 namespace IssaPlugin
@@ -45,6 +45,7 @@ namespace IssaPlugin
         public static ShapeShifterConfig ShapeShifter { get; private set; }
         public static SuperShapeShifterConfig SuperShapeShifter { get; private set; }
         public static ExplosiveGolfBallsConfig ExplosiveGolfBalls { get; private set; }
+        public static GolfCartLauncherConfig GolfCartLauncher { get; private set; }
 
         public static void Initialize(ConfigFile cfg)
         {
@@ -86,6 +87,7 @@ namespace IssaPlugin
             ShapeShifter = new ShapeShifterConfig(cfg, Global);
             SuperShapeShifter = new SuperShapeShifterConfig(cfg, Global);
             ExplosiveGolfBalls = new ExplosiveGolfBallsConfig(cfg, Global);
+            GolfCartLauncher = new GolfCartLauncherConfig(cfg, Global);
         }
 
         // ── Pass-through helper methods (from GlobalConfig) ───────────────────

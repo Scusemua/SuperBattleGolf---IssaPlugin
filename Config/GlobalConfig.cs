@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using BepInEx.Configuration;
 using IssaPlugin.Items;
 using UnityEngine.InputSystem;
@@ -318,6 +318,13 @@ namespace IssaPlugin
                 "RocketTetherGrenadeEnabled",
                 "Rocket Tether Grenade"
             );
+            Reg(
+                cfg,
+                _itemEnabledEntries,
+                135,
+                "GolfCartLauncherEnabled",
+                "Golf Cart Launcher"
+            );
 
             // ── Warnings ───────────────────────────────────────────────────────
             WarningsEnabled = cfg.Bind(
@@ -496,6 +503,14 @@ namespace IssaPlugin
                 127,
                 "RocketTetherGrenadeWarning",
                 "Rocket Tether Grenade",
+                false
+            );
+            RegWarn(
+                cfg,
+                _itemWarningEnabledEntries,
+                135,
+                "GolfCartLauncherWarning",
+                "Golf Cart Launcher",
                 false
             );
 

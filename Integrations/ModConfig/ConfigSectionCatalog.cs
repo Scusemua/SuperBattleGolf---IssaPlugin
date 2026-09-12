@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 
 namespace IssaPlugin.Integrations.ModConfigUI
@@ -42,6 +42,7 @@ namespace IssaPlugin.Integrations.ModConfigUI
                 Group("Drone Swarm", "DroneSwarm"),
                 Group("Flamethrower", "Flamethrower"),
                 Group("Freeze World", "FreezeWorld"),
+                Group("Golf Cart Launcher", "GolfCartLauncher"),
                 Group("Gravity Gun", "GravityGun"),
                 Group("Harrier", "HarrierJet"),
                 Group("Hunter Drone", "HunterDrone"),

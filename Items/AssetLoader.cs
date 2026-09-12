@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using Mirror;
@@ -137,6 +137,15 @@ namespace IssaPlugin.Items
         public static GameObject UfoAbductionUfoPrefab { get; private set; }
 
         // ── ShapeShifter / SuperShapeShifter ──────────────────────────────────
+        // ── Golf Cart Launcher ────────────────────────────────────────────────
+        /// Item icon for the Golf Cart Launcher. Null until golf_cart_launcher_icon.png
+        /// is added to the bundle; the rocket launcher icon is used as a fallback.
+        public static Sprite GolfCartLauncherIcon { get; private set; }
+
+        /// Handheld launcher model shown in the player's hand. Null until
+        /// golf_cart_launcher.prefab is added to the bundle.
+        public static GameObject GolfCartLauncherPrefab { get; private set; }
+
         // ── Explosive Golf Balls ──────────────────────────────────────────────
         /// Item icon for Explosive Golf Balls. Null until explosive_golf_balls_icon.png is added to the bundle.
         public static Sprite ExplosiveGolfBallsIcon { get; private set; }
@@ -640,6 +649,17 @@ namespace IssaPlugin.Items
                 HandheldPrefab(
                     p => ExplosiveGolfBallsHandheldPrefab = p,
                     "bomb_for_exploding_balls.prefab",
+                    optional: true
+                ),
+                // ── Golf Cart Launcher ────────────────────────────────────────
+                SpriteAsset(
+                    p => GolfCartLauncherIcon = p,
+                    "golf_cart_launcher_icon.png",
+                    optional: true
+                ),
+                HandheldPrefab(
+                    p => GolfCartLauncherPrefab = p,
+                    "golf_cart_launcher.prefab",
                     optional: true
                 ),
                 // ── First Place Star ──────────────────────────────────────────
