@@ -142,8 +142,53 @@ namespace IssaPlugin.Items
                 ModConfig.GolfCartLauncher.ScreenShakeIntensity.Value
             );
 
+            PlayFireEffects(inventory);
+
             // The cart is a networked object — only the server may spawn it.
             bridge?.ClientRequestLaunch(dir.normalized);
+        }
+
+        // ── Firing effects ───────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Plays the base game's rocket launcher muzzle flash, back blast and shot
+        /// sound for every client.
+        ///
+        /// The two pooled VFX are the same ones VfxManager.PlayRocketLaunchLocalOnly
+        /// spawns for a real rocket, positioned from the launcher's own barrel helpers
+        /// (which this item already uses for aiming), so they line up with the weapon
+        /// without any manual placement.
+        ///
+        /// PlayRocketLaunchLocalOnly itself is deliberately NOT used: it only plays on
+        /// the caller's machine (the base game reaches remote clients through its own
+        /// private, rocket-specific RpcInformShotRocket path). ClientPlayPooledVfxForAllClients
+        /// sends to every client INCLUDING the sender, so calling both would play the
+        /// muzzle flash twice on the shooter's screen.
+        ///
+        /// PlayerAudio.PlayRocketLauncherShotForAllClients handles its own networking.
+        /// It is server-rate-limited to 5 calls per 0.5s; the default FireRate of 0.75s
+        /// is well inside that, but a very low FireRate could have sounds dropped.
+        /// </summary>
+        private static void PlayFireEffects(PlayerInventory inventory)
+        {
+            inventory.PlayerInfo?.PlayerAudio?.PlayRocketLauncherShotForAllClients();
+
+            // Mirrors the placement PlayRocketLaunchLocalOnly uses internally.
+            Quaternion muzzleRotation = inventory.GetRocketLauncherRocketRotation();
+            Quaternion backBlastRotation =
+                Quaternion.AngleAxis(180f, inventory.transform.up) * muzzleRotation;
+
+            VfxManager.ClientPlayPooledVfxForAllClients(
+                VfxType.RocketLauncherMuzzle,
+                inventory.GetRocketLauncherBarrelFrontEndPosition(),
+                muzzleRotation
+            );
+
+            VfxManager.ClientPlayPooledVfxForAllClients(
+                VfxType.RocketLauncherBackBlast,
+                inventory.GetRocketLauncherBarrelBackEndPosition(),
+                backBlastRotation
+            );
         }
     }
 }
