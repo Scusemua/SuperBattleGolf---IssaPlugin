@@ -57,15 +57,18 @@ namespace IssaPlugin.Patches
             // TryUseItem via ItemData.NonAimUse, but that check sits after this prefix
             // returns, so it is reproduced here for items that opt in.
             //
-            // shouldEatInput mirrors the base game exactly: swallow the input only while
-            // the aim button is held, so a press that arrives just before aim-in is not
-            // re-delivered, while an ordinary click still falls through to the golf swing.
-            if (def.RequiresAimToUse && !__instance.IsAimingItem && !isAirhornReaction)
+            // Reads the aim button rather than IsAimingItem. IsAimingItem is derived by
+            // ShouldAim, which returns false whenever an item is in use unless it is the
+            // Railgun or ElephantGun — so for an item mid-use (or one whose substituted
+            // type is RocketLauncher) it goes false while the player is still visibly
+            // aiming, and gating on it would reject every shot.
+            bool holdingAim = __instance.PlayerInfo?.Input?.IsHoldingAimSwing ?? false;
+
+            if (def.RequiresAimToUse && !holdingAim && !isAirhornReaction)
             {
-                // Null-conditional to match the guards above: an exception thrown from a
-                // Harmony prefix would propagate into the game's input handling. Falling
-                // back to false simply lets the input through to the golf swing.
-                shouldEatInput = __instance.PlayerInfo?.Input?.IsHoldingAimSwing ?? false;
+                // Matches the base game: swallow the input only while the aim button is
+                // held, so an ordinary click still falls through to the golf swing.
+                shouldEatInput = false;
                 __result = false;
                 return false;
             }
@@ -664,6 +667,11 @@ namespace IssaPlugin.Patches
             var actual = __instance.GetEffectivelyEquippedItem(true);
             if (actual == ItemRegistry.SniperRifleItemType || actual == ItemRegistry.AK47ItemType)
                 __result = ItemType.ElephantGun;
+            else if (actual == ItemRegistry.GolfCartLauncherItemType)
+                // Maps to RocketLauncher rather than ElephantGun so the stance, aim pose
+                // and reticle all come from the base game's rocket launcher, which this
+                // item is modelled on.
+                __result = ItemType.RocketLauncher;
         }
     }
 
@@ -691,6 +699,7 @@ namespace IssaPlugin.Patches
             if (
                 equipped != ItemRegistry.SniperRifleItemType
                 && equipped != ItemRegistry.AK47ItemType
+                && equipped != ItemRegistry.GolfCartLauncherItemType
             )
                 return;
 
@@ -704,6 +713,15 @@ namespace IssaPlugin.Patches
 
             __instance.PlayerInfo.SetIsAimingItem(shouldAim);
             __instance.PlayerInfo.Movement.InformIsAimingItemChanged();
+
+            // The base game plays the aim sound from UpdateIsAimingItem, but gates it on
+            // the raw slot ItemType, which is the custom value and matches none of its
+            // cases. Play it on the aim-in edge so the launcher sounds like the rocket
+            // launcher it is modelled on.
+            if (shouldAim && equipped == ItemRegistry.GolfCartLauncherItemType)
+                __instance.PlayerInfo.PlayerAudio?.PlayItemAimForAllClients(
+                    ItemType.RocketLauncher
+                );
         }
     }
 

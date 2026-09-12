@@ -97,6 +97,17 @@ namespace IssaPlugin.Items
         // in SetEquippedItem.
         public virtual ItemType AnimatorChangedItemType => ItemType.OrbitalLaser;
 
+        /// When true, this item's injected ItemData borrows the AnimatorOverrideController
+        /// belonging to <see cref="AnimatorItemType"/>, so the player holds it in that base
+        /// item's stance while idle — not just while aiming.
+        ///
+        /// Custom items otherwise get a null controller (see ItemRegistry.GetOrCreateItemData),
+        /// which leaves the idle pose as the default empty-handed stance.
+        ///
+        /// Defaults to false so items whose AnimatorItemType is only a rough stand-in keep
+        /// their existing look; opt in when the item really should mimic that weapon.
+        public virtual bool InheritAnimatorOverrideController => false;
+
         // Use behavior (called from TryUseItemPatch)
         public virtual bool ShouldEatInputOnUse => true;
         public virtual bool UseResult => true;

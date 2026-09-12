@@ -212,6 +212,9 @@ namespace IssaPlugin.Items
             "Icon"
         );
 
+        private static readonly PropertyInfo AnimatorOverrideControllerProperty =
+            AccessTools.Property(typeof(ItemData), "AnimatorOverrideController");
+
         private static readonly Dictionary<ItemType, ItemData> CustomItemDataCache =
             new Dictionary<ItemType, ItemData>();
 
@@ -297,6 +300,25 @@ namespace IssaPlugin.Items
                     ? rocketFallbackIcon
                     : pistolFallbackIcon;
                 IconProperty.SetValue(data, def.Icon ?? fallbackIcon);
+
+                // Borrow the animator override controller from the base item this one is
+                // animated as. GetOrCreateItemData sets it to null, which leaves the player
+                // in the default (empty-handed) stance while idle — the held pose only
+                // looked right while aiming, because that path is driven separately.
+                //
+                // Only applied when the definition asks to inherit it, so items whose
+                // AnimatorItemType is merely a rough stand-in keep the previous behaviour.
+                if (
+                    def.InheritAnimatorOverrideController
+                    && dict.TryGetValue(def.AnimatorItemType, out var animatorSource)
+                )
+                {
+                    AnimatorOverrideControllerProperty.SetValue(
+                        data,
+                        animatorSource.AnimatorOverrideController
+                    );
+                }
+
                 dict[def.ItemType] = data;
                 newArray.SetValue(data, oldSize + i);
             }

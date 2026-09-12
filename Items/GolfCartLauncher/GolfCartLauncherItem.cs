@@ -44,6 +44,9 @@ namespace IssaPlugin.Items
             if (Mouse.current == null || !Mouse.current.leftButton.isPressed)
                 yield break;
 
+            // Guards against a second concurrent burst. The flag is also cleared by
+            // ClientHoleCleanup and in the finally below, so a burst that is interrupted
+            // cannot leave firing permanently blocked.
             if (_isFiring)
                 yield break;
 
@@ -65,7 +68,16 @@ namespace IssaPlugin.Items
                     // Releasing the aim button mid-burst stops the burst. TryUseItem only
                     // gates the first shot, so without this the loop would keep firing
                     // from the hip once it had started.
-                    if (!inventory.IsAimingItem)
+                    //
+                    // This reads the aim INPUT, not IsAimingItem: SetCurrentItemUse above
+                    // makes IsUsingItemAtAll true, and ShouldAim returns false whenever an
+                    // item is in use unless it is the Railgun or ElephantGun. Our item maps
+                    // to RocketLauncher, so IsAimingItem goes false the moment firing starts
+                    // and testing it here would end the burst before the first shot.
+                    //
+                    // PlayerInput.IsHoldingAimSwing rather than Mouse.rightButton so a
+                    // rebound aim control still works.
+                    if (!(inventory.PlayerInfo?.Input?.IsHoldingAimSwing ?? false))
                         break;
 
                     int slot = inventory.EquippedItemIndex;
