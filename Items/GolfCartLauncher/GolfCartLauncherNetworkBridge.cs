@@ -83,43 +83,52 @@ namespace IssaPlugin.Items
             if (shooter == null)
                 return;
 
-            // Validate the sender actually holds the launcher, so a modified client
-            // cannot spawn unlimited carts by sending this message directly.
-            //
-            // Checked against the authoritative `slots` SyncList at the index the client
-            // sent, NOT against the live equipped item (the pattern PositionSwap and
-            // ShapeShifter use). A liveness check races the client's own consumption:
-            // on a host the decrement applies immediately, while this message only
-            // arrives when Mirror drains the local connection queue, so the item can
-            // already be gone by the time the server looks — rejecting valid shots
-            // non-deterministically.
             var inventory = GetComponent<PlayerInventory>();
-            if (
-                inventory == null
-                || ItemRegistry.GetItemTypeAtSlot(inventory, equippedSlotIndex)
-                    != ItemRegistry.GolfCartLauncherItemType
-            )
-            {
-                IssaPluginPlugin.Log.LogWarning(
-                    "[GolfCartLauncher] Launch request from a player without the launcher equipped."
-                );
-                return;
-            }
 
-            // Joyride spends the whole item, so it is only legitimate at full uses.
-            // The client already gates this; re-check so a modified client cannot ride
-            // a cart for a single use.
-            if (joyride)
-            {
-                // Uses are read from the same authoritative slot, for the same reason.
-                int remainingUses = ItemRegistry.GetRemainingUsesAtSlot(
-                    inventory,
-                    equippedSlotIndex
-                );
-                int maxUses = ItemRegistry.GetMaxUses(ItemRegistry.GolfCartLauncherItemType);
+            // Anti-cheat validation, for REMOTE senders only.
+            //
+            // It cannot be applied to the host's own shot. On a host the shooting client
+            // is the server, so PlayerInventory.DecrementUseFromSlotAt and RemoveItemAt
+            // take their isServer branch and write straight to the `slots` SyncList —
+            // the same list any validation would read. By the time this handler runs,
+            // the use that authorised the shot is already spent (and the final use has
+            // emptied the slot entirely), so ANY inventory-based check rejects the
+            // host's own valid shots. There is no pre-consumption state left to inspect.
+            //
+            // That is safe to skip: the host IS the server, so its requests are
+            // authoritative by definition and there is nothing to spoof. Remote clients
+            // still go through the full check, and their inventory is untouched at this
+            // point because their consumption only reaches the server as a separate
+            // Cmd — which is exactly the state this validation is meant to police.
+            bool fromRemoteClient =
+                connectionToClient != null && connectionToClient != NetworkServer.localConnection;
 
-                if (maxUses <= 0 || remainingUses < maxUses)
-                    joyride = false;
+            if (fromRemoteClient)
+            {
+                if (
+                    inventory == null
+                    || ItemRegistry.GetItemTypeAtSlot(inventory, equippedSlotIndex)
+                        != ItemRegistry.GolfCartLauncherItemType
+                )
+                {
+                    IssaPluginPlugin.Log.LogWarning(
+                        "[GolfCartLauncher] Launch request from a player without the launcher equipped."
+                    );
+                    return;
+                }
+
+                // Joyride spends the whole item, so it is only legitimate at full uses.
+                if (joyride)
+                {
+                    int remainingUses = ItemRegistry.GetRemainingUsesAtSlot(
+                        inventory,
+                        equippedSlotIndex
+                    );
+                    int maxUses = ItemRegistry.GetMaxUses(ItemRegistry.GolfCartLauncherItemType);
+
+                    if (maxUses <= 0 || remainingUses < maxUses)
+                        joyride = false;
+                }
             }
 
             var prefab = GameManager.GolfCartSettings?.Prefab;
