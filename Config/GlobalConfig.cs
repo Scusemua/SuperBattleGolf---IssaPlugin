@@ -34,6 +34,7 @@ namespace IssaPlugin
         public ConfigEntry<Key> SpawnConfigUIKey { get; private set; }
         public ConfigEntry<Key> SpawnerToggleKey { get; private set; }
         public ConfigEntry<bool> SpawnerSuppressItemSpawner { get; private set; }
+        public ConfigEntry<float> SpawnerUiScale { get; private set; }
 
         // ── Warnings section ──────────────────────────────────────────────────
         public ConfigEntry<bool> WarningsEnabled { get; private set; }
@@ -258,6 +259,20 @@ namespace IssaPlugin
                 "Hotkey that opens/closes the item spawner window, which lets the host give "
                     + "any item to any player. Defaults to H to match the ItemSpawner mod. "
                     + "Set to None to disable the window entirely."
+            );
+
+            SpawnerUiScale = cfg.Bind(
+                "UI",
+                "SpawnerUiScale",
+                0f,
+                new ConfigDescription(
+                    "Size multiplier for the item spawner window. 0 (the default) scales it "
+                        + "automatically from your screen height against a 1080p reference, so it "
+                        + "stays the same apparent size on a 1440p or 4K display instead of "
+                        + "shrinking. Set a value to override that -- 1 is the original fixed size, "
+                        + "2 is double.",
+                    new AcceptableValueRange<float>(0f, 4f)
+                )
             );
 
             SpawnerSuppressItemSpawner = cfg.Bind(

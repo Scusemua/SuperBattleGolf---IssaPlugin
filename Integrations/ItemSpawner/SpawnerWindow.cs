@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
@@ -23,6 +23,17 @@ namespace IssaPlugin.Integrations.SpawnerUI
     {
         private const int WindowId = 0x1554A;
         private const string SearchControlName = "ISSA_SPAWNER_SEARCH";
+
+        // Every dimension below is authored against a 1080p-tall screen and multiplied
+        // by the current scale at use. At raw pixel values the whole window renders at a
+        // fraction of its intended apparent size on a 1440p or 4K display.
+        //
+        // The scaling is per-dimension rather than a GUI.matrix transform because this
+        // window is interactive: GUILayout.Window's drag rect, the text field's caret,
+        // and both scroll views hit-test in unscaled screen space, and a matrix scale
+        // desynchronises those from what is drawn.
+        private const float ReferenceHeight = 1080f;
+
         private const float IconSize = 48f;
         private const float CellHeight = 78f;
         private const float CellSpacing = 6f;
@@ -30,7 +41,7 @@ namespace IssaPlugin.Integrations.SpawnerUI
         private const float MinCellWidth = 90f;
         private const float PlayerRowHeight = 30f;
 
-        /// <summary>Fixed window size. Constants, so the layout can never feed back into it.</summary>
+        /// <summary>Window size at the reference height. The layout never feeds back into it.</summary>
         private const float WindowWidth = 720f;
         private const float WindowHeight = 520f;
 
@@ -43,6 +54,45 @@ namespace IssaPlugin.Integrations.SpawnerUI
         /// while over-reserving only costs a little unused margin.
         /// </summary>
         private const float GridPadding = 60f;
+
+        // Font sizes, also at the reference height.
+        private const int LabelFontSize = 11;
+        private const int CellLabelFontSize = 10;
+        private const int SearchFontSize = 12;
+
+        /// <summary>
+        /// Scale from the reference layout to this screen. A configured value wins;
+        /// 0 (the default) derives it from screen height.
+        ///
+        /// Only height is considered, on purpose. An ultra-wide monitor is wide but no
+        /// taller than an ordinary one of the same vertical resolution, so scaling by
+        /// width would inflate the window past the screen height on a 32:9 display.
+        /// Never scales below 1: the layout has hand-tuned minimums that stop reading
+        /// correctly when shrunk.
+        /// </summary>
+        private static float CurrentScale
+        {
+            get
+            {
+                float configured = ModConfig.Global.SpawnerUiScale.Value;
+                if (configured > 0f) return configured;
+
+                return Mathf.Max(1f, Screen.height / ReferenceHeight);
+            }
+        }
+
+        /// <summary>
+        /// Scale the styles were last built at, so a resolution change or a config edit
+        /// rebuilds the font sizes rather than leaving them at the old size.
+        /// </summary>
+        private float _styleScale;
+
+        /// <summary>
+        /// The scale for the frame being drawn. Sampled once per OnGUI so every pass of
+        /// an IMGUI frame (layout, repaint, input) uses an identical value -- if layout
+        /// and repaint disagreed, controls would be drawn off their own hitboxes.
+        /// </summary>
+        private float _scale = 1f;
 
         /// <summary>Footer summary, rebuilt only when the filter changes.</summary>
         private string _footerText = string.Empty;
@@ -104,6 +154,15 @@ namespace IssaPlugin.Integrations.SpawnerUI
         {
             if (_open) Close();
 
+            ReleaseTextures();
+        }
+
+        /// <summary>
+        /// Destroys every texture minted for the current styles. Called both on teardown
+        /// and before a style rebuild, since GUIStyle textures are not garbage collected.
+        /// </summary>
+        private void ReleaseTextures()
+        {
             foreach (var texture in _textures)
             {
                 if (texture != null) Destroy(texture);
@@ -253,15 +312,25 @@ namespace IssaPlugin.Integrations.SpawnerUI
         {
             if (!_open) return;
 
+            // One sample per frame, used by every pass. Reading the scale separately in
+            // layout and repaint would let a mid-frame resolution change split them.
+            _scale = CurrentScale;
+
             EnsureStyles();
+
+            // Cap at the screen: a scaled-up window on a short screen would otherwise
+            // push the footer and its Close button below the bottom edge.
+            float windowW = Mathf.Min(WindowWidth * _scale, Screen.width);
+            float windowH = Mathf.Min(WindowHeight * _scale, Screen.height);
 
             // Pin the size. GUILayout.Window otherwise auto-sizes to its content and
             // writes the result back into _windowRect, so any row even slightly too wide
             // grows the window, which widens the grid, which grows the window again --
-            // the window visibly creeps rightward every frame. The size always comes from
-            // constants, never from _windowRect, so no measured value can feed back in.
-            _windowRect.width = WindowWidth;
-            _windowRect.height = WindowHeight;
+            // the window visibly creeps rightward every frame. The size is always derived
+            // from the constants and the scale, never from _windowRect, so no measured
+            // value can feed back in.
+            _windowRect.width = windowW;
+            _windowRect.height = windowH;
 
             _windowRect = GUILayout.Window(
                 WindowId,
@@ -269,22 +338,23 @@ namespace IssaPlugin.Integrations.SpawnerUI
                 DrawWindow,
                 "Item Spawner",
                 _windowStyle,
-                GUILayout.Width(WindowWidth),
-                GUILayout.Height(WindowHeight));
+                GUILayout.Width(windowW),
+                GUILayout.Height(windowH));
 
             // Keep it on screen: with a fixed size it can otherwise be dragged mostly off.
-            _windowRect.x = Mathf.Clamp(_windowRect.x, -WindowWidth + 80f, Screen.width - 80f);
-            _windowRect.y = Mathf.Clamp(_windowRect.y, 0f, Screen.height - 40f);
+            float edge = 80f * _scale;
+            _windowRect.x = Mathf.Clamp(_windowRect.x, -windowW + edge, Screen.width - edge);
+            _windowRect.y = Mathf.Clamp(_windowRect.y, 0f, Screen.height - (40f * _scale));
         }
 
         private void DrawWindow(int id)
         {
-            GUI.DragWindow(new Rect(0, 0, 100000, 28));
+            GUI.DragWindow(new Rect(0, 0, 100000, 28f * _scale));
 
             DrawControls();
-            GUILayout.Space(6);
+            GUILayout.Space(6f * _scale);
             DrawGrid();
-            GUILayout.Space(6);
+            GUILayout.Space(6f * _scale);
             DrawFooter();
         }
 
@@ -292,10 +362,11 @@ namespace IssaPlugin.Integrations.SpawnerUI
         {
             GUILayout.BeginHorizontal();
 
-            GUILayout.Label("Search", _labelStyle, GUILayout.Width(52));
+            GUILayout.Label("Search", _labelStyle, GUILayout.Width(52f * _scale));
 
             GUI.SetNextControlName(SearchControlName);
-            string search = GUILayout.TextField(_search, _searchStyle, GUILayout.MinWidth(180));
+            string search = GUILayout.TextField(
+                _search, _searchStyle, GUILayout.MinWidth(180f * _scale));
             _searchFocused = GUI.GetNameOfFocusedControl() == SearchControlName;
             if (search != _search)
             {
@@ -303,15 +374,16 @@ namespace IssaPlugin.Integrations.SpawnerUI
                 ApplyFilter();
             }
 
-            if (GUILayout.Button("x", GUILayout.Width(24)) && _search.Length > 0)
+            if (GUILayout.Button("x", _pillStyle, GUILayout.Width(24f * _scale))
+                && _search.Length > 0)
             {
                 _search = string.Empty;
                 GUI.FocusControl(null);
                 ApplyFilter();
             }
 
-            GUILayout.Space(10);
-            GUILayout.Label("Show", _labelStyle, GUILayout.Width(42));
+            GUILayout.Space(10f * _scale);
+            GUILayout.Label("Show", _labelStyle, GUILayout.Width(42f * _scale));
 
             // A simple pill row rather than a dropdown: IMGUI has no native dropdown,
             // and with only three or four sources a row is clearer and one click less.
@@ -328,7 +400,7 @@ namespace IssaPlugin.Integrations.SpawnerUI
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
-            GUILayout.Label("Give to", _labelStyle, GUILayout.Width(52));
+            GUILayout.Label("Give to", _labelStyle, GUILayout.Width(52f * _scale));
 
             if (_players.Count == 0)
             {
@@ -347,7 +419,7 @@ namespace IssaPlugin.Integrations.SpawnerUI
                     GUI.skin.horizontalScrollbar,
                     GUIStyle.none,
                     GUIStyle.none,
-                    GUILayout.Height(PlayerRowHeight));
+                    GUILayout.Height(PlayerRowHeight * _scale));
 
                 GUILayout.BeginHorizontal();
                 for (int i = 0; i < _players.Count; i++)
@@ -360,7 +432,8 @@ namespace IssaPlugin.Integrations.SpawnerUI
                 GUILayout.EndScrollView();
             }
 
-            if (GUILayout.Button("Refresh", _pillStyle, GUILayout.Width(70))) RefreshPlayers();
+            if (GUILayout.Button("Refresh", _pillStyle, GUILayout.Width(70f * _scale)))
+                RefreshPlayers();
 
             GUILayout.EndHorizontal();
         }
@@ -375,17 +448,22 @@ namespace IssaPlugin.Integrations.SpawnerUI
             // scroll view's own inner width with an ExpandWidth probe fed back into
             // itself: the content width set the measurement and the measurement set the
             // content width, so the grid grew a little every frame.
-            float viewport = WindowWidth - GridPadding;
+            float viewport = _windowRect.width - (GridPadding * _scale);
 
-            int columns = Mathf.Clamp(Mathf.FloorToInt(viewport / TargetCellWidth), 1, 6);
+            // Both sides of this division are scaled, so the column count stays the same
+            // as at 1080p and the extra width goes into larger cells -- which is the
+            // point: the grid should look identical, just bigger, not reflow into more
+            // columns of the same tiny size.
+            int columns = Mathf.Clamp(
+                Mathf.FloorToInt(viewport / (TargetCellWidth * _scale)), 1, 6);
 
             // Cells must be an explicit, uniform width or IMGUI sizes each one to its own
             // label and the "grid" ends up as ragged columns that do not line up.
             // Rows lay out as (columns - 1) gaps between columns cells, so only the gaps
             // are subtracted -- charging every cell for a trailing gap overshoots the
             // viewport by one CellSpacing and reintroduces the horizontal scrollbar.
-            float gaps = CellSpacing * (columns - 1);
-            float cellWidth = Mathf.Max(MinCellWidth, (viewport - gaps) / columns);
+            float gaps = CellSpacing * _scale * (columns - 1);
+            float cellWidth = Mathf.Max(MinCellWidth * _scale, (viewport - gaps) / columns);
 
             _scroll = GUILayout.BeginScrollView(
                 _scroll,
@@ -397,7 +475,7 @@ namespace IssaPlugin.Integrations.SpawnerUI
 
             if (_filtered.Count == 0)
             {
-                GUILayout.Space(20);
+                GUILayout.Space(20f * _scale);
                 GUILayout.Label(
                     _catalog.Count == 0
                         ? "Items not loaded yet."
@@ -414,7 +492,7 @@ namespace IssaPlugin.Integrations.SpawnerUI
                     int index = i + column;
 
                     // Gap between columns only -- never after the last one.
-                    if (column > 0) GUILayout.Space(CellSpacing);
+                    if (column > 0) GUILayout.Space(CellSpacing * _scale);
 
                     if (index >= _filtered.Count)
                     {
@@ -429,7 +507,7 @@ namespace IssaPlugin.Integrations.SpawnerUI
                 }
 
                 GUILayout.EndHorizontal();
-                GUILayout.Space(4);
+                GUILayout.Space(4f * _scale);
             }
 
             GUILayout.EndScrollView();
@@ -437,14 +515,19 @@ namespace IssaPlugin.Integrations.SpawnerUI
 
         private void DrawCell(SpawnerItemCatalog.Entry entry, float width)
         {
-            GUILayout.BeginVertical(GUILayout.Width(width), GUILayout.Height(CellHeight));
+            float iconSize = IconSize * _scale;
+
+            GUILayout.BeginVertical(GUILayout.Width(width), GUILayout.Height(CellHeight * _scale));
 
             // Draw the button first, then blit the icon into it. Sprite.texture returns
             // the whole source texture, which for an atlased sprite is the entire atlas —
             // so the icon has to be drawn through its textureRect rather than handed to
             // GUIContent directly.
             bool clicked = GUILayout.Button(
-                GUIContent.none, _cellStyle, GUILayout.Width(width), GUILayout.Height(IconSize + 8f));
+                GUIContent.none,
+                _cellStyle,
+                GUILayout.Width(width),
+                GUILayout.Height(iconSize + (8f * _scale)));
 
             Rect buttonRect = GUILayoutUtility.GetLastRect();
             Sprite icon = entry.Data.Icon;
@@ -452,10 +535,10 @@ namespace IssaPlugin.Integrations.SpawnerUI
             if (icon != null && icon.texture != null)
             {
                 var iconRect = new Rect(
-                    buttonRect.x + (buttonRect.width - IconSize) * 0.5f,
-                    buttonRect.y + (buttonRect.height - IconSize) * 0.5f,
-                    IconSize,
-                    IconSize);
+                    buttonRect.x + (buttonRect.width - iconSize) * 0.5f,
+                    buttonRect.y + (buttonRect.height - iconSize) * 0.5f,
+                    iconSize,
+                    iconSize);
 
                 Rect tr = icon.textureRect;
                 var coords = new Rect(
@@ -472,7 +555,11 @@ namespace IssaPlugin.Integrations.SpawnerUI
                 Give(entry);
             }
 
-            GUILayout.Label(entry.DisplayName, _cellLabelStyle, GUILayout.Width(width), GUILayout.Height(CaptionHeight));
+            GUILayout.Label(
+                entry.DisplayName,
+                _cellLabelStyle,
+                GUILayout.Width(width),
+                GUILayout.Height(CaptionHeight * _scale));
             GUILayout.EndVertical();
         }
 
@@ -484,7 +571,12 @@ namespace IssaPlugin.Integrations.SpawnerUI
             // every one of them while the window is open.
             GUILayout.Label(_footerText, _labelStyle);
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Close", GUILayout.Width(90), GUILayout.Height(26))) Close();
+            if (GUILayout.Button(
+                    "Close",
+                    _pillStyle,
+                    GUILayout.Width(90f * _scale),
+                    GUILayout.Height(26f * _scale)))
+                Close();
             GUILayout.EndHorizontal();
         }
 
@@ -538,15 +630,24 @@ namespace IssaPlugin.Integrations.SpawnerUI
 
         private void EnsureStyles()
         {
-            if (_stylesReady) return;
+            // Font sizes bake the scale in, so a resolution change or a config edit has
+            // to rebuild them -- otherwise the box grows and the text inside it does not.
+            if (_stylesReady && Mathf.Approximately(_styleScale, _scale)) return;
+
+            // This can now run more than once per scene (the scale changed), and every
+            // style below mints fresh textures. Release the previous batch first or each
+            // rebuild strands its predecessors -- GUIStyle textures are not collected on
+            // their own. Safe on the first pass: the list is empty.
+            ReleaseTextures();
 
             _windowStyle = new GUIStyle(GUI.skin.window);
             _windowStyle.normal.background = MakeTexture(new Color(0.10f, 0.10f, 0.12f, 0.94f));
 
+            int cellPad = Mathf.RoundToInt(4f * _scale);
             _cellStyle = new GUIStyle(GUI.skin.button)
             {
                 alignment = TextAnchor.MiddleCenter,
-                padding = new RectOffset(4, 4, 4, 4),
+                padding = new RectOffset(cellPad, cellPad, cellPad, cellPad),
                 imagePosition = ImagePosition.ImageOnly,
             };
             _cellStyle.normal.background = MakeTexture(new Color(0.24f, 0.24f, 0.28f, 0.85f));
@@ -556,7 +657,7 @@ namespace IssaPlugin.Integrations.SpawnerUI
             _labelStyle = new GUIStyle(GUI.skin.label)
             {
                 alignment = TextAnchor.MiddleCenter,
-                fontSize = 11,
+                fontSize = Mathf.RoundToInt(LabelFontSize * _scale),
                 wordWrap = false,
             };
             _labelStyle.normal.textColor = Color.white;
@@ -567,17 +668,22 @@ namespace IssaPlugin.Integrations.SpawnerUI
             _cellLabelStyle = new GUIStyle(_labelStyle)
             {
                 wordWrap = true,
-                fontSize = 10,
+                fontSize = Mathf.RoundToInt(CellLabelFontSize * _scale),
                 clipping = TextClipping.Clip,
                 alignment = TextAnchor.UpperCenter,
             };
 
-            _searchStyle = new GUIStyle(GUI.skin.textField) { fontSize = 12 };
+            _searchStyle = new GUIStyle(GUI.skin.textField)
+            {
+                fontSize = Mathf.RoundToInt(SearchFontSize * _scale),
+            };
 
+            int pillPadX = Mathf.RoundToInt(10f * _scale);
+            int pillPadY = Mathf.RoundToInt(4f * _scale);
             _pillStyle = new GUIStyle(GUI.skin.button)
             {
-                fontSize = 11,
-                padding = new RectOffset(10, 10, 4, 4),
+                fontSize = Mathf.RoundToInt(LabelFontSize * _scale),
+                padding = new RectOffset(pillPadX, pillPadX, pillPadY, pillPadY),
             };
             _pillStyle.normal.background = MakeTexture(new Color(0.24f, 0.24f, 0.28f, 0.85f));
             _pillStyle.normal.textColor = Color.white;
@@ -586,6 +692,7 @@ namespace IssaPlugin.Integrations.SpawnerUI
             _pillActiveStyle.normal.background = MakeTexture(new Color(0.30f, 0.62f, 0.36f, 0.92f));
             _pillActiveStyle.normal.textColor = Color.white;
 
+            _styleScale = _scale;
             _stylesReady = true;
         }
 

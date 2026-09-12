@@ -37,11 +37,11 @@ namespace IssaPlugin.Overlays
         // shrinking to unreadable pixels.
         private const float ReferenceHeight = 1080f;
         private const float PanelWidth = 732f;
-        private const float PanelHeight = 150f;
+        private const float PanelHeight = 100f;
         private const float MarginX = 28f;
         private const float MarginY = 110f;
         private const int ModeFontSize = 32;
-        private const int HintFontSize = 26;
+        private const int HintFontSize = 25;
 
         /// <summary>Scale factor from the 1080p reference layout to this screen.</summary>
         private static float UiScale => Mathf.Max(1f, Screen.height / ReferenceHeight);
