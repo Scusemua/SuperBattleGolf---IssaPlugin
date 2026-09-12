@@ -35,6 +35,64 @@ namespace IssaPlugin.Items
         private GameObject _particles;
         private GameObject _equippedPrefabInstance;
 
+        // Local offset of the backpack on the player's back, at character scale 1.
+        // Scaled by the live character scale so the pack stays seated on the back when
+        // Jumbo Burger grows the player.
+        private static readonly Vector3 EquippedLocalOffset = new Vector3(0f, 0.5f, -0.2f);
+
+        private PlayerMovement _cachedMovement;
+        private bool _movementLookupDone;
+
+        /// <summary>
+        /// The PlayerMovement on this bridge's player object, resolved once.
+        /// Used only to read <see cref="PlayerMovement.CharacterScale"/>.
+        /// </summary>
+        private PlayerMovement CachedMovement
+        {
+            get
+            {
+                if (!_movementLookupDone)
+                {
+                    _cachedMovement = GetComponent<PlayerMovement>();
+                    _movementLookupDone = true;
+                }
+                return _cachedMovement;
+            }
+        }
+
+        /// <summary>
+        /// Current character scale for this player, or 1 if movement is unavailable.
+        /// Jumbo Burger scales the player by setting PlayerInfo.BonesParent's local
+        /// scale; the jetpack visuals are parented to the player root instead, so they
+        /// do not inherit that and must be scaled here.
+        /// </summary>
+        private float CharacterScale
+        {
+            get
+            {
+                var movement = CachedMovement;
+                return movement == null ? 1f : movement.CharacterScale;
+            }
+        }
+
+        /// <summary>
+        /// Re-applies scale and back offset to the jetpack visuals. Called every frame
+        /// because the giant-form scale is animated over time rather than set once.
+        /// </summary>
+        private void ApplyCharacterScaleToVisuals()
+        {
+            float scale = CharacterScale;
+
+            if (_equippedPrefabInstance != null)
+            {
+                _equippedPrefabInstance.transform.localScale = Vector3.one * scale;
+                _equippedPrefabInstance.transform.localPosition = EquippedLocalOffset * scale;
+            }
+
+            if (_particles != null)
+                _particles.transform.localScale = Vector3.one * scale;
+        }
+
         // ================================================================
         //  Client → Server
         // ================================================================
@@ -149,6 +207,7 @@ namespace IssaPlugin.Items
             _particles.transform.SetParent(transform, false);
             _particles.transform.localPosition = Vector3.zero;
             _particles.transform.localRotation = Quaternion.identity;
+            _particles.transform.localScale = Vector3.one * CharacterScale;
             _particles.SetActive(true);
         }
 
@@ -174,6 +233,13 @@ namespace IssaPlugin.Items
 
         private void Update()
         {
+            // Runs for every bridge, including remote players on a client, because the
+            // backpack is shown on remote players too. Jumbo Burger animates the scale
+            // over time rather than setting it once, so it has to be tracked per frame
+            // while a visual exists — the null checks make this free otherwise.
+            if (_equippedPrefabInstance != null || _particles != null)
+                ApplyCharacterScaleToVisuals();
+
             // Neither block below applies to a remote player's bridge on a client.
             // Without this the host runs the whole method once per player per frame.
             if (!isServer && !isLocalPlayer)
@@ -235,8 +301,8 @@ namespace IssaPlugin.Items
                 rb.isKinematic = true;
                 rb.useGravity = false;
                 _equippedPrefabInstance.transform.SetParent(transform, false);
-                _equippedPrefabInstance.transform.localPosition = new Vector3(0f, 0.5f, -0.2f);
                 _equippedPrefabInstance.transform.localRotation = Quaternion.identity;
+                ApplyCharacterScaleToVisuals();
             }
             else if (!jetpackActive && _equippedPrefabInstance != null)
             {
@@ -277,8 +343,8 @@ namespace IssaPlugin.Items
             rb.isKinematic = true;
             rb.useGravity = false;
             _equippedPrefabInstance.transform.SetParent(transform, false);
-            _equippedPrefabInstance.transform.localPosition = new Vector3(0f, 0.5f, -0.2f);
             _equippedPrefabInstance.transform.localRotation = Quaternion.identity;
+            ApplyCharacterScaleToVisuals();
         }
 
         private void ClientDestroyEquippedPrefab()
