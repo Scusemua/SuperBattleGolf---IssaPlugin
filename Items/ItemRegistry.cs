@@ -448,6 +448,23 @@ namespace IssaPlugin.Items
         }
 
         /// <summary>
+        /// Remaining uses in <paramref name="slotIndex"/>, read from the authoritative
+        /// `slots` SyncList. Returns 0 when the slot is missing or out of range.
+        ///
+        /// Safe to call on the server for any player, unlike GetUsesForSlot, which goes
+        /// through the local-player slot overrides.
+        /// </summary>
+        public static int GetRemainingUsesAtSlot(PlayerInventory inventory, int slotIndex)
+        {
+            if (inventory == null || slotIndex < 0)
+                return 0;
+            var slots = SlotsField.GetValue(inventory) as IList<InventorySlot>;
+            if (slots == null || slotIndex >= slots.Count)
+                return 0;
+            return slots[slotIndex].remainingUses;
+        }
+
+        /// <summary>
         /// Finds the first slot index that contains <paramref name="itemType"/>.
         /// Returns -1 if not found. Safe to call on the server for any player because
         /// the SyncList is authoritative on the server.

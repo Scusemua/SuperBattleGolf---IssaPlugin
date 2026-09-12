@@ -24,6 +24,17 @@ namespace IssaPlugin.Items
         /// them in the driver seat and uses JoyrideLaunchSpeed instead of LaunchSpeed.
         /// </summary>
         public bool Joyride;
+
+        /// <summary>
+        /// The client's EquippedItemIndex when the shot was fired.
+        ///
+        /// The server validates against this slot in the authoritative `slots` SyncList
+        /// rather than against the live equipped item. On a host the client's own
+        /// decrement is applied immediately while this message only reaches the server
+        /// when Mirror drains the local connection queue, so a liveness check races the
+        /// consumption and rejects shots non-deterministically.
+        /// </summary>
+        public int EquippedSlotIndex;
     }
 
     // ── Server → Owning Client ───────────────────────────────────────────────
@@ -45,6 +56,12 @@ namespace IssaPlugin.Items
 
         /// <summary>World-space velocity to apply.</summary>
         public Vector3 Velocity;
+
+        /// <summary>
+        /// World-space angular velocity (radians/sec) to apply. Sent because spin is
+        /// set on the server, which a remote owner's physics would otherwise overwrite.
+        /// </summary>
+        public Vector3 AngularVelocity;
     }
 
     // ── Serialization ────────────────────────────────────────────────────────
@@ -55,18 +72,30 @@ namespace IssaPlugin.Items
         {
             w.WriteVector3(msg.Direction);
             w.WriteBool(msg.Joyride);
+            w.WriteInt(msg.EquippedSlotIndex);
         }
 
         public static GolfCartLaunchRequestMessage ReadLaunchRequest(NetworkReader r) =>
-            new() { Direction = r.ReadVector3(), Joyride = r.ReadBool() };
+            new()
+            {
+                Direction = r.ReadVector3(),
+                Joyride = r.ReadBool(),
+                EquippedSlotIndex = r.ReadInt(),
+            };
 
         public static void WriteJoyrideLaunch(NetworkWriter w, GolfCartJoyrideLaunchMessage msg)
         {
             w.WriteUInt(msg.CartNetId);
             w.WriteVector3(msg.Velocity);
+            w.WriteVector3(msg.AngularVelocity);
         }
 
         public static GolfCartJoyrideLaunchMessage ReadJoyrideLaunch(NetworkReader r) =>
-            new() { CartNetId = r.ReadUInt(), Velocity = r.ReadVector3() };
+            new()
+            {
+                CartNetId = r.ReadUInt(),
+                Velocity = r.ReadVector3(),
+                AngularVelocity = r.ReadVector3(),
+            };
     }
 }

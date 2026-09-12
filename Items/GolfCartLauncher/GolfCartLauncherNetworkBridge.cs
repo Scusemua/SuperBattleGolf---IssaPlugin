@@ -46,9 +46,14 @@ namespace IssaPlugin.Items
         /// Asks the server to launch a cart along <paramref name="direction"/>.
         /// Called by GolfCartLauncherItem.Fire on the shooter's client.
         /// </summary>
-        public void ClientRequestLaunch(Vector3 direction, bool joyride = false) =>
+        public void ClientRequestLaunch(Vector3 direction, bool joyride, int equippedSlotIndex) =>
             NetworkClient.Send(
-                new GolfCartLaunchRequestMessage { Direction = direction, Joyride = joyride }
+                new GolfCartLaunchRequestMessage
+                {
+                    Direction = direction,
+                    Joyride = joyride,
+                    EquippedSlotIndex = equippedSlotIndex,
+                }
             );
 
         // ================================================================
@@ -58,7 +63,11 @@ namespace IssaPlugin.Items
         /// <summary>
         /// Spawns and launches one golf cart. Registered in NetworkManagerPatches.
         /// </summary>
-        public void ServerHandleLaunchRequest(Vector3 direction, bool joyride = false)
+        public void ServerHandleLaunchRequest(
+            Vector3 direction,
+            bool joyride,
+            int equippedSlotIndex
+        )
         {
             if (!isServer)
                 return;
@@ -73,6 +82,45 @@ namespace IssaPlugin.Items
             var shooter = GetComponent<PlayerInfo>();
             if (shooter == null)
                 return;
+
+            // Validate the sender actually holds the launcher, so a modified client
+            // cannot spawn unlimited carts by sending this message directly.
+            //
+            // Checked against the authoritative `slots` SyncList at the index the client
+            // sent, NOT against the live equipped item (the pattern PositionSwap and
+            // ShapeShifter use). A liveness check races the client's own consumption:
+            // on a host the decrement applies immediately, while this message only
+            // arrives when Mirror drains the local connection queue, so the item can
+            // already be gone by the time the server looks — rejecting valid shots
+            // non-deterministically.
+            var inventory = GetComponent<PlayerInventory>();
+            if (
+                inventory == null
+                || ItemRegistry.GetItemTypeAtSlot(inventory, equippedSlotIndex)
+                    != ItemRegistry.GolfCartLauncherItemType
+            )
+            {
+                IssaPluginPlugin.Log.LogWarning(
+                    "[GolfCartLauncher] Launch request from a player without the launcher equipped."
+                );
+                return;
+            }
+
+            // Joyride spends the whole item, so it is only legitimate at full uses.
+            // The client already gates this; re-check so a modified client cannot ride
+            // a cart for a single use.
+            if (joyride)
+            {
+                // Uses are read from the same authoritative slot, for the same reason.
+                int remainingUses = ItemRegistry.GetRemainingUsesAtSlot(
+                    inventory,
+                    equippedSlotIndex
+                );
+                int maxUses = ItemRegistry.GetMaxUses(ItemRegistry.GolfCartLauncherItemType);
+
+                if (maxUses <= 0 || remainingUses < maxUses)
+                    joyride = false;
+            }
 
             var prefab = GameManager.GolfCartSettings?.Prefab;
             if (prefab == null)
@@ -130,11 +178,16 @@ namespace IssaPlugin.Items
             if (ownedByRemoteRider)
             {
                 float speed = ModConfig.GolfCartLauncher.JoyrideLaunchSpeed.Value;
+                var rb = cart.AsEntity != null ? cart.AsEntity.Rigidbody : null;
+
                 shooter.connectionToClient?.Send(
                     new GolfCartJoyrideLaunchMessage
                     {
                         CartNetId = cart.netId,
                         Velocity = direction * speed,
+                        // Reuse the spin ServerApplyLaunchImpulse just computed, so the
+                        // owner reproduces exactly what the server intended.
+                        AngularVelocity = rb != null ? rb.angularVelocity : Vector3.zero,
                     }
                 );
             }
@@ -177,14 +230,18 @@ namespace IssaPlugin.Items
             // Spin is authored in degrees/second about the cart's own axes, which is
             // how a user thinks about "rotation on the golf carts"; Rigidbody wants
             // radians/second in world space.
-            // A rider gets no tumble — spinning the cart with a player aboard fights the
-            // seat attachment and just looks broken.
-            Vector3 localSpinDeg = joyride
-                ? Vector3.zero
-                : new Vector3(
-                    ModConfig.GolfCartLauncher.SpinPitch.Value,
-                    ModConfig.GolfCartLauncher.SpinYaw.Value,
-                    ModConfig.GolfCartLauncher.SpinRoll.Value
+            Vector3 localSpinDeg = new Vector3(
+                ModConfig.GolfCartLauncher.SpinPitch.Value,
+                ModConfig.GolfCartLauncher.SpinYaw.Value,
+                ModConfig.GolfCartLauncher.SpinRoll.Value
+            );
+
+            // A rider gets a configurable fraction of the standard tumble. The default
+            // is 0 (flies level), because a full tumble with a passenger aboard is hard
+            // to read, but it is deliberately exposed for anyone who wants the chaos.
+            if (joyride)
+                localSpinDeg *= Mathf.Clamp01(
+                    ModConfig.GolfCartLauncher.JoyrideSpinRetention.Value
                 );
 
             rb.angularVelocity = cart.transform.TransformDirection(localSpinDeg * Mathf.Deg2Rad);
@@ -268,6 +325,13 @@ namespace IssaPlugin.Items
 
             rb.isKinematic = false;
             rb.linearVelocity = msg.Velocity;
+            rb.angularVelocity = msg.AngularVelocity;
+
+            // Unity clamps angular velocity to 7 rad/s by default, which would silently
+            // eat a configured tumble.
+            float requiredMax = msg.AngularVelocity.magnitude;
+            if (requiredMax > rb.maxAngularVelocity)
+                rb.maxAngularVelocity = requiredMax;
         }
 
         /// <summary>Driver is always seat 0 (see GolfCartInfo.ServerTryAssignPassengerToSeat).</summary>
@@ -308,10 +372,21 @@ namespace IssaPlugin.Items
             ServerDestroyAllLaunchedCarts();
         }
 
+        /// <summary>
+        /// Clears the local player's firing and Joyride state at a hole transition.
+        ///
+        /// GolfCartLauncherItem's state is static and describes the LOCAL player only —
+        /// the fire loop and the Joyride toggle both run on the shooting client, and
+        /// nothing about them is per-bridge. There is deliberately no isLocalPlayer
+        /// guard here: the call is already idempotent, and guarding it would imply a
+        /// per-player scope that the state does not have.
+        ///
+        /// Plugin.OnMatchStateChanged only invokes this on the local player's bridges,
+        /// so it runs once per hole regardless.
+        /// </summary>
         public override void ClientHoleCleanup()
         {
-            if (isLocalPlayer)
-                GolfCartLauncherItem.ResetFiringState();
+            GolfCartLauncherItem.ResetFiringState();
         }
 
         public override void OnStopServer()

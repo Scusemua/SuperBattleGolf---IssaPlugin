@@ -142,14 +142,14 @@ namespace IssaPlugin.Items
                     // item and ends the burst, so it can only ever be the first one.
                     bool joyride = JoyrideArmed && CanArmJoyride(inventory);
 
-                    Fire(inventory, bridge, joyride);
+                    Fire(inventory, bridge, joyride, slot);
 
                     if (joyride)
                     {
-                        // The whole item is spent riding the cart.
-                        inventory.GetUsesForSlot(slot, out int remainingUses, out _);
-                        for (int i = 0; i < remainingUses; i++)
-                            ItemHelper.DecrementAndRemove(inventory, slot);
+                        // The whole item is spent riding the cart. Safe to do
+                        // immediately: the server validates against the slot index sent
+                        // with the launch request, not against live equipped state.
+                        ConsumeWholeItem(inventory, slot);
 
                         // CanEnterGolfCart() refuses while IsUsingItemAtAll is true, and
                         // the server seats the player as part of handling this shot — so
@@ -178,12 +178,41 @@ namespace IssaPlugin.Items
             }
         }
 
+        /// <summary>
+        /// Spends every remaining use of the launcher in <paramref name="slot"/>.
+        ///
+        /// The slot is re-checked each iteration rather than decrementing a count
+        /// captured up front, because DecrementUseFromSlotAt does NOT guard against an
+        /// empty slot: once RemoveIfOutOfUses clears it, any further call would
+        /// decrement whatever occupies that slot next (into negative uses) and Cmd the
+        /// server for each one.
+        /// </summary>
+        private static void ConsumeWholeItem(PlayerInventory inventory, int slot)
+        {
+            if (inventory == null)
+                return;
+
+            while (
+                inventory.GetEffectivelyEquippedItem(true)
+                    == ItemRegistry.GolfCartLauncherItemType
+                && inventory.EquippedItemIndex == slot
+            )
+            {
+                inventory.GetUsesForSlot(slot, out int remainingUses, out _);
+                if (remainingUses <= 0)
+                    break;
+
+                ItemHelper.DecrementAndRemove(inventory, slot);
+            }
+        }
+
         // ── Single cart launch ───────────────────────────────────────────────────
 
         private static void Fire(
             PlayerInventory inventory,
             GolfCartLauncherNetworkBridge bridge,
-            bool joyride
+            bool joyride,
+            int equippedSlotIndex
         )
         {
             Vector3 barrelEnd = inventory.GetRocketLauncherBarrelFrontEndPosition();
@@ -226,7 +255,7 @@ namespace IssaPlugin.Items
             PlayFireEffects(inventory);
 
             // The cart is a networked object — only the server may spawn it.
-            bridge?.ClientRequestLaunch(dir.normalized, joyride);
+            bridge?.ClientRequestLaunch(dir.normalized, joyride, equippedSlotIndex);
         }
 
         // ── Firing effects ───────────────────────────────────────────────────────

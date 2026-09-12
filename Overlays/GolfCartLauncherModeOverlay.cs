@@ -9,11 +9,11 @@ namespace IssaPlugin.Overlays
     ///
     /// Displays the active firing mode and the key that toggles it:
     ///
-    ///   STANDARD  — the cart is launched empty (the normal weapon).
-    ///   RIDE ALONG — the shooter is seated in the cart as it launches, spending the
-    ///                whole item.
+    ///   STANDARD — the cart is launched empty (the normal weapon).
+    ///   JOY RIDE — the shooter is seated in the cart as it launches, spending the
+    ///              whole item.
     ///
-    /// RIDE ALONG is only available at full uses, since firing it consumes every
+    /// JOY RIDE is only available at full uses, since firing it consumes every
     /// remaining use. When it is unavailable the row is dimmed and annotated, so the
     /// player can see the mode exists and why they cannot pick it.
     ///
@@ -36,12 +36,12 @@ namespace IssaPlugin.Overlays
         // screen, so the panel stays legible on high-resolution displays instead of
         // shrinking to unreadable pixels.
         private const float ReferenceHeight = 1080f;
-        private const float PanelWidth = 400f;
-        private const float PanelHeight = 82f;
+        private const float PanelWidth = 732f;
+        private const float PanelHeight = 150f;
         private const float MarginX = 28f;
         private const float MarginY = 110f;
-        private const int ModeFontSize = 24;
-        private const int HintFontSize = 18;
+        private const int ModeFontSize = 28;
+        private const int HintFontSize = 22;
 
         /// <summary>Scale factor from the 1080p reference layout to this screen.</summary>
         private static float UiScale => Mathf.Max(1f, Screen.height / ReferenceHeight);
@@ -49,6 +49,7 @@ namespace IssaPlugin.Overlays
         private static readonly Color StandardColor = new(0.82f, 0.86f, 0.92f, 1f);
         private static readonly Color JoyrideColor = new(1f, 0.78f, 0.22f, 1f);
         private static readonly Color DisabledColor = new(0.55f, 0.57f, 0.62f, 1f);
+        private static readonly Color HintColor = Color.white;
 
         private void Update()
         {
@@ -112,7 +113,7 @@ namespace IssaPlugin.Overlays
             GUI.DrawTexture(panel, _panelTex, ScaleMode.StretchToFill);
             GUI.color = Color.white;
 
-            string modeLabel = armed ? "RIDE ALONG" : "STANDARD";
+            string modeLabel = armed ? "JOY RIDE" : "STANDARD";
             _modeStyle.normal.textColor = armed ? JoyrideColor : StandardColor;
 
             GUI.Label(
@@ -131,12 +132,12 @@ namespace IssaPlugin.Overlays
             if (!canArm && !armed)
             {
                 _hintStyle.normal.textColor = DisabledColor;
-                hint = "RIDE ALONG needs full ammo";
+                hint = "JOY RIDE needs full ammo";
             }
             else
             {
-                _hintStyle.normal.textColor = DisabledColor;
-                hint = $"[{KeyLabel()}] toggle mode";
+                _hintStyle.normal.textColor = HintColor;
+                hint = $"[Press {KeyLabel()}] Toggle Firing Mode";
             }
 
             GUI.Label(

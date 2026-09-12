@@ -1463,7 +1463,11 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<GolfCartLaunchRequestMessage>(
                     (conn, msg) =>
                         GetBridge<GolfCartLauncherNetworkBridge>(conn)
-                            ?.ServerHandleLaunchRequest(msg.Direction, msg.Joyride)
+                            ?.ServerHandleLaunchRequest(
+                                msg.Direction,
+                                msg.Joyride,
+                                msg.EquippedSlotIndex
+                            )
                 );
             }
 
