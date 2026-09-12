@@ -23,6 +23,10 @@ namespace IssaPlugin.Items
         public override ItemType AnimatorItemType => ItemType.RocketLauncher;
         public override ItemType AnimatorChangedItemType => ItemType.RocketLauncher;
 
+        // Hold and aim the Javelin in the rocket launcher's stance — it is a
+        // shoulder-fired launcher, same as the item it borrows its animations from.
+        public override bool InheritAnimatorOverrideController => true;
+
         public override void OnUse(PlayerInventory inventory)
         {
             var bridge = inventory.GetComponent<JavelinNetworkBridge>();

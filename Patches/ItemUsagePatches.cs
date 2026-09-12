@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
 using IssaPlugin.Items;
@@ -667,10 +667,13 @@ namespace IssaPlugin.Patches
             var actual = __instance.GetEffectivelyEquippedItem(true);
             if (actual == ItemRegistry.SniperRifleItemType || actual == ItemRegistry.AK47ItemType)
                 __result = ItemType.ElephantGun;
-            else if (actual == ItemRegistry.GolfCartLauncherItemType)
+            else if (
+                actual == ItemRegistry.GolfCartLauncherItemType
+                || actual == ItemRegistry.JavelinItemType
+            )
                 // Maps to RocketLauncher rather than ElephantGun so the stance, aim pose
-                // and reticle all come from the base game's rocket launcher, which this
-                // item is modelled on.
+                // and reticle all come from the base game's rocket launcher, which these
+                // items are modelled on.
                 __result = ItemType.RocketLauncher;
         }
     }
@@ -700,6 +703,7 @@ namespace IssaPlugin.Patches
                 equipped != ItemRegistry.SniperRifleItemType
                 && equipped != ItemRegistry.AK47ItemType
                 && equipped != ItemRegistry.GolfCartLauncherItemType
+                && equipped != ItemRegistry.JavelinItemType
             )
                 return;
 
@@ -716,9 +720,15 @@ namespace IssaPlugin.Patches
 
             // The base game plays the aim sound from UpdateIsAimingItem, but gates it on
             // the raw slot ItemType, which is the custom value and matches none of its
-            // cases. Play it on the aim-in edge so the launcher sounds like the rocket
-            // launcher it is modelled on.
-            if (shouldAim && equipped == ItemRegistry.GolfCartLauncherItemType)
+            // cases. Play it on the aim-in edge so these items sound like the rocket
+            // launcher they are modelled on.
+            if (
+                shouldAim
+                && (
+                    equipped == ItemRegistry.GolfCartLauncherItemType
+                    || equipped == ItemRegistry.JavelinItemType
+                )
+            )
                 __instance.PlayerInfo.PlayerAudio?.PlayItemAimForAllClients(
                     ItemType.RocketLauncher
                 );
