@@ -39,6 +39,10 @@ namespace IssaPlugin.Items
         /// eat pose can be cleared from any exit path, including ForceReset.
         private static PlayerInventory _animatingInventory;
 
+        /// The pending delayed-clear coroutine, tracked so it can be cancelled. It runs
+        /// outside _routine, so StopRoutine does not reach it on its own.
+        private static Coroutine _clearEatRoutine;
+
         /// The MonoBehaviour the routine was started on. Needed because StopCoroutine
         /// must be called on the same behaviour that started it — nulling the handle
         /// alone leaves the routine running and re-inflating the player.
@@ -247,6 +251,22 @@ namespace IssaPlugin.Items
             // own EatJumboBurgerRoutine, which applies the giant effect partway through
             // the animation rather than at the start, so the player visibly takes a bite
             // before growing.
+            //
+            // The override controller has to be re-established here, not just relied on.
+            // LocalPlayerUpdateIsEquipmentForceHiddenPatch normally installs it, but it
+            // early-returns while equipment is force-hidden — which being in giant form
+            // does. So the sequence for a SECOND burger is:
+            //
+            //   1. first burger -> giant form -> equipment force-hidden, patch skipped
+            //   2. form ends -> PlayerAnimatorIo.UpdateDefaultAnimatorController resets
+            //      the animator to the default controller
+            //   3. second burger -> the patch only re-fires on item-slot SELECTION, which
+            //      does not happen when the burger is already the selected item
+            //
+            // leaving no burger controller installed and so no eat animation at all. That
+            // is why every burger after the first played incorrectly.
+            RestoreBurgerAnimator(info);
+
             ItemHelper.SetCurrentItemUse(inventory, ItemUseType.Regular);
             _animatingInventory = inventory;
 
@@ -337,20 +357,25 @@ namespace IssaPlugin.Items
                 yield break;
             }
 
-            // Broadcast the eat/grow VFX only once the form is confirmed: in step with
-            // the player actually growing rather than a beat early, and never at all if
-            // the eat was interrupted or activation refused.
+            // Broadcast the eat/grow VFX only once the form is confirmed: never at all
+            // if the eat was interrupted or activation refused.
             inventory.GetComponent<SuperJumboBurgerNetworkBridge>()?.ClientRequestEffects();
 
-            // Hold the eating pose for the remainder of the animation. The base game's
-            // own routine keeps ItemUseType.Regular set for the full JumboBurgerEatDuration
-            // and only clears it at the end; clearing at the effect-start time instead
-            // would cut the animation off partway through.
+            // Clear the eating pose on its own schedule, WITHOUT blocking the grow.
+            //
+            // The base game's EatJumboBurgerRoutine applies the giant effect at
+            // JumboBurgerEffectStartTime and only clears the item-use state at
+            // JumboBurgerEatDuration, so the grow overlaps the tail of the eat
+            // animation. Awaiting the rest of the eat here before growing would
+            // serialise the two and leave a visible pause between the bite finishing
+            // and the player growing.
             float remainingEat = eatDuration - eatDelay;
-            if (remainingEat > 0f)
-                yield return new WaitForSeconds(remainingEat);
-
-            ClearEatAnimation();
+            if (remainingEat > 0f && _routineHost != null)
+                _clearEatRoutine = _routineHost.StartCoroutine(
+                    ClearEatAnimationAfter(remainingEat)
+                );
+            else
+                ClearEatAnimation();
 
             // Activation started the base game's own grow coroutine, which writes
             // NetworkcharacterScale toward the vanilla scale every frame. Two writers on
@@ -484,15 +509,55 @@ namespace IssaPlugin.Items
                 info.LocalPlayerCancelJumboBurgerGiantForm(true);
         }
 
-        /// Clears session state from INSIDE the routine, as it finishes or bails.
+        /// Installs the Jumbo Burger override controller and equipped-item integer on the
+        /// animator, so the eat animation has something to play.
         ///
-        /// Deliberately does not call StopCoroutine — the routine is ending under its
-        /// own control, and stopping a coroutine from within itself is both unnecessary
-        /// and, if the handles have already been reused, wrong.
-        /// Returns the player to the normal upper-body pose. Safe to call repeatedly and
-        /// when no animation was started.
+        /// Mirrors what LocalPlayerUpdateIsEquipmentForceHiddenPatch does on item
+        /// selection. Done explicitly here because that patch cannot run at the moment we
+        /// need it: it skips while equipment is force-hidden (as it is in giant form), and
+        /// otherwise only fires on selection, which does not recur when the player uses a
+        /// second burger that is already selected.
+        private static void RestoreBurgerAnimator(PlayerInfo info)
+        {
+            var animatorIo = info != null ? info.AnimatorIo : null;
+            if (animatorIo == null)
+                return;
+
+            var def = ItemRegistry.GetDefinition(ItemRegistry.SuperJumboBurgerItemType);
+            if (def == null)
+                return;
+
+            // Swaps runtimeAnimatorController to the burger's override; SetEquippedItem
+            // then sets the animator integer the state machine transitions on. Both are
+            // needed — the integer alone has no visible effect without the controller.
+            animatorIo.OnNetworkedEquippedItemChanged(
+                def.AnimatorChangedItemType,
+                ItemRegistry.SuperJumboBurgerItemType
+            );
+            animatorIo.SetEquippedItem(def.AnimatorItemType);
+        }
+
+        /// Clears the eating pose after a delay, so the grow can start immediately while
+        /// the eat animation plays out its tail — matching the base game, which overlaps
+        /// the two.
+        private static IEnumerator ClearEatAnimationAfter(float delay)
+        {
+            yield return new WaitForSeconds(delay);
+            ClearEatAnimation();
+        }
+
+        /// Returns the player to the normal upper-body pose, and cancels any pending
+        /// delayed clear. Safe to call repeatedly and when no animation was started.
         private static void ClearEatAnimation()
         {
+            // Stop the pending timer first. Without this a timer left over from a
+            // PREVIOUS eat could fire during a new one and cut its animation short: the
+            // second eat sets _animatingInventory afresh, so the stale timer would no
+            // longer be a harmless no-op.
+            if (_clearEatRoutine != null && _routineHost != null)
+                _routineHost.StopCoroutine(_clearEatRoutine);
+            _clearEatRoutine = null;
+
             if (_animatingInventory == null)
                 return;
 
@@ -500,6 +565,11 @@ namespace IssaPlugin.Items
             _animatingInventory = null;
         }
 
+        /// Clears session state from INSIDE the routine, as it finishes or bails.
+        ///
+        /// Deliberately does not call StopCoroutine on _routine — the routine is ending
+        /// under its own control, and stopping a coroutine from within itself is both
+        /// unnecessary and, if the handles have already been reused, wrong.
         private static void EndSession()
         {
             // Belt and braces: the normal path clears this as soon as the eat animation
@@ -520,12 +590,16 @@ namespace IssaPlugin.Items
                 _routineHost.StopCoroutine(_routine);
 
             _routine = null;
-            _routineHost = null;
 
             // A stopped coroutine runs no finally block, so anything it was mid-way
             // through has to be undone here. Without this a routine killed during the
             // eat would leave the player stuck in the eating pose.
+            //
+            // Called BEFORE _routineHost is cleared: ClearEatAnimation needs that host to
+            // stop the pending delayed-clear coroutine, which was started on it.
             ClearEatAnimation();
+
+            _routineHost = null;
         }
 
         /// Animates scale from → to.

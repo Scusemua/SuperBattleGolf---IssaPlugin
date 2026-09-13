@@ -58,9 +58,12 @@ namespace IssaPlugin.Items
                 Quaternion.identity,
                 Vector3.one
             );
-            // Sized from config, which ItemConfigSyncer keeps host-authoritative on every
-            // client, so the effect matches the size the player will actually reach.
-            float scale = ModConfig.SuperJumboBurger?.Scale.Value ?? 1f;
+            // Sized from the player's LIVE scale, matching what the base game's own
+            // PlayJumboBurgerGrowEffectsInternal does. Using the configured target
+            // instead would draw a full-size burst around a player who has only just
+            // started growing — and it would also depend on the config having synced to
+            // this client, which the live SyncVar does not.
+            float scale = info.Movement != null ? info.Movement.CharacterScale : 1f;
             VfxManager.PlayPooledVfxLocalOnly(
                 VfxType.JumboBurgerGrow,
                 info.ChestBone.position,
