@@ -15,6 +15,7 @@ namespace IssaPlugin
         public ConfigEntry<float> CameraDistancePerScale { get; private set; }
         public ConfigEntry<float> CameraHeightPerScale { get; private set; }
         public ConfigEntry<float> SpeedScaling { get; private set; }
+        public ConfigEntry<float> FlickPowerMultiplier { get; private set; }
 
         public SuperJumboBurgerConfig(ConfigFile cfg, GlobalConfig global)
         {
@@ -81,6 +82,18 @@ namespace IssaPlugin
                         + "10x giant covers ground 10x as fast. 0.30 keeps big feeling "
                         + "heavy without feeling slow.",
                     new AcceptableValueRange<float>(0f, 1f)
+                )
+            );
+            FlickPowerMultiplier = cfg.Bind(
+                Section,
+                "FlickPowerMultiplier",
+                2f,
+                new ConfigDescription(
+                    "Multiplies the power of the giant flick (left-click) that sends "
+                        + "players and objects flying. 1 = the same flick the base game's "
+                        + "Jumbo Burger has. Applies only while in a Super Jumbo Burger "
+                        + "form, never to a vanilla one.",
+                    new AcceptableValueRange<float>(1f, 10f)
                 )
             );
             Uses = cfg.Bind(Section, "Uses", 1f, "Number of uses");

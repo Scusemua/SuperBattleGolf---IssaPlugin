@@ -153,6 +153,33 @@ namespace IssaPlugin.Items
                 * Mathf.Max(0f, ModConfig.SuperJumboBurger.CameraHeightPerScale.Value);
         }
 
+        /// <summary>
+        /// Multiplier for the giant flick's power at the given scale.
+        ///
+        /// Returns 1 (unchanged) at or below the vanilla giant scale, so a vanilla Jumbo
+        /// Burger's flick is untouched and the patch is inert for it.
+        ///
+        /// Unlike the speed and camera helpers this does NOT scale with size — the
+        /// configured multiplier applies in full to any super form. Flick power is a
+        /// balance knob rather than a consequence of being large, so tying it to scale
+        /// would make it change whenever Scale was retuned.
+        ///
+        /// Takes scale as a parameter because the swing is resolved on whichever client
+        /// owns the target, not the swinger, so the value has to come from the hitter's
+        /// CharacterScale (a SyncVar) rather than from local session state.
+        /// </summary>
+        public static float GetFlickPowerMultiplier(float swingerScale)
+        {
+            float vanillaScale = VanillaGiantScale;
+            if (vanillaScale <= 0f || swingerScale <= vanillaScale)
+                return 1f;
+
+            if (ModConfig.SuperJumboBurger == null)
+                return 1f;
+
+            return Mathf.Max(1f, ModConfig.SuperJumboBurger.FlickPowerMultiplier.Value);
+        }
+
         /// Starts the giant form. Returns false when it could not be started, so the
         /// caller can leave the item in the player's inventory instead of consuming a
         /// use for nothing.
