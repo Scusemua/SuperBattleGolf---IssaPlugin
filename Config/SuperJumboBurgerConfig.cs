@@ -26,7 +26,7 @@ namespace IssaPlugin
                 new ConfigDescription(
                     "How large the player becomes. The base game's Jumbo Burger is 3. "
                         + "Values far above ~8 make the player wider than many fairways.",
-                    new AcceptableValueRange<float>(1.1f, 12f)
+                    new AcceptableValueRange<float>(1.0f, 100f)
                 )
             );
             Duration = cfg.Bind(
@@ -35,7 +35,7 @@ namespace IssaPlugin
                 20f,
                 new ConfigDescription(
                     "Seconds spent giant before shrinking back.",
-                    new AcceptableValueRange<float>(1f, 300f)
+                    new AcceptableValueRange<float>(1f, 500f)
                 )
             );
             GrowDuration = cfg.Bind(
@@ -87,13 +87,13 @@ namespace IssaPlugin
             FlickPowerMultiplier = cfg.Bind(
                 Section,
                 "FlickPowerMultiplier",
-                2f,
+                1.75f,
                 new ConfigDescription(
                     "Multiplies the power of the giant flick (left-click) that sends "
                         + "players and objects flying. 1 = the same flick the base game's "
                         + "Jumbo Burger has. Applies only while in a Super Jumbo Burger "
                         + "form, never to a vanilla one.",
-                    new AcceptableValueRange<float>(1f, 10f)
+                    new AcceptableValueRange<float>(0f, 100f)
                 )
             );
             Uses = cfg.Bind(Section, "Uses", 1f, "Number of uses");
