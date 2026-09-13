@@ -320,6 +320,8 @@ namespace IssaPlugin.Items
 
         // ── Spinach ───────────────────────────────────────────────────────────
         public static Sprite SpinachIcon { get; private set; }
+        public static Sprite SuperJumboBurgerIcon { get; private set; }
+        public static GameObject SuperJumboBurgerPrefab { get; private set; }
         public static GameObject SpinachPrefab { get; private set; }
 
         /// Local-only speed-boost trail VFX parented to the player.
@@ -606,7 +608,9 @@ namespace IssaPlugin.Items
                 ),
                 // ── Spinach ───────────────────────────────────────────────────
                 SpriteAsset(p => SpinachIcon = p, "spinach_icon.png"),
+                SpriteAsset(p => SuperJumboBurgerIcon = p, "super_jumbo_burger_icon.png"),
                 HandheldPrefab(p => SpinachPrefab = p, "spinach.prefab"),
+                HandheldPrefab(p => SuperJumboBurgerPrefab = p, "super_jumbo_burger.prefab"),
                 LocalVfxPrefab(p => _spinachTrailPrefab = p, "spinach_trail.prefab"),
                 // ── UFO Abduction ─────────────────────────────────────────────
                 SpriteAsset(p => UfoAbductionIcon = p, "ufo_abduction_icon.png", optional: true),

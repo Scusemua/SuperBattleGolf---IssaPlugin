@@ -36,6 +36,7 @@ namespace IssaPlugin
         public static JetpackConfig Jetpack { get; private set; }
         public static TeleporterConfig Teleporter { get; private set; }
         public static SpinachConfig Spinach { get; private set; }
+        public static SuperJumboBurgerConfig SuperJumboBurger { get; private set; }
         public static FlamethrowerConfig Flamethrower { get; private set; }
         public static RocketTetherGrenadeConfig RocketTetherGrenade { get; private set; }
         public static WindStormConfig WindStorm { get; private set; }
@@ -78,6 +79,7 @@ namespace IssaPlugin
             Jetpack = new JetpackConfig(cfg, Global);
             Teleporter = new TeleporterConfig(cfg, Global);
             Spinach = new SpinachConfig(cfg, Global);
+            SuperJumboBurger = new SuperJumboBurgerConfig(cfg, Global);
             Flamethrower = new FlamethrowerConfig(cfg, Global);
             RocketTetherGrenade = new RocketTetherGrenadeConfig(cfg, Global);
             WindStorm = new WindStormConfig(cfg, Global);

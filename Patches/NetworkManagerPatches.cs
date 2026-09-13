@@ -1379,6 +1379,26 @@ namespace IssaPlugin.Patches
                     (conn, msg) => GetBridge<SpinachNetworkBridge>(conn)?.ServerActivate()
                 );
 
+            // ── Super Jumbo Burger ────────────────────────────────────────────────
+            // Only the one-shot eat/grow VFX travels here. The giant size itself rides
+            // the base game's characterScale SyncVar on PlayerMovement.
+            Writer<SuperJumboBurgerActivateMessage>.write =
+                SuperJumboBurgerMessageSerialization.WriteActivate;
+            Reader<SuperJumboBurgerActivateMessage>.read =
+                SuperJumboBurgerMessageSerialization.ReadActivate;
+            Writer<SuperJumboBurgerEffectsMessage>.write =
+                SuperJumboBurgerMessageSerialization.WriteEffects;
+            Reader<SuperJumboBurgerEffectsMessage>.read =
+                SuperJumboBurgerMessageSerialization.ReadEffects;
+            NetworkClient.RegisterHandler<SuperJumboBurgerEffectsMessage>(
+                SuperJumboBurgerNetworkBridge.HandleEffects
+            );
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<SuperJumboBurgerActivateMessage>(
+                    (conn, msg) =>
+                        GetBridge<SuperJumboBurgerNetworkBridge>(conn)?.ServerActivate()
+                );
+
             // ── Flamethrower ──────────────────────────────────────────────────────
             Writer<FlamethrowerFireStartMessage>.write =
                 FlamethrowerMessageSerialization.WriteFireStart;

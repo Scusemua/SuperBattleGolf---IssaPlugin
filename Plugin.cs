@@ -188,6 +188,13 @@ namespace IssaPlugin
         {
             Log.LogDebug($"[MatchState] {previousState} → {currentState}");
 
+            // A Super Jumbo Burger form can outlast the vanilla giant-form duration, so
+            // it must also be ended when the match itself ends — HoleOverview does not
+            // fire after the final hole, which would otherwise leave the local player
+            // giant through the results screen.
+            if (currentState == MatchState.Ended)
+                SuperJumboBurgerBehaviour.ForceReset();
+
             // When a new hole begins, force-end any item sessions that survived the
             // scene transition (player objects are DontDestroyOnLoad; OnStopServer
             // only fires on disconnect, not on hole-to-hole scene changes).

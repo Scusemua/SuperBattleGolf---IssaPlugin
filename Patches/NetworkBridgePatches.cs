@@ -62,6 +62,9 @@ namespace IssaPlugin.Patches
                 __instance.gameObject.AddComponent<TeleporterNetworkBridge>();
             if (!__instance.GetComponent<SpinachNetworkBridge>())
                 __instance.gameObject.AddComponent<SpinachNetworkBridge>();
+
+            if (!__instance.GetComponent<SuperJumboBurgerNetworkBridge>())
+                __instance.gameObject.AddComponent<SuperJumboBurgerNetworkBridge>();
             if (!__instance.GetComponent<FlamethrowerNetworkBridge>())
                 __instance.gameObject.AddComponent<FlamethrowerNetworkBridge>();
             if (!__instance.GetComponent<RocketTetherGrenadeNetworkBridge>())

@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 3579762643
+CRC: 1008302913
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: bfd5fe5a3ea1fe97c845c73d525c4e6f
+    Hash: 3974885132b5ed4da72664eb57856940
   TypeTreeHash:
     serializedVersion: 2
     Hash: 5a8cce00eebcad12dd14cf3a32c3a8ad
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 8c3849a5d3ccb411f11aec6bdf3f9242
+    Hash: 5178b355e2c0bfff4b5ef45439087b2c
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -120,9 +120,11 @@ Assets:
 - Assets/Assets/flamethrower_victim_fire.prefab
 - Assets/Assets/GolfBalls/golf_ball_cube.prefab
 - Assets/Assets/rocket_tether_grenade_icon.png
+- Assets/Assets/super_jumbo_burger_icon.png
 - Assets/Assets/bomber_icon.png
 - Assets/Assets/redbull.prefab
 - Assets/Assets/gold_star.prefab
+- Assets/Assets/super_jumbo_burger.prefab
 - Assets/Assets/wall.prefab
 - Assets/Assets/position_swap_handheld.prefab
 - Assets/Assets/spike_ball.prefab

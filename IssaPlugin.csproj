@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <AssemblyName>IssaPlugin</AssemblyName>
@@ -75,6 +75,14 @@
     </Reference>
     <Reference Include="GameAssembly">
       <HintPath>Assembly\GameAssembly.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.RenderPipelines.Core.Runtime">
+      <HintPath>Assembly\Unity.RenderPipelines.Core.Runtime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.RenderPipelines.Universal.Runtime">
+      <HintPath>Assembly\Unity.RenderPipelines.Universal.Runtime.dll</HintPath>
+      <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.InputForUIModule">
       <HintPath>Assembly\UnityEngine.InputForUIModule.dll</HintPath>
