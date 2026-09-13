@@ -21,7 +21,7 @@ namespace IssaPlugin
             Scale = cfg.Bind(
                 Section,
                 "Scale",
-                4.5f,
+                8f,
                 new ConfigDescription(
                     "How large the player becomes. The base game's Jumbo Burger is 3. "
                         + "Values far above ~8 make the player wider than many fairways.",
@@ -40,7 +40,7 @@ namespace IssaPlugin
             GrowDuration = cfg.Bind(
                 Section,
                 "GrowDuration",
-                0.6f,
+                1f,
                 new ConfigDescription(
                     "Seconds the grow/shrink animation takes.",
                     new AcceptableValueRange<float>(0.05f, 5f)
@@ -49,7 +49,7 @@ namespace IssaPlugin
             CameraDistancePerScale = cfg.Bind(
                 Section,
                 "CameraDistancePerScale",
-                2.5f,
+                3.5f,
                 new ConfigDescription(
                     "Extra camera distance per unit of scale above the base game's giant "
                         + "scale. The base game's own pull-back is sized for its 3x form, so "
@@ -73,12 +73,12 @@ namespace IssaPlugin
             SpeedScaling = cfg.Bind(
                 Section,
                 "SpeedScaling",
-                0.65f,
+                0.30f,
                 new ConfigDescription(
                     "How much the giant's movement speed grows with size. 0 = no bonus "
                         + "beyond the base game's giant-form boost (a 10x giant feels "
                         + "sluggish). 1 = speed scales fully in proportion to scale, so a "
-                        + "10x giant covers ground 10x as fast. 0.65 keeps big feeling "
+                        + "10x giant covers ground 10x as fast. 0.30 keeps big feeling "
                         + "heavy without feeling slow.",
                     new AcceptableValueRange<float>(0f, 1f)
                 )
