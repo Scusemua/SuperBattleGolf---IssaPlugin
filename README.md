@@ -2,7 +2,7 @@
 
 <img src="icon.png" width="256" height="256" />
 
-Adds **36 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
+Adds **37 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
 
 To download and/or install the mod, please check out [the GitHub releases](https://github.com/Scusemua/SuperBattleGolf---IssaPlugin/releases) or the mod's [ThunderStore page](https://thunderstore.io/c/super-battle-golf/p/TeamScusemua/IssaMod/).
 
@@ -119,6 +119,12 @@ A passive item, so just having it in your inventory is enough. Every swing launc
 A shoulder-fired launcher that shoots golf carts instead of rockets. Aim in with right-click like the rocket launcher, then fire to hurl a real golf cart down range. Anyone it hits gets run over and sent flying. Launch speed, fire rate, accuracy, and how wildly the cart tumbles in flight are all configurable.
 
 Holding a full launcher lets you flip it into **Joy Ride** mode (press `V` by default). Fire in that mode and you are strapped into the driver's seat as the cart launches, riding it wherever it lands. It costs the entire item, so you get one trip.
+
+
+### 🍔 Super Jumbo Burger
+A bigger version of the base game's Jumbo Burger. Eat it and you grow far larger than the normal giant form -- 8x by default, and you can push it higher. The camera pulls back and lifts to keep you in frame, and your movement speed scales up with your size so you don't feel like you're wading through mud.
+
+The left-click flick that giants use to swat people is amplified too, at twice the normal power by default. Scale, duration, flick power, speed scaling, and the camera offsets are all configurable.
 
 ---
 
