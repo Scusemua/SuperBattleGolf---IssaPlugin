@@ -154,5 +154,80 @@ namespace IssaPlugin.Items
             // snap to zero over a void.
             return fallbackY;
         }
+
+        // ── Rocket launcher firing effects ───────────────────────────────────
+
+        /// <summary>
+        /// Plays the base game's rocket launcher muzzle flash, back blast and shot
+        /// sound for every client, as if <paramref name="inventory"/> had just fired a
+        /// real rocket.
+        ///
+        /// Shared by the custom launcher-style items (Golf Cart Launcher, Javelin),
+        /// which are all held and animated as the rocket launcher, so reusing its
+        /// effects keeps them consistent with the weapon the player appears to hold.
+        ///
+        /// The two pooled VFX are the ones VfxManager.PlayRocketLaunchLocalOnly spawns
+        /// for a real rocket, positioned from the rocket launcher barrel helpers, so
+        /// they line up with the model without any manual placement.
+        ///
+        /// PlayerAudio.PlayRocketLauncherShotForAllClients handles its own networking.
+        /// It is server-rate-limited to 5 calls per 0.5s, so an item firing faster than
+        /// that will have some shot sounds dropped.
+        /// </summary>
+        public static void PlayRocketLauncherFireEffects(PlayerInventory inventory)
+        {
+            if (inventory == null)
+                return;
+
+            inventory.PlayerInfo?.PlayerAudio?.PlayRocketLauncherShotForAllClients();
+
+            // Mirrors the placement PlayRocketLaunchLocalOnly uses internally.
+            Quaternion muzzleRotation = inventory.GetRocketLauncherRocketRotation();
+            Quaternion backBlastRotation =
+                Quaternion.AngleAxis(180f, inventory.transform.up) * muzzleRotation;
+
+            PlayShotVfx(
+                VfxType.RocketLauncherMuzzle,
+                inventory.GetRocketLauncherBarrelFrontEndPosition(),
+                muzzleRotation
+            );
+
+            PlayShotVfx(
+                VfxType.RocketLauncherBackBlast,
+                inventory.GetRocketLauncherBarrelBackEndPosition(),
+                backBlastRotation
+            );
+        }
+
+        /// <summary>
+        /// Plays one pooled VFX for every player, from either a host or a pure client.
+        ///
+        /// The entry point depends on where this runs:
+        ///   - On a pure client, ClientPlayPooledVfxForAllClients plays locally and Cmds
+        ///     the rest. Calling it on the server instead LOGS AN ERROR AND DOES NOTHING
+        ///     ("On the server, ServerPlayPooledVfxForAllClients should be called
+        ///     instead"), so a host would see no effect at all.
+        ///   - On the host, ServerPlayPooledVfxForAllClients RPCs the other clients but
+        ///     does not play locally, so the host also plays it itself.
+        /// </summary>
+        public static void PlayShotVfx(VfxType vfxType, Vector3 position, Quaternion rotation)
+        {
+            if (NetworkServer.active)
+            {
+                // Host: RPC reaches the other clients only, so play it here too.
+                VfxManager.PlayPooledVfxLocalOnly(vfxType, position, rotation);
+                VfxManager.ServerPlayPooledVfxForAllClients(
+                    vfxType,
+                    position,
+                    rotation,
+                    connectionToSkip: NetworkServer.localConnection
+                );
+                return;
+            }
+
+            // Pure client: plays locally and forwards to everyone else.
+            VfxManager.ClientPlayPooledVfxForAllClients(vfxType, position, rotation);
+        }
+
     }
 }

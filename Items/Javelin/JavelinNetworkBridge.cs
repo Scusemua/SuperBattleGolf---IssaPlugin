@@ -118,6 +118,14 @@ namespace IssaPlugin.Items
             }
 
             IsWaitingForDetonation = true;
+
+            // Reuse the base rocket launcher's muzzle flash, back blast and shot
+            // sound. The Javelin is held and animated as the rocket launcher, so its
+            // own firing effects should match. Played here, on the shooter's client,
+            // because the helper positions the VFX from that client's barrel
+            // transforms; it broadcasts to everyone else itself.
+            ItemHelper.PlayRocketLauncherFireEffects(CachedInventory);
+
             NetworkClient.Send(new JavelinFireMessage { TargetPosition = targetPosition });
         }
 

@@ -1,5 +1,4 @@
 using System.Collections;
-using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -252,77 +251,11 @@ namespace IssaPlugin.Items
                 ModConfig.GolfCartLauncher.ScreenShakeIntensity.Value
             );
 
-            PlayFireEffects(inventory);
+            ItemHelper.PlayRocketLauncherFireEffects(inventory);
 
             // The cart is a networked object — only the server may spawn it.
             bridge?.ClientRequestLaunch(dir.normalized, joyride, equippedSlotIndex);
         }
 
-        // ── Firing effects ───────────────────────────────────────────────────────
-
-        /// <summary>
-        /// Plays the base game's rocket launcher muzzle flash, back blast and shot
-        /// sound for every client.
-        ///
-        /// The two pooled VFX are the same ones VfxManager.PlayRocketLaunchLocalOnly
-        /// spawns for a real rocket, positioned from the launcher's own barrel helpers
-        /// (which this item already uses for aiming), so they line up with the weapon
-        /// without any manual placement.
-        ///
-        /// Broadcasting has to pick the right entry point for where this runs:
-        ///   - On a pure client, ClientPlayPooledVfxForAllClients plays locally and
-        ///     Cmds the rest. Calling it on the server instead LOGS AN ERROR AND DOES
-        ///     NOTHING ("On the server, ServerPlayPooledVfxForAllClients should be
-        ///     called instead"), which is why the host saw no effect at all.
-        ///   - On the host, ServerPlayPooledVfxForAllClients RPCs the other clients but
-        ///     does not play locally, so the host also plays it itself.
-        ///
-        /// PlayerAudio.PlayRocketLauncherShotForAllClients handles its own networking.
-        /// It is server-rate-limited to 5 calls per 0.5s; the default FireRate of 0.75s
-        /// is well inside that, but a very low FireRate could have sounds dropped.
-        /// </summary>
-        private static void PlayFireEffects(PlayerInventory inventory)
-        {
-            inventory.PlayerInfo?.PlayerAudio?.PlayRocketLauncherShotForAllClients();
-
-            // Mirrors the placement PlayRocketLaunchLocalOnly uses internally.
-            Quaternion muzzleRotation = inventory.GetRocketLauncherRocketRotation();
-            Quaternion backBlastRotation =
-                Quaternion.AngleAxis(180f, inventory.transform.up) * muzzleRotation;
-
-            PlayShotVfx(
-                VfxType.RocketLauncherMuzzle,
-                inventory.GetRocketLauncherBarrelFrontEndPosition(),
-                muzzleRotation
-            );
-
-            PlayShotVfx(
-                VfxType.RocketLauncherBackBlast,
-                inventory.GetRocketLauncherBarrelBackEndPosition(),
-                backBlastRotation
-            );
-        }
-
-        /// <summary>
-        /// Plays one pooled VFX for every player, from either a host or a pure client.
-        /// </summary>
-        private static void PlayShotVfx(VfxType vfxType, Vector3 position, Quaternion rotation)
-        {
-            if (NetworkServer.active)
-            {
-                // Host: RPC reaches the other clients only, so play it here too.
-                VfxManager.PlayPooledVfxLocalOnly(vfxType, position, rotation);
-                VfxManager.ServerPlayPooledVfxForAllClients(
-                    vfxType,
-                    position,
-                    rotation,
-                    connectionToSkip: NetworkServer.localConnection
-                );
-                return;
-            }
-
-            // Pure client: plays locally and forwards to everyone else.
-            VfxManager.ClientPlayPooledVfxForAllClients(vfxType, position, rotation);
-        }
     }
 }
