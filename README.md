@@ -120,9 +120,8 @@ A shoulder-fired launcher that shoots golf carts instead of rockets. Aim in with
 
 Holding a full launcher lets you flip it into **Joy Ride** mode (press `V` by default). Fire in that mode and you are strapped into the driver's seat as the cart launches, riding it wherever it lands. It costs the entire item, so you get one trip.
 
-
 ### 🍔 Super Jumbo Burger
-A bigger version of the base game's Jumbo Burger. Eat it and you grow far larger than the normal giant form -- 8x by default, and you can push it higher. The camera pulls back and lifts to keep you in frame, and your movement speed scales up with your size so you don't feel like you're wading through mud.
+A bigger version of the base game's Jumbo Burger. Eat it and you grow far larger than the normal giant form: 8x by default, and you can push it higher if you want to. The camera pulls back and lifts to keep you in frame, and your movement speed scales up with your size so you don't feel like you're wading through mud.
 
 The left-click flick that giants use to swat people is amplified too, at twice the normal power by default. Scale, duration, flick power, speed scaling, and the camera offsets are all configurable.
 
