@@ -35,6 +35,10 @@ namespace IssaPlugin.Items
 
         private static Coroutine _routine;
 
+        /// The inventory whose item-use animation state we drove, if any. Held so the
+        /// eat pose can be cleared from any exit path, including ForceReset.
+        private static PlayerInventory _animatingInventory;
+
         /// The MonoBehaviour the routine was started on. Needed because StopCoroutine
         /// must be called on the same behaviour that started it — nulling the handle
         /// alone leaves the routine running and re-inflating the player.
@@ -75,26 +79,28 @@ namespace IssaPlugin.Items
         ///
         /// Returns 0 when no super form is active, so the patch is inert otherwise.
         /// </summary>
-        public static float CameraDistanceAddition()
+        /// <param name="characterScale">
+        /// Scale of the player the camera is looking at. Takes the scale as a parameter
+        /// rather than reading the local player so it matches GetCameraHeightAddition,
+        /// which resolves from the camera's subject: while spectating a super giant the
+        /// height and the distance must come from the same player, or the camera ends up
+        /// raised but still too close.
+        /// </param>
+        public static float CameraDistanceAddition(float characterScale)
         {
             float vanillaScale = VanillaGiantScale;
             if (vanillaScale <= 0f || ModConfig.SuperJumboBurger == null)
                 return 0f;
 
-            // Derived from the player's ACTUAL current scale rather than the configured
-            // target, so the surplus eases in and out with the grow/shrink animation and
-            // reaches exactly 0 as the player returns to normal size. Keying it to the
-            // session flag instead would snap the camera the moment the flag cleared,
-            // while the base game's own easing was still running.
-            var movement = GameManager.LocalPlayerMovement;
-            if (movement == null)
+            // Derived from the ACTUAL current scale rather than the configured target,
+            // so the surplus eases in and out with the grow/shrink animation and reaches
+            // exactly 0 at normal size. Keying it to the session flag instead would snap
+            // the camera the moment the flag cleared, while the base game's own easing
+            // was still running.
+            if (characterScale <= vanillaScale)
                 return 0f;
 
-            float current = movement.CharacterScale;
-            if (current <= vanillaScale)
-                return 0f;
-
-            return (current - vanillaScale)
+            return (characterScale - vanillaScale)
                 * Mathf.Max(0f, ModConfig.SuperJumboBurger.CameraDistancePerScale.Value);
         }
 
@@ -195,15 +201,26 @@ namespace IssaPlugin.Items
             if (info.IsInJumboBurgerGiantForm)
                 return false;
 
+            // A session is already running. This matters during the eat animation, when
+            // the player is NOT yet giant and so the check above does not catch it:
+            // without this, a second burger would restart the routine, orphaning the
+            // first one's eat state and skipping its consume — a free use.
+            if (LocalSessionActive)
+                return false;
+
             // Stop any previous routine on whichever behaviour actually started it.
             StopRoutine();
 
             _routineHost = inventory;
-            _routine = inventory.StartCoroutine(Routine(info, movement));
+            _routine = inventory.StartCoroutine(Routine(info, movement, inventory));
             return true;
         }
 
-        private static IEnumerator Routine(PlayerInfo info, PlayerMovement movement)
+        private static IEnumerator Routine(
+            PlayerInfo info,
+            PlayerMovement movement,
+            PlayerInventory inventory
+        )
         {
             // Clamped defensively: AcceptableValueRange constrains the settings UI, but
             // a hand-edited config file can still contain anything.
@@ -216,9 +233,78 @@ namespace IssaPlugin.Items
 
             LocalSessionActive = true;
 
-            // Hand off to the base game first: this sets isInJumboBurgerGiantForm, starts
-            // its timer, plays the grow VFX/audio and starts its own scale animation
-            // toward the vanilla JumboBurgerGiantFormScale.
+            // Play the base game's burger eat animation before the effect lands.
+            //
+            // The animator is already set up for this: PlayerAnimatorSetEquippedItemPatch
+            // substitutes our AnimatorItemType (JumboBurger) into the animator's
+            // equipped-item integer, and InheritAnimatorOverrideController gives us the
+            // burger's override controller. The only missing input was the item-use
+            // integer, which the base game sets from PlayerInventory.CurrentItemUse and
+            // which never fires for custom items — so we drive it directly, the same way
+            // the Flamethrower and AK-47 do.
+            //
+            // Waiting JumboBurgerEffectStartTime before growing matches the base game's
+            // own EatJumboBurgerRoutine, which applies the giant effect partway through
+            // the animation rather than at the start, so the player visibly takes a bite
+            // before growing.
+            ItemHelper.SetCurrentItemUse(inventory, ItemUseType.Regular);
+            _animatingInventory = inventory;
+
+            var settings = GameManager.ItemSettings;
+            float eatDelay = settings != null ? settings.JumboBurgerEffectStartTime : 0f;
+            float eatDuration = settings != null ? settings.JumboBurgerEatDuration : 0f;
+            if (eatDelay > 0f)
+                yield return new WaitForSeconds(eatDelay);
+
+            // Bail WITHOUT consuming if the player can no longer become giant.
+            //
+            // The eat animation takes real time, and a lot can happen during it. The
+            // null checks cover the object being destroyed (disconnect, hole change);
+            // the state checks cover the player being interrupted. Both matter because
+            // the consume is next: activation would be refused a few lines later anyway,
+            // and charging a use for an effect that never lands is the one outcome worth
+            // avoiding.
+            if (info == null || movement == null || inventory == null)
+            {
+                EndSession();
+                yield break;
+            }
+
+            if (
+                movement.IsKnockedOutOrRecovering
+                || movement.IsRespawningOrDrowning
+                || (info.AsHittable != null && info.AsHittable.FrozenState == FrozenState.Frozen)
+                || info.IsInJumboBurgerGiantForm
+            )
+            {
+                IssaPluginPlugin.Log.LogInfo(
+                    "[SuperJumboBurger] Interrupted during the eat animation — "
+                        + "item not consumed."
+                );
+                EndSession();
+                yield break;
+            }
+
+            // Consume the burger mid-animation rather than in OnUse, matching the base
+            // game's EatJumboBurgerRoutine: it removes the item partway through the eat,
+            // not the moment the item is used. Consuming in OnUse would also clear the
+            // animator's item-use state and cancel the animation before it played.
+            ItemHelper.ConsumeEquippedItem(inventory);
+
+            // ConsumeEquippedItem ends with SetCurrentItemUse(None) — and RemoveItemAt
+            // additionally trips RemoveItemAtForcedDeselectPatch, which clears it again.
+            // Re-assert so the animation runs for the rest of the eat.
+            //
+            // _animatingInventory is still set, so every cleanup path continues to clear
+            // this even though we have re-entered the "using an item" state after the
+            // item itself is gone. That matters: CurrentItemUse > None makes
+            // IsUsingItemAtAll true, which blocks item switching — leaking it would soft
+            // lock the player's inventory, not merely look wrong.
+            ItemHelper.SetCurrentItemUse(inventory, ItemUseType.Regular);
+
+            // Hand off to the base game: this sets isInJumboBurgerGiantForm, starts its
+            // timer, plays the grow VFX/audio and starts its own scale animation toward
+            // the vanilla JumboBurgerGiantFormScale.
             info.LocalPlayerActivateJumboBurgerGiantForm(
                 new ItemUseId(
                     info.PlayerId.Guid,
@@ -243,11 +329,28 @@ namespace IssaPlugin.Items
             {
                 IssaPluginPlugin.Log.LogInfo(
                     "[SuperJumboBurger] Giant form was refused by the base game "
-                        + "(CanActivate returned false) — not growing."
+                        + "(CanActivate returned false) — not growing. The item was "
+                        + "already consumed mid-eat, matching how the base game's own "
+                        + "burger behaves if the player is interrupted."
                 );
                 EndSession();
                 yield break;
             }
+
+            // Broadcast the eat/grow VFX only once the form is confirmed: in step with
+            // the player actually growing rather than a beat early, and never at all if
+            // the eat was interrupted or activation refused.
+            inventory.GetComponent<SuperJumboBurgerNetworkBridge>()?.ClientRequestEffects();
+
+            // Hold the eating pose for the remainder of the animation. The base game's
+            // own routine keeps ItemUseType.Regular set for the full JumboBurgerEatDuration
+            // and only clears it at the end; clearing at the effect-start time instead
+            // would cut the animation off partway through.
+            float remainingEat = eatDuration - eatDelay;
+            if (remainingEat > 0f)
+                yield return new WaitForSeconds(remainingEat);
+
+            ClearEatAnimation();
 
             // Activation started the base game's own grow coroutine, which writes
             // NetworkcharacterScale toward the vanilla scale every frame. Two writers on
@@ -386,8 +489,23 @@ namespace IssaPlugin.Items
         /// Deliberately does not call StopCoroutine — the routine is ending under its
         /// own control, and stopping a coroutine from within itself is both unnecessary
         /// and, if the handles have already been reused, wrong.
+        /// Returns the player to the normal upper-body pose. Safe to call repeatedly and
+        /// when no animation was started.
+        private static void ClearEatAnimation()
+        {
+            if (_animatingInventory == null)
+                return;
+
+            ItemHelper.SetCurrentItemUse(_animatingInventory, ItemUseType.None);
+            _animatingInventory = null;
+        }
+
         private static void EndSession()
         {
+            // Belt and braces: the normal path clears this as soon as the eat animation
+            // finishes, but an early bail (refused activation, cancellation mid-eat)
+            // would otherwise leave the player stuck mid-bite.
+            ClearEatAnimation();
             LocalSessionActive = false;
             _pendingTimeReduction = 0f;
             _routine = null;
@@ -403,6 +521,11 @@ namespace IssaPlugin.Items
 
             _routine = null;
             _routineHost = null;
+
+            // A stopped coroutine runs no finally block, so anything it was mid-way
+            // through has to be undone here. Without this a routine killed during the
+            // eat would leave the player stuck in the eating pose.
+            ClearEatAnimation();
         }
 
         /// Animates scale from → to.
@@ -464,7 +587,7 @@ namespace IssaPlugin.Items
         /// running and re-inflating the player after cleanup.
         public static void ForceReset()
         {
-            StopRoutine();
+            StopRoutine(); // also clears the eat animation
             LocalSessionActive = false;
             _pendingTimeReduction = 0f;
 

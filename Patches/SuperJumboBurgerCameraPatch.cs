@@ -71,7 +71,9 @@ namespace IssaPlugin.Patches
             // Derived from the player's live scale, so it eases in and out with the
             // grow/shrink animation and is exactly 0 at normal size — which is what
             // makes this patch inert outside a super form, with no state flag needed.
-            float extra = SuperJumboBurgerBehaviour.CameraDistanceAddition();
+            float extra = SuperJumboBurgerBehaviour.CameraDistanceAddition(
+                SuperJumboBurgerCameraSubject.GetScale(orbitCamera)
+            );
             if (extra <= 0f)
                 return;
 
@@ -83,6 +85,126 @@ namespace IssaPlugin.Patches
                 + (float)GiantAdditionField.GetValue(__instance);
 
             orbitCamera.SetDistanceAddition(baseSum + extra);
+        }
+    }
+
+    /// <summary>
+    /// Drives the camera-distance update every frame while a super form is active.
+    ///
+    /// SuperJumboBurgerCameraPatch below only applies its surplus when the base game
+    /// calls UpdateCameraDistanceAddition — and the base game only calls it from event
+    /// handlers and from its own giant-form camera routine, which runs for
+    /// JumboBurgerGrowCameraDistanceAdditionDuration and then stops. Once that short
+    /// routine finished, nothing called the method again, so the extra distance
+    /// silently reverted and the CameraDistancePerScale setting appeared to do nothing.
+    ///
+    /// It also meant the pull-back finished on the base game's schedule rather than
+    /// ours, so it never lined up with a GrowDuration the player had configured.
+    ///
+    /// Calling the base game's own method (rather than SetDistanceAddition directly)
+    /// keeps the aim and swing-charge terms in the sum, and lets the existing Postfix
+    /// remain the single place the surplus is applied.
+    /// </summary>
+    /// <summary>
+    /// Resolves the CharacterScale of whichever player the orbit camera is looking at,
+    /// cached per subject transform.
+    ///
+    /// Shared by the distance and height patches so both read the SAME player. The
+    /// camera can be following a spectated player rather than the local one, and if the
+    /// two patches disagreed the camera would be raised for a giant while still sitting
+    /// at the close, normal-sized distance.
+    /// </summary>
+    static class SuperJumboBurgerCameraSubject
+    {
+        private static Transform _cachedSubject;
+        private static PlayerMovement _cachedMovement;
+
+        /// True when the last lookup actually found a PlayerMovement. Lets a destroyed
+        /// one force a re-resolve while a genuine "this subject has none" (a golf cart)
+        /// stays cached.
+        private static bool _cachedResolved;
+
+        /// Current subject's scale, or 1 (normal) when there is no player subject.
+        public static float GetScale(OrbitCameraModule orbitCamera)
+        {
+            if (orbitCamera == null)
+                return 1f;
+
+            var subject = orbitCamera.Subject;
+            if (subject == null)
+                return 1f;
+
+            // Re-resolved when the subject changes, and when a previously found
+            // PlayerMovement has been destroyed underneath us — Unity's overloaded ==
+            // reports a destroyed object as null, so a stale entry would otherwise
+            // survive as long as the subject reference compared equal.
+            if (subject != _cachedSubject || (_cachedResolved && _cachedMovement == null))
+            {
+                _cachedSubject = subject;
+                _cachedMovement = subject.GetComponentInParent<PlayerMovement>();
+                _cachedResolved = _cachedMovement != null;
+            }
+
+            return _cachedMovement != null ? _cachedMovement.CharacterScale : 1f;
+        }
+    }
+
+    [HarmonyPatch(typeof(GameplayCameraManager), "Update")]
+    static class SuperJumboBurgerCameraDriverPatch
+    {
+        /// Bound once as an open-instance delegate rather than invoked reflectively:
+        /// this runs every frame while a super form is active, and MethodInfo.Invoke
+        /// allocates an args array and boxes on each call.
+        private static readonly System.Action<GameplayCameraManager, OrbitCameraModule> UpdateDistance =
+            BuildUpdateDistance();
+
+        private static System.Action<GameplayCameraManager, OrbitCameraModule> BuildUpdateDistance()
+        {
+            var method = AccessTools.Method(
+                typeof(GameplayCameraManager),
+                "UpdateCameraDistanceAddition"
+            );
+            if (method == null)
+            {
+                IssaPluginPlugin.Log.LogWarning(
+                    "[SuperJumboBurger] GameplayCameraManager.UpdateCameraDistanceAddition "
+                        + "not found — the camera will not pull back for large scales."
+                );
+                return null;
+            }
+
+            return (System.Action<GameplayCameraManager, OrbitCameraModule>)
+                System.Delegate.CreateDelegate(
+                    typeof(System.Action<GameplayCameraManager, OrbitCameraModule>),
+                    method
+                );
+        }
+
+        /// Tracks whether the surplus was nonzero last frame, so one final update runs
+        /// after it reaches zero. Without it the camera would keep the last nonzero
+        /// surplus forever once the player returned to normal size.
+        private static bool _wasActive;
+
+        static void Postfix(GameplayCameraManager __instance)
+        {
+            if (__instance == null || UpdateDistance == null)
+                return;
+
+            // The orbit module is briefly unavailable during scene transitions and
+            // camera-mode switches — which includes hole changes, exactly when the
+            // surplus is dropping to zero. Bail BEFORE latching: clearing _wasActive
+            // here would skip the final update forever, leaving the camera pulled back
+            // at a stale distance with nothing left to reset it.
+            if (!CameraModuleController.TryGetOrbitModule(out var orbitCamera))
+                return;
+
+            float scale = SuperJumboBurgerCameraSubject.GetScale(orbitCamera);
+            bool active = SuperJumboBurgerBehaviour.CameraDistanceAddition(scale) > 0f;
+            if (!active && !_wasActive)
+                return;
+
+            _wasActive = active;
+            UpdateDistance(__instance, orbitCamera);
         }
     }
 
@@ -112,50 +234,17 @@ namespace IssaPlugin.Patches
         static MethodBase TargetMethod() =>
             AccessTools.Method(typeof(OrbitCameraModule), "GetCurrentTargetTrackedPoint");
 
-        private static Transform _cachedSubject;
-        private static PlayerMovement _cachedMovement;
-
-        /// True when the last lookup actually found a PlayerMovement. Lets a destroyed
-        /// one force a re-resolve while a genuine "this subject has none" stays cached.
-        private static bool _cachedResolved;
-
         static void Postfix(OrbitCameraModule __instance, ref Vector3 __result)
         {
             if (__instance == null || __instance.Subject == null)
                 return;
 
-            // The camera can be tracking any player (spectating included), so resolve the
-            // scale from the subject rather than assuming it is the local player.
-            //
-            // Cached per subject transform: this runs on every camera position update,
-            // and the subject only changes when the camera retargets (respawn, entering
-            // a cart, switching spectator target).
-            // Re-resolved when the subject changes, and also when the cached
-            // PlayerMovement has been destroyed underneath us — Unity's overloaded ==
-            // reports a destroyed object as null, so a stale entry would otherwise
-            // survive as long as the subject reference compared equal.
-            // Re-resolved when the subject changes, and also when a previously found
-            // PlayerMovement has been destroyed underneath us — Unity's overloaded ==
-            // reports a destroyed object as null, so a stale entry would otherwise
-            // survive as long as the subject reference compared equal.
-            //
-            // _cachedResolved distinguishes "not looked up yet" from "looked up and
-            // there genuinely is none" (the subject is a golf cart), so the negative
-            // result is cached too rather than re-running the search every call.
-            var subject = __instance.Subject;
-            if (subject != _cachedSubject || (_cachedResolved && _cachedMovement == null))
-            {
-                _cachedSubject = subject;
-                _cachedMovement = subject.GetComponentInParent<PlayerMovement>();
-                _cachedResolved = _cachedMovement != null;
-            }
-
-            var movement = _cachedMovement;
-            if (movement == null)
-                return;
-
+            // Shares SuperJumboBurgerCameraSubject with the distance patch so both read
+            // the SAME player — the camera may be following a spectated giant rather
+            // than the local one, and if the two disagreed the camera would be raised
+            // for a giant while still sitting at the close, normal-sized distance.
             float height = SuperJumboBurgerBehaviour.GetCameraHeightAddition(
-                movement.CharacterScale
+                SuperJumboBurgerCameraSubject.GetScale(__instance)
             );
             if (height <= 0f)
                 return;

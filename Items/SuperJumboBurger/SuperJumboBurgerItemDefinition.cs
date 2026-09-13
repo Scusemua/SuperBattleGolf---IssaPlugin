@@ -45,11 +45,11 @@ namespace IssaPlugin.Items
             if (!SuperJumboBurgerBehaviour.Activate(inventory))
                 return;
 
-            ItemHelper.ConsumeEquippedItem(inventory);
-
-            // Tell the server to broadcast the eat/grow VFX to every client. The size
-            // change itself needs no message — it rides the characterScale SyncVar.
-            inventory.GetComponent<SuperJumboBurgerNetworkBridge>()?.ClientRequestEffects();
+            // The item is consumed, and the eat/grow VFX broadcast, inside the routine.
+            // Consuming here would clear the animator's item-use state and cancel the eat
+            // animation before it played; broadcasting here would show remote players the
+            // grow burst before the player actually grew, and would fire even when the
+            // eat is interrupted.
         }
     }
 }
