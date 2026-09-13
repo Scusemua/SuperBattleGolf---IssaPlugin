@@ -87,13 +87,13 @@ namespace IssaPlugin
             FlickPowerMultiplier = cfg.Bind(
                 Section,
                 "FlickPowerMultiplier",
-                1.75f,
+                2.0f,
                 new ConfigDescription(
                     "Multiplies the power of the giant flick (left-click) that sends "
                         + "players and objects flying. 1 = the same flick the base game's "
                         + "Jumbo Burger has. Applies only while in a Super Jumbo Burger "
                         + "form, never to a vanilla one.",
-                    new AcceptableValueRange<float>(0f, 100f)
+                    new AcceptableValueRange<float>(0f, 50f)
                 )
             );
             Uses = cfg.Bind(Section, "Uses", 1f, "Number of uses");
