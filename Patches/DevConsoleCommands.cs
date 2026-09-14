@@ -100,5 +100,26 @@ namespace IssaPlugin.Patches
             }
             SpawnConfigUI.Instance.Toggle();
         }
+
+        /// <summary>
+        /// Console command: checkUpdate
+        /// Re-runs the GitHub update check immediately, skipping the startup delay.
+        ///
+        /// To see the notice while already on the latest release, set the
+        /// Updates/UpdateCheckSpoofVersion config entry to an older version
+        /// (e.g. 0.0.46) and run this command.
+        /// </summary>
+        [CCommand("checkUpdate", "Re-run the GitHub update check now.")]
+        private static void CheckUpdate()
+        {
+            if (UpdateChecker.Instance == null)
+            {
+                UnityEngine.Debug.LogWarning("[checkUpdate] UpdateChecker is not initialised yet.");
+                return;
+            }
+
+            UnityEngine.Debug.Log("[checkUpdate] Checking GitHub for the latest release...");
+            UpdateChecker.Instance.CheckNow();
+        }
     }
 }

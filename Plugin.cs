@@ -106,6 +106,9 @@ namespace IssaPlugin
             gameObject.AddComponent<SpawnConfigUI>();
             gameObject.AddComponent<ShapeShifterManager>();
             gameObject.AddComponent<ShapeShifterOverlay>();
+            // Overlay first: UpdateChecker resolves its Instance when the check returns.
+            gameObject.AddComponent<UpdateAvailableOverlay>();
+            gameObject.AddComponent<UpdateChecker>();
 
             Log.LogInfo("IssaPlugin by Scusemua has loaded.");
         }

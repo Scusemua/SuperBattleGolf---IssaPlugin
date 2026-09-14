@@ -36,6 +36,12 @@ namespace IssaPlugin
         public ConfigEntry<bool> SpawnerSuppressItemSpawner { get; private set; }
         public ConfigEntry<float> SpawnerUiScale { get; private set; }
 
+        // ── Updates section ───────────────────────────────────────────────────
+        public ConfigEntry<bool> UpdateCheckEnabled { get; private set; }
+        public ConfigEntry<float> UpdateCheckDelay { get; private set; }
+        public ConfigEntry<float> UpdateNoticeDuration { get; private set; }
+        public ConfigEntry<string> UpdateCheckSpoofVersion { get; private set; }
+
         // ── Warnings section ──────────────────────────────────────────────────
         public ConfigEntry<bool> WarningsEnabled { get; private set; }
         public ConfigEntry<float> WarningDuration { get; private set; }
@@ -283,6 +289,47 @@ namespace IssaPlugin
                 "When the ItemSpawner mod is also installed, hide its window so only our "
                     + "spawner (with search, source filtering, and a grid layout) appears. "
                     + "Set to false to show both."
+            );
+
+            // ── Updates ────────────────────────────────────────────────────────
+            UpdateCheckEnabled = cfg.Bind(
+                "Updates",
+                "UpdateCheckEnabled",
+                true,
+                "Check GitHub once on startup for a newer IssaMod release and show a brief "
+                    + "notice in the corner if one exists. Nothing is downloaded or installed. "
+                    + "Set to false to make no network request at all."
+            );
+
+            UpdateCheckDelay = cfg.Bind(
+                "Updates",
+                "UpdateCheckDelay",
+                20f,
+                new ConfigDescription(
+                    "Seconds to wait after startup before checking for an update, so the "
+                        + "request does not compete with the game finishing its own loading.",
+                    new AcceptableValueRange<float>(0f, 300f)
+                )
+            );
+
+            UpdateNoticeDuration = cfg.Bind(
+                "Updates",
+                "UpdateNoticeDuration",
+                15f,
+                new ConfigDescription(
+                    "How long the update notice stays on screen, in seconds.",
+                    new AcceptableValueRange<float>(3f, 120f)
+                )
+            );
+
+            UpdateCheckSpoofVersion = cfg.Bind(
+                "Updates",
+                "UpdateCheckSpoofVersion",
+                "",
+                "TESTING ONLY. Pretend the installed mod is this version when comparing "
+                    + "against the latest GitHub release, e.g. 0.0.46 to make the current "
+                    + "build look out of date and show the notice. Leave empty for normal "
+                    + "behaviour -- this changes nothing but the comparison."
             );
 
             // ── ItemEnabled flags ──────────────────────────────────────────────
