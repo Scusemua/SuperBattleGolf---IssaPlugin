@@ -68,7 +68,7 @@ namespace IssaPlugin
             Radius = cfg.Bind(
                 JarSection,
                 "Radius",
-                2.0f,
+                4.0f,
                 "Radius in metres of the poison AoE. Also scales the splash VFX."
             );
             Duration = cfg.Bind(

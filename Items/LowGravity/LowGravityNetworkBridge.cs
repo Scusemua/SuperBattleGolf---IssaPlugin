@@ -71,7 +71,7 @@ namespace IssaPlugin.Items
             float duration = ModConfig.LowGravity.Duration.Value;
 
             // [ClientRpc] is not IL-weaved in plugin DLLs — use NetworkMessage instead.
-            NetworkServer.SendToAll(new LowGravityBeginMessage { Duration = duration });
+            NetworkServer.SendToAll(new LowGravityBeginMessage { Duration = duration, ActivatorNetId = netId });
             _timeoutCoroutine = StartCoroutine(ServerTimeoutRoutine(duration));
 
             IssaPluginPlugin.Log.LogInfo($"[LowGravity] Server session started for {duration}s.");
@@ -98,7 +98,14 @@ namespace IssaPlugin.Items
             RenderSettings.fogDensity = 0.01f;
             RenderSettings.ambientLight = new Color(0.2f, 0.1f, 0.4f);
 
-            LowGravityItem.IsActive = true;
+            bool isActivator =
+                NetworkClient.localPlayer != null
+                && NetworkClient.localPlayer.netId == msg.ActivatorNetId;
+            bool exempt = isActivator && !ModConfig.LowGravity.AffectsUser.Value;
+
+            if (!exempt)
+                LowGravityItem.IsActive = true;
+
             LowGravityOverlay.Instance?.SetActive(true, msg.Duration);
 
             IssaPluginPlugin.Log.LogInfo("[LowGravity] Client session started.");

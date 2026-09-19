@@ -11,6 +11,7 @@ namespace IssaPlugin
         public ConfigEntry<float> Uses { get; private set; }
         public ConfigEntry<float> Duration { get; private set; }
         public ConfigEntry<float> Scale { get; private set; }
+        public ConfigEntry<bool> AffectsUser { get; private set; }
 
         public LowGravityConfig(ConfigFile cfg, GlobalConfig global)
         {
@@ -34,6 +35,12 @@ namespace IssaPlugin
                 "Fraction of normal gravity applied during the effect (e.g. 0.25 = 25%). "
                     + "Affects golf balls (Rigidbody) and player fall/jump height equally, "
                     + "since PlayerMovement reads Physics.gravity directly."
+            );
+            AffectsUser = cfg.Bind(
+                Section,
+                "AffectsUser",
+                false,
+                "Whether the player who activates Freeze World is themselves affected by its ice physics and movement restrictions. Defaults to false (activator is immune)."
             );
         }
     }

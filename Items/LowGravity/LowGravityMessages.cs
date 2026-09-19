@@ -6,6 +6,7 @@ namespace IssaPlugin.Items
     public struct LowGravityBeginMessage : NetworkMessage
     {
         public float Duration;
+        public uint ActivatorNetId;
 
         public override string ToString()
         {
@@ -23,11 +24,12 @@ namespace IssaPlugin.Items
         )
         {
             writer.WriteFloat(msg.Duration);
+            writer.WriteUInt(msg.ActivatorNetId);
         }
 
         public static LowGravityBeginMessage ReadLowGravityBeginMessage(NetworkReader reader)
         {
-            return new LowGravityBeginMessage { Duration = reader.ReadFloat() };
+            return new LowGravityBeginMessage { Duration = reader.ReadFloat(), ActivatorNetId = reader.ReadUInt() };
         }
     }
 
