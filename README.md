@@ -452,6 +452,10 @@ Assets used in the project:
     (https://skfb.ly/oMMwE) by darklord3d 
     Licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
 
+-   "Pirate Cannon" \
+    (https://skfb.ly/o6yuJ) by Maxwell McCurry 
+    Licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
+
 ---
 
 *IssaPlugin is a fan-made mod and is not affiliated with Brimstone or Oro Interactive.*

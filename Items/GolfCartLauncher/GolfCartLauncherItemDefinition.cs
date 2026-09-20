@@ -9,10 +9,6 @@ namespace IssaPlugin.Items
         public override string DisplayName => "Golf Cart Launcher";
         public override string[] ConsoleAliases =>
             new[] { "golfcartlauncher", "cartlauncher", "cartgun", "carts" };
-
-        // TODO: add "golf_cart_launcher_icon.png" and "golf_cart_launcher.prefab" to the
-        // asset bundle, then populate these in AssetLoader. Until then both are null —
-        // UseRocketIconFallback keeps the item usable with the rocket launcher's icon/model.
         public override Sprite Icon => AssetLoader.GolfCartLauncherIcon;
         public override GameObject HeldModelPrefab => AssetLoader.GolfCartLauncherPrefab;
 

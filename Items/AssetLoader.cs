@@ -124,35 +124,39 @@ namespace IssaPlugin.Items
         public static GameObject DronePrefab { get; private set; }
 
         /// Handheld hunter drone model shown in the player's hand before use.
-        /// Null until hunter_drone_handheld.prefab is added to the bundle.
         public static GameObject HunterDroneHandheldPrefab { get; private set; }
 
-        /// Networked hunter drone projectile. Null until hunter_drone.prefab is added to the bundle.
+        /// Networked hunter drone projectile.
         public static GameObject HunterDronePrefab { get; private set; }
 
-        /// Handheld UFO model shown in the player's hand. Null until ufo_abduction_handheld.prefab is added.
+        /// Handheld UFO model shown in the player's hand.
         public static GameObject UfoAbductionHandheldPrefab { get; private set; }
 
-        /// Client-only UFO VFX that flies over and abducts the victim. Null until ufo_abduction.prefab is added.
+        /// Client-only UFO VFX that flies over and abducts the victim.
         public static GameObject UfoAbductionUfoPrefab { get; private set; }
 
-        // ── ShapeShifter / SuperShapeShifter ──────────────────────────────────
         // ── Golf Cart Launcher ────────────────────────────────────────────────
-        /// Item icon for the Golf Cart Launcher. Null until golf_cart_launcher_icon.png
-        /// is added to the bundle; the rocket launcher icon is used as a fallback.
+        /// Item icon for the Golf Cart Launcher.
         public static Sprite GolfCartLauncherIcon { get; private set; }
 
-        /// Handheld launcher model shown in the player's hand. Null until
-        /// golf_cart_launcher.prefab is added to the bundle.
+        /// Handheld launcher model shown in the player's hand.
         public static GameObject GolfCartLauncherPrefab { get; private set; }
 
         // ── Explosive Golf Balls ──────────────────────────────────────────────
-        /// Item icon for Explosive Golf Balls. Null until explosive_golf_balls_icon.png is added to the bundle.
+        /// Item icon for Explosive Golf Balls.
         public static Sprite ExplosiveGolfBallsIcon { get; private set; }
 
-        /// Handheld model shown in the player's hand. Null until explosive_golf_balls_handheld.prefab is added.
+        /// Handheld model shown in the player's hand.
         public static GameObject ExplosiveGolfBallsHandheldPrefab { get; private set; }
 
+        // ── Golf Cart Launcher ────────────────────────────────────────────────
+        /// Item icon for the Cannon.
+        public static Sprite CannonIcon { get; private set; }
+
+        /// Handheld launcher model shown in the player's hand.
+        public static GameObject CannonPrefab { get; private set; }
+
+        // ── ShapeShifter / SuperShapeShifter ──────────────────────────────────
         // ── ShapeShifter shape prefabs ────────────────────────────────────────
         /// Visual-only shape prefabs spawned as children of the golf ball.
         /// Each must contain MeshFilter + MeshRenderer + MeshCollider (convex).
@@ -164,24 +168,23 @@ namespace IssaPlugin.Items
         public static GameObject ShapeShifterShapePyramid { get; private set; }
         public static GameObject ShapeShifterShapeIsosphere { get; private set; }
 
-        /// Item icon for Shape Shifter. Null until cube_ball_icon.png is added to the bundle.
+        /// Item icon for Shape Shifter.
         public static Sprite ShapeShifterIcon { get; private set; }
 
         /// Item icon for Super Shape Shifter. Falls back to ShapeShifterIcon at runtime if absent.
         public static Sprite SuperShapeShifterIcon { get; private set; }
 
         /// Shared handheld/dropped prefab for both ShapeShifter and SuperShapeShifter.
-        /// Null until cube_ball_handheld.prefab is added to the bundle.
         public static GameObject ShapeShifterHandheldPrefab { get; private set; }
 
         // ── Moon ──────────────────────────────────────────────────────────────
-        /// Item icon for Majora's Moon. Null until moon_icon.png is added to the bundle.
+        /// Item icon for Majora's Moon.
         public static Sprite MoonIcon { get; private set; }
 
-        /// Handheld model shown in the player's hand before activation. Null until moon_handheld.prefab is added.
+        /// Handheld model shown in the player's hand before activation.
         public static GameObject MoonHandheldPrefab { get; private set; }
 
-        /// Client-only moon VFX prefab that approaches the course. Null until moon.prefab is added.
+        /// Client-only moon VFX prefab that approaches the course.
         private static GameObject _moonVfxPrefab;
         public static GameObject MoonVfxPrefab => Vfx(_moonVfxPrefab);
 
@@ -668,6 +671,9 @@ namespace IssaPlugin.Items
                 ),
                 // ── First Place Star ──────────────────────────────────────────
                 LocalVfxPrefab(p => GoldStarPrefab = p, "gold_star.prefab"),
+                // ── Cannon ────────────────────────────────────────
+                SpriteAsset(p => CannonIcon = p, "cannon_icon.png", optional: true),
+                HandheldPrefab(p => CannonPrefab = p, "cannon.prefab", optional: true),
             };
         }
 

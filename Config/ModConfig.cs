@@ -48,6 +48,8 @@ namespace IssaPlugin
         public static ExplosiveGolfBallsConfig ExplosiveGolfBalls { get; private set; }
         public static GolfCartLauncherConfig GolfCartLauncher { get; private set; }
 
+        public static CannonConfig Cannon { get; private set; }
+
         public static void Initialize(ConfigFile cfg)
         {
             // Global must come first — GlobalConfig.BindAllItemPoolWeights binds all per-pool weights centrally.
@@ -90,6 +92,7 @@ namespace IssaPlugin
             SuperShapeShifter = new SuperShapeShifterConfig(cfg, Global);
             ExplosiveGolfBalls = new ExplosiveGolfBallsConfig(cfg, Global);
             GolfCartLauncher = new GolfCartLauncherConfig(cfg, Global);
+            Cannon = new CannonConfig(cfg, Global);
         }
 
         // ── Pass-through helper methods (from GlobalConfig) ───────────────────
