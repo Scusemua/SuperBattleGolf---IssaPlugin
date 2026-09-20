@@ -1491,6 +1491,24 @@ namespace IssaPlugin.Patches
                 );
             }
 
+            // ── Cannon ─────────────────────────────────────────────────────
+            Writer<CannonShootMessage>.write =
+                CannonShootMessageSerialization.WriteCannonShootMessage;
+            Reader<CannonShootMessage>.read =
+                CannonShootMessageSerialization.ReadCannonShootMessage;
+
+            if (NetworkServer.active)
+            {
+                NetworkServer.RegisterHandler<CannonShootMessage>(
+                    (conn, msg) =>
+                        GetBridge<CannonNetworkBridge>(conn)
+                            ?.ServerHandleCannonShootMessage(
+                                msg.Direction,
+                                msg.EquippedSlotIndex
+                            )
+                );
+            }
+
             // ── Hotkey item-giving (Client → Server) ─────────────────────────────
             Writer<GiveItemRequestMessage>.write =
                 GiveItemRequestMessageSerialization.WriteGiveItemRequestMessage;

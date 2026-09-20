@@ -670,6 +670,7 @@ namespace IssaPlugin.Patches
             else if (
                 actual == ItemRegistry.GolfCartLauncherItemType
                 || actual == ItemRegistry.JavelinItemType
+                || actual == ItemRegistry.CannonItemType
             )
                 // Maps to RocketLauncher rather than ElephantGun so the stance, aim pose
                 // and reticle all come from the base game's rocket launcher, which these
@@ -704,6 +705,7 @@ namespace IssaPlugin.Patches
                 && equipped != ItemRegistry.AK47ItemType
                 && equipped != ItemRegistry.GolfCartLauncherItemType
                 && equipped != ItemRegistry.JavelinItemType
+                && equipped != ItemRegistry.CannonItemType
             )
                 return;
 
@@ -727,6 +729,7 @@ namespace IssaPlugin.Patches
                 && (
                     equipped == ItemRegistry.GolfCartLauncherItemType
                     || equipped == ItemRegistry.JavelinItemType
+                    || equipped == ItemRegistry.CannonItemType
                 )
             )
                 __instance.PlayerInfo.PlayerAudio?.PlayItemAimForAllClients(

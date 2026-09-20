@@ -156,6 +156,8 @@ namespace IssaPlugin.Items
         /// Handheld launcher model shown in the player's hand.
         public static GameObject CannonPrefab { get; private set; }
 
+        public static GameObject CannonBallPrefab { get; private set; }
+
         // ── ShapeShifter / SuperShapeShifter ──────────────────────────────────
         // ── ShapeShifter shape prefabs ────────────────────────────────────────
         /// Visual-only shape prefabs spawned as children of the golf ball.
@@ -674,6 +676,7 @@ namespace IssaPlugin.Items
                 // ── Cannon ────────────────────────────────────────
                 SpriteAsset(p => CannonIcon = p, "cannon_icon.png", optional: true),
                 HandheldPrefab(p => CannonPrefab = p, "cannon.prefab", optional: true),
+                HandheldPrefab(p => CannonBallPrefab = p, "bowling_ball.prefab", optional: true),
             };
         }
 

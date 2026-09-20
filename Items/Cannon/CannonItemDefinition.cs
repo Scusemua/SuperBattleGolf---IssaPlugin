@@ -5,7 +5,7 @@ namespace IssaPlugin.Items
 {
     public class CannonItemDefinition : CustomItemDefinition
     {
-        public override ItemType ItemType => ItemRegistry.GolfCartLauncherItemType;
+        public override ItemType ItemType => ItemRegistry.CannonItemType;
         public override string DisplayName => "Cannon";
         public override string[] ConsoleAliases => new[] { "cannon" };
         public override Sprite Icon => AssetLoader.CannonIcon;
@@ -24,11 +24,8 @@ namespace IssaPlugin.Items
                 _ => DefaultPoolWeight,
             };
 
-        public override Key GiveKey => ModConfig.GolfCartLauncher.GiveKey.Value;
+        public override Key GiveKey => ModConfig.Cannon.GiveKey.Value;
 
-        // Held and animated as a rocket launcher — it is a shoulder-fired launcher that
-        // happens to fire golf carts. EquipmentType/Animator defaults from the base class
-        // are already RocketLauncher/OrbitalLaser, so only the animator types are pinned here.
         public override ItemType AnimatorItemType => ItemType.RocketLauncher;
         public override ItemType AnimatorChangedItemType => ItemType.RocketLauncher;
 
@@ -40,6 +37,6 @@ namespace IssaPlugin.Items
         public override bool InheritAnimatorOverrideController => true;
 
         public override void OnUse(PlayerInventory inventory) =>
-            inventory.StartCoroutine(GolfCartLauncherItem.FireLoop(inventory));
+            inventory.StartCoroutine(CannonItem.FireLoop(inventory));
     }
 }

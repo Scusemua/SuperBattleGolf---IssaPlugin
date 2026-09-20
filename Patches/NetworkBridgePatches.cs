@@ -75,6 +75,8 @@ namespace IssaPlugin.Patches
                 __instance.gameObject.AddComponent<HunterDroneNetworkBridge>();
             if (!__instance.GetComponent<GolfCartLauncherNetworkBridge>())
                 __instance.gameObject.AddComponent<GolfCartLauncherNetworkBridge>();
+            if (!__instance.GetComponent<CannonNetworkBridge>())
+                __instance.gameObject.AddComponent<CannonNetworkBridge>();
             if (!__instance.GetComponent<UfoAbductionNetworkBridge>())
                 __instance.gameObject.AddComponent<UfoAbductionNetworkBridge>();
             if (!__instance.GetComponent<MoonNetworkBridge>())
