@@ -31,6 +31,6 @@ namespace IssaPlugin.Items
         // Starts the fire loop coroutine on button-down. The coroutine itself loops
         // while the button is held, consuming one use per bullet.
         public override void OnUse(PlayerInventory inventory) =>
-            inventory.StartCoroutine(AK47Item.FireLoop(inventory));
+            inventory.StartCoroutine(AK47Item.GetFirearm().FireLoop(inventory)); // FireLoop(inventory));
     }
 }

@@ -27,6 +27,21 @@ namespace IssaPlugin.Items
         private static float _lastVfxTime = float.MinValue;
         private const float VfxMinInterval = 0.1f; // slightly above server's 0.25 s threshold
 
+        private static readonly Firearm AK47Firearm = new Firearm(
+            ItemRegistry.AK47ItemType,
+            null,
+            (PlayerInventory inventory) => true,
+            (PlayerInventory inventory) =>
+            {
+                inventory.PlayerInfo.PlayerAudio.PlayElephantGunShotForAllClients();
+            },
+            DoShoot,
+            () =>
+            {
+                return ModConfig.AK47.FireRate.Value;
+            }
+        );
+
         // ── Reflected private methods ────────────────────────────────────────────
 
         private static readonly MethodInfo TryParseFirearmRaycastResultsMethod =
@@ -48,6 +63,11 @@ namespace IssaPlugin.Items
             );
 
         // ── Fire loop coroutine ──────────────────────────────────────────────────
+
+        public static Firearm GetFirearm()
+        {
+            return AK47Firearm;
+        }
 
         /// <summary>
         /// Started by OnUse on button-down. Fires immediately, then continues firing
