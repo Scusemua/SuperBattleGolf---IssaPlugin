@@ -31,7 +31,7 @@ namespace IssaPlugin.Items
     /// the launcher never registered and schedule the base game's
     /// "destroy if nobody boards" timer.
     /// </summary>
-    public class GolfCartLauncherNetworkBridge : NetworkBridgeBase
+    public class GolfCartLauncherNetworkBridge : FirearmNetworkBridge
     {
         // Every cart launched by any player this hole, tracked so the server can
         // despawn them at the hole transition. Static because cleanup is global and
@@ -410,6 +410,8 @@ namespace IssaPlugin.Items
         {
             GolfCartLauncherItem.ResetFiringState();
         }
+
+        public override void ClientNotifyFireStop() { }
 
         public override void OnStopServer()
         {

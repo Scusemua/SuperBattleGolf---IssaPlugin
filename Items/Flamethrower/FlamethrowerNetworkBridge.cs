@@ -35,7 +35,7 @@ namespace IssaPlugin.Items
     ///   6. All clients: destroy victim fire VFX.
     ///      Victim's own client: LocalPlayerIsBurning = false, calls TryKnockOut.
     /// </summary>
-    public class FlamethrowerNetworkBridge : NetworkBridgeBase
+    public class FlamethrowerNetworkBridge : FirearmNetworkBridge
     {
         // ── Static server state ───────────────────────────────────────────────
         // Tracks active burn timers keyed by victim netId.
@@ -68,7 +68,7 @@ namespace IssaPlugin.Items
         public void ClientNotifyFireStart() =>
             NetworkClient.Send(new FlamethrowerFireStartMessage());
 
-        public void ClientNotifyFireStop()
+        public override void ClientNotifyFireStop()
         {
             _hitDetector?.ResetCooldowns();
             NetworkClient.Send(new FlamethrowerFireStopMessage());
