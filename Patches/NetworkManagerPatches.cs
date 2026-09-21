@@ -1937,6 +1937,9 @@ namespace IssaPlugin.Patches
             // Null-safe: HunterDronePrefab is null until hunter_drone.prefab is added to the bundle.
             if (AssetLoader.HunterDronePrefab != null)
                 RegisterPrefab(AssetLoader.HunterDronePrefab);
+            // Null-safe: CannonBallPrefab is null until bowling_ball.prefab is in the bundle.
+            if (AssetLoader.CannonBallPrefab != null)
+                RegisterPrefab(AssetLoader.CannonBallPrefab);
         }
 
         private static void RegisterPrefab(GameObject prefab)

@@ -18,11 +18,15 @@ namespace IssaPlugin
         /// <summary>Speed (m/s) the launched cart is given along the aim direction.</summary>
         public ConfigEntry<float> LaunchSpeed { get; private set; }
 
+        public ConfigEntry<float> BowlingBallMass { get; private set; }
+
+        public ConfigEntry<float> BowlingBallMassMultiplier { get; private set; }
+
         /// <summary>
-        /// Seconds a launched cannon ball survives before the server despawns it.
-        /// Prevents launched cannon balls from piling up. 0 disables the timeout.
+        /// Seconds a launched bowling ball survives before the server despawns it.
+        /// Prevents launched bowling balls from piling up. 0 disables the timeout.
         /// </summary>
-        public ConfigEntry<float> CannonBallLifetime { get; private set; }
+        public ConfigEntry<float> BowlingBallLifetime { get; private set; }
 
         /// <summary>Intensity of the screen shake applied when firing. 0 disables it.</summary>
         public ConfigEntry<float> ScreenShakeIntensity { get; private set; }
@@ -41,7 +45,7 @@ namespace IssaPlugin
                 "Uses",
                 3f,
                 new ConfigDescription(
-                    "Number of cannon balls per pickup.",
+                    "Number of bowling balls per pickup.",
                     new AcceptableValueRange<float>(1f, 50f)
                 )
             );
@@ -61,17 +65,17 @@ namespace IssaPlugin
                 "LaunchSpeed",
                 55f,
                 new ConfigDescription(
-                    "Speed (metres/second) the launched cannon ball is given along the aim direction.",
+                    "Speed (metres/second) the launched bowling ball is given along the aim direction.",
                     new AcceptableValueRange<float>(1f, 300f)
                 )
             );
 
-            CannonBallLifetime = cfg.Bind(
+            BowlingBallLifetime = cfg.Bind(
                 Section,
                 "Lifetime",
                 300f,
                 new ConfigDescription(
-                    "Seconds a launched cannon ball survives before the server despawns it. 0 disables the timeout (carts persist until the hole ends).",
+                    "Seconds a launched bowling ball survives before the server despawns it. 0 disables the timeout (carts persist until the hole ends).",
                     new AcceptableValueRange<float>(0f, 600f)
                 )
             );
@@ -83,6 +87,26 @@ namespace IssaPlugin
                 new ConfigDescription(
                     "Intensity of the screen shake when firing the Cannon. 0 disables it.",
                     new AcceptableValueRange<float>(0f, 5f)
+                )
+            );
+
+            BowlingBallMass = cfg.Bind(
+                Section,
+                "BowlingBallMass",
+                40f,
+                new ConfigDescription(
+                    "Mass of the bowling balls. Cart/prop shove comes only from Unity collision; raise this for harder hits, lower for softer.",
+                    new AcceptableValueRange<float>(0.1f, 2000f)
+                )
+            );
+
+            BowlingBallMassMultiplier = cfg.Bind(
+                Section,
+                "BowlingBallMassMultiplier",
+                1.0f,
+                new ConfigDescription(
+                    "MUltiplies the configured mass of the bowling balls.",
+                    new AcceptableValueRange<float>(1f, 50f)
                 )
             );
         }

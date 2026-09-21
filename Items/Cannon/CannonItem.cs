@@ -24,7 +24,7 @@ namespace IssaPlugin.Items
         }
 
         /// <summary>
-        /// Fires cannon balls while the button is held, one every FireRate seconds.
+        /// Fires bowling balls while the button is held, one every FireRate seconds.
         /// Started by Cannon.OnUse on button-down.
         /// </summary>
         public static IEnumerator FireLoop(PlayerInventory inventory)
@@ -86,7 +86,7 @@ namespace IssaPlugin.Items
             }
         }
 
-        // ── Single cannon ball launch ───────────────────────────────────────────────────
+        // ── Single bowling ball launch ───────────────────────────────────────────────────
 
         private static void DoShoot(
             PlayerInventory inventory,
@@ -131,7 +131,7 @@ namespace IssaPlugin.Items
 
             ItemHelper.PlayRocketLauncherFireEffects(inventory);
 
-            // The cannon ball is a networked object — only the server may spawn it.
+            // The bowling ball is a networked object — only the server may spawn it.
             bridge?.ClientRequestLaunch(dir.normalized, equippedSlotIndex);
         }
     }

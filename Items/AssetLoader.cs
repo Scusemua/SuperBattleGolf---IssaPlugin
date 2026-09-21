@@ -156,6 +156,7 @@ namespace IssaPlugin.Items
         /// Handheld launcher model shown in the player's hand.
         public static GameObject CannonPrefab { get; private set; }
 
+        /// Networked bowling ball projectile spawned by the Cannon.
         public static GameObject CannonBallPrefab { get; private set; }
 
         // ── ShapeShifter / SuperShapeShifter ──────────────────────────────────
@@ -676,7 +677,14 @@ namespace IssaPlugin.Items
                 // ── Cannon ────────────────────────────────────────
                 SpriteAsset(p => CannonIcon = p, "cannon_icon.png", optional: true),
                 HandheldPrefab(p => CannonPrefab = p, "cannon.prefab", optional: true),
-                HandheldPrefab(p => CannonBallPrefab = p, "bowling_ball.prefab", optional: true),
+                // Networked projectile — must carry a stable Mirror assetId so remote
+                // clients can spawn the ball from NetworkServer.Spawn.
+                NetworkedPrefab(
+                    p => CannonBallPrefab = p,
+                    "bowling_ball.prefab",
+                    0xCA110001u,
+                    optional: true
+                ),
             };
         }
 

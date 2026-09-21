@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using HarmonyLib;
+using IssaPlugin.Items.Cannon;
 using IssaPlugin.Network;
 using Mirror;
 using UnityEngine;
@@ -8,9 +9,9 @@ namespace IssaPlugin.Items
 {
     public class CannonNetworkBridge : NetworkBridgeBase
     {
-        // Every cannon ball launched by any player this hole, tracked so the server can
+        // Every bowling ball launched by any player this hole, tracked so the server can
         // despawn them at the hole transition. Static because cleanup is global and
-        // a launched cannon ball outlives the interaction with its shooter's bridge.
+        // a launched bowling ball outlives the interaction with its shooter's bridge.
         private static readonly List<GameObject> _serverLaunchedCannonBalls = new();
 
         // ================================================================
@@ -35,17 +36,10 @@ namespace IssaPlugin.Items
         // ================================================================
 
         /// <summary>
-        /// Spawns and launches one cannon ball. Registered in NetworkManagerPatches.
+        /// Spawns and launches one bowling ball. Registered in NetworkManagerPatches.
         /// </summary>
         public void ServerHandleCannonShootMessage(Vector3 direction, int equippedSlotIndex)
         {
-            IssaPluginPlugin.Log.LogWarning(
-                "[Cannon] ServerHandleCannonShootMessage called with dir="
-                    + direction.ToString()
-                    + ", slotIdx="
-                    + equippedSlotIndex
-            );
-
             if (!isServer)
                 return;
 
@@ -99,51 +93,66 @@ namespace IssaPlugin.Items
             if (prefab == null)
             {
                 IssaPluginPlugin.Log.LogWarning(
-                    "[Cannon] CannonSettings.Prefab is null; cannot launch a cart."
+                    "[Cannon] CannonBallPrefab is null; cannot launch a bowling ball."
                 );
                 return;
             }
 
-            // Spawn ahead of and above the shooter so the cart clears their own
-            // collider instead of spawning inside it and knocking them over.
-            Vector3 spawnPos = shooter.transform.position + direction;
+            // Spawn at the rocket barrel tip, then nudge further along the shot so a
+            // large bowling-ball collider is less likely to overlap the shooter even
+            // before IgnoreCollision is applied in CannonBallBehavior.Start.
+            Vector3 spawnPos =
+                shooter.RightHandEquipmentSwitcher.transform.TransformPoint(
+                    GameManager.ItemSettings.RocketLauncherLocalRocketPosition
+                )
+                + direction * 0.75f;
 
-            // Face the cart along its flight path, kept upright relative to world up.
+            // Face the ball along its flight path, kept upright relative to world up.
             Quaternion spawnRot = Quaternion.LookRotation(direction, Vector3.up);
 
             GameObject cannonBall = Object.Instantiate(prefab, spawnPos, spawnRot);
             if (cannonBall == null)
                 return;
 
-            // The server drives this cart's flight; without this the host's local
+            // Moving golf balls use DynamicBallLayer so they collide with terrain
+            // additions (buildings/props). Leaving the prefab on Default misses those
+            // contacts while still hitting players, carts, and terrain.
+            SetLayerRecursive(cannonBall, GameManager.LayerSettings.DynamicBallLayer);
+            EnsureSolidColliders(cannonBall);
+
+            // The server drives this ball's flight; without this the host's local
             // client would own the transform and overwrite the launch velocity.
-            ServerAuthoritativeTransform.Apply(cannonBall.gameObject, "CannonBall");
+            ServerAuthoritativeTransform.Apply(cannonBall, "CannonBall");
 
-            NetworkServer.Spawn(cannonBall.gameObject);
+            if (cannonBall.GetComponentInChildren<NetworkTransformBase>(true) == null)
+            {
+                IssaPluginPlugin.Log.LogWarning(
+                    "[Cannon] bowling_ball.prefab has no NetworkTransform; "
+                        + "remote clients will not see the ball move. Add NetworkTransformReliable "
+                        + "(or equivalent) to the prefab in the asset bundle."
+                );
+            }
 
-            // Drop entries whose cart is already gone (despawned by lifetime, driven
+            NetworkServer.Spawn(cannonBall);
+
+            var behaviour = cannonBall.AddComponent<CannonBallBehavior>();
+            behaviour.ThrowerInfo = inventory.PlayerInfo;
+            behaviour.InitialVelocity = direction * ModConfig.Cannon.LaunchSpeed.Value;
+            // Apply IgnoreCollision immediately — waiting for Start() can let the
+            // first FixedUpdate resolve a self-hit if the ball overlaps the shooter.
+            behaviour.BeginIgnoreThrower();
+
+            // Drop entries whose ball is already gone (despawned by lifetime, driven
             // out of bounds, or destroyed by the game) so a long hole with heavy
             // launcher use does not grow this list without bound.
             _serverLaunchedCannonBalls.RemoveAll(c => c == null);
-            _serverLaunchedCannonBalls.Add(cannonBall.gameObject);
+            _serverLaunchedCannonBalls.Add(cannonBall);
 
-            // Apply initial velocity before Spawn so the first NetworkTransform
-            // update already has the correct velocity baked in.
-            var rb = cannonBall.GetComponent<Rigidbody>();
-            if (rb != null)
-            {
-                rb.useGravity = true;
-                rb.isKinematic = false;
-                rb.linearVelocity = direction * ModConfig.GolfCartLauncher.LaunchSpeed.Value;
-            }
-
-            // The timer lives on the cart, not on this bridge, so it keeps running if
-            // the shooter disconnects while their cart is still in the air.
-            float lifetime = ModConfig.Cannon.CannonBallLifetime.Value;
+            // The timer lives on the ball, not on this bridge, so it keeps running if
+            // the shooter disconnects while their ball is still in the air.
+            float lifetime = ModConfig.Cannon.BowlingBallLifetime.Value;
             if (lifetime > 0f)
-                cannonBall
-                    .gameObject.AddComponent<LaunchedCannonBallDespawner>()
-                    .Initialize(lifetime);
+                cannonBall.AddComponent<LaunchedCannonBallDespawner>().Initialize(lifetime);
         }
 
         private static bool IsFinite(Vector3 v) =>
@@ -154,12 +163,34 @@ namespace IssaPlugin.Items
             && !float.IsInfinity(v.y)
             && !float.IsInfinity(v.z);
 
+        private static void SetLayerRecursive(GameObject go, int layer)
+        {
+            go.layer = layer;
+            for (int i = 0; i < go.transform.childCount; i++)
+                SetLayerRecursive(go.transform.GetChild(i).gameObject, layer);
+        }
+
+        /// <summary>
+        /// Hardens the prefab's colliders for rigidbody vs mesh world geometry.
+        /// A non-convex MeshCollider on a dynamic body will not collide with other
+        /// MeshColliders (typical for buildings), which matches the reported miss.
+        /// </summary>
+        private static void EnsureSolidColliders(GameObject go)
+        {
+            foreach (var col in go.GetComponentsInChildren<Collider>(true))
+            {
+                col.isTrigger = false;
+                if (col is MeshCollider mesh)
+                    mesh.convex = true;
+            }
+        }
+
         // ================================================================
         //  Cleanup
         // ================================================================
 
         /// <summary>
-        /// Destroys every cannon ball launched this hole. Runs on the first bridge to be
+        /// Destroys every bowling ball launched this hole. Runs on the first bridge to be
         /// cleaned up; the list is static and shared, so later calls are no-ops.
         /// </summary>
         private static void ServerDestroyAllLaunchedCannonBalls()
