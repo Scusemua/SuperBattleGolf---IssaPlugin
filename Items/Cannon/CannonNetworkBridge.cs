@@ -156,7 +156,7 @@ namespace IssaPlugin.Items
             if (prefab == null)
             {
                 IssaPluginPlugin.Log.LogWarning(
-                    "[Cannon] BowlingBallPreab is null; cannot launch a bowling ball."
+                    "[Cannon] BowlingBallPrefab is null; cannot launch a bowling ball."
                 );
                 return;
             }
