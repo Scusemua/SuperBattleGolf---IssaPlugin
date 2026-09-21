@@ -170,6 +170,10 @@ namespace IssaPlugin
             if (keyboard[Key.F10].wasPressedThisFrame)
                 DebugDummies.ToggleDebugDummies();
 
+            var testFireKey = ModConfig.Cannon.TestFireAtSelfKey.Value;
+            if (testFireKey != Key.None && keyboard[testFireKey].wasPressedThisFrame)
+                CannonNetworkBridge.ClientRequestTestFireAtSelf();
+
             // Keep the Javelin lock-on target fresh every frame while equipped.
             var localInventory = GameManager.LocalPlayerInventory;
             if (localInventory != null)

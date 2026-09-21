@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using HarmonyLib;
 using IssaPlugin.Items.Cannon;
 using IssaPlugin.Network;
 using Mirror;
@@ -19,7 +18,7 @@ namespace IssaPlugin.Items
         // ================================================================
 
         /// <summary>
-        /// Asks the server to launch a cart along <paramref name="direction"/>.
+        /// Asks the server to launch a ball along <paramref name="direction"/>.
         /// Called by Cannon.Fire on the shooter's client.
         /// </summary>
         public void ClientRequestLaunch(Vector3 direction, int equippedSlotIndex) =>
@@ -31,20 +30,31 @@ namespace IssaPlugin.Items
                 }
             );
 
+        /// <summary>
+        /// Asks the server to launch a ball at the local player from TestFireDistance
+        /// away. Bound to Cannon.TestFireAtSelfKey — for hit-reaction testing only.
+        /// </summary>
+        public static void ClientRequestTestFireAtSelf()
+        {
+            if (!NetworkClient.active)
+                return;
+
+            NetworkClient.Send(new CannonTestFireAtSelfMessage());
+        }
+
         // ================================================================
         //  Server
         // ================================================================
 
         /// <summary>
-        /// Spawns and launches one bowling ball. Registered in NetworkManagerPatches.
+        /// Spawns and launches one bowling ball from the shooter's barrel.
+        /// Registered in NetworkManagerPatches.
         /// </summary>
         public void ServerHandleCannonShootMessage(Vector3 direction, int equippedSlotIndex)
         {
             if (!isServer)
                 return;
 
-            // Reject a malformed or hostile direction rather than launching a cart
-            // with NaN velocity, which would corrupt the physics scene for everyone.
             if (!IsFinite(direction) || direction.sqrMagnitude < 0.0001f)
                 return;
 
@@ -89,15 +99,6 @@ namespace IssaPlugin.Items
                 }
             }
 
-            var prefab = AssetLoader.CannonBallPrefab;
-            if (prefab == null)
-            {
-                IssaPluginPlugin.Log.LogWarning(
-                    "[Cannon] CannonBallPrefab is null; cannot launch a bowling ball."
-                );
-                return;
-            }
-
             // Spawn at the rocket barrel tip, then nudge further along the shot so a
             // large bowling-ball collider is less likely to overlap the shooter even
             // before IgnoreCollision is applied in CannonBallBehavior.Start.
@@ -107,7 +108,64 @@ namespace IssaPlugin.Items
                 )
                 + direction * 0.75f;
 
-            // Face the ball along its flight path, kept upright relative to world up.
+            ServerSpawnBall(shooter, inventory?.PlayerInfo ?? shooter, spawnPos, direction, ignoreThrower: true);
+        }
+
+        /// <summary>
+        /// Debug: spawn a ball aimed at the requesting player from TestFireDistance away.
+        /// Does not consume an item use. Registered in NetworkManagerPatches.
+        /// </summary>
+        public void ServerHandleTestFireAtSelfMessage()
+        {
+            if (!isServer)
+                return;
+
+            var target = GetComponent<PlayerInfo>();
+            if (target == null)
+                return;
+
+            float distance = ModConfig.Cannon.TestFireDistance.Value;
+
+            // Prefer the player's facing so the ball comes from "in front" of them.
+            Vector3 away = target.transform.forward;
+            away.y = 0f;
+            if (away.sqrMagnitude < 0.0001f)
+                away = Vector3.forward;
+            away.Normalize();
+
+            // Spawn in front, slightly above chest height, aimed back at the player.
+            Vector3 aimPoint = target.transform.position + Vector3.up * 1.0f;
+            Vector3 spawnPos = aimPoint + away * distance;
+            Vector3 direction = (aimPoint - spawnPos).normalized;
+
+            ServerSpawnBall(target, target, spawnPos, direction, ignoreThrower: false);
+        }
+
+        /// <summary>
+        /// Shared spawn path for normal shots and the test-fire hotkey.
+        /// </summary>
+        private void ServerSpawnBall(
+            PlayerInfo attributionPlayer,
+            PlayerInfo throwerInfo,
+            Vector3 spawnPos,
+            Vector3 direction,
+            bool ignoreThrower
+        )
+        {
+            var prefab = AssetLoader.CannonBallPrefab;
+            if (prefab == null)
+            {
+                IssaPluginPlugin.Log.LogWarning(
+                    "[Cannon] CannonBallPrefab is null; cannot launch a bowling ball."
+                );
+                return;
+            }
+
+            if (!IsFinite(direction) || direction.sqrMagnitude < 0.0001f)
+                return;
+
+            direction = direction.normalized;
+
             Quaternion spawnRot = Quaternion.LookRotation(direction, Vector3.up);
 
             GameObject cannonBall = Object.Instantiate(prefab, spawnPos, spawnRot);
@@ -136,20 +194,18 @@ namespace IssaPlugin.Items
             NetworkServer.Spawn(cannonBall);
 
             var behaviour = cannonBall.AddComponent<CannonBallBehavior>();
-            behaviour.ThrowerInfo = inventory.PlayerInfo;
+            behaviour.ThrowerInfo = throwerInfo ?? attributionPlayer;
+            behaviour.ThrowerIgnoreDuration = ModConfig.Cannon.ThrowerIgnoreDuration.Value;
             behaviour.InitialVelocity = direction * ModConfig.Cannon.LaunchSpeed.Value;
-            // Apply IgnoreCollision immediately — waiting for Start() can let the
-            // first FixedUpdate resolve a self-hit if the ball overlaps the shooter.
-            behaviour.BeginIgnoreThrower();
 
-            // Drop entries whose ball is already gone (despawned by lifetime, driven
-            // out of bounds, or destroyed by the game) so a long hole with heavy
-            // launcher use does not grow this list without bound.
+            // Test-fire deliberately does not ignore the target — the whole point is
+            // to hit them. Normal shots ignore the shooter for the configured duration.
+            if (ignoreThrower && behaviour.ThrowerIgnoreDuration > 0f)
+                behaviour.BeginIgnoreThrower();
+
             _serverLaunchedCannonBalls.RemoveAll(c => c == null);
             _serverLaunchedCannonBalls.Add(cannonBall);
 
-            // The timer lives on the ball, not on this bridge, so it keeps running if
-            // the shooter disconnects while their ball is still in the air.
             float lifetime = ModConfig.Cannon.BowlingBallLifetime.Value;
             if (lifetime > 0f)
                 cannonBall.AddComponent<LaunchedCannonBallDespawner>().Initialize(lifetime);
@@ -189,10 +245,6 @@ namespace IssaPlugin.Items
         //  Cleanup
         // ================================================================
 
-        /// <summary>
-        /// Destroys every bowling ball launched this hole. Runs on the first bridge to be
-        /// cleaned up; the list is static and shared, so later calls are no-ops.
-        /// </summary>
         private static void ServerDestroyAllLaunchedCannonBalls()
         {
             foreach (var cannonBall in _serverLaunchedCannonBalls)

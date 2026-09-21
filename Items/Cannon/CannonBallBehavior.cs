@@ -51,7 +51,7 @@ namespace IssaPlugin.Items.Cannon
 
             // Bridge usually calls this before the first physics step; Start is a
             // fallback if the ball was spawned some other way.
-            if (!_isIgnoringThrower)
+            if (!_isIgnoringThrower && ThrowerIgnoreDuration > 0f)
                 BeginIgnoreThrower();
         }
 
@@ -66,7 +66,7 @@ namespace IssaPlugin.Items.Cannon
 
             _throwerIgnoreTimer = ThrowerIgnoreDuration;
             _throwerTransform = ThrowerInfo != null ? ThrowerInfo.transform : null;
-            if (_throwerTransform == null)
+            if (_throwerTransform == null || ThrowerIgnoreDuration <= 0f)
                 return;
 
             _ballColliders = GetComponentsInChildren<Collider>(true);
@@ -130,8 +130,8 @@ namespace IssaPlugin.Items.Cannon
 
         void OnCollisionEnter(Collision collision)
         {
-            // Knockouts / impulses are server-authoritative; remote clients only
-            // receive the NetworkTransform visual and never run this component.
+            // Knockouts / hittable reactions are server-authoritative; remote clients
+            // only receive the NetworkTransform visual and never run this component.
             if (!NetworkServer.active)
                 return;
 
@@ -145,42 +145,104 @@ namespace IssaPlugin.Items.Cannon
             if (_rb == null || _rb.linearVelocity.magnitude <= MinKnockoutSpeed)
                 return;
 
+            if (ThrowerInfo == null)
+                return;
+
+            // Contact modification (and some PhysicsManager foliage/terrain paths) can
+            // deliver OnCollisionEnter with contactCount == 0. GetContact(0) throws then.
+            Vector3 hitPosition;
+            if (collision.contactCount > 0)
+                hitPosition = collision.GetContact(0).point;
+            else
+                hitPosition = collision.collider != null
+                    ? collision.collider.ClosestPoint(_rb.position)
+                    : transform.position;
+
+            Vector3 hitDirection = _rb.linearVelocity.normalized;
+            if (hitDirection.sqrMagnitude < 0.0001f)
+                hitDirection = (hitPosition - transform.position).normalized;
+
             // ── Player knockout ───────────────────────────────────────────────
             // Cart / prop motion comes only from Unity's contact solver (ball mass ×
             // velocity). No extra AddForce — that was launching carts.
             var movement = collision.gameObject.GetComponentInParent<PlayerMovement>();
-            if (movement == null)
+            if (movement != null)
+            {
+                if (movement.GetComponent<NetworkIdentity>() == null)
+                    return;
+
+                float dist = Vector3.Distance(ThrowerInfo.transform.position, hitPosition);
+
+                movement.TryKnockOut(
+                    ThrowerInfo,
+                    KnockoutType.Rocket,
+                    false,
+                    movement.transform.InverseTransformPoint(hitPosition),
+                    dist,
+                    _rb.linearVelocity,
+                    ElectromagnetShieldHitBlockType.FullyBlocked,
+                    new ItemUseId(
+                        ThrowerInfo.PlayerId.Guid,
+                        BlackHoleGrenadeItem.NextUseIndex(),
+                        ItemType.RocketLauncher,
+                        false
+                    ),
+                    false,
+                    true,
+                    out _,
+                    out _
+                );
+                return;
+            }
+
+            // ── Target dummies / other non-player Hittables ───────────────────
+            // Guns call Hittable.HitWithItem, which raises WasHitByItem — the event
+            // TargetDummy listens to for its flinch/spin animations. Without this,
+            // a physics collision alone never triggers that reaction.
+            var hittable = collision.gameObject.GetComponentInParent<Hittable>();
+            if (hittable == null)
                 return;
 
-            if (movement.GetComponent<NetworkIdentity>() == null)
+            // Players are handled above via TryKnockOut; HitWithItem on a player would
+            // stack a second gun-style hit response on top of the knockout.
+            if (hittable.AsEntity != null && hittable.AsEntity.IsPlayer)
                 return;
 
-            if (ThrowerInfo == null)
+            // Golf carts already move from the Rigidbody contact solver. HitWithItem
+            // with RocketLauncher would apply a second rocket-style impulse on top.
+            if (hittable.GetComponentInParent<GolfCartInfo>() != null)
                 return;
 
-            ContactPoint contact = collision.GetContact(0);
-            Vector3 hitPosition = contact.point;
+            var inventory = ThrowerInfo.GetComponent<PlayerInventory>();
+            if (inventory == null)
+                return;
 
-            float dist = Vector3.Distance(ThrowerInfo.transform.position, hitPosition);
+            Vector3 localHitPoint = hittable.transform.InverseTransformPoint(hitPosition);
+            Vector3 localOrigin = hittable.transform.InverseTransformPoint(
+                ThrowerInfo.transform.position
+            );
+            float distance = Vector3.Distance(ThrowerInfo.transform.position, hitPosition);
 
-            movement.TryKnockOut(
-                ThrowerInfo,
-                KnockoutType.Rocket,
+            var useId = new ItemUseId(
+                ThrowerInfo.PlayerId.Guid,
+                BlackHoleGrenadeItem.NextUseIndex(),
+                ItemType.RocketLauncher,
+                false
+            );
+
+            hittable.HitWithItem(
+                ItemType.RocketLauncher,
+                useId,
+                localHitPoint,
+                hitDirection,
+                localOrigin,
+                distance,
+                inventory,
                 false,
-                movement.transform.InverseTransformPoint(hitPosition),
-                dist,
-                _rb.linearVelocity,
-                ElectromagnetShieldHitBlockType.FullyBlocked,
-                new ItemUseId(
-                    ThrowerInfo.PlayerId.Guid,
-                    BlackHoleGrenadeItem.NextUseIndex(),
-                    ItemType.RocketLauncher,
-                    false
-                ),
                 false,
-                true,
-                out _,
-                out _
+                false,
+                NetworkTime.time,
+                0UL
             );
         }
 

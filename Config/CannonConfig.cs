@@ -9,6 +9,12 @@ namespace IssaPlugin
 
         public ConfigEntry<Key> GiveKey { get; private set; }
 
+        /// <summary>
+        /// Hotkey that asks the server to launch a bowling ball at the local player
+        /// from TestFireDistance away (debug/testing). Key.None disables it.
+        /// </summary>
+        public ConfigEntry<Key> TestFireAtSelfKey { get; private set; }
+
         /// <summary>Number of carts per Golf Cart Launcher pickup. Each shot consumes one use.</summary>
         public ConfigEntry<float> Uses { get; private set; }
 
@@ -21,6 +27,16 @@ namespace IssaPlugin
         public ConfigEntry<float> BowlingBallMass { get; private set; }
 
         public ConfigEntry<float> BowlingBallMassMultiplier { get; private set; }
+
+        /// <summary>
+        /// Seconds after launch during which the ball ignores the shooter's colliders.
+        /// </summary>
+        public ConfigEntry<float> ThrowerIgnoreDuration { get; private set; }
+
+        /// <summary>
+        /// How far in front of the local player a TestFireAtSelfKey ball spawns.
+        /// </summary>
+        public ConfigEntry<float> TestFireDistance { get; private set; }
 
         /// <summary>
         /// Seconds a launched bowling ball survives before the server despawns it.
@@ -38,6 +54,13 @@ namespace IssaPlugin
                 "GiveKey",
                 Key.None,
                 "Hotkey to give yourself a Cannon (debug/testing)."
+            );
+
+            TestFireAtSelfKey = cfg.Bind(
+                Section,
+                "TestFireAtSelfKey",
+                Key.None,
+                "Hotkey to launch a bowling ball at yourself from TestFireDistance away (debug/testing). Key.None disables."
             );
 
             Uses = cfg.Bind(
@@ -67,6 +90,26 @@ namespace IssaPlugin
                 new ConfigDescription(
                     "Speed (metres/second) the launched bowling ball is given along the aim direction.",
                     new AcceptableValueRange<float>(1f, 300f)
+                )
+            );
+
+            ThrowerIgnoreDuration = cfg.Bind(
+                Section,
+                "ThrowerIgnoreDuration",
+                2.0f,
+                new ConfigDescription(
+                    "Seconds after launch during which the ball ignores the shooter's colliders. 0 disables the grace period.",
+                    new AcceptableValueRange<float>(0f, 10f)
+                )
+            );
+
+            TestFireDistance = cfg.Bind(
+                Section,
+                "TestFireDistance",
+                7.5f,
+                new ConfigDescription(
+                    "Distance (metres) in front of the local player at which a TestFireAtSelfKey ball spawns.",
+                    new AcceptableValueRange<float>(5f, 10f)
                 )
             );
 
@@ -105,7 +148,7 @@ namespace IssaPlugin
                 "BowlingBallMassMultiplier",
                 1.0f,
                 new ConfigDescription(
-                    "MUltiplies the configured mass of the bowling balls.",
+                    "Multiplies the configured mass of the bowling balls.",
                     new AcceptableValueRange<float>(1f, 50f)
                 )
             );

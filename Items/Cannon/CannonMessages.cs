@@ -22,6 +22,12 @@ namespace IssaPlugin.Items
         public int EquippedSlotIndex;
     }
 
+    /// <summary>
+    /// Debug request: spawn a bowling ball aimed at the sender from TestFireDistance away.
+    /// Does not consume a Cannon use and does not require the item equipped.
+    /// </summary>
+    public struct CannonTestFireAtSelfMessage : NetworkMessage { }
+
     // ── Serialization ────────────────────────────────────────────────────────
 
     public static class CannonShootMessageSerialization
@@ -34,5 +40,16 @@ namespace IssaPlugin.Items
 
         public static CannonShootMessage ReadCannonShootMessage(NetworkReader r) =>
             new() { Direction = r.ReadVector3(), EquippedSlotIndex = r.ReadInt() };
+    }
+
+    public static class CannonTestFireAtSelfMessageSerialization
+    {
+        public static void WriteCannonTestFireAtSelfMessage(
+            NetworkWriter w,
+            CannonTestFireAtSelfMessage msg
+        ) { }
+
+        public static CannonTestFireAtSelfMessage ReadCannonTestFireAtSelfMessage(NetworkReader r) =>
+            new();
     }
 }

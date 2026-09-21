@@ -1497,6 +1497,11 @@ namespace IssaPlugin.Patches
             Reader<CannonShootMessage>.read =
                 CannonShootMessageSerialization.ReadCannonShootMessage;
 
+            Writer<CannonTestFireAtSelfMessage>.write =
+                CannonTestFireAtSelfMessageSerialization.WriteCannonTestFireAtSelfMessage;
+            Reader<CannonTestFireAtSelfMessage>.read =
+                CannonTestFireAtSelfMessageSerialization.ReadCannonTestFireAtSelfMessage;
+
             if (NetworkServer.active)
             {
                 NetworkServer.RegisterHandler<CannonShootMessage>(
@@ -1506,6 +1511,10 @@ namespace IssaPlugin.Patches
                                 msg.Direction,
                                 msg.EquippedSlotIndex
                             )
+                );
+                NetworkServer.RegisterHandler<CannonTestFireAtSelfMessage>(
+                    (conn, msg) =>
+                        GetBridge<CannonNetworkBridge>(conn)?.ServerHandleTestFireAtSelfMessage()
                 );
             }
 
