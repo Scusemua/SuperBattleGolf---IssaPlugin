@@ -157,7 +157,7 @@ namespace IssaPlugin.Items
         public static GameObject CannonPrefab { get; private set; }
 
         /// Networked bowling ball projectile spawned by the Cannon.
-        public static GameObject CannonBallPrefab { get; private set; }
+        public static GameObject BowlingBallPrefab { get; private set; }
 
         // ── ShapeShifter / SuperShapeShifter ──────────────────────────────────
         // ── ShapeShifter shape prefabs ────────────────────────────────────────
@@ -680,7 +680,7 @@ namespace IssaPlugin.Items
                 // Networked projectile — must carry a stable Mirror assetId so remote
                 // clients can spawn the ball from NetworkServer.Spawn.
                 NetworkedPrefab(
-                    p => CannonBallPrefab = p,
+                    p => BowlingBallPrefab = p,
                     "bowling_ball.prefab",
                     0xCA110001u,
                     optional: true

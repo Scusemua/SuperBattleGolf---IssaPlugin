@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace IssaPlugin.Items.Cannon
 {
-    public class CannonBallBehavior : CustomHittable
+    public class BowlingBallBehavior : CustomHittable
     {
         /// <summary>PlayerInfo of the player who fired this ball (for kill attribution).</summary>
         public PlayerInfo ThrowerInfo;

@@ -11,7 +11,7 @@ namespace IssaPlugin.Items
         // Every bowling ball launched by any player this hole, tracked so the server can
         // despawn them at the hole transition. Static because cleanup is global and
         // a launched bowling ball outlives the interaction with its shooter's bridge.
-        private static readonly List<GameObject> _serverLaunchedCannonBalls = new();
+        private static readonly List<GameObject> _serverLaunchedBowlingBalls = new();
 
         // ================================================================
         //  Client → Server
@@ -101,7 +101,7 @@ namespace IssaPlugin.Items
 
             // Spawn at the rocket barrel tip, then nudge further along the shot so a
             // large bowling-ball collider is less likely to overlap the shooter even
-            // before IgnoreCollision is applied in CannonBallBehavior.Start.
+            // before IgnoreCollision is applied in BowlingBallBehavior.Start.
             Vector3 spawnPos =
                 shooter.RightHandEquipmentSwitcher.transform.TransformPoint(
                     GameManager.ItemSettings.RocketLauncherLocalRocketPosition
@@ -152,11 +152,11 @@ namespace IssaPlugin.Items
             bool ignoreThrower
         )
         {
-            var prefab = AssetLoader.CannonBallPrefab;
+            var prefab = AssetLoader.BowlingBallPrefab;
             if (prefab == null)
             {
                 IssaPluginPlugin.Log.LogWarning(
-                    "[Cannon] CannonBallPrefab is null; cannot launch a bowling ball."
+                    "[Cannon] BowlingBallPreab is null; cannot launch a bowling ball."
                 );
                 return;
             }
@@ -168,21 +168,21 @@ namespace IssaPlugin.Items
 
             Quaternion spawnRot = Quaternion.LookRotation(direction, Vector3.up);
 
-            GameObject cannonBall = Object.Instantiate(prefab, spawnPos, spawnRot);
-            if (cannonBall == null)
+            GameObject bowlingBall = Object.Instantiate(prefab, spawnPos, spawnRot);
+            if (bowlingBall == null)
                 return;
 
             // Moving golf balls use DynamicBallLayer so they collide with terrain
             // additions (buildings/props). Leaving the prefab on Default misses those
             // contacts while still hitting players, carts, and terrain.
-            SetLayerRecursive(cannonBall, GameManager.LayerSettings.DynamicBallLayer);
-            EnsureSolidColliders(cannonBall);
+            SetLayerRecursive(bowlingBall, GameManager.LayerSettings.DynamicBallLayer);
+            EnsureSolidColliders(bowlingBall);
 
             // The server drives this ball's flight; without this the host's local
             // client would own the transform and overwrite the launch velocity.
-            ServerAuthoritativeTransform.Apply(cannonBall, "CannonBall");
+            ServerAuthoritativeTransform.Apply(bowlingBall, "BowlingBall");
 
-            if (cannonBall.GetComponentInChildren<NetworkTransformBase>(true) == null)
+            if (bowlingBall.GetComponentInChildren<NetworkTransformBase>(true) == null)
             {
                 IssaPluginPlugin.Log.LogWarning(
                     "[Cannon] bowling_ball.prefab has no NetworkTransform; "
@@ -191,9 +191,9 @@ namespace IssaPlugin.Items
                 );
             }
 
-            NetworkServer.Spawn(cannonBall);
+            NetworkServer.Spawn(bowlingBall);
 
-            var behaviour = cannonBall.AddComponent<CannonBallBehavior>();
+            var behaviour = bowlingBall.AddComponent<BowlingBallBehavior>();
             behaviour.ThrowerInfo = throwerInfo ?? attributionPlayer;
             behaviour.ThrowerIgnoreDuration = ModConfig.Cannon.ThrowerIgnoreDuration.Value;
             behaviour.InitialVelocity = direction * ModConfig.Cannon.LaunchSpeed.Value;
@@ -203,12 +203,12 @@ namespace IssaPlugin.Items
             if (ignoreThrower && behaviour.ThrowerIgnoreDuration > 0f)
                 behaviour.BeginIgnoreThrower();
 
-            _serverLaunchedCannonBalls.RemoveAll(c => c == null);
-            _serverLaunchedCannonBalls.Add(cannonBall);
+            _serverLaunchedBowlingBalls.RemoveAll(c => c == null);
+            _serverLaunchedBowlingBalls.Add(bowlingBall);
 
             float lifetime = ModConfig.Cannon.BowlingBallLifetime.Value;
             if (lifetime > 0f)
-                cannonBall.AddComponent<LaunchedCannonBallDespawner>().Initialize(lifetime);
+                bowlingBall.AddComponent<LaunchedBowlingBallDespawner>().Initialize(lifetime);
         }
 
         private static bool IsFinite(Vector3 v) =>
@@ -245,20 +245,20 @@ namespace IssaPlugin.Items
         //  Cleanup
         // ================================================================
 
-        private static void ServerDestroyAllLaunchedCannonBalls()
+        private static void ServerDestroyAllLaunchedBowlingBalls()
         {
-            foreach (var cannonBall in _serverLaunchedCannonBalls)
+            foreach (var bowlingBall in _serverLaunchedBowlingBalls)
             {
-                if (cannonBall != null)
-                    NetworkServer.Destroy(cannonBall);
+                if (bowlingBall != null)
+                    NetworkServer.Destroy(bowlingBall);
             }
 
-            _serverLaunchedCannonBalls.Clear();
+            _serverLaunchedBowlingBalls.Clear();
         }
 
         public override void ServerHoleCleanup()
         {
-            ServerDestroyAllLaunchedCannonBalls();
+            ServerDestroyAllLaunchedBowlingBalls();
         }
 
         public override void ClientHoleCleanup()
@@ -268,7 +268,7 @@ namespace IssaPlugin.Items
 
         public override void OnStopServer()
         {
-            ServerDestroyAllLaunchedCannonBalls();
+            ServerDestroyAllLaunchedBowlingBalls();
         }
     }
 }

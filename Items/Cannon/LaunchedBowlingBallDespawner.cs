@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace IssaPlugin.Items
 {
-    public class LaunchedCannonBallDespawner : MonoBehaviour
+    public class LaunchedBowlingBallDespawner : MonoBehaviour
     {
         private float _remaining;
 
