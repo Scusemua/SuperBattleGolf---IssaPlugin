@@ -120,6 +120,18 @@ namespace IssaPlugin.Items
             if (!isServer)
                 return;
 
+            // Same gate as GiveItemRequestMessage: host may always test-fire; remote
+            // clients need AllowHotkeyItemGiving or anyone could spam free balls.
+            bool fromRemoteClient =
+                connectionToClient != null && connectionToClient != NetworkServer.localConnection;
+            if (fromRemoteClient && !ModConfig.Global.AllowHotkeyItemGiving.Value)
+            {
+                IssaPluginPlugin.Log.LogInfo(
+                    "[Cannon] Rejected TestFireAtSelf: AllowHotkeyItemGiving is disabled."
+                );
+                return;
+            }
+
             var target = GetComponent<PlayerInfo>();
             if (target == null)
                 return;
@@ -139,6 +151,44 @@ namespace IssaPlugin.Items
             Vector3 direction = (aimPoint - spawnPos).normalized;
 
             ServerSpawnBall(target, target, spawnPos, direction, ignoreThrower: false);
+        }
+
+        /// <summary>
+        /// Victim-client handler for <see cref="BowlingBallKnockoutMessage"/>.
+        /// Runs TryKnockOut on the local player only — same authority model as Nuke /
+        /// Flamethrower burn knockouts.
+        /// </summary>
+        public static void HandleBowlingBallKnockout(BowlingBallKnockoutMessage msg)
+        {
+            var local = NetworkClient.localPlayer;
+            if (local == null)
+                return;
+
+            var movement = local.GetComponent<PlayerMovement>();
+            if (movement == null)
+                return;
+
+            PlayerInfo throwerInfo = null;
+            if (
+                msg.ThrowerNetId != 0
+                && NetworkClient.spawned.TryGetValue(msg.ThrowerNetId, out var throwerIdentity)
+            )
+                throwerInfo = throwerIdentity.GetComponent<PlayerInfo>();
+
+            movement.TryKnockOut(
+                throwerInfo,
+                KnockoutType.Rocket,
+                false,
+                msg.LocalHitPoint,
+                msg.Distance,
+                msg.IncomingVelocity,
+                ElectromagnetShieldHitBlockType.FullyBlocked,
+                msg.ItemUseId,
+                false,
+                true,
+                out _,
+                out _
+            );
         }
 
         /// <summary>

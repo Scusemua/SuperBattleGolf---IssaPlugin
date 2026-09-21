@@ -1,3 +1,4 @@
+using HarmonyLib;
 using Mirror;
 using UnityEngine;
 
@@ -154,44 +155,56 @@ namespace IssaPlugin.Items.Cannon
             if (collision.contactCount > 0)
                 hitPosition = collision.GetContact(0).point;
             else
-                hitPosition = collision.collider != null
-                    ? collision.collider.ClosestPoint(_rb.position)
-                    : transform.position;
+                hitPosition =
+                    collision.collider != null
+                        ? collision.collider.ClosestPoint(_rb.position)
+                        : transform.position;
 
             Vector3 hitDirection = _rb.linearVelocity.normalized;
             if (hitDirection.sqrMagnitude < 0.0001f)
                 hitDirection = (hitPosition - transform.position).normalized;
 
             // ── Player knockout ───────────────────────────────────────────────
-            // Cart / prop motion comes only from Unity's contact solver (ball mass ×
-            // velocity). No extra AddForce — that was launching carts.
+            // Cart / prop motion comes only from Unity's contact solver.
+            //
+            // Knockout is applied on the VICTIM's client (Nuke / Flamethrower pattern).
+            // TryKnockOut ends in a Command that requires an active owning client;
+            // calling it on the server copy fails on dedicated servers and is the
+            // wrong authority model even on a listen host for remote victims.
             var movement = collision.gameObject.GetComponentInParent<PlayerMovement>();
             if (movement != null)
             {
-                if (movement.GetComponent<NetworkIdentity>() == null)
+                var victimIdentity = movement.GetComponent<NetworkIdentity>();
+                if (victimIdentity == null)
                     return;
 
-                float dist = Vector3.Distance(ThrowerInfo.transform.position, hitPosition);
+                var throwerIdentity = ThrowerInfo.GetComponent<NetworkIdentity>();
+                uint throwerNetId = throwerIdentity != null ? throwerIdentity.netId : 0u;
 
-                movement.TryKnockOut(
-                    ThrowerInfo,
-                    KnockoutType.Rocket,
-                    false,
-                    movement.transform.InverseTransformPoint(hitPosition),
-                    dist,
-                    _rb.linearVelocity,
-                    ElectromagnetShieldHitBlockType.FullyBlocked,
-                    new ItemUseId(
-                        ThrowerInfo.PlayerId.Guid,
-                        BlackHoleGrenadeItem.NextUseIndex(),
-                        ItemType.RocketLauncher,
-                        false
-                    ),
-                    false,
-                    true,
-                    out _,
-                    out _
+                float dist = Vector3.Distance(ThrowerInfo.transform.position, hitPosition);
+                var useId = new ItemUseId(
+                    ThrowerInfo.PlayerId.Guid,
+                    BlackHoleGrenadeItem.NextUseIndex(),
+                    ItemType.RocketLauncher,
+                    false
                 );
+
+                var knockoutMsg = new BowlingBallKnockoutMessage
+                {
+                    ThrowerNetId = throwerNetId,
+                    LocalHitPoint = movement.transform.InverseTransformPoint(hitPosition),
+                    Distance = dist,
+                    IncomingVelocity = _rb.linearVelocity,
+                    ItemUseId = useId,
+                };
+
+                // Prefer the owning connection; fall back to SendToAll so a listen-host
+                // victim (localConnection) still receives the message.
+                if (victimIdentity.connectionToClient != null)
+                    victimIdentity.connectionToClient.Send(knockoutMsg);
+                else
+                    NetworkServer.SendToAll(knockoutMsg);
+
                 return;
             }
 
@@ -203,8 +216,8 @@ namespace IssaPlugin.Items.Cannon
             if (hittable == null)
                 return;
 
-            // Players are handled above via TryKnockOut; HitWithItem on a player would
-            // stack a second gun-style hit response on top of the knockout.
+            // Players are handled above; HitWithItem on a player would stack a second
+            // gun-style hit response on top of the knockout.
             if (hittable.AsEntity != null && hittable.AsEntity.IsPlayer)
                 return;
 
@@ -223,16 +236,20 @@ namespace IssaPlugin.Items.Cannon
             );
             float distance = Vector3.Distance(ThrowerInfo.transform.position, hitPosition);
 
-            var useId = new ItemUseId(
+            var hitUseId = new ItemUseId(
                 ThrowerInfo.PlayerId.Guid,
                 BlackHoleGrenadeItem.NextUseIndex(),
                 ItemType.RocketLauncher,
                 false
             );
 
+            // HitWithItem runs HitWithItemInternal locally, then tries CmdHitWithItem
+            // to Rpc remotes. On a listen host that Cmd shortcut works. On a dedicated
+            // server SendCommandInternal is a no-op (no active client), so we manually
+            // broadcast the same Rpc path afterward.
             hittable.HitWithItem(
                 ItemType.RocketLauncher,
-                useId,
+                hitUseId,
                 localHitPoint,
                 hitDirection,
                 localOrigin,
@@ -243,6 +260,72 @@ namespace IssaPlugin.Items.Cannon
                 false,
                 NetworkTime.time,
                 0UL
+            );
+
+            if (NetworkServer.active && !NetworkClient.active)
+                BroadcastItemHitToClients(
+                    hittable,
+                    ItemType.RocketLauncher,
+                    hitUseId,
+                    localHitPoint,
+                    hitDirection,
+                    localOrigin,
+                    distance,
+                    inventory,
+                    NetworkTime.time
+                );
+        }
+
+        /// <summary>
+        /// Dedicated-server follow-up for <see cref="Hittable.HitWithItem"/>: invoke the
+        /// Command UserCode that TargetRpcs HitWithItemInternal to every connection.
+        /// Listen hosts already get that from HitWithItem's Cmd shortcut.
+        /// </summary>
+        private static void BroadcastItemHitToClients(
+            Hittable hittable,
+            ItemType itemType,
+            ItemUseId itemUseId,
+            Vector3 hitLocalPosition,
+            Vector3 direction,
+            Vector3 localOrigin,
+            float distance,
+            PlayerInventory itemUser,
+            double hitTimestamp
+        )
+        {
+            var method = AccessTools.Method(
+                typeof(Hittable),
+                "UserCode_CmdHitWithItem__ItemType__ItemUseId__Vector3__Vector3__Vector3__Single__PlayerInventory__Boolean__Boolean__Boolean__Double__UInt64__NetworkConnectionToClient"
+            );
+            if (method == null)
+            {
+                IssaPluginPlugin.Log.LogWarning(
+                    "[Cannon] Could not find Hittable.UserCode_CmdHitWithItem; "
+                        + "dedicated-server TargetDummy hits will not replicate."
+                );
+                return;
+            }
+
+            // sender=null → UserCode skips a second HitWithItemInternal (already ran)
+            // and Rpcs every remote connection.
+            method.Invoke(
+                hittable,
+                new object[]
+                {
+                    itemType,
+                    itemUseId,
+                    hitLocalPosition,
+                    direction,
+                    localOrigin,
+                    distance,
+                    itemUser,
+                    false,
+                    false,
+                    false,
+                    hitTimestamp,
+                    0UL,
+                    null,
+                }
             );
         }
 

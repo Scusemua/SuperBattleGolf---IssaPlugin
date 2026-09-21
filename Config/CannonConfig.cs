@@ -149,7 +149,7 @@ namespace IssaPlugin
                 1.0f,
                 new ConfigDescription(
                     "Multiplies the configured mass of the bowling balls.",
-                    new AcceptableValueRange<float>(1f, 50f)
+                    new AcceptableValueRange<float>(1f, 100f)
                 )
             );
         }

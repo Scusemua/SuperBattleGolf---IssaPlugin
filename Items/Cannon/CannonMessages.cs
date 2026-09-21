@@ -7,7 +7,7 @@ namespace IssaPlugin.Items
 
     public struct CannonShootMessage : NetworkMessage
     {
-        /// <summary>Normalized world-space direction to launch the cart along.</summary>
+        /// <summary>Normalized world-space direction to launch the ball along.</summary>
         public Vector3 Direction;
 
         /// <summary>
@@ -27,6 +27,25 @@ namespace IssaPlugin.Items
     /// Does not consume a Cannon use and does not require the item equipped.
     /// </summary>
     public struct CannonTestFireAtSelfMessage : NetworkMessage { }
+
+    // ── Server → Client ──────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Tells the victim's client to run TryKnockOut locally.
+    ///
+    /// Same pattern as Nuke / Flamethrower: PlayerMovement.TryKnockOut ends in a
+    /// Command that only works when issued by an active client that owns the
+    /// movement. Server-side collision therefore notifies the victim's machine
+    /// rather than calling TryKnockOut on the server copy.
+    /// </summary>
+    public struct BowlingBallKnockoutMessage : NetworkMessage
+    {
+        public uint ThrowerNetId;
+        public Vector3 LocalHitPoint;
+        public float Distance;
+        public Vector3 IncomingVelocity;
+        public ItemUseId ItemUseId;
+    }
 
     // ── Serialization ────────────────────────────────────────────────────────
 
@@ -51,5 +70,30 @@ namespace IssaPlugin.Items
 
         public static CannonTestFireAtSelfMessage ReadCannonTestFireAtSelfMessage(NetworkReader r) =>
             new();
+    }
+
+    public static class BowlingBallKnockoutMessageSerialization
+    {
+        public static void WriteBowlingBallKnockoutMessage(
+            NetworkWriter w,
+            BowlingBallKnockoutMessage msg
+        )
+        {
+            w.WriteUInt(msg.ThrowerNetId);
+            w.WriteVector3(msg.LocalHitPoint);
+            w.WriteFloat(msg.Distance);
+            w.WriteVector3(msg.IncomingVelocity);
+            w.Write(msg.ItemUseId);
+        }
+
+        public static BowlingBallKnockoutMessage ReadBowlingBallKnockoutMessage(NetworkReader r) =>
+            new()
+            {
+                ThrowerNetId = r.ReadUInt(),
+                LocalHitPoint = r.ReadVector3(),
+                Distance = r.ReadFloat(),
+                IncomingVelocity = r.ReadVector3(),
+                ItemUseId = r.Read<ItemUseId>(),
+            };
     }
 }

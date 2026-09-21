@@ -1502,6 +1502,15 @@ namespace IssaPlugin.Patches
             Reader<CannonTestFireAtSelfMessage>.read =
                 CannonTestFireAtSelfMessageSerialization.ReadCannonTestFireAtSelfMessage;
 
+            Writer<BowlingBallKnockoutMessage>.write =
+                BowlingBallKnockoutMessageSerialization.WriteBowlingBallKnockoutMessage;
+            Reader<BowlingBallKnockoutMessage>.read =
+                BowlingBallKnockoutMessageSerialization.ReadBowlingBallKnockoutMessage;
+
+            NetworkClient.RegisterHandler<BowlingBallKnockoutMessage>(
+                CannonNetworkBridge.HandleBowlingBallKnockout
+            );
+
             if (NetworkServer.active)
             {
                 NetworkServer.RegisterHandler<CannonShootMessage>(
