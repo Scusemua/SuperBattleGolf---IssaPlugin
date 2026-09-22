@@ -16,6 +16,7 @@ namespace IssaPlugin
         public ConfigEntry<float> CameraHeightPerScale { get; private set; }
         public ConfigEntry<float> SpeedScaling { get; private set; }
         public ConfigEntry<float> FlickPowerMultiplier { get; private set; }
+        public ConfigEntry<float> FlickHitboxScaling { get; private set; }
 
         public SuperJumboBurgerConfig(ConfigFile cfg, GlobalConfig global)
         {
@@ -94,6 +95,21 @@ namespace IssaPlugin
                         + "Jumbo Burger has. Applies only while in a Super Jumbo Burger "
                         + "form, never to a vanilla one.",
                     new AcceptableValueRange<float>(0f, 50f)
+                )
+            );
+            FlickHitboxScaling = cfg.Bind(
+                Section,
+                "FlickHitboxScaling",
+                1.0f,
+                new ConfigDescription(
+                    "How much the giant flick's hit region grows with size. The base "
+                        + "game's Jumbo Burger hitbox is a fixed box sized for its 3x "
+                        + "form, so without this a larger giant's hands miss people "
+                        + "standing next to them. 0 = keep that vanilla hitbox. 1 = the "
+                        + "box scales fully with character scale (an 8x giant reaches "
+                        + "8/3 as far as a vanilla one). Values above 1 add extra reach "
+                        + "beyond that. Applies only while in a Super Jumbo Burger form.",
+                    new AcceptableValueRange<float>(0f, 2f)
                 )
             );
             Uses = cfg.Bind(Section, "Uses", 1f, "Number of uses");

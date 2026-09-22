@@ -63,7 +63,7 @@ namespace IssaPlugin.Items
         }
 
         /// The base game's giant-form scale, or 0 if ItemSettings is not available yet.
-        /// All three scale-derived helpers below compare against it, and each returns
+        /// The scale-derived helpers below compare against it, and each returns
         /// "no effect" when it is 0, so a missing settings singleton disables them
         /// rather than throwing.
         private static float VanillaGiantScale =>
@@ -188,6 +188,44 @@ namespace IssaPlugin.Items
                 return 1f;
 
             return Mathf.Max(1f, ModConfig.SuperJumboBurger.FlickPowerMultiplier.Value);
+        }
+
+        /// <summary>
+        /// Multiplier for the giant flick's world-space hitbox at the given scale.
+        ///
+        /// The base game's JumboBurgerSwingHitBoxSize is a constant sized for the vanilla
+        /// giant, and CharacterScale is applied to BonesParent rather than the golfer
+        /// transform, so TransformPoint does not enlarge it. Without this, a super giant
+        /// swings a 3x-sized box.
+        ///
+        /// Returns 1 (unchanged) at or below the vanilla giant scale, so a vanilla Jumbo
+        /// Burger's hitbox is untouched. Interpolates between that and full
+        /// size-proportional scaling by the configured FlickHitboxScaling (unclamped
+        /// past 1, so values above 1 add extra reach).
+        ///
+        /// Takes scale as a parameter because GetSwingHitBox is evaluated on the
+        /// swinging PlayerGolfer, whose CharacterScale is a SyncVar.
+        /// </summary>
+        public static float GetFlickHitboxMultiplier(float swingerScale)
+        {
+            float vanillaScale = VanillaGiantScale;
+            if (vanillaScale <= 0f || swingerScale <= vanillaScale)
+                return 1f;
+
+            if (ModConfig.SuperJumboBurger == null)
+                return 1f;
+
+            float scaling = Mathf.Clamp(
+                ModConfig.SuperJumboBurger.FlickHitboxScaling.Value,
+                0f,
+                2f
+            );
+            float sizeRatio = swingerScale / vanillaScale;
+
+            // Unclamped: Mathf.Lerp clamps t to 0-1, which would make the config's
+            // 1-2 range a no-op. 0 keeps the vanilla jumbo box, 1 is fully
+            // proportional, 2 is twice the extra reach beyond vanilla.
+            return 1f + (sizeRatio - 1f) * scaling;
         }
 
         /// Starts the giant form. Returns false when it could not be started, so the

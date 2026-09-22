@@ -1,11 +1,14 @@
+using System.Collections.Generic;
 using System.Reflection;
+using Brimstone.Geometry;
 using HarmonyLib;
 using IssaPlugin.Items;
+using UnityEngine;
 
 namespace IssaPlugin.Patches
 {
     /// <summary>
-    /// Shared state for the two patches below.
+    /// Shared state for the flick-power patches below.
     ///
     /// GetSwingHitSpeed does not receive the swinger, so it is captured from its caller,
     /// HitWithGolfSwingInternal.
@@ -92,6 +95,64 @@ namespace IssaPlugin.Patches
             __result *= SuperJumboBurgerBehaviour.GetFlickPowerMultiplier(
                 movement.CharacterScale
             );
+        }
+    }
+
+    /// <summary>
+    /// Enlarges the giant flick's OverlapBox while the swinger is in a Super Jumbo
+    /// Burger form.
+    ///
+    /// GetSwingHitBox is the single chokepoint for both the swing-hit OverlapBox and
+    /// the trajectory-preview OverlapBox. Size and the offset from the player are
+    /// scaled together so the region stays in front of the giant instead of growing
+    /// equally backward through their body.
+    ///
+    /// GetLocalPlayerEffectiveSwingHitBoxLocalCenter is deliberately not patched: the
+    /// camera, golf-tee placement, ball-return, and item-drop paths also read it, and
+    /// none of those should grow with the flick.
+    /// </summary>
+    [HarmonyPatch]
+    static class SuperJumboBurgerFlickHitboxPatch
+    {
+        static IEnumerable<MethodBase> TargetMethods()
+        {
+            var method = AccessTools.Method(typeof(PlayerGolfer), "GetSwingHitBox");
+            if (method == null)
+            {
+                IssaPluginPlugin.Log.LogWarning(
+                    "[SuperJumboBurger] PlayerGolfer.GetSwingHitBox not found — the "
+                        + "giant flick hitbox will not scale with size. A game update "
+                        + "likely renamed it."
+                );
+                yield break;
+            }
+
+            yield return method;
+        }
+
+        static void Postfix(PlayerGolfer __instance, ref Box __result)
+        {
+            if (__instance == null)
+                return;
+
+            var info = __instance.PlayerInfo;
+            if (info == null || !info.IsInJumboBurgerGiantForm)
+                return;
+
+            var movement = info.Movement;
+            if (movement == null)
+                return;
+
+            float multiplier = SuperJumboBurgerBehaviour.GetFlickHitboxMultiplier(
+                movement.CharacterScale
+            );
+            if (multiplier <= 1f)
+                return;
+
+            Vector3 playerPosition = __instance.transform.position;
+            Vector3 scaledCenter =
+                playerPosition + (__result.center - playerPosition) * multiplier;
+            __result = new Box(scaledCenter, __result.Size * multiplier, __result.orientation);
         }
     }
 }
