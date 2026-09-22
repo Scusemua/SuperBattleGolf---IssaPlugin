@@ -16,6 +16,7 @@ namespace IssaPlugin.Overlays
     public class SpinachOverlay : MonoBehaviour
     {
         public static SpinachOverlay Instance { get; private set; }
+        public static bool IsActive => Instance != null && Instance._active;
 
         // ── Effect state ──────────────────────────────────────────────────
         private bool _active;
@@ -94,6 +95,7 @@ namespace IssaPlugin.Overlays
                 (FreezeItem.IsFrozen ? 1 : 0)
                 + (LowGravityItem.IsActive ? 1 : 0)
                 + (WindStormOverlay.IsActive ? 1 : 0)
+                + (PowerJammerOverlay.IsActive ? 1 : 0)
                 + (jetpackShowing ? 1 : 0);
             float barY = EffectBarLayout.GetBarY(slot);
 

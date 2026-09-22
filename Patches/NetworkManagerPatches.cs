@@ -300,6 +300,24 @@ namespace IssaPlugin.Patches
             Reader<LowGravityEndMessage>.read =
                 LowGravityEndMessageSerialization.ReadLowGravityEndMessage;
 
+            // ------------------------------
+            // ---- PowerJammer Messages ----
+            NetworkClient.RegisterHandler<PowerJammerBeginMessage>(
+                PowerJammerNetworkBridge.HandlePowerJammerBegin
+            );
+            Writer<PowerJammerBeginMessage>.write =
+                PowerJammerBeginMessageSerialization.WritePowerJammerBeginMessage;
+            Reader<PowerJammerBeginMessage>.read =
+                PowerJammerBeginMessageSerialization.ReadPowerJammerBeginMessage;
+
+            NetworkClient.RegisterHandler<PowerJammerEndMessage>(
+                PowerJammerNetworkBridge.HandlePowerJammerEnd
+            );
+            Writer<PowerJammerEndMessage>.write =
+                PowerJammerEndMessageSerialization.WritePowerJammerEndMessage;
+            Reader<PowerJammerEndMessage>.read =
+                PowerJammerEndMessageSerialization.ReadPowerJammerEndMessage;
+
             // --------------------------------
             // ---- StealthBomber Messages ----
             NetworkClient.RegisterHandler<BomberVisualSpawnMessage>(
@@ -404,6 +422,19 @@ namespace IssaPlugin.Patches
                             $"[LowGravity] Server received LowGravityActivateMessage. identity={(conn.identity != null ? "OK" : "NULL")}, bridge={(bridge != null ? "OK" : "NULL")}"
                         );
                         bridge?.ServerActivateLowGravity();
+                    }
+                );
+
+            Writer<PowerJammerActivateMessage>.write =
+                PowerJammerActivateMessageSerialization.WritePowerJammerActivateMessage;
+            Reader<PowerJammerActivateMessage>.read =
+                PowerJammerActivateMessageSerialization.ReadPowerJammerActivateMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<PowerJammerActivateMessage>(
+                    (conn, msg) =>
+                    {
+                        GetBridge<PowerJammerNetworkBridge>(conn)
+                            ?.ServerActivatePowerJammer();
                     }
                 );
 
@@ -2035,6 +2066,7 @@ namespace IssaPlugin.Patches
             // The periodic 5-second sync will update all clients within one tick.
             SpawnWeightsSyncer.SyncToConnection(connection);
             ItemConfigSyncer.BroadcastToConnection(connection);
+            PowerJammerNetworkBridge.SyncActiveSessionToConnection(connection);
         }
     }
 

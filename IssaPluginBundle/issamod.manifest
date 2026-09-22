@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 2297587929
+CRC: 3602449037
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: bf7e608e1dbdda93dc8f670c1012a82f
+    Hash: d1f8037384025101089d6da68426ae3c
   TypeTreeHash:
     serializedVersion: 2
     Hash: 5a8cce00eebcad12dd14cf3a32c3a8ad
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 565c2482ffad053eb4e8aeaaa07a9e9f
+    Hash: 57f7bf1dad23cc6bed436a2b45bc61d8
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -128,6 +128,7 @@ Assets:
 - Assets/Assets/super_jumbo_burger.prefab
 - Assets/Assets/wall.prefab
 - Assets/Assets/bowling_ball.prefab
+- Assets/Assets/power_jammer_icon.png
 - Assets/Assets/position_swap_handheld.prefab
 - Assets/Assets/spike_ball.prefab
 - Assets/Assets/stealth_bomber_tablet.prefab

@@ -139,12 +139,14 @@ namespace IssaPlugin.Items
             float barH = EffectBarLayout.BarHeight;
             float barX = EffectBarLayout.GetBarX();
 
-            // Stack above Freeze (slot 0) and LowGravity (slot 1) if active.
-            int slot = 0;
-            if (FreezeItem.IsFrozen)
-                slot++;
-            if (LowGravityItem.IsActive)
-                slot++;
+            // This per-player status sits above every world-effect/buff bar.
+            int slot =
+                (FreezeItem.IsFrozen ? 1 : 0)
+                + (LowGravityItem.IsActive ? 1 : 0)
+                + (WindStormOverlay.IsActive ? 1 : 0)
+                + (PowerJammerOverlay.IsActive ? 1 : 0)
+                + (JetpackOverlay.IsEquippedLocally ? 1 : 0)
+                + (SpinachOverlay.IsActive ? 1 : 0);
             float barY = EffectBarLayout.GetBarY(slot);
 
             GUI.DrawTexture(new Rect(barX, barY, barW, barH), _barBgTexture);

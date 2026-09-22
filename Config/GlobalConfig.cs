@@ -341,6 +341,7 @@ namespace IssaPlugin
                 "GolfCartLauncherEnabled",
                 "Golf Cart Launcher"
             );
+            Reg(cfg, _itemEnabledEntries, 138, "PowerJammerEnabled", "Power Jammer");
 
             // ── Warnings ───────────────────────────────────────────────────────
             WarningsEnabled = cfg.Bind(

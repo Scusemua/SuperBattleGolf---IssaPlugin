@@ -16,6 +16,7 @@ namespace IssaPlugin
         public static AC130Config AC130 { get; private set; }
         public static FreezeConfig Freeze { get; private set; }
         public static LowGravityConfig LowGravity { get; private set; }
+        public static PowerJammerConfig PowerJammer { get; private set; }
         public static SniperRifleConfig SniperRifle { get; private set; }
         public static DonutConfig Donut { get; private set; }
         public static JavelinConfig Javelin { get; private set; }
@@ -61,6 +62,7 @@ namespace IssaPlugin
             AC130 = new AC130Config(cfg, Global);
             Freeze = new FreezeConfig(cfg, Global);
             LowGravity = new LowGravityConfig(cfg, Global);
+            PowerJammer = new PowerJammerConfig(cfg, Global);
             SniperRifle = new SniperRifleConfig(cfg, Global);
             Donut = new DonutConfig(cfg, Global);
             Javelin = new JavelinConfig(cfg, Global);

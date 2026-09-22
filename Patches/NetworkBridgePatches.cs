@@ -26,6 +26,8 @@ namespace IssaPlugin.Patches
                 __instance.gameObject.AddComponent<FreezeNetworkBridge>();
             if (!__instance.GetComponent<LowGravityNetworkBridge>())
                 __instance.gameObject.AddComponent<LowGravityNetworkBridge>();
+            if (!__instance.GetComponent<PowerJammerNetworkBridge>())
+                __instance.gameObject.AddComponent<PowerJammerNetworkBridge>();
             if (!__instance.GetComponent<DonutNetworkBridge>())
                 __instance.gameObject.AddComponent<DonutNetworkBridge>();
             if (!__instance.GetComponent<JavelinNetworkBridge>())

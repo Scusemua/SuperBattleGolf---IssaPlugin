@@ -57,6 +57,7 @@ namespace IssaPlugin.Items
         public static Sprite AC130Icon { get; private set; }
         public static Sprite FreezeIcon { get; private set; }
         public static Sprite LowGravityIcon { get; private set; }
+        public static Sprite PowerJammerIcon { get; private set; }
         public static Sprite SniperRifleIcon { get; private set; }
         public static Sprite DonutIcon { get; private set; }
         public static Sprite JavelinIcon { get; private set; }
@@ -86,6 +87,7 @@ namespace IssaPlugin.Items
         public static GameObject BatModelPrefab { get; private set; }
         public static GameObject FreezeModelPrefab { get; private set; }
         public static GameObject LowGravityModelPrefab { get; private set; }
+        public static GameObject PowerJammerModelPrefab { get; private set; }
         public static GameObject SniperRiflePrefab { get; private set; }
         public static GameObject DonutHandheldPrefab { get; private set; }
         public static GameObject JavelinHandheldPrefab { get; private set; }
@@ -412,6 +414,7 @@ namespace IssaPlugin.Items
                 SpriteAsset(p => AC130Icon = p, "ac130_icon.png"),
                 SpriteAsset(p => FreezeIcon = p, "freeze_effect_icon.png"),
                 SpriteAsset(p => LowGravityIcon = p, "gravity_remote_icon.png"),
+                SpriteAsset(p => PowerJammerIcon = p, "power_jammer_icon.png", optional: true),
                 SpriteAsset(p => SniperRifleIcon = p, "sniper_rifle_icon.png"),
                 SpriteAsset(p => DonutIcon = p, "donut_icon_v2.png"),
                 SpriteAsset(p => JavelinIcon = p, "javelin_icon.png"),
@@ -441,6 +444,11 @@ namespace IssaPlugin.Items
                 HandheldPrefab(p => BatModelPrefab = p, "bat_model.prefab"),
                 HandheldPrefab(p => FreezeModelPrefab = p, "snowball.prefab"),
                 HandheldPrefab(p => LowGravityModelPrefab = p, "gravity_remote.prefab"),
+                HandheldPrefab(
+                    p => PowerJammerModelPrefab = p,
+                    "power_jammer_remote.prefab",
+                    optional: true
+                ),
                 HandheldPrefab(p => SniperRiflePrefab = p, "intervention.prefab"),
                 HandheldPrefab(p => DonutHandheldPrefab = p, "donut_model.prefab"),
                 HandheldPrefab(p => JavelinHandheldPrefab = p, "javelin_rocket_launcher.prefab"),
@@ -728,6 +736,10 @@ namespace IssaPlugin.Items
             // SuperDonut fallbacks: use Donut assets when the dedicated ones are absent.
             SuperDonutIcon ??= DonutIcon;
             SuperDonutHandheldPrefab ??= DonutHandheldPrefab;
+
+            // Dedicated jammer art is optional; use the existing remote until supplied.
+            PowerJammerIcon ??= LowGravityIcon;
+            PowerJammerModelPrefab ??= LowGravityModelPrefab;
 
             // SuperShapeShifter icon falls back to ShapeShifter icon when the dedicated one is absent.
             SuperShapeShifterIcon ??= ShapeShifterIcon;

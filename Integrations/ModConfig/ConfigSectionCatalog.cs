@@ -54,6 +54,7 @@ namespace IssaPlugin.Integrations.ModConfigUI
                 Group("Placeable Wall", "PlaceableWall"),
                 Group("Poison Jar", "PoisonJar", "PoisonOverlay"),
                 Group("Position Swap", "PositionSwap"),
+                Group("Power Jammer", "PowerJammer"),
                 Group("Predator Missile", "PredatorMissile"),
                 Group("Red Bull", "RedBull"),
                 Group("Rocket Tether", "RocketTether"),

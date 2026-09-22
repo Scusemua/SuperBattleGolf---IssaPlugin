@@ -1,6 +1,6 @@
 # IssaMod
 
-Adds **37 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
+Adds **39 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
 
 For more information as well as the mod's source code, please see [the mod's GitHub repository](https://github.com/Scusemua/SuperBattleGolf---IssaPlugin/).
 
@@ -48,6 +48,9 @@ Turn the world into ice and watch as everybody helplessly slips around.
 
 ### 🌌 Low Gravity
 Reduces gravity across the entire course for a configurable duration. Shots fly further, players float on hits, and any ball already airborne gets a free extension. Can backfire badly on anyone with a long putt already in motion. (And yes, the swing preview / power bar IS adjusted during low gravity.)
+
+### 📵 Power Jammer
+Temporarily removes the terrain and hazard predictions from every opponent's swing power gauge, forcing them to judge shots without the usual grass, sand, water, and out-of-bounds color hints. A synchronized timer shows how long the disruption remains. The activator is immune by default, but that can be changed in the configuration.
 
 ### 🎯 M200 Intervention
 A scoped sniper rifle. Right-click to zoom and show the scope overlay. Fire to hit instantly at any range without the backwards-knockback dive of the Elephant Gun. Tight spread when scoped, normal spread when hipfired. One shot, one hole in someone's plan.
