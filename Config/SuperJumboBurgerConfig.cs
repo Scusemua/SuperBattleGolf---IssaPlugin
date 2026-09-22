@@ -26,7 +26,7 @@ namespace IssaPlugin
                 new ConfigDescription(
                     "How large the player becomes. The base game's Jumbo Burger is 3. "
                         + "Values far above ~8 make the player wider than many fairways.",
-                    new AcceptableValueRange<float>(1.0f, 100f)
+                    new AcceptableValueRange<float>(1.0f, 500f)
                 )
             );
             Duration = cfg.Bind(

@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using HarmonyLib;
 using Mirror;
@@ -11,6 +12,7 @@ namespace IssaPlugin.Items.Cannon
         public PlayerInfo ThrowerInfo;
 
         public Vector3 InitialVelocity;
+        public ItemUseId ImpactItemUseId;
 
         public float ThrowerIgnoreDuration = 2.0f;
 
@@ -20,11 +22,9 @@ namespace IssaPlugin.Items.Cannon
         private const float ThrowerClearDistance = 4f;
 
         private const float MinHittableImpactSpeed = 5f;
-        private const double PlayerHitCooldown = 0.25;
-
         // A player can have several colliders. Suppress duplicate OnCollisionEnter
-        // callbacks from the same physical impact without preventing a later re-hit.
-        private readonly Dictionary<uint, double> _lastPlayerHitTime = new();
+        // callbacks for the same window the base game ignores repeat cart contacts.
+        private readonly Dictionary<uint, double> _nextAllowedPlayerHitTime = new();
 
         // Countdown for the thrower-collision grace period, and the thrower's transform
         // cached at Start so the per-frame check is a cheap IsChildOf rather than a
@@ -33,6 +33,7 @@ namespace IssaPlugin.Items.Cannon
         private Transform _throwerTransform;
 
         private Rigidbody _rb;
+        private Vector3 _velocityBeforePhysics;
 
         // Collider pairs we IgnoreCollision'd at spawn so we can restore them when the
         // grace period ends (otherwise the shooter stays permanently intangible).
@@ -52,6 +53,7 @@ namespace IssaPlugin.Items.Cannon
             _rb.useGravity = true;
             _rb.isKinematic = false;
             _rb.linearVelocity = InitialVelocity;
+            _velocityBeforePhysics = _rb.linearVelocity;
             _rb.mass =
                 ModConfig.Cannon.BowlingBallMass.Value
                 * ModConfig.Cannon.BowlingBallMassMultiplier.Value;
@@ -152,9 +154,6 @@ namespace IssaPlugin.Items.Cannon
             if (_rb == null)
                 return;
 
-            if (ThrowerInfo == null)
-                return;
-
             // Contact modification (and some PhysicsManager foliage/terrain paths) can
             // deliver OnCollisionEnter with contactCount == 0. GetContact(0) throws then.
             Vector3 hitPosition;
@@ -166,14 +165,15 @@ namespace IssaPlugin.Items.Cannon
                         ? collision.collider.ClosestPoint(_rb.position)
                         : transform.position;
 
-            // Collision.relativeVelocity is captured for the impact; Rigidbody.linearVelocity
-            // is already post-collision here. This callback is on the ball, so negating
-            // the relative velocity gives the ball's approach relative to the victim.
-            Vector3 incidentVelocity = -collision.relativeVelocity;
-            if (incidentVelocity.sqrMagnitude < 0.0001f)
-                incidentVelocity = _rb.linearVelocity;
+            // FixedUpdate cached the ball's absolute velocity before this physics step.
+            // Rigidbody.linearVelocity is already post-collision inside OnCollisionEnter.
+            Vector3 incidentVelocity = _velocityBeforePhysics;
+            Vector3 impactDirectionVelocity =
+                incidentVelocity.sqrMagnitude >= 0.0001f
+                    ? incidentVelocity
+                    : -collision.relativeVelocity;
 
-            Vector3 hitDirection = incidentVelocity.normalized;
+            Vector3 hitDirection = impactDirectionVelocity.normalized;
             if (hitDirection.sqrMagnitude < 0.0001f)
                 hitDirection = (hitPosition - transform.position).normalized;
 
@@ -211,13 +211,28 @@ namespace IssaPlugin.Items.Cannon
 
                 double now = NetworkTime.time;
                 if (
-                    _lastPlayerHitTime.TryGetValue(victimIdentity.netId, out double lastHit)
-                    && now - lastHit < PlayerHitCooldown
+                    _nextAllowedPlayerHitTime.TryGetValue(
+                        victimIdentity.netId,
+                        out double nextAllowedHit
+                    )
+                    && now < nextAllowedHit
                 )
                     return;
-                _lastPlayerHitTime[victimIdentity.netId] = now;
+                double repeatSuppressionDuration =
+                    movement.PlayerInfo != null
+                    && movement.PlayerInfo.IsInJumboBurgerGiantForm
+                        ? 0.2
+                        : 0.5;
+                _nextAllowedPlayerHitTime[victimIdentity.netId] =
+                    now + repeatSuppressionDuration;
+                StartCoroutine(
+                    TemporarilyIgnoreVictimCollisions(
+                        movement.transform,
+                        (float)repeatSuppressionDuration
+                    )
+                );
 
-                var throwerIdentity = ThrowerInfo.GetComponent<NetworkIdentity>();
+                var throwerIdentity = ThrowerInfo?.GetComponent<NetworkIdentity>();
                 uint throwerNetId = throwerIdentity != null ? throwerIdentity.netId : 0u;
 
                 float relativeSpeed = Mathf.Sqrt(relativeSpeedSq);
@@ -245,7 +260,7 @@ namespace IssaPlugin.Items.Cannon
                     horizontalDirection.Normalize();
                 }
 
-                Vector3 incidentHorizontal = incidentVelocity;
+                Vector3 incidentHorizontal = impactDirectionVelocity;
                 incidentHorizontal.y = 0f;
                 incidentHorizontal.Normalize();
                 if (horizontalDirection.sqrMagnitude < 0.0001f)
@@ -263,14 +278,10 @@ namespace IssaPlugin.Items.Cannon
                         + Vector3.up * verticalKnockback
                     ) * knockbackMultiplier;
 
-                float dist = Vector3.Distance(ThrowerInfo.transform.position, hitPosition);
-                var useId = new ItemUseId(
-                    ThrowerInfo.PlayerId.Guid,
-                    BlackHoleGrenadeItem.NextUseIndex(),
-                    ItemType.RocketLauncher,
-                    false
-                );
-
+                float dist =
+                    ThrowerInfo != null
+                        ? Vector3.Distance(ThrowerInfo.transform.position, hitPosition)
+                        : 0f;
                 var knockoutMsg = new BowlingBallKnockoutMessage
                 {
                     VictimNetId = victimIdentity.netId,
@@ -278,7 +289,7 @@ namespace IssaPlugin.Items.Cannon
                     LocalHitPoint = movement.transform.InverseTransformPoint(hitPosition),
                     Distance = dist,
                     KnockbackVelocityChange = playerVelocityChange,
-                    ItemUseId = useId,
+                    ItemUseId = ImpactItemUseId,
                 };
 
                 // Player movement is owner-authoritative, so only the victim may apply
@@ -321,6 +332,9 @@ namespace IssaPlugin.Items.Cannon
             if (hittable.GetComponentInParent<GolfCartInfo>() != null)
                 return;
 
+            if (ThrowerInfo == null)
+                return;
+
             var inventory = ThrowerInfo.GetComponent<PlayerInventory>();
             if (inventory == null)
                 return;
@@ -331,20 +345,13 @@ namespace IssaPlugin.Items.Cannon
             );
             float distance = Vector3.Distance(ThrowerInfo.transform.position, hitPosition);
 
-            var hitUseId = new ItemUseId(
-                ThrowerInfo.PlayerId.Guid,
-                BlackHoleGrenadeItem.NextUseIndex(),
-                ItemType.RocketLauncher,
-                false
-            );
-
             // HitWithItem runs HitWithItemInternal locally, then tries CmdHitWithItem
             // to Rpc remotes. On a listen host that Cmd shortcut works. On a dedicated
             // server SendCommandInternal is a no-op (no active client), so we manually
             // broadcast the same Rpc path afterward.
             hittable.HitWithItem(
                 ItemType.RocketLauncher,
-                hitUseId,
+                ImpactItemUseId,
                 localHitPoint,
                 hitDirection,
                 localOrigin,
@@ -361,7 +368,7 @@ namespace IssaPlugin.Items.Cannon
                 BroadcastItemHitToClients(
                     hittable,
                     ItemType.RocketLauncher,
-                    hitUseId,
+                    ImpactItemUseId,
                     localHitPoint,
                     hitDirection,
                     localOrigin,
@@ -369,6 +376,41 @@ namespace IssaPlugin.Items.Cannon
                     inventory,
                     NetworkTime.time
                 );
+        }
+
+        private IEnumerator TemporarilyIgnoreVictimCollisions(
+            Transform victimTransform,
+            float duration
+        )
+        {
+            var ballColliders = GetComponentsInChildren<Collider>(true);
+            var victimColliders =
+                victimTransform != null
+                    ? victimTransform.GetComponentsInChildren<Collider>(true)
+                    : null;
+            if (victimColliders == null)
+                yield break;
+
+            SetIgnored(true);
+            yield return new WaitForSeconds(duration);
+            SetIgnored(false);
+
+            void SetIgnored(bool ignored)
+            {
+                for (int i = 0; i < ballColliders.Length; i++)
+                {
+                    var ballCollider = ballColliders[i];
+                    if (ballCollider == null)
+                        continue;
+
+                    for (int j = 0; j < victimColliders.Length; j++)
+                    {
+                        var victimCollider = victimColliders[j];
+                        if (victimCollider != null)
+                            Physics.IgnoreCollision(ballCollider, victimCollider, ignored);
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -426,6 +468,9 @@ namespace IssaPlugin.Items.Cannon
 
         public void FixedUpdate()
         {
+            if (_rb != null)
+                _velocityBeforePhysics = _rb.linearVelocity;
+
             if (!_isIgnoringThrower && _throwerIgnoreTimer <= 0f)
                 return;
 

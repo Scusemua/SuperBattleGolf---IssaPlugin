@@ -683,6 +683,7 @@ namespace IssaPlugin.Items
                     p => BowlingBallPrefab = p,
                     "bowling_ball.prefab",
                     0xCA110001u,
+                    typeof(Cannon.BowlingBallClientSetup),
                     optional: true
                 ),
             };

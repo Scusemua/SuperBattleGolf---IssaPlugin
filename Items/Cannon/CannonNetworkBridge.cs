@@ -172,6 +172,7 @@ namespace IssaPlugin.Items
             if (
                 movement.IsKnockedOutOrRecovering
                 || localInfo?.AsHittable?.FrozenState == FrozenState.Frozen
+                || (localInfo != null && localInfo.ActiveGolfCartSeat.IsValid())
             )
                 return;
 
@@ -191,7 +192,7 @@ namespace IssaPlugin.Items
 
             movement.TryKnockOut(
                 throwerInfo,
-                KnockoutType.Rocket,
+                KnockoutType.GolfCart,
                 false,
                 msg.LocalHitPoint,
                 msg.Distance,
@@ -204,10 +205,8 @@ namespace IssaPlugin.Items
                 out _
             );
 
-            // TryKnockOut changes the movement state immediately, but it deliberately
-            // does not apply velocity. The base golf-cart path adds its velocity change
-            // even when knockout is blocked (for example by immunity), so mirror that
-            // behavior exactly.
+            // Match the base cart path's velocity ordering: TryKnockOut first, then
+            // apply the tuned velocity change even if protection blocked the knockout.
             var victimRigidbody = movement.GetComponentInParent<Rigidbody>();
             if (victimRigidbody != null && !victimRigidbody.isKinematic)
                 victimRigidbody.linearVelocity += knockbackVelocityChange;
@@ -267,6 +266,12 @@ namespace IssaPlugin.Items
 
             var behaviour = bowlingBall.AddComponent<BowlingBallBehavior>();
             behaviour.ThrowerInfo = throwerInfo ?? attributionPlayer;
+            behaviour.ImpactItemUseId = new ItemUseId(
+                behaviour.ThrowerInfo.PlayerId.Guid,
+                CannonItem.NextUseIndex(),
+                ItemRegistry.CannonItemType,
+                false
+            );
             behaviour.ThrowerIgnoreDuration = ModConfig.Cannon.ThrowerIgnoreDuration.Value;
             behaviour.InitialVelocity = direction * ModConfig.Cannon.LaunchSpeed.Value;
 

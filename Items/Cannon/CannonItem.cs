@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Threading;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -10,6 +11,9 @@ namespace IssaPlugin.Items
         // firing (the game's input buffer can retry TryUseItem). Static because only
         // one local player fires at a time.
         private static bool _isFiring;
+        private static int _useIndex;
+
+        public static int NextUseIndex() => Interlocked.Increment(ref _useIndex);
 
         /// <summary>True while the local player is mid burst.</summary>
         public static bool IsFiring => _isFiring;
