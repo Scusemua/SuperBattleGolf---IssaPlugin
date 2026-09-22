@@ -1,3 +1,5 @@
+using UnityEngine;
+
 namespace IssaPlugin.Items
 {
     /// <summary>
@@ -16,11 +18,25 @@ namespace IssaPlugin.Items
         private static bool _active;
         private static T _holder;
 
-        /// <summary>The bridge instance currently holding the lock, or null.</summary>
-        public static T Holder => _holder;
+        /// <summary>The live bridge instance currently holding the lock, or null.</summary>
+        public static T Holder
+        {
+            get
+            {
+                ClearStaleHolder();
+                return _holder;
+            }
+        }
 
         /// <summary>True if any instance currently holds the lock.</summary>
-        public static bool IsActive => _active;
+        public static bool IsActive
+        {
+            get
+            {
+                ClearStaleHolder();
+                return _active;
+            }
+        }
 
         /// <summary>
         /// Attempts to acquire the lock for <paramref name="instance"/>.
@@ -28,10 +44,25 @@ namespace IssaPlugin.Items
         /// </summary>
         public static bool TryAcquire(T instance)
         {
+            ClearStaleHolder();
             if (_active)
                 return false;
             _active = true;
             _holder = instance;
+            return true;
+        }
+
+        /// <summary>
+        /// Releases the lock only when <paramref name="instance"/> still owns it.
+        /// This prevents delayed cleanup from one session releasing a newer session.
+        /// </summary>
+        public static bool Release(T instance)
+        {
+            ClearStaleHolder();
+            if (!_active || !ReferenceEquals(_holder, instance))
+                return false;
+
+            Release();
             return true;
         }
 
@@ -40,6 +71,18 @@ namespace IssaPlugin.Items
         {
             _active = false;
             _holder = null;
+        }
+
+        private static void ClearStaleHolder()
+        {
+            if (
+                _active
+                && (
+                    _holder == null
+                    || (_holder is Object unityObject && unityObject == null)
+                )
+            )
+                Release();
         }
     }
 }
