@@ -161,12 +161,26 @@ namespace IssaPlugin.Items
         public static void HandleBowlingBallKnockout(BowlingBallKnockoutMessage msg)
         {
             var local = NetworkClient.localPlayer;
-            if (local == null)
+            if (local == null || local.netId != msg.VictimNetId)
                 return;
 
             var movement = local.GetComponent<PlayerMovement>();
             if (movement == null)
                 return;
+
+            var localInfo = local.GetComponent<PlayerInfo>();
+            if (
+                movement.IsKnockedOutOrRecovering
+                || localInfo?.AsHittable?.FrozenState == FrozenState.Frozen
+            )
+                return;
+
+            Vector3 knockbackVelocityChange =
+                localInfo?.AsHittable != null
+                    ? localInfo.AsHittable.ApplyVehicleHitKnockbackReduction(
+                        msg.KnockbackVelocityChange
+                    )
+                    : msg.KnockbackVelocityChange;
 
             PlayerInfo throwerInfo = null;
             if (
@@ -181,7 +195,7 @@ namespace IssaPlugin.Items
                 false,
                 msg.LocalHitPoint,
                 msg.Distance,
-                msg.IncomingVelocity,
+                knockbackVelocityChange,
                 ElectromagnetShieldHitBlockType.FullyBlocked,
                 msg.ItemUseId,
                 false,
@@ -189,6 +203,14 @@ namespace IssaPlugin.Items
                 out _,
                 out _
             );
+
+            // TryKnockOut changes the movement state immediately, but it deliberately
+            // does not apply velocity. The base golf-cart path adds its velocity change
+            // even when knockout is blocked (for example by immunity), so mirror that
+            // behavior exactly.
+            var victimRigidbody = movement.GetComponentInParent<Rigidbody>();
+            if (victimRigidbody != null && !victimRigidbody.isKinematic)
+                victimRigidbody.linearVelocity += knockbackVelocityChange;
         }
 
         /// <summary>

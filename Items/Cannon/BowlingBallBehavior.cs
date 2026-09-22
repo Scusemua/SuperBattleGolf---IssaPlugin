@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using HarmonyLib;
 using Mirror;
 using UnityEngine;
@@ -18,7 +19,12 @@ namespace IssaPlugin.Items.Cannon
         // harmlessly through its owner, so we drop it as soon as it is no longer needed.
         private const float ThrowerClearDistance = 4f;
 
-        private const float MinKnockoutSpeed = 5f;
+        private const float MinHittableImpactSpeed = 5f;
+        private const double PlayerHitCooldown = 0.25;
+
+        // A player can have several colliders. Suppress duplicate OnCollisionEnter
+        // callbacks from the same physical impact without preventing a later re-hit.
+        private readonly Dictionary<uint, double> _lastPlayerHitTime = new();
 
         // Countdown for the thrower-collision grace period, and the thrower's transform
         // cached at Start so the per-frame check is a cheap IsChildOf rather than a
@@ -143,7 +149,7 @@ namespace IssaPlugin.Items.Cannon
             )
                 return;
 
-            if (_rb == null || _rb.linearVelocity.magnitude <= MinKnockoutSpeed)
+            if (_rb == null)
                 return;
 
             if (ThrowerInfo == null)
@@ -160,7 +166,14 @@ namespace IssaPlugin.Items.Cannon
                         ? collision.collider.ClosestPoint(_rb.position)
                         : transform.position;
 
-            Vector3 hitDirection = _rb.linearVelocity.normalized;
+            // Collision.relativeVelocity is captured for the impact; Rigidbody.linearVelocity
+            // is already post-collision here. This callback is on the ball, so negating
+            // the relative velocity gives the ball's approach relative to the victim.
+            Vector3 incidentVelocity = -collision.relativeVelocity;
+            if (incidentVelocity.sqrMagnitude < 0.0001f)
+                incidentVelocity = _rb.linearVelocity;
+
+            Vector3 hitDirection = incidentVelocity.normalized;
             if (hitDirection.sqrMagnitude < 0.0001f)
                 hitDirection = (hitPosition - transform.position).normalized;
 
@@ -178,8 +191,77 @@ namespace IssaPlugin.Items.Cannon
                 if (victimIdentity == null)
                     return;
 
+                // Occupied carts receive the physical ball collision themselves. Do not
+                // detach and launch a seated passenger independently from their vehicle.
+                if (
+                    movement.PlayerInfo != null
+                    && movement.PlayerInfo.ActiveGolfCartSeat.IsValid()
+                )
+                    return;
+
+                var cartSettings = GameManager.GolfCartSettings;
+                float incidentSpeedSq = incidentVelocity.sqrMagnitude;
+                float relativeSpeedSq = collision.relativeVelocity.sqrMagnitude;
+                if (
+                    incidentSpeedSq < cartSettings.RunOverPlayerKnockoutMinSpeedSquared
+                    || relativeSpeedSq
+                        < cartSettings.RunOverPlayerKnockoutMinRelativeSpeedSquared
+                )
+                    return;
+
+                double now = NetworkTime.time;
+                if (
+                    _lastPlayerHitTime.TryGetValue(victimIdentity.netId, out double lastHit)
+                    && now - lastHit < PlayerHitCooldown
+                )
+                    return;
+                _lastPlayerHitTime[victimIdentity.netId] = now;
+
                 var throwerIdentity = ThrowerInfo.GetComponent<NetworkIdentity>();
                 uint throwerNetId = throwerIdentity != null ? throwerIdentity.netId : 0u;
+
+                float relativeSpeed = Mathf.Sqrt(relativeSpeedSq);
+                float impactT = Mathf.InverseLerp(
+                    cartSettings.RunOverPlayerKnockoutMinRelativeSpeed,
+                    cartSettings.RunOverPlayerKnockoutMaxRelativeSpeed,
+                    relativeSpeed
+                );
+                float horizontalKnockback = Mathf.Lerp(
+                    cartSettings.RunOverPlayerKnockoutMinHorizontalKnockback,
+                    cartSettings.RunOverPlayerKnockoutMaxHorizontalKnockback,
+                    impactT
+                );
+                float verticalKnockback = Mathf.Lerp(
+                    cartSettings.RunOverPlayerKnockoutMinVerticalKnockback,
+                    cartSettings.RunOverPlayerKnockoutMaxVerticalKnockback,
+                    impactT
+                );
+
+                Vector3 horizontalDirection = Vector3.zero;
+                if (collision.contactCount > 0)
+                {
+                    horizontalDirection = -collision.GetContact(0).normal;
+                    horizontalDirection.y = 0f;
+                    horizontalDirection.Normalize();
+                }
+
+                Vector3 incidentHorizontal = incidentVelocity;
+                incidentHorizontal.y = 0f;
+                incidentHorizontal.Normalize();
+                if (horizontalDirection.sqrMagnitude < 0.0001f)
+                    horizontalDirection = incidentHorizontal;
+                else if (
+                    incidentHorizontal.sqrMagnitude > 0.0001f
+                    && Vector3.Dot(horizontalDirection, incidentHorizontal) < 0f
+                )
+                    horizontalDirection = -horizontalDirection;
+
+                float knockbackMultiplier = ModConfig.Cannon.PlayerKnockbackMultiplier.Value;
+                Vector3 playerVelocityChange =
+                    (
+                        horizontalDirection * horizontalKnockback
+                        + Vector3.up * verticalKnockback
+                    ) * knockbackMultiplier;
 
                 float dist = Vector3.Distance(ThrowerInfo.transform.position, hitPosition);
                 var useId = new ItemUseId(
@@ -191,19 +273,29 @@ namespace IssaPlugin.Items.Cannon
 
                 var knockoutMsg = new BowlingBallKnockoutMessage
                 {
+                    VictimNetId = victimIdentity.netId,
                     ThrowerNetId = throwerNetId,
                     LocalHitPoint = movement.transform.InverseTransformPoint(hitPosition),
                     Distance = dist,
-                    IncomingVelocity = _rb.linearVelocity,
+                    KnockbackVelocityChange = playerVelocityChange,
                     ItemUseId = useId,
                 };
 
-                // Prefer the owning connection; fall back to SendToAll so a listen-host
-                // victim (localConnection) still receives the message.
+                // Player movement is owner-authoritative, so only the victim may apply
+                // the knockout and velocity. Never broadcast this message.
                 if (victimIdentity.connectionToClient != null)
                     victimIdentity.connectionToClient.Send(knockoutMsg);
+                else if (
+                    NetworkServer.localConnection != null
+                    && NetworkServer.localConnection.identity == victimIdentity
+                    && NetworkClient.active
+                )
+                    CannonNetworkBridge.HandleBowlingBallKnockout(knockoutMsg);
                 else
-                    NetworkServer.SendToAll(knockoutMsg);
+                    IssaPluginPlugin.Log.LogWarning(
+                        $"[Cannon] No owning connection for victim netId={victimIdentity.netId}; "
+                            + "knockout was not delivered."
+                    );
 
                 return;
             }
@@ -214,6 +306,9 @@ namespace IssaPlugin.Items.Cannon
             // a physics collision alone never triggers that reaction.
             var hittable = collision.gameObject.GetComponentInParent<Hittable>();
             if (hittable == null)
+                return;
+
+            if (incidentVelocity.magnitude <= MinHittableImpactSpeed)
                 return;
 
             // Players are handled above; HitWithItem on a player would stack a second

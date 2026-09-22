@@ -18,7 +18,7 @@ namespace IssaPlugin.Items
         public override GameObject HeldModelPrefab => AssetLoader.SuperJumboBurgerPrefab;
 
         public override int MaxUses => (int)ModConfig.SuperJumboBurger.Uses.Value;
-        public override float DefaultPoolWeight => 1f; // rare — it is a strong effect
+        public override float DefaultPoolWeight => 3f; // Epic tier
 
         public override Key GiveKey => ModConfig.SuperJumboBurger.GiveKey.Value;
 

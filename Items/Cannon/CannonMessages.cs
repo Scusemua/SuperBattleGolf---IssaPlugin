@@ -40,10 +40,11 @@ namespace IssaPlugin.Items
     /// </summary>
     public struct BowlingBallKnockoutMessage : NetworkMessage
     {
+        public uint VictimNetId;
         public uint ThrowerNetId;
         public Vector3 LocalHitPoint;
         public float Distance;
-        public Vector3 IncomingVelocity;
+        public Vector3 KnockbackVelocityChange;
         public ItemUseId ItemUseId;
     }
 
@@ -79,20 +80,22 @@ namespace IssaPlugin.Items
             BowlingBallKnockoutMessage msg
         )
         {
+            w.WriteUInt(msg.VictimNetId);
             w.WriteUInt(msg.ThrowerNetId);
             w.WriteVector3(msg.LocalHitPoint);
             w.WriteFloat(msg.Distance);
-            w.WriteVector3(msg.IncomingVelocity);
+            w.WriteVector3(msg.KnockbackVelocityChange);
             w.Write(msg.ItemUseId);
         }
 
         public static BowlingBallKnockoutMessage ReadBowlingBallKnockoutMessage(NetworkReader r) =>
             new()
             {
+                VictimNetId = r.ReadUInt(),
                 ThrowerNetId = r.ReadUInt(),
                 LocalHitPoint = r.ReadVector3(),
                 Distance = r.ReadFloat(),
-                IncomingVelocity = r.ReadVector3(),
+                KnockbackVelocityChange = r.ReadVector3(),
                 ItemUseId = r.Read<ItemUseId>(),
             };
     }

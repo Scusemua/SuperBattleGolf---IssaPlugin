@@ -28,6 +28,9 @@ namespace IssaPlugin
 
         public ConfigEntry<float> BowlingBallMassMultiplier { get; private set; }
 
+        /// <summary>Scales the base game's golf-cart knockback curve for Cannon hits.</summary>
+        public ConfigEntry<float> PlayerKnockbackMultiplier { get; private set; }
+
         /// <summary>
         /// Seconds after launch during which the ball ignores the shooter's colliders.
         /// </summary>
@@ -150,6 +153,16 @@ namespace IssaPlugin
                 new ConfigDescription(
                     "Multiplies the configured mass of the bowling balls.",
                     new AcceptableValueRange<float>(1f, 100f)
+                )
+            );
+
+            PlayerKnockbackMultiplier = cfg.Bind(
+                Section,
+                "PlayerKnockbackMultiplier",
+                1f,
+                new ConfigDescription(
+                    "Multiplies the horizontal and vertical player knockback calculated from the base game's golf-cart impact curve. 1 uses the normal golf-cart force.",
+                    new AcceptableValueRange<float>(0f, 5f)
                 )
             );
         }
