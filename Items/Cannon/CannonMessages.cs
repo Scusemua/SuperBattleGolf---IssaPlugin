@@ -31,12 +31,17 @@ namespace IssaPlugin.Items
     // ── Server → Client ──────────────────────────────────────────────────────
 
     /// <summary>
-    /// Tells the victim's client to run TryKnockOut locally.
+    /// Tells the victim's client to apply a scripted VelocityChange and run
+    /// TryKnockOut locally.
     ///
     /// Same pattern as Nuke / Flamethrower: PlayerMovement.TryKnockOut ends in a
     /// Command that only works when issued by an active client that owns the
     /// movement. Server-side collision therefore notifies the victim's machine
     /// rather than calling TryKnockOut on the server copy.
+    ///
+    /// IncomingVelocity is the ball's world velocity at contact. The victim applies
+    /// IncomingVelocity * ClientHitVelocityScale as ForceMode.VelocityChange so host
+    /// and remote shove strength share one tunable (PhysX contact impulse is not used).
     /// </summary>
     public struct BowlingBallKnockoutMessage : NetworkMessage
     {

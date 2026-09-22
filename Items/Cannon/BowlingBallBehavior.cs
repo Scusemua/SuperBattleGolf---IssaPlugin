@@ -171,12 +171,37 @@ namespace IssaPlugin.Items.Cannon
             // TryKnockOut ends in a Command that requires an active owning client;
             // calling it on the server copy fails on dedicated servers and is the
             // wrong authority model even on a listen host for remote victims.
+            //
+            // Shove strength uses a scripted VelocityChange (fraction of ball speed),
+            // not collision.impulse — the solver impulse is often enormous and does
+            // not match what PlayerMovement keeps after damping. Listen-host victims
+            // get the PhysX shove undone here so host and remote share one path.
             var movement = collision.gameObject.GetComponentInParent<PlayerMovement>();
             if (movement != null)
             {
                 var victimIdentity = movement.GetComponent<NetworkIdentity>();
                 if (victimIdentity == null)
                     return;
+
+                var victimRb = collision.rigidbody;
+                if (victimRb == null)
+                    victimRb = movement.GetComponentInParent<Rigidbody>();
+
+                // Undo the contact shove on the owning machine before the knockout
+                // message re-applies a tunable VelocityChange.
+                if (
+                    movement.isLocalPlayer
+                    && victimRb != null
+                    && collision.contactCount > 0
+                )
+                {
+                    // collision.impulse is the impulse applied to THIS body (the ball);
+                    // the player received the opposite. Adding it back cancels their shove.
+                    victimRb.AddForce(collision.impulse, ForceMode.Impulse);
+                }
+
+                // Prevent follow-up contacts from re-shoving after the undo.
+                IgnoreVictimColliders(movement.transform);
 
                 var throwerIdentity = ThrowerInfo.GetComponent<NetworkIdentity>();
                 uint throwerNetId = throwerIdentity != null ? throwerIdentity.netId : 0u;
@@ -274,6 +299,36 @@ namespace IssaPlugin.Items.Cannon
                     inventory,
                     NetworkTime.time
                 );
+        }
+
+        /// <summary>
+        /// Stops further PhysX contacts with a player after the first hit so the
+        /// listen-host undo is not immediately overwritten by a multi-contact pulse.
+        /// </summary>
+        private void IgnoreVictimColliders(Transform victimRoot)
+        {
+            if (victimRoot == null)
+                return;
+
+            if (_ballColliders == null || _ballColliders.Length == 0)
+                _ballColliders = GetComponentsInChildren<Collider>(true);
+
+            var victimCols = victimRoot.GetComponentsInChildren<Collider>(true);
+            for (int i = 0; i < _ballColliders.Length; i++)
+            {
+                var ballCol = _ballColliders[i];
+                if (ballCol == null)
+                    continue;
+
+                for (int j = 0; j < victimCols.Length; j++)
+                {
+                    var victimCol = victimCols[j];
+                    if (victimCol == null)
+                        continue;
+
+                    Physics.IgnoreCollision(ballCol, victimCol, true);
+                }
+            }
         }
 
         /// <summary>

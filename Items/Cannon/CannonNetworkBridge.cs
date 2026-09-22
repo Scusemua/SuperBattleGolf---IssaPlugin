@@ -155,8 +155,11 @@ namespace IssaPlugin.Items
 
         /// <summary>
         /// Victim-client handler for <see cref="BowlingBallKnockoutMessage"/>.
-        /// Runs TryKnockOut on the local player only — same authority model as Nuke /
-        /// Flamethrower burn knockouts.
+        ///
+        /// Applies a scripted VelocityChange (fraction of ball speed) on every victim —
+        /// host included — then runs TryKnockOut locally. Listen-host PhysX shove is
+        /// undone in <see cref="BowlingBallBehavior"/> before this runs so both sides
+        /// share one tunable path.
         /// </summary>
         public static void HandleBowlingBallKnockout(BowlingBallKnockoutMessage msg)
         {
@@ -174,6 +177,19 @@ namespace IssaPlugin.Items
                 && NetworkClient.spawned.TryGetValue(msg.ThrowerNetId, out var throwerIdentity)
             )
                 throwerInfo = throwerIdentity.GetComponent<PlayerInfo>();
+
+            // Remote clients own their PlayerMovement Rigidbody (ClientToServer); the
+            // ball's contact never reaches them. Hosts had their PhysX shove undone
+            // on contact so the same VelocityChange applies to everyone.
+            var rb = local.GetComponentInParent<Rigidbody>();
+            float scale = ModConfig.Cannon.ClientHitVelocityScale.Value;
+            Vector3 delta = msg.IncomingVelocity * scale;
+            float maxSpeed = ModConfig.Cannon.ClientHitMaxSpeed.Value;
+            if (maxSpeed > 0f && delta.sqrMagnitude > maxSpeed * maxSpeed)
+                delta = delta.normalized * maxSpeed;
+
+            if (rb != null && scale > 0f && delta.sqrMagnitude > 0.0001f)
+                rb.AddForce(delta, ForceMode.VelocityChange);
 
             movement.TryKnockOut(
                 throwerInfo,

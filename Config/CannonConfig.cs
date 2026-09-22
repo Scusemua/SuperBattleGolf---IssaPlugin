@@ -29,6 +29,17 @@ namespace IssaPlugin
         public ConfigEntry<float> BowlingBallMassMultiplier { get; private set; }
 
         /// <summary>
+        /// Fraction of the ball's velocity applied as ForceMode.VelocityChange when a
+        /// player is hit (host and remote). 0.15 ≈ 8 m/s at the default 55 launch speed.
+        /// </summary>
+        public ConfigEntry<float> ClientHitVelocityScale { get; private set; }
+
+        /// <summary>
+        /// Hard cap (m/s) on the scripted hit VelocityChange after scaling. 0 disables.
+        /// </summary>
+        public ConfigEntry<float> ClientHitMaxSpeed { get; private set; }
+
+        /// <summary>
         /// Seconds after launch during which the ball ignores the shooter's colliders.
         /// </summary>
         public ConfigEntry<float> ThrowerIgnoreDuration { get; private set; }
@@ -150,6 +161,26 @@ namespace IssaPlugin
                 new ConfigDescription(
                     "Multiplies the configured mass of the bowling balls.",
                     new AcceptableValueRange<float>(1f, 100f)
+                )
+            );
+
+            ClientHitVelocityScale = cfg.Bind(
+                Section,
+                "ClientHitVelocityScale",
+                0.15f,
+                new ConfigDescription(
+                    "Fraction of ball velocity applied as VelocityChange on hit (host and remote). Lower if players fly too far; raise if they barely move.",
+                    new AcceptableValueRange<float>(0f, 5f)
+                )
+            );
+
+            ClientHitMaxSpeed = cfg.Bind(
+                Section,
+                "ClientHitMaxSpeed",
+                18f,
+                new ConfigDescription(
+                    "Hard cap (m/s) on the scripted hit VelocityChange after scaling. 0 disables the cap.",
+                    new AcceptableValueRange<float>(0f, 500f)
                 )
             );
         }
