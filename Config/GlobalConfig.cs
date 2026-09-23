@@ -337,9 +337,72 @@ namespace IssaPlugin
             Reg(
                 cfg,
                 _itemEnabledEntries,
+                128,
+                "WindStormEnabled",
+                "Wind Storm"
+            );
+            Reg(
+                cfg,
+                _itemEnabledEntries,
+                129,
+                "HunterDronenabled",
+                "Hunter Drone"
+            );
+            Reg(
+                cfg,
+                _itemEnabledEntries,
+                130,
+                "UfoAbductionEnabled",
+                "UFO Abduction"
+            );
+            Reg(
+                cfg,
+                _itemEnabledEntries,
+                131,
+                "MoonEnabled",
+                "Moon"
+            );
+            Reg(
+                cfg,
+                _itemEnabledEntries,
+                132,
+                "ShapeShifterEnabled",
+                "Shape Shifter"
+            );
+            Reg(
+                cfg,
+                _itemEnabledEntries,
+                133,
+                "SuperShapeShifterEnabled",
+                "Super Shape-Shifter"
+            );
+            Reg(
+                cfg,
+                _itemEnabledEntries,
+                134,
+                "ExplosiveGolfBallsEnabled",
+                "Explosive Golf Balls"
+            );
+            Reg(
+                cfg,
+                _itemEnabledEntries,
                 135,
                 "GolfCartLauncherEnabled",
                 "Golf Cart Launcher"
+            );
+            Reg(
+                cfg,
+                _itemEnabledEntries,
+                136,
+                "SuperJumboBurgerEnabled",
+                "Super Jumbo Burger"
+            );
+            Reg(
+                cfg,
+                _itemEnabledEntries,
+                137,
+                "CannonEnabled",
+                "Cannon"
             );
 
             // ── Warnings ───────────────────────────────────────────────────────
