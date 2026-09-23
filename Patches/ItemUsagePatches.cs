@@ -635,7 +635,10 @@ namespace IssaPlugin.Patches
     ///   • Sniper / AK47 → ElephantGun
     ///   • Golf Cart Launcher / Javelin / Cannon → RocketLauncher
     ///   • Freeze / Low Gravity / Wind Storm / Glove / AC130 / Predator Missile /
-    ///     Stealth Bomber / Harrier / Moon / UFO Abduction → OrbitalLaser
+    ///     Stealth Bomber / Harrier / Moon / UFO Abduction / Shape Shifter /
+    ///     Super Shape Shifter / Spinach / Hunter Drone / Sticky Grenade / Bear /
+    ///     Nuke / Black Hole Grenade / Donut / Super Donut / Poison Jar /
+    ///     Drone Swarm / Rocket Tether Grenade → OrbitalLaser
     ///
     /// GetEffectivelyEquippedItem(false) returns None for all custom items because
     /// the game's visual hiding system doesn't know about them.  Every rotation and
@@ -699,6 +702,19 @@ namespace IssaPlugin.Patches
                 || actual == ItemRegistry.HarrierItemType
                 || actual == ItemRegistry.MoonItemType
                 || actual == ItemRegistry.UfoAbductionItemType
+                || actual == ItemRegistry.ShapeShifterItemType
+                || actual == ItemRegistry.SuperShapeShifterItemType
+                || actual == ItemRegistry.SpinachItemType
+                || actual == ItemRegistry.HunterDroneItemType
+                || actual == ItemRegistry.StickyGrenadeItemType
+                || actual == ItemRegistry.BearItemType
+                || actual == ItemRegistry.NukeItemType
+                || actual == ItemRegistry.BlackHoleGrenadeItemType
+                || actual == ItemRegistry.DonutItemType
+                || actual == ItemRegistry.SuperDonutItemType
+                || actual == ItemRegistry.PoisonJarItemType
+                || actual == ItemRegistry.DroneSwarmItemType
+                || actual == ItemRegistry.RocketTetherGrenadeItemType
             )
                 // Maps to OrbitalLaser so stance, hand position, and use animation come
                 // from the base game's orbital laser — matching AK47→ElephantGun /
