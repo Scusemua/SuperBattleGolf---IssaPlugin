@@ -5,9 +5,7 @@ namespace IssaPlugin.Items
 {
     /// <summary>
     /// Glove — pick up and carry your own golf ball, then drop or throw it.
-    ///
-    /// Pose matches Freeze World / Low Gravity / Wind Storm: base-class defaults
-    /// (RocketLauncher equipment, OrbitalLaser animator, no override controller).
+    /// Held/animated as the Orbital Laser (see EquipmentType / Animator overrides).
     /// </summary>
     public class GloveItemDefinition : CustomItemDefinition
     {
@@ -28,6 +26,13 @@ namespace IssaPlugin.Items
             };
 
         public override Key GiveKey => ModConfig.Glove.GiveKey.Value;
+
+        // Orbital Laser hold/use pose — same wiring as AK47 (Equipment+Animator) and
+        // Cannon/Golf Cart Launcher (InheritAnimatorOverrideController).
+        public override EquipmentType EquipmentType => EquipmentType.OrbitalLaser;
+        public override ItemType AnimatorItemType => ItemType.OrbitalLaser;
+        public override ItemType AnimatorChangedItemType => ItemType.OrbitalLaser;
+        public override bool InheritAnimatorOverrideController => true;
 
         // Pickup does not require aim. Charge/throw after pickup is handled by the bridge.
         public override bool RequiresAimToUse => false;

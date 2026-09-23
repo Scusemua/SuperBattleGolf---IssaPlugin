@@ -26,7 +26,7 @@ namespace IssaPlugin
                 Key.None,
                 "Debug key to add the Glove to your inventory."
             );
-            Uses = cfg.Bind(Section, "Uses", 2f, "Number of Glove uses per pickup.");
+            Uses = cfg.Bind(Section, "Uses", 1f, "Number of Glove uses per pickup.");
             PickupRadius = cfg.Bind(
                 Section,
                 "PickupRadius",
@@ -72,7 +72,7 @@ namespace IssaPlugin
             IndicatorHeight = cfg.Bind(
                 Section,
                 "IndicatorHeight",
-                0.7f,
+                1.1f,
                 "Height in Unity units above the holder's HeadBone for the held-ball indicator. "
                     + "Raise this if the icon sits inside the head mesh."
             );

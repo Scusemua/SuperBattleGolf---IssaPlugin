@@ -630,8 +630,12 @@ namespace IssaPlugin.Patches
     }
 
     /// <summary>
-    /// Makes GetEffectivelyEquippedItem(false) return ItemType.ElephantGun for the
-    /// sniper rifle and AK47.
+    /// Makes GetEffectivelyEquippedItem(false) return a base-game ItemType for custom
+    /// items that borrow that item's stance / aim / use animation:
+    ///   • Sniper / AK47 → ElephantGun
+    ///   • Golf Cart Launcher / Javelin / Cannon → RocketLauncher
+    ///   • Freeze / Low Gravity / Wind Storm / Glove / AC130 / Predator Missile /
+    ///     Stealth Bomber / Harrier / Moon / UFO Abduction → OrbitalLaser
     ///
     /// GetEffectivelyEquippedItem(false) returns None for all custom items because
     /// the game's visual hiding system doesn't know about them.  Every rotation and
@@ -642,9 +646,8 @@ namespace IssaPlugin.Patches
     ///   • InformIsAimingItemChanged        — sees None → uses golf-swing rotation
     ///     mode (body offset CCW from camera), not gun-aim mode (body faces camera)
     ///
-    /// Returning ElephantGun makes both systems behave exactly as they do for the
-    /// elephant gun: IsAimingItem becomes true naturally and the character faces the
-    /// camera's aim direction rather than the swing direction.
+    /// Returning the proxy base ItemType makes those systems behave exactly as they
+    /// do for the borrowed weapon.
     ///
     /// This is the most frequently invoked patch in the mod — the base game calls
     /// GetEffectivelyEquippedItem from several per-frame paths — so the Postfix body
@@ -685,6 +688,22 @@ namespace IssaPlugin.Patches
                 // and reticle all come from the base game's rocket launcher, which these
                 // items are modelled on.
                 __result = ItemType.RocketLauncher;
+            else if (
+                actual == ItemRegistry.FreezeItemType
+                || actual == ItemRegistry.LowGravityItemType
+                || actual == ItemRegistry.WindStormItemType
+                || actual == ItemRegistry.GloveItemType
+                || actual == ItemRegistry.AC130ItemType
+                || actual == ItemRegistry.PredatorMissileItemType
+                || actual == ItemRegistry.StealthBomberItemType
+                || actual == ItemRegistry.HarrierItemType
+                || actual == ItemRegistry.MoonItemType
+                || actual == ItemRegistry.UfoAbductionItemType
+            )
+                // Maps to OrbitalLaser so stance, hand position, and use animation come
+                // from the base game's orbital laser — matching AK47→ElephantGun /
+                // Cannon→RocketLauncher remaps above.
+                __result = ItemType.OrbitalLaser;
         }
     }
 
