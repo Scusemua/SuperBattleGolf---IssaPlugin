@@ -49,6 +49,7 @@ namespace IssaPlugin
         public static GolfCartLauncherConfig GolfCartLauncher { get; private set; }
 
         public static CannonConfig Cannon { get; private set; }
+        public static GloveConfig Glove { get; private set; }
 
         public static void Initialize(ConfigFile cfg)
         {
@@ -93,6 +94,7 @@ namespace IssaPlugin
             ExplosiveGolfBalls = new ExplosiveGolfBallsConfig(cfg, Global);
             GolfCartLauncher = new GolfCartLauncherConfig(cfg, Global);
             Cannon = new CannonConfig(cfg, Global);
+            Glove = new GloveConfig(cfg, Global);
         }
 
         // ── Pass-through helper methods (from GlobalConfig) ───────────────────

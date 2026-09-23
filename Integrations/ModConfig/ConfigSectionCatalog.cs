@@ -43,6 +43,7 @@ namespace IssaPlugin.Integrations.ModConfigUI
                 Group("Flamethrower", "Flamethrower"),
                 Group("Freeze World", "FreezeWorld"),
                 Group("Golf Cart Launcher", "GolfCartLauncher"),
+                Group("Glove", "Glove"),
                 Group("Gravity Gun", "GravityGun"),
                 Group("Harrier", "HarrierJet"),
                 Group("Hunter Drone", "HunterDrone"),

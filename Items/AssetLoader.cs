@@ -159,6 +159,16 @@ namespace IssaPlugin.Items
         /// Networked bowling ball projectile spawned by the Cannon.
         public static GameObject BowlingBallPrefab { get; private set; }
 
+        // ── Glove ─────────────────────────────────────────────────────────────
+        /// Item icon for the Glove.
+        public static Sprite GloveIcon { get; private set; }
+
+        /// Handheld glove model shown in the player's hand.
+        public static GameObject GloveHandheldPrefab { get; private set; }
+
+        /// Icon shown above a player holding their ball. Falls back to <see cref="GloveIcon"/>.
+        public static Sprite GloveBallIndicatorIcon { get; private set; }
+
         // ── ShapeShifter / SuperShapeShifter ──────────────────────────────────
         // ── ShapeShifter shape prefabs ────────────────────────────────────────
         /// Visual-only shape prefabs spawned as children of the golf ball.
@@ -686,6 +696,18 @@ namespace IssaPlugin.Items
                     typeof(BowlingBallClientSetup),
                     optional: true
                 ),
+                // ── Glove ─────────────────────────────────────────────────────
+                SpriteAsset(p => GloveIcon = p, "glove_icon.png", optional: true),
+                SpriteAsset(
+                    p => GloveBallIndicatorIcon = p,
+                    "glove_ball_indicator.png",
+                    optional: true
+                ),
+                HandheldPrefab(
+                    p => GloveHandheldPrefab = p,
+                    "baseball_glove.prefab",
+                    optional: true
+                ),
             };
         }
 
@@ -732,6 +754,9 @@ namespace IssaPlugin.Items
 
             // SuperShapeShifter icon falls back to ShapeShifter icon when the dedicated one is absent.
             SuperShapeShifterIcon ??= ShapeShifterIcon;
+
+            // Held-ball indicator can reuse the inventory icon when a dedicated PNG is absent.
+            GloveBallIndicatorIcon ??= GloveIcon;
         }
 
         // ─────────────────────────────────────────────────────────────────────

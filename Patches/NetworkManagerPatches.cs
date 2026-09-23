@@ -1917,6 +1917,59 @@ namespace IssaPlugin.Patches
                     msg.Position
                 );
             });
+
+            // ── Glove Messages ────────────────────────────────────────────────
+            Writer<GlovePickupRequestMessage>.write =
+                GlovePickupRequestMessageSerialization.WriteGlovePickupRequestMessage;
+            Reader<GlovePickupRequestMessage>.read =
+                GlovePickupRequestMessageSerialization.ReadGlovePickupRequestMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<GlovePickupRequestMessage>(
+                    (conn, msg) =>
+                    {
+                        GetBridge<GloveNetworkBridge>(conn)
+                            ?.ServerHandlePickupRequest(msg.EquippedSlotIndex);
+                    }
+                );
+
+            Writer<GloveThrowRequestMessage>.write =
+                GloveThrowRequestMessageSerialization.WriteGloveThrowRequestMessage;
+            Reader<GloveThrowRequestMessage>.read =
+                GloveThrowRequestMessageSerialization.ReadGloveThrowRequestMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<GloveThrowRequestMessage>(
+                    (conn, msg) =>
+                    {
+                        GetBridge<GloveNetworkBridge>(conn)
+                            ?.ServerHandleThrowRequest(
+                                msg.SessionId,
+                                msg.AimDirection,
+                                msg.Charge01
+                            );
+                    }
+                );
+
+            Writer<GloveHoldStartedMessage>.write =
+                GloveHoldStartedMessageSerialization.WriteGloveHoldStartedMessage;
+            Reader<GloveHoldStartedMessage>.read =
+                GloveHoldStartedMessageSerialization.ReadGloveHoldStartedMessage;
+            NetworkClient.RegisterHandler<GloveHoldStartedMessage>(
+                GloveNetworkBridge.HandleHoldStarted
+            );
+
+            Writer<GloveReleasedMessage>.write =
+                GloveReleasedMessageSerialization.WriteGloveReleasedMessage;
+            Reader<GloveReleasedMessage>.read =
+                GloveReleasedMessageSerialization.ReadGloveReleasedMessage;
+            NetworkClient.RegisterHandler<GloveReleasedMessage>(GloveNetworkBridge.HandleReleased);
+
+            Writer<GloveActiveHoldsMessage>.write =
+                GloveActiveHoldsMessageSerialization.WriteGloveActiveHoldsMessage;
+            Reader<GloveActiveHoldsMessage>.read =
+                GloveActiveHoldsMessageSerialization.ReadGloveActiveHoldsMessage;
+            NetworkClient.RegisterHandler<GloveActiveHoldsMessage>(
+                GloveNetworkBridge.HandleActiveHolds
+            );
         }
 
         public static void ResetRegistration() => _prefabsRegistered = false;
@@ -2035,6 +2088,7 @@ namespace IssaPlugin.Patches
             // The periodic 5-second sync will update all clients within one tick.
             SpawnWeightsSyncer.SyncToConnection(connection);
             ItemConfigSyncer.BroadcastToConnection(connection);
+            GloveNetworkBridge.ServerSyncActiveHoldsTo(connection);
         }
     }
 

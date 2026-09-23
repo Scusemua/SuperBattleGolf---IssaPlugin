@@ -103,6 +103,8 @@ namespace IssaPlugin
             gameObject.AddComponent<TeleporterOverlay>();
             gameObject.AddComponent<SpinachOverlay>();
             gameObject.AddComponent<FirstPlaceStarOverlay>();
+            gameObject.AddComponent<GloveOverlay>();
+            gameObject.AddComponent<GloveHoldIndicatorOverlay>();
             gameObject.AddComponent<SpawnConfigUI>();
             gameObject.AddComponent<ShapeShifterManager>();
             gameObject.AddComponent<ShapeShifterOverlay>();

@@ -281,6 +281,15 @@ namespace IssaPlugin.Patches
             if (inventory == null)
                 return true;
 
+            // Block swinging while carrying a ball with the Glove — the item is
+            // consumed on pickup, so the player may re-equip a club mid-hold.
+            var glove = inventory.GetComponent<GloveNetworkBridge>();
+            if (glove != null && glove.IsHolding)
+            {
+                __result = false;
+                return false;
+            }
+
             var equipped = inventory.GetEffectivelyEquippedItem(true);
             if (ItemRegistry.IsCustomItem(equipped))
             {

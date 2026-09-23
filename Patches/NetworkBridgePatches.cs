@@ -87,6 +87,8 @@ namespace IssaPlugin.Patches
                 __instance.gameObject.AddComponent<SuperShapeShifterNetworkBridge>();
             if (!__instance.GetComponent<ExplosiveGolfBallsNetworkBridge>())
                 __instance.gameObject.AddComponent<ExplosiveGolfBallsNetworkBridge>();
+            if (!__instance.GetComponent<GloveNetworkBridge>())
+                __instance.gameObject.AddComponent<GloveNetworkBridge>();
 
             IssaPluginPlugin.Log.LogDebug(
                 "[Network] Bridge components injected onto player object."
