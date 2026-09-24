@@ -37,6 +37,12 @@ namespace IssaPlugin.Items
         // Pickup does not require aim. Charge/throw after pickup is handled by the bridge.
         public override bool RequiresAimToUse => false;
 
+        public override void OnEquip(PlayerInventory inventory)
+        {
+            if (inventory.GetComponent<GloveTrajectoryPreview>() == null)
+                inventory.gameObject.AddComponent<GloveTrajectoryPreview>();
+        }
+
         public override void OnUse(PlayerInventory inventory)
         {
             var bridge = inventory.GetComponent<GloveNetworkBridge>();

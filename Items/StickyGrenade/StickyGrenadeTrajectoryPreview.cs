@@ -1,197 +1,76 @@
 using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.Rendering;
 
 namespace IssaPlugin.Items
 {
-    /// Client-only MonoBehaviour (local player only) that draws a parabolic arc
-    /// preview each frame showing where the sticky grenade will land.
+    /// <summary>
+    /// Lob-arc adapter for sticky-style throws (camera origin, fixed speed, RMB aim).
     ///
-    /// Uses the same origin/direction/speed math as StickyGrenadeNetworkBridge.ClientThrow
-    /// so the preview exactly matches the actual throw.  The arc terminates early
-    /// when a linecast hits terrain or static geometry (GroundLayerMask).
-    ///
-    /// Added by LocalPlayerUpdateEquipmentSwitchers when StickyGrenade is equipped.
-    /// Self-destructs when a different item is equipped.
+    /// Owns a <see cref="BallisticTrajectoryPreview"/> and exposes the same config
+    /// hooks existing item definitions already set (TargetItemType / ThrowSpeed /
+    /// LobAngle / RingRadius). Self-destructs when a different item is equipped.
+    /// </summary>
     public class StickyGrenadeTrajectoryPreview : MonoBehaviour
     {
-        private const int ArcSteps = 40;
-        private const float ArcTimeStep = 0.08f; // seconds per simulation step (~3.2 s total)
-
-        private const int RingSegments = 32;
-        private const float RingSurfaceOffset = 0.06f; // lift off surface to avoid z-fighting
-
         // Configurable fields — set immediately after AddComponent to override defaults.
-        // StickyGrenadeItemDefinition leaves these at their defaults; other items
-        // (e.g. BlackHoleGrenadeItemDefinition) override them before the first Update.
         public ItemType TargetItemType;
         public Func<float> ThrowSpeed;
         public Func<float> LobAngle;
-        public Func<float> RingRadius; // world-space radius of the landing indicator ring
+        public Func<float> RingRadius;
 
-        private LineRenderer _line;
-        private LineRenderer _ring;
         private PlayerInventory _inventory;
-        private readonly Vector3[] _positions = new Vector3[ArcSteps + 1];
-        private readonly Vector3[] _ringPositions = new Vector3[RingSegments];
+        private BallisticTrajectoryPreview _preview;
 
         private void Awake()
         {
             _inventory = GetComponent<PlayerInventory>();
 
-            // Defaults match the sticky grenade so existing callers need no changes.
             TargetItemType = ItemRegistry.StickyGrenadeItemType;
             ThrowSpeed = () => ModConfig.StickyGrenade.ThrowSpeed.Value;
             LobAngle = () => ModConfig.StickyGrenade.LobAngle.Value;
-            RingRadius = () => 0.55f; // matches StickyGrenadeStickRadius default
+            RingRadius = () => 0.55f;
 
-            _line = gameObject.AddComponent<LineRenderer>();
-            _line.useWorldSpace = true;
-            _line.positionCount = ArcSteps + 1;
-            _line.startWidth = 0.07f;
-            _line.endWidth = 0.02f;
-            _line.shadowCastingMode = ShadowCastingMode.Off;
-            _line.receiveShadows = false;
-            _line.numCapVertices = 2;
-
-            // Sprites/Default supports vertex-color alpha and is available in
-            // both legacy and URP pipelines.
-            var shader = Shader.Find("Sprites/Default");
-            if (shader != null)
-                _line.material = new Material(shader);
-
-            _line.startColor = new Color(1f, 0.85f, 0f, 0.9f); // bright yellow
-            _line.endColor = new Color(1f, 0.40f, 0f, 0.1f); // faded orange
-
-            // Landing ring — a looping circle drawn at the projected impact point.
-            var ringGo = new GameObject("StickyGrenadeRing");
-            ringGo.transform.SetParent(null, false);
-            _ring = ringGo.AddComponent<LineRenderer>();
-            _ring.useWorldSpace = true;
-            _ring.loop = true;
-            _ring.positionCount = RingSegments;
-            _ring.startWidth = 0.06f;
-            _ring.endWidth = 0.06f;
-            _ring.shadowCastingMode = ShadowCastingMode.Off;
-            _ring.receiveShadows = false;
-            _ring.numCapVertices = 2;
-
-            if (shader != null)
-                _ring.material = new Material(shader);
-
-            var ringColor = new Color(1f, 0.85f, 0f, 0.85f);
-            _ring.startColor = ringColor;
-            _ring.endColor = ringColor;
-            _ring.enabled = false;
+            _preview = gameObject.AddComponent<BallisticTrajectoryPreview>();
+            _preview.ShouldKeepAlive = () =>
+                _inventory != null
+                && _inventory.GetEffectivelyEquippedItem(true) == TargetItemType;
+            _preview.IsActive = () => Mouse.current?.rightButton.isPressed ?? false;
+            _preview.GetOrigin = GetCameraThrowOrigin;
+            _preview.GetVelocity = GetCameraThrowVelocity;
+            _preview.RingRadius = () => RingRadius?.Invoke() ?? 0.55f;
         }
 
         private void Update()
         {
             if (_inventory == null || _inventory.GetEffectivelyEquippedItem(true) != TargetItemType)
-            {
                 Destroy(this);
-                return;
-            }
-
-            if (!(Mouse.current?.rightButton.isPressed ?? false))
-            {
-                _line.enabled = false;
-                _ring.enabled = false;
-                return;
-            }
-
-            var cam = Camera.main;
-            if (cam == null)
-            {
-                _line.enabled = false;
-                _ring.enabled = false;
-                return;
-            }
-
-            _line.enabled = true;
-
-            // Mirror ClientThrow exactly so the preview matches the real throw.
-            Vector3 forward = cam.transform.forward;
-            Vector3 pos = cam.transform.position + forward * 1.2f + Vector3.up * 0.3f;
-            Vector3 vel = (forward + Vector3.up * LobAngle()).normalized * ThrowSpeed();
-
-            // Combine both masks so the arc stops on terrain, walls, players,
-            // and vehicles — mirroring the two-phase check in StickyGrenadeBehaviour.
-            int stickMask = ItemHelper.GroundLayerMask | GameManager.LayerSettings.GunHittablesMask;
-
-            _positions[0] = pos;
-            int count = 1;
-            Vector3 landingPoint = pos;
-            Vector3 landingNormal = Vector3.up;
-            bool hitSomething = false;
-
-            for (int i = 1; i <= ArcSteps; i++)
-            {
-                Vector3 next = pos + vel * ArcTimeStep;
-                vel += Physics.gravity * ArcTimeStep;
-
-                if (
-                    Physics.Linecast(
-                        pos,
-                        next,
-                        out RaycastHit hit,
-                        stickMask,
-                        QueryTriggerInteraction.Ignore
-                    )
-                )
-                {
-                    _positions[i] = hit.point;
-                    count = i + 1;
-                    landingPoint = hit.point;
-                    landingNormal = hit.normal;
-                    hitSomething = true;
-                    break;
-                }
-
-                pos = next;
-                _positions[i] = pos;
-                count = i + 1;
-                landingPoint = pos;
-            }
-
-            _line.positionCount = count;
-            _line.SetPositions(_positions);
-
-            // Update the landing ring on any stickable surface.
-            _ring.enabled = hitSomething;
-            if (hitSomething)
-                UpdateRing(landingPoint, landingNormal);
         }
 
-        private void UpdateRing(Vector3 center, Vector3 normal)
+        private Vector3 GetCameraThrowOrigin()
         {
-            // Build two axes perpendicular to the surface normal so the ring
-            // lies flush against the terrain regardless of slope.
-            Vector3 axisA = Vector3.Cross(normal, Vector3.forward);
-            if (axisA.sqrMagnitude < 0.01f)
-                axisA = Vector3.Cross(normal, Vector3.right);
-            axisA.Normalize();
-            Vector3 axisB = Vector3.Cross(axisA, normal).normalized;
+            var cam = Camera.main;
+            if (cam == null)
+                return transform.position;
+            Vector3 forward = cam.transform.forward;
+            return cam.transform.position + forward * 1.2f + Vector3.up * 0.3f;
+        }
 
-            float radius = RingRadius();
-            Vector3 origin = center + normal * RingSurfaceOffset;
-            for (int i = 0; i < RingSegments; i++)
-            {
-                float angle = i * Mathf.PI * 2f / RingSegments;
-                _ringPositions[i] =
-                    origin + (axisA * Mathf.Cos(angle) + axisB * Mathf.Sin(angle)) * radius;
-            }
-
-            _ring.SetPositions(_ringPositions);
+        private Vector3 GetCameraThrowVelocity()
+        {
+            var cam = Camera.main;
+            if (cam == null)
+                return Vector3.zero;
+            Vector3 forward = cam.transform.forward;
+            float lob = LobAngle?.Invoke() ?? 0f;
+            float speed = ThrowSpeed?.Invoke() ?? 0f;
+            return (forward + Vector3.up * lob).normalized * speed;
         }
 
         private void OnDestroy()
         {
-            if (_line != null)
-                Destroy(_line);
-            if (_ring != null)
-                Destroy(_ring.gameObject);
+            if (_preview != null)
+                Destroy(_preview);
         }
     }
 }

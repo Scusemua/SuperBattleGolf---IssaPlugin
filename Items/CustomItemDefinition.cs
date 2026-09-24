@@ -134,7 +134,8 @@ namespace IssaPlugin.Items
         // Per-frame equip hook — called from LocalPlayerUpdateEquipmentSwitchers for the local player only.
         // Must be idempotent (called every frame). Guard AddComponent with a null check:
         //   if (inventory.GetComponent<T>() == null) inventory.gameObject.AddComponent<T>();
-        // Used for: JavelinLockOnIndicator, StickyGrenadeTrajectoryPreview.
+        // Used for: JavelinLockOnIndicator, BallisticTrajectoryPreview adapters
+        // (StickyGrenadeTrajectoryPreview, GloveTrajectoryPreview).
         public virtual void OnEquip(PlayerInventory inventory) { }
     }
 }

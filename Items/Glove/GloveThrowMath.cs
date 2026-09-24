@@ -5,8 +5,8 @@ namespace IssaPlugin.Items
     /// <summary>
     /// Shared throw velocity math for the Glove.
     ///
-    /// Kept free of MonoBehaviour / networking so a future trajectory preview can call
-    /// the exact same formula the server uses on release.
+    /// Kept free of MonoBehaviour / networking so trajectory preview and the server
+    /// throw path share the exact same formula.
     /// </summary>
     public static class GloveThrowMath
     {
