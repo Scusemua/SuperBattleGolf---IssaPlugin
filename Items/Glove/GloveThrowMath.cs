@@ -43,6 +43,26 @@ namespace IssaPlugin.Items
             return dir * speed;
         }
 
+        /// <summary>
+        /// Backspin / tumble for a thrown ball. Matches the lob-item pattern
+        /// (axis ⊥ to flight × up, magnitude from speed).
+        /// </summary>
+        public static Vector3 ComputeThrowAngularVelocity(Vector3 linearVelocity)
+        {
+            float speed = linearVelocity.magnitude;
+            if (speed < 0.01f)
+                return Vector3.zero;
+
+            Vector3 spinAxis = Vector3.Cross(linearVelocity.normalized, Vector3.up);
+            if (spinAxis.sqrMagnitude < 0.01f)
+                spinAxis = Vector3.right;
+            else
+                spinAxis.Normalize();
+
+            // ~rad/s — scales with throw power so soft tosses tumble less.
+            return spinAxis * Mathf.Lerp(6f, 14f, Mathf.Clamp01(speed / 25f));
+        }
+
         public static Vector3 GetHeldWorldPosition(Transform holder)
         {
             return GetHeldWorldPosition(holder, holderBody: null);

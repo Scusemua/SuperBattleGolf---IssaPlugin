@@ -78,6 +78,20 @@ namespace IssaPlugin.Items
         /// </summary>
         private bool _suppressAttach;
 
+        // Soft-follow + roll while held (kinematic, but not rigidly locked).
+        private bool _attachPoseInitialized;
+        private Vector3 _attachPos;
+        private Vector3 _attachPosVelocity;
+        private Quaternion _attachRot = Quaternion.identity;
+        private Vector3 _lastAttachTarget;
+        private float _attachBallRadius = 0.05f;
+
+        /// <summary>Seconds for SmoothDamp to catch the hand target — small lag feels carried.</summary>
+        private const float AttachFollowSmoothTime = 0.07f;
+
+        /// <summary>Hard-snap if the hand target warps farther than this (teleport / seat).</summary>
+        private const float AttachTeleportSnapDistance = 2.5f;
+
         // ================================================================
         //  Client — pickup / charge / throw input
         // ================================================================
@@ -176,16 +190,11 @@ namespace IssaPlugin.Items
         {
             if (_serverHolding && NetworkServer.active)
                 ServerTickHold();
-
-            if (!IsHolding || _suppressAttach)
-                return;
-
-            TickAttachBall();
         }
 
         private void LateUpdate()
         {
-            // Catch teleports / seat moves that land between FixedUpdate ticks.
+            // Visual attach after movement / seat / teleport writes for the frame.
             if (IsHolding && !_suppressAttach)
                 TickAttachBall();
         }
@@ -623,10 +632,12 @@ namespace IssaPlugin.Items
                 // logs Unity warnings and is ignored anyway.
                 rb.isKinematic = true;
                 rb.detectCollisions = true;
+                InitAttachPose(ball, rb);
             }
             else
             {
                 _hasPhysicsSnapshot = false;
+                InitAttachPose(ball, null);
             }
 
             DisableBallHittability(ball);
@@ -660,7 +671,7 @@ namespace IssaPlugin.Items
             rb.isKinematic = false;
             rb.detectCollisions = true;
             rb.linearVelocity = velocity;
-            rb.angularVelocity = Vector3.zero;
+            rb.angularVelocity = GloveThrowMath.ComputeThrowAngularVelocity(velocity);
         }
 
         /// <summary>
@@ -706,21 +717,99 @@ namespace IssaPlugin.Items
             // cart seating) that write the body first still carry the ball along.
             Vector3 target = GloveThrowMath.GetHeldWorldPosition(transform, info?.Rigidbody);
 
+            if (!_attachPoseInitialized)
+                InitAttachPose(ball, rb);
+
+            // Teleports / seat snaps: jump immediately so the ball does not trail across the map.
+            float snapDist = AttachTeleportSnapDistance;
+            if ((target - _attachPos).sqrMagnitude > snapDist * snapDist)
+            {
+                _attachPos = target;
+                _attachPosVelocity = Vector3.zero;
+                _lastAttachTarget = target;
+            }
+            else
+            {
+                _attachPos = Vector3.SmoothDamp(
+                    _attachPos,
+                    target,
+                    ref _attachPosVelocity,
+                    AttachFollowSmoothTime,
+                    Mathf.Infinity,
+                    Time.deltaTime
+                );
+            }
+
+            // Roll from hand motion so the ball spins instead of floating locked upright.
+            Vector3 handDelta = target - _lastAttachTarget;
+            _lastAttachTarget = target;
+            float moveDist = handDelta.magnitude;
+            if (moveDist > 0.00005f && _attachBallRadius > 0.001f)
+            {
+                Vector3 axis = Vector3.Cross(Vector3.up, handDelta);
+                if (axis.sqrMagnitude < 1e-8f)
+                    axis = Vector3.Cross(transform.right, handDelta);
+                if (axis.sqrMagnitude > 1e-8f)
+                {
+                    float angleDeg = (moveDist / _attachBallRadius) * Mathf.Rad2Deg;
+                    _attachRot = Quaternion.AngleAxis(angleDeg, axis.normalized) * _attachRot;
+                }
+            }
+
             if (rb != null)
             {
                 if (!rb.isKinematic)
                     rb.isKinematic = true;
-                // Position only — do not write linear/angular velocity on a
-                // kinematic body (Unity logs a warning and ignores the write).
-                rb.position = target;
-                rb.rotation = Quaternion.identity;
-                // Keep Transform in sync for NetworkTransform / non-physics readers.
-                ball.transform.SetPositionAndRotation(target, Quaternion.identity);
+                // Position/rotation only — never write velocities on a kinematic body.
+                rb.position = _attachPos;
+                rb.rotation = _attachRot;
+                ball.transform.SetPositionAndRotation(_attachPos, _attachRot);
             }
             else
             {
-                ball.transform.position = target;
+                ball.transform.SetPositionAndRotation(_attachPos, _attachRot);
             }
+        }
+
+        private void InitAttachPose(GolfBall ball, Rigidbody rb)
+        {
+            var info = GetComponent<PlayerInfo>();
+            Vector3 target = GloveThrowMath.GetHeldWorldPosition(transform, info?.Rigidbody);
+            _attachPos = target;
+            _attachPosVelocity = Vector3.zero;
+            _lastAttachTarget = target;
+            _attachRot =
+                rb != null ? rb.rotation : (ball != null ? ball.transform.rotation : Quaternion.identity);
+            _attachBallRadius = EstimateBallRadius(ball);
+            _attachPoseInitialized = true;
+        }
+
+        private static float EstimateBallRadius(GolfBall ball)
+        {
+            if (ball == null)
+                return 0.05f;
+
+            var sphere = ball.GetComponentInChildren<SphereCollider>();
+            if (sphere != null)
+            {
+                float s = sphere.transform.lossyScale.x;
+                return Mathf.Max(0.02f, sphere.radius * s);
+            }
+
+            var col = ball.GetComponentInChildren<Collider>();
+            if (col != null)
+            {
+                Vector3 e = col.bounds.extents;
+                return Mathf.Max(0.02f, Mathf.Max(e.x, Mathf.Max(e.y, e.z)));
+            }
+
+            return 0.05f;
+        }
+
+        private void ClearAttachPose()
+        {
+            _attachPoseInitialized = false;
+            _attachPosVelocity = Vector3.zero;
         }
 
         private void DisableBallHittability(GolfBall ball)
@@ -911,6 +1000,7 @@ namespace IssaPlugin.Items
             // Pickup uses LMB — require a full release before charge/throw can start.
             _throwInputArmed = false;
             _suppressAttach = false;
+            ClearAttachPose();
 
             if (isOwned)
                 GloveOverlay.Instance?.SetHolding(true, timeRemaining);
@@ -927,6 +1017,7 @@ namespace IssaPlugin.Items
             CancelLocalCharge();
             _throwInputArmed = false;
             _suppressAttach = false;
+            ClearAttachPose();
 
             if (isOwned)
                 GloveOverlay.Instance?.ForceClose();
@@ -965,6 +1056,7 @@ namespace IssaPlugin.Items
             CancelLocalCharge();
             _throwInputArmed = false;
             _suppressAttach = false;
+            ClearAttachPose();
 
             // Pure clients may run hole cleanup before Released arrives — always
             // restore physics/colliders if we still hold a snapshot.
