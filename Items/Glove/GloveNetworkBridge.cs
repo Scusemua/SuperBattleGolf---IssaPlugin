@@ -35,6 +35,8 @@ namespace IssaPlugin.Items
         private float _serverEndTime;
         private float _serverDuration;
         private uint _nextSessionId = 1;
+        /// <summary>Inventory slot that holds the Glove for this session (consumed on release).</summary>
+        private int _wielderSlot = -1;
 
         private bool _savedKinematic;
         private bool _savedDetectCollisions;
@@ -54,6 +56,12 @@ namespace IssaPlugin.Items
         public bool IsCharging { get; private set; }
         public float Charge01 { get; private set; }
         private float _chargeStartTime;
+
+        /// <summary>
+        /// False until LMB has been released at least once after hold start.
+        /// Prevents the pickup click (or a held LMB) from immediately charging/throwing.
+        /// </summary>
+        private bool _throwInputArmed;
 
         // ================================================================
         //  Client — pickup / charge / throw input
@@ -84,6 +92,11 @@ namespace IssaPlugin.Items
                 return;
             }
 
+            TickThrowInput();
+        }
+
+        private void TickThrowInput()
+        {
             var input = GetComponent<PlayerInfo>()?.Input;
             // Reboundable aim / charge bindings (same sources as golf swing + custom guns).
             bool aiming = input?.IsHoldingAimSwing ?? false;
@@ -96,35 +109,43 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            if (fireHeld)
+            // Wait for LMB release after pickup before charge/throw can begin.
+            if (!fireHeld)
             {
-                if (!IsCharging)
+                if (IsCharging)
                 {
-                    IsCharging = true;
-                    _chargeStartTime = Time.time;
-                    Charge01 = 0f;
+                    float charge = Charge01;
+                    CancelLocalCharge();
+
+                    var cam = Camera.main;
+                    Vector3 aim = cam != null ? cam.transform.forward : transform.forward;
+
+                    NetworkClient.Send(
+                        new GloveThrowRequestMessage
+                        {
+                            SessionId = CurrentSessionId,
+                            AimDirection = aim,
+                            Charge01 = charge,
+                        }
+                    );
                 }
 
-                float duration = Mathf.Max(0.05f, ModConfig.Glove.ChargeDuration.Value);
-                Charge01 = Mathf.Clamp01((Time.time - _chargeStartTime) / duration);
+                _throwInputArmed = true;
+                return;
             }
-            else if (IsCharging)
+
+            if (!_throwInputArmed)
+                return;
+
+            if (!IsCharging)
             {
-                float charge = Charge01;
-                CancelLocalCharge();
-
-                var cam = Camera.main;
-                Vector3 aim = cam != null ? cam.transform.forward : transform.forward;
-
-                NetworkClient.Send(
-                    new GloveThrowRequestMessage
-                    {
-                        SessionId = CurrentSessionId,
-                        AimDirection = aim,
-                        Charge01 = charge,
-                    }
-                );
+                IsCharging = true;
+                _chargeStartTime = Time.time;
+                Charge01 = 0f;
             }
+
+            float duration = Mathf.Max(0.05f, ModConfig.Glove.ChargeDuration.Value);
+            Charge01 = Mathf.Clamp01((Time.time - _chargeStartTime) / duration);
         }
 
         private void CancelLocalCharge()
@@ -175,7 +196,8 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            ItemHelper.ConsumeItemAtSlot(inventory, equippedSlotIndex);
+            // Keep the Glove equipped for the hold; consume on throw / timeout / KO / unequip.
+            _wielderSlot = equippedSlotIndex;
 
             _serverSessionId = _nextSessionId++;
             if (_nextSessionId == 0)
@@ -371,10 +393,18 @@ namespace IssaPlugin.Items
             var info = GetComponent<PlayerInfo>();
             var movement = info?.Movement;
             var ball = info?.AsGolfer?.OwnBall;
+            var inventory = CachedInventory;
 
             if (ball == null)
             {
                 ServerRelease(GloveReleaseReason.Cleanup, Vector3.zero);
+                return;
+            }
+
+            // Switched away from the Glove or dropped it — drop the ball and consume.
+            if (!ServerStillWieldingGlove(inventory))
+            {
+                ServerRelease(GloveReleaseReason.Interrupt, Vector3.zero);
                 return;
             }
 
@@ -416,6 +446,26 @@ namespace IssaPlugin.Items
                 ServerRelease(GloveReleaseReason.Timeout, Vector3.zero);
         }
 
+        private bool ServerStillWieldingGlove(PlayerInventory inventory)
+        {
+            if (inventory == null || _wielderSlot < 0)
+                return false;
+
+            if (
+                ItemRegistry.GetItemTypeAtSlot(inventory, _wielderSlot)
+                != ItemRegistry.GloveItemType
+            )
+                return false;
+
+            // Prefer networked equipped index for remote clients on the server.
+            int equipped =
+                (!inventory.isLocalPlayer && NetworkServer.active)
+                    ? inventory.PlayerInfo.NetworkedEquippedItemIndex
+                    : inventory.EquippedItemIndex;
+
+            return equipped == _wielderSlot;
+        }
+
         private void ServerRelease(GloveReleaseReason reason, Vector3 velocity)
         {
             if (!_serverHolding)
@@ -424,6 +474,9 @@ namespace IssaPlugin.Items
             uint sessionId = _serverSessionId;
             _serverHolding = false;
             ServerActiveHolds.Remove(netId);
+
+            // Consume the Glove now that the hold ends (throw / timeout / KO / unequip / cleanup).
+            ServerConsumeGloveIfPresent();
 
             var info = GetComponent<PlayerInfo>();
             var ball = info?.AsGolfer?.OwnBall;
@@ -468,6 +521,21 @@ namespace IssaPlugin.Items
             IssaPluginPlugin.Log.LogInfo(
                 $"[Glove] Released session={sessionId} reason={reason} speed={velocity.magnitude:F1}."
             );
+        }
+
+        private void ServerConsumeGloveIfPresent()
+        {
+            int slot = _wielderSlot;
+            _wielderSlot = -1;
+            if (slot < 0)
+                return;
+
+            var inventory = CachedInventory;
+            if (
+                inventory != null
+                && ItemRegistry.GetItemTypeAtSlot(inventory, slot) == ItemRegistry.GloveItemType
+            )
+                ItemHelper.ConsumeItemAtSlot(inventory, slot);
         }
 
         private Vector3 GetFeetDropPosition()
@@ -782,6 +850,8 @@ namespace IssaPlugin.Items
             HoldDuration = duration;
             HoldStartTime = Time.time - Mathf.Max(0f, duration - timeRemaining);
             CancelLocalCharge();
+            // Pickup uses LMB — require a full release before charge/throw can start.
+            _throwInputArmed = false;
 
             if (isOwned)
                 GloveOverlay.Instance?.SetHolding(true, timeRemaining);
@@ -796,6 +866,7 @@ namespace IssaPlugin.Items
             IsHolding = false;
             CurrentSessionId = 0;
             CancelLocalCharge();
+            _throwInputArmed = false;
 
             if (isOwned)
                 GloveOverlay.Instance?.ForceClose();
@@ -832,6 +903,7 @@ namespace IssaPlugin.Items
         public override void ClientHoleCleanup()
         {
             CancelLocalCharge();
+            _throwInputArmed = false;
 
             // Pure clients may run hole cleanup before Released arrives — always
             // restore physics/colliders if we still hold a snapshot.

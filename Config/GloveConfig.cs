@@ -26,7 +26,12 @@ namespace IssaPlugin
                 Key.None,
                 "Debug key to add the Glove to your inventory."
             );
-            Uses = cfg.Bind(Section, "Uses", 1f, "Number of Glove uses per pickup.");
+            Uses = cfg.Bind(
+                Section,
+                "Uses",
+                1f,
+                "Number of Glove uses. One use is consumed when a hold ends (throw, timeout, knockout, or unequip) — not on pickup."
+            );
             PickupRadius = cfg.Bind(
                 Section,
                 "PickupRadius",
