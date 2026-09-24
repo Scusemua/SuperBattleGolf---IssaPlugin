@@ -5,13 +5,22 @@ using UnityEngine.InputSystem;
 namespace IssaPlugin.Items
 {
     /// <summary>
-    /// Lob-arc adapter for sticky-style throws (camera origin, fixed speed, RMB aim).
+    /// Camera-origin lob-arc adapter for thrown items that use fixed throw speed +
+    /// RMB aim (not golf-ball physics):
+    /// <list type="bullet">
+    ///   <item><see cref="ItemRegistry.StickyGrenadeItemType"/></item>
+    ///   <item><see cref="ItemRegistry.PoisonJarItemType"/></item>
+    ///   <item><see cref="ItemRegistry.BlackHoleGrenadeItemType"/></item>
+    ///   <item><see cref="ItemRegistry.RocketTetherGrenadeItemType"/></item>
+    /// </list>
     ///
-    /// Owns a <see cref="BallisticTrajectoryPreview"/> and exposes the same config
-    /// hooks existing item definitions already set (TargetItemType / ThrowSpeed /
-    /// LobAngle / RingRadius). Self-destructs when a different item is equipped.
+    /// Owns a <see cref="BallisticTrajectoryPreview"/> and exposes TargetItemType /
+    /// ThrowSpeed / LobAngle / RingRadius for per-item OnEquip configuration.
+    /// Self-destructs when a different item is equipped.
+    ///
+    /// Golf-ball throws (Glove) use <see cref="GloveTrajectoryPreview"/> instead.
     /// </summary>
-    public class StickyGrenadeTrajectoryPreview : MonoBehaviour
+    public class LobTrajectoryPreview : MonoBehaviour
     {
         // Configurable fields — set immediately after AddComponent to override defaults.
         public ItemType TargetItemType;

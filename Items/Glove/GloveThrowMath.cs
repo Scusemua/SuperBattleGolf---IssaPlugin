@@ -45,6 +45,17 @@ namespace IssaPlugin.Items
 
         public static Vector3 GetHeldWorldPosition(Transform holder)
         {
+            return GetHeldWorldPosition(holder, holderBody: null);
+        }
+
+        /// <summary>
+        /// Prefer the holder's Rigidbody pose when available so the ball follows
+        /// teleports / warps that update the body before the Transform catches up.
+        /// </summary>
+        public static Vector3 GetHeldWorldPosition(Transform holder, Rigidbody holderBody)
+        {
+            if (holderBody != null)
+                return holderBody.position + holderBody.rotation * HeldBallLocalOffset;
             return holder.TransformPoint(HeldBallLocalOffset);
         }
     }

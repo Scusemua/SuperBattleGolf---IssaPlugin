@@ -31,6 +31,12 @@ namespace IssaPlugin.Items
             _preview.GetOrigin = GetThrowOrigin;
             _preview.GetVelocity = GetThrowVelocity;
             _preview.RingRadius = () => LandingRingRadius;
+            // Match GolfBall.ApplyLinearDamping → Hittable.ApplyAirDamping so the
+            // preview does not overestimate range on flatter throws.
+            _preview.LinearAirDragFactor = () =>
+                GameManager.GolfBallSettings != null
+                    ? GameManager.GolfBallSettings.LinearAirDragFactor
+                    : 0f;
         }
 
         private void Update()
@@ -52,7 +58,10 @@ namespace IssaPlugin.Items
         }
 
         private Vector3 GetThrowOrigin() =>
-            GloveThrowMath.GetHeldWorldPosition(transform);
+            GloveThrowMath.GetHeldWorldPosition(
+                transform,
+                _inventory?.PlayerInfo?.Rigidbody
+            );
 
         private Vector3 GetThrowVelocity()
         {

@@ -135,7 +135,7 @@ namespace IssaPlugin.Items
         // Must be idempotent (called every frame). Guard AddComponent with a null check:
         //   if (inventory.GetComponent<T>() == null) inventory.gameObject.AddComponent<T>();
         // Used for: JavelinLockOnIndicator, BallisticTrajectoryPreview adapters
-        // (StickyGrenadeTrajectoryPreview, GloveTrajectoryPreview).
+        // (LobTrajectoryPreview, GloveTrajectoryPreview).
         public virtual void OnEquip(PlayerInventory inventory) { }
     }
 }

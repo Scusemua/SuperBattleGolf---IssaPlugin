@@ -39,10 +39,10 @@ namespace IssaPlugin.Items
 
         public override void OnEquip(PlayerInventory inventory)
         {
-            var preview = inventory.GetComponent<StickyGrenadeTrajectoryPreview>();
+            var preview = inventory.GetComponent<LobTrajectoryPreview>();
             if (preview == null)
             {
-                preview = inventory.gameObject.AddComponent<StickyGrenadeTrajectoryPreview>();
+                preview = inventory.gameObject.AddComponent<LobTrajectoryPreview>();
                 preview.TargetItemType = ItemRegistry.PoisonJarItemType;
                 preview.ThrowSpeed = () => ModConfig.PoisonJar.ThrowSpeed.Value;
                 preview.LobAngle = () => ModConfig.PoisonJar.LobAngle.Value;

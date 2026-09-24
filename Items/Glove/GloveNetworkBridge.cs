@@ -170,6 +170,13 @@ namespace IssaPlugin.Items
             TickAttachBall();
         }
 
+        private void LateUpdate()
+        {
+            // Catch teleports / seat moves that land between FixedUpdate ticks.
+            if (IsHolding)
+                TickAttachBall();
+        }
+
         // ================================================================
         //  Server — pickup
         // ================================================================
@@ -260,7 +267,7 @@ namespace IssaPlugin.Items
             ball = null;
             reason = null;
 
-            if (!ServerHolderAllowed(info, movement, out reason))
+            if (!ServerHolderAllowed(info, movement, out reason, requireOnFoot: true))
                 return false;
 
             ball = info.AsGolfer?.OwnBall;
@@ -286,7 +293,8 @@ namespace IssaPlugin.Items
         private static bool ServerHolderAllowed(
             PlayerInfo info,
             PlayerMovement movement,
-            out string reason
+            out string reason,
+            bool requireOnFoot
         )
         {
             reason = null;
@@ -315,16 +323,19 @@ namespace IssaPlugin.Items
                 return false;
             }
 
-            if (info.ActiveGolfCartSeat.IsValid())
+            if (requireOnFoot)
             {
-                reason = "in golf cart";
-                return false;
-            }
+                if (info.ActiveGolfCartSeat.IsValid())
+                {
+                    reason = "in golf cart";
+                    return false;
+                }
 
-            if (!movement.IsGrounded)
-            {
-                reason = "not grounded";
-                return false;
+                if (!movement.IsGrounded)
+                {
+                    reason = "not grounded";
+                    return false;
+                }
             }
 
             return true;
@@ -370,7 +381,9 @@ namespace IssaPlugin.Items
 
             var info = GetComponent<PlayerInfo>();
             var movement = info?.Movement;
-            if (!ServerHolderAllowed(info, movement, out _))
+            // Throws are allowed in a golf cart / mid-air (e.g. after a teleport);
+            // only KO / drown / freeze still block.
+            if (!ServerHolderAllowed(info, movement, out _, requireOnFoot: false))
                 return;
 
             var ball = info?.AsGolfer?.OwnBall;
@@ -435,11 +448,8 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            if (info != null && info.ActiveGolfCartSeat.IsValid())
-            {
-                ServerRelease(GloveReleaseReason.Interrupt, Vector3.zero);
-                return;
-            }
+            // Golf carts are allowed while holding — the ball keeps following the
+            // player (seat) until timeout / throw / KO.
 
             if (!ServerBallAllowed(ball, out _))
             {
@@ -684,15 +694,20 @@ namespace IssaPlugin.Items
                 return;
 
             var rb = ball.Rigidbody ?? entity?.Rigidbody;
-            Vector3 target = GloveThrowMath.GetHeldWorldPosition(transform);
+            // Prefer the player's Rigidbody pose so warps (Position Swap, Teleporter,
+            // cart seating) that write the body first still carry the ball along.
+            Vector3 target = GloveThrowMath.GetHeldWorldPosition(transform, info?.Rigidbody);
 
             if (rb != null)
             {
                 if (!rb.isKinematic)
                     rb.isKinematic = true;
                 rb.position = target;
+                rb.rotation = Quaternion.identity;
                 rb.linearVelocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
+                // Keep Transform in sync for NetworkTransform / non-physics readers.
+                ball.transform.SetPositionAndRotation(target, Quaternion.identity);
             }
             else
             {

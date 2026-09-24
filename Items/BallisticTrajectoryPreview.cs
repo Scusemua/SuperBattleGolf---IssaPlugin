@@ -37,6 +37,13 @@ namespace IssaPlugin.Items
         /// </summary>
         public Func<float> RingRadius;
 
+        /// <summary>
+        /// Optional quadratic air-drag factor matching golf-ball flight
+        /// (<see cref="GolfBallSettings.LinearAirDragFactor"/>). When null, the arc is
+        /// vacuum-ballistic (correct for thrown items that are not golf balls).
+        /// </summary>
+        public Func<float> LinearAirDragFactor;
+
         public Color ArcStartColor = new Color(1f, 0.85f, 0f, 0.9f);
         public Color ArcEndColor = new Color(1f, 0.40f, 0f, 0.1f);
         public Color RingColor = new Color(1f, 0.85f, 0f, 0.85f);
@@ -133,6 +140,12 @@ namespace IssaPlugin.Items
 
             for (int i = 1; i <= ArcSteps; i++)
             {
+                // Golf balls apply quadratic air drag each physics tick before gravity
+                // integrates — without this the arc overestimates range, especially on
+                // flatter (higher-speed) throws.
+                if (LinearAirDragFactor != null)
+                    ApplyGolfBallAirDrag(ref vel, LinearAirDragFactor(), ArcTimeStep);
+
                 Vector3 next = pos + vel * ArcTimeStep;
                 vel += Physics.gravity * ArcTimeStep;
 
@@ -191,6 +204,23 @@ namespace IssaPlugin.Items
             }
 
             _ring.SetPositions(_ringPositions);
+        }
+
+        /// <summary>
+        /// Mirrors <c>Hittable.ApplyAirDamping</c> for the no-wind / default-swing case:
+        /// <c>vel -= vel * max(0, k * |vel|^2 * dt)</c>.
+        /// </summary>
+        private static void ApplyGolfBallAirDrag(ref Vector3 vel, float dragFactor, float dt)
+        {
+            if (dragFactor <= 0f || dt <= 0f)
+                return;
+
+            float sqr = vel.sqrMagnitude;
+            if (sqr < 0.0001f)
+                return;
+
+            float damp = Mathf.Max(0f, dragFactor * sqr * dt);
+            vel -= vel * damp;
         }
 
         private void OnDestroy()

@@ -41,11 +41,11 @@ namespace IssaPlugin.Items
         }
 
         // OnEquip is called every frame — guard with null check.
-        // StickyGrenadeTrajectoryPreview self-destructs when a different item is equipped.
+        // LobTrajectoryPreview self-destructs when a different item is equipped.
         public override void OnEquip(PlayerInventory inventory)
         {
-            if (inventory.GetComponent<StickyGrenadeTrajectoryPreview>() == null)
-                inventory.gameObject.AddComponent<StickyGrenadeTrajectoryPreview>();
+            if (inventory.GetComponent<LobTrajectoryPreview>() == null)
+                inventory.gameObject.AddComponent<LobTrajectoryPreview>();
         }
     }
 }
