@@ -68,7 +68,7 @@ namespace IssaPlugin.Items
 
         private Vector3 GetThrowOrigin()
         {
-            // Prefer the live ball pose once it is parented under the glove.
+            // Prefer the live ball pose while it is snapped to the glove.
             var ball = _inventory?.PlayerInfo?.AsGolfer?.OwnBall;
             if (_bridge != null && _bridge.IsHolding && ball != null)
                 return ball.transform.position;
@@ -95,11 +95,16 @@ namespace IssaPlugin.Items
             float spinachMult = GloveThrowMath.GetSpinachThrowSpeedMultiplier(
                 SpinachBehaviour.IsActive
             );
+            float minSpeed = ModConfig.Glove.MinimumThrowSpeed.Value * spinachMult;
+            float maxSpeed = ModConfig.Glove.MaximumThrowSpeed.Value * spinachMult;
+            if (maxSpeed < minSpeed)
+                (minSpeed, maxSpeed) = (maxSpeed, minSpeed);
+
             return GloveThrowMath.ComputeThrowVelocity(
                 aim,
                 charge01,
-                ModConfig.Glove.MinimumThrowSpeed.Value * spinachMult,
-                ModConfig.Glove.MaximumThrowSpeed.Value * spinachMult,
+                minSpeed,
+                maxSpeed,
                 ModConfig.Glove.ThrowUpwardBias.Value
             );
         }

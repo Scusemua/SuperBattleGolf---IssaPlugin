@@ -22,6 +22,8 @@ namespace IssaPlugin.Patches
                     m.Name.Contains("ShouldOwnedBallDisplayNotAllowedVisuals")
                 );
 
+        static bool Prepare() => TargetMethod() != null;
+
         static void Postfix(GolfBall __instance, ref bool __result)
         {
             var local = GameManager.LocalPlayerInfo;

@@ -126,7 +126,7 @@ namespace IssaPlugin.Items
                 Reason = (GloveReleaseReason)r.ReadByte(),
                 WorldPosition = r.ReadVector3(),
                 Velocity = r.ReadVector3(),
-                PowerMultiplier = Mathf.Max(0.01f, r.ReadFloat()),
+                PowerMultiplier = Mathf.Max(1f, r.ReadFloat()),
             };
     }
 

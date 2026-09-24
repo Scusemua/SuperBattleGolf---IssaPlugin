@@ -298,6 +298,12 @@ namespace IssaPlugin.Items
         {
             reason = null;
 
+            if (info == null)
+            {
+                reason = "no player";
+                return false;
+            }
+
             if (movement == null)
             {
                 reason = "no movement";
@@ -400,6 +406,9 @@ namespace IssaPlugin.Items
             );
             float minSpeed = ModConfig.Glove.MinimumThrowSpeed.Value * spinachMult;
             float maxSpeed = ModConfig.Glove.MaximumThrowSpeed.Value * spinachMult;
+            if (maxSpeed < minSpeed)
+                (minSpeed, maxSpeed) = (maxSpeed, minSpeed);
+
             Vector3 velocity = GloveThrowMath.ComputeThrowVelocity(
                 aimDirection,
                 charge01,
@@ -407,6 +416,9 @@ namespace IssaPlugin.Items
                 maxSpeed,
                 ModConfig.Glove.ThrowUpwardBias.Value
             );
+
+            if (!IsFinite(velocity))
+                return;
 
             velocity = Vector3.ClampMagnitude(velocity, Mathf.Max(maxSpeed, 0.01f));
             ServerRelease(GloveReleaseReason.Throw, velocity, spinachMult);
@@ -441,6 +453,8 @@ namespace IssaPlugin.Items
                     ModConfig.Glove.KnockoutEjectSpeed.Value,
                     GloveThrowMath.KnockoutUpwardBias
                 );
+                if (!IsFinite(eject))
+                    eject = Vector3.up * ModConfig.Glove.KnockoutEjectSpeed.Value;
                 ServerRelease(GloveReleaseReason.Knockout, eject);
                 return;
             }
@@ -479,10 +493,18 @@ namespace IssaPlugin.Items
                 return false;
 
             // Prefer networked equipped index for remote clients on the server.
-            int equipped =
-                (!inventory.isLocalPlayer && NetworkServer.active)
-                    ? inventory.PlayerInfo.NetworkedEquippedItemIndex
-                    : inventory.EquippedItemIndex;
+            int equipped;
+            if (!inventory.isLocalPlayer && NetworkServer.active)
+            {
+                var playerInfo = inventory.PlayerInfo;
+                if (playerInfo == null)
+                    return false;
+                equipped = playerInfo.NetworkedEquippedItemIndex;
+            }
+            else
+            {
+                equipped = inventory.EquippedItemIndex;
+            }
 
             return equipped == _wielderSlot;
         }
@@ -653,29 +675,34 @@ namespace IssaPlugin.Items
             bool snapToFeet
         )
         {
-            IgnoreCollisionsWithHolder(ball, GetComponent<PlayerInfo>(), ignore: false);
             RestoreBallHittability();
 
             var rb = ball.Rigidbody ?? ball.AsEntity?.Rigidbody;
             if (rb == null)
             {
+                // Still clear holder ignore pairs even without a Rigidbody.
+                IgnoreCollisionsWithHolder(ball, GetComponent<PlayerInfo>(), ignore: false);
                 _hasPhysicsSnapshot = false;
                 return;
             }
 
+            // Always sync to the server release pose so clients match (throw / KO /
+            // feet-drop), then clear kinematic before writing velocities.
+            rb.position = worldPosition;
+            ball.transform.position = worldPosition;
             if (snapToFeet || velocity.sqrMagnitude < 0.0001f)
-            {
-                rb.position = worldPosition;
-                ball.transform.position = worldPosition;
-            }
+                ball.transform.rotation = Quaternion.identity;
 
             _hasPhysicsSnapshot = false;
 
-            // Non-kinematic before writing velocities (avoids Unity kinematic warnings).
             rb.isKinematic = false;
             rb.detectCollisions = true;
             rb.linearVelocity = velocity;
             rb.angularVelocity = GloveThrowMath.ComputeThrowAngularVelocity(velocity);
+
+            // Clear holder ignores after launch so the ball does not immediately
+            // collide with the player the frame it leaves the hand.
+            IgnoreCollisionsWithHolder(ball, GetComponent<PlayerInfo>(), ignore: false);
         }
 
         /// <summary>
@@ -685,8 +712,8 @@ namespace IssaPlugin.Items
         private void RestoreCollisionStateOnly()
         {
             var ball = GetComponent<PlayerInfo>()?.AsGolfer?.OwnBall;
-            IgnoreCollisionsWithHolder(ball, GetComponent<PlayerInfo>(), ignore: false);
             RestoreBallHittability();
+            IgnoreCollisionsWithHolder(ball, GetComponent<PlayerInfo>(), ignore: false);
 
             var rb = ball?.Rigidbody ?? ball?.AsEntity?.Rigidbody;
             if (rb != null)
@@ -957,11 +984,30 @@ namespace IssaPlugin.Items
         private static bool TryGetBridge(uint holderNetId, out GloveNetworkBridge bridge)
         {
             bridge = null;
-            var dict = NetworkServer.active ? NetworkServer.spawned : NetworkClient.spawned;
-            if (!dict.TryGetValue(holderNetId, out var identity) || identity == null)
-                return false;
-            bridge = identity.GetComponent<GloveNetworkBridge>();
-            return bridge != null;
+            // Prefer the client spawn map so pure clients resolve remote holders;
+            // fall back to the server map for listen-host / dedicated paths.
+            if (
+                NetworkClient.active
+                && NetworkClient.spawned.TryGetValue(holderNetId, out var clientId)
+                && clientId != null
+            )
+            {
+                bridge = clientId.GetComponent<GloveNetworkBridge>();
+                if (bridge != null)
+                    return true;
+            }
+
+            if (
+                NetworkServer.active
+                && NetworkServer.spawned.TryGetValue(holderNetId, out var serverId)
+                && serverId != null
+            )
+            {
+                bridge = serverId.GetComponent<GloveNetworkBridge>();
+                return bridge != null;
+            }
+
+            return false;
         }
 
         private static bool IsFinite(Vector3 v) =>
