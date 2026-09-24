@@ -20,6 +20,11 @@ namespace IssaPlugin.Items
             "isInHole"
         );
 
+        private static readonly PropertyInfo ServerLastStrokePositionProp = AccessTools.Property(
+            typeof(GolfBall),
+            "ServerLastStrokePosition"
+        );
+
         private static readonly Dictionary<uint, ActiveHold> ServerActiveHolds = new();
 
         private struct ActiveHold
@@ -475,9 +480,6 @@ namespace IssaPlugin.Items
             _serverHolding = false;
             ServerActiveHolds.Remove(netId);
 
-            // Consume the Glove now that the hold ends (throw / timeout / KO / unequip / cleanup).
-            ServerConsumeGloveIfPresent();
-
             var info = GetComponent<PlayerInfo>();
             var ball = info?.AsGolfer?.OwnBall;
 
@@ -495,6 +497,12 @@ namespace IssaPlugin.Items
             {
                 releasePos = ball.transform.position;
             }
+
+            // Consume the Glove now that the hold ends. Stroke counting skips hole
+            // Cleanup so ending a hole mid-hold does not inflate the scorecard.
+            ServerConsumeGloveIfPresent();
+            if (reason != GloveReleaseReason.Cleanup)
+                ServerRegisterGloveStroke(info, ball, releasePos);
 
             if (
                 ball != null
@@ -521,6 +529,29 @@ namespace IssaPlugin.Items
             IssaPluginPlugin.Log.LogInfo(
                 $"[Glove] Released session={sessionId} reason={reason} speed={velocity.magnitude:F1}."
             );
+        }
+
+        /// <summary>
+        /// Counts one stroke for ending a Glove hold (same counters as a real swing /
+        /// OOB penalty) and stamps the ball's last-stroke position at the release point
+        /// for chip-in / scoring helpers. Suppresses the "Penalty" popup so intentional
+        /// throws do not look like rule penalties.
+        /// </summary>
+        private static void ServerRegisterGloveStroke(
+            PlayerInfo info,
+            GolfBall ball,
+            Vector3 releasePos
+        )
+        {
+            if (!NetworkServer.active)
+                return;
+
+            var golfer = info?.AsGolfer;
+            if (golfer != null)
+                CourseManager.AddPenaltyStroke(golfer, suppressPopup: true);
+
+            if (ball != null && ServerLastStrokePositionProp != null)
+                ServerLastStrokePositionProp.SetValue(ball, releasePos);
         }
 
         private void ServerConsumeGloveIfPresent()
