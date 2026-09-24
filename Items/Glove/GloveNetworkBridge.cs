@@ -25,6 +25,11 @@ namespace IssaPlugin.Items
             "ServerLastStrokePosition"
         );
 
+        private static readonly MethodInfo OnPlayerHitOwnBallMethod = AccessTools.Method(
+            typeof(PlayerGolfer),
+            "OnPlayerHitOwnBall"
+        );
+
         private static readonly Dictionary<uint, ActiveHold> ServerActiveHolds = new();
 
         private struct ActiveHold
@@ -43,7 +48,6 @@ namespace IssaPlugin.Items
         /// <summary>Inventory slot that holds the Glove for this session (consumed on release).</summary>
         private int _wielderSlot = -1;
 
-        private bool _savedKinematic;
         private bool _savedDetectCollisions;
         private bool _hasPhysicsSnapshot;
         private readonly List<(Collider a, Collider b)> _ignoredPairs = new();
@@ -67,6 +71,12 @@ namespace IssaPlugin.Items
         /// Prevents the pickup click (or a held LMB) from immediately charging/throwing.
         /// </summary>
         private bool _throwInputArmed;
+
+        /// <summary>
+        /// When true, skip attach updates (local throw already sent; waiting for Released).
+        /// Prevents fighting launch velocity / re-kinematicizing the ball.
+        /// </summary>
+        private bool _suppressAttach;
 
         // ================================================================
         //  Client — pickup / charge / throw input
@@ -133,6 +143,9 @@ namespace IssaPlugin.Items
                             Charge01 = charge,
                         }
                     );
+                    // Stop attach immediately so we do not fight the launch
+                    // (kinematic + zero velocity) while waiting for Released.
+                    _suppressAttach = true;
                 }
 
                 _throwInputArmed = true;
@@ -164,7 +177,7 @@ namespace IssaPlugin.Items
             if (_serverHolding && NetworkServer.active)
                 ServerTickHold();
 
-            if (!IsHolding)
+            if (!IsHolding || _suppressAttach)
                 return;
 
             TickAttachBall();
@@ -173,7 +186,7 @@ namespace IssaPlugin.Items
         private void LateUpdate()
         {
             // Catch teleports / seat moves that land between FixedUpdate ticks.
-            if (IsHolding)
+            if (IsHolding && !_suppressAttach)
                 TickAttachBall();
         }
 
@@ -508,6 +521,10 @@ namespace IssaPlugin.Items
                 releasePos = ball.transform.position;
             }
 
+            // Stop attach before restoring physics — otherwise TickAttachBall can
+            // re-kinematicize the ball and zero velocity on the same frame as launch.
+            ApplyClientReleaseState(sessionId);
+
             // Consume the Glove now that the hold ends. Stroke counting skips hole
             // Cleanup so ending a hole mid-hold does not inflate the scorecard.
             ServerConsumeGloveIfPresent();
@@ -522,8 +539,6 @@ namespace IssaPlugin.Items
             else
                 // Still undo ignore/collider state if we captured on this peer.
                 RestoreCollisionStateOnly();
-
-            ApplyClientReleaseState(sessionId);
 
             NetworkServer.SendToAll(
                 new GloveReleasedMessage
@@ -542,10 +557,10 @@ namespace IssaPlugin.Items
         }
 
         /// <summary>
-        /// Counts one stroke for ending a Glove hold (same counters as a real swing /
-        /// OOB penalty) and stamps the ball's last-stroke position at the release point
-        /// for chip-in / scoring helpers. Suppresses the "Penalty" popup so intentional
-        /// throws do not look like rule penalties.
+        /// Counts one stroke for ending a Glove hold via the same
+        /// <see cref="PlayerGolfer.PlayerHitOwnBall"/> path as a real club hit
+        /// (CourseManager.OnServerPlayerHitOwnBall), and stamps last-stroke position
+        /// at the release point for chip-in / scoring helpers.
         /// </summary>
         private static void ServerRegisterGloveStroke(
             PlayerInfo info,
@@ -557,8 +572,8 @@ namespace IssaPlugin.Items
                 return;
 
             var golfer = info?.AsGolfer;
-            if (golfer != null)
-                CourseManager.AddPenaltyStroke(golfer, suppressPopup: true);
+            if (golfer != null && OnPlayerHitOwnBallMethod != null)
+                OnPlayerHitOwnBallMethod.Invoke(golfer, null);
 
             if (ball != null && ServerLastStrokePositionProp != null)
                 ServerLastStrokePositionProp.SetValue(ball, releasePos);
@@ -601,12 +616,11 @@ namespace IssaPlugin.Items
             var rb = ball.Rigidbody ?? ball.AsEntity?.Rigidbody;
             if (rb != null)
             {
-                _savedKinematic = rb.isKinematic;
                 _savedDetectCollisions = rb.detectCollisions;
                 _hasPhysicsSnapshot = true;
 
-                rb.linearVelocity = Vector3.zero;
-                rb.angularVelocity = Vector3.zero;
+                // Make kinematic first — setting velocities on a kinematic body
+                // logs Unity warnings and is ignored anyway.
                 rb.isKinematic = true;
                 rb.detectCollisions = true;
             }
@@ -639,21 +653,12 @@ namespace IssaPlugin.Items
             if (snapToFeet || velocity.sqrMagnitude < 0.0001f)
                 rb.position = worldPosition;
 
-            if (_hasPhysicsSnapshot)
-            {
-                rb.isKinematic = _savedKinematic;
-                rb.detectCollisions = _savedDetectCollisions;
-            }
-            else
-            {
-                rb.isKinematic = false;
-                rb.detectCollisions = true;
-            }
-
             _hasPhysicsSnapshot = false;
 
-            // Always leave the ball simulating after a glove release.
+            // Always leave the ball simulating after a glove release. Set
+            // non-kinematic before writing velocities to avoid Unity warnings.
             rb.isKinematic = false;
+            rb.detectCollisions = true;
             rb.linearVelocity = velocity;
             rb.angularVelocity = Vector3.zero;
         }
@@ -673,10 +678,13 @@ namespace IssaPlugin.Items
 
             var ball = GetComponent<PlayerInfo>()?.AsGolfer?.OwnBall;
             var rb = ball?.Rigidbody ?? ball?.AsEntity?.Rigidbody;
-            if (rb != null && _hasPhysicsSnapshot)
+            if (rb != null)
             {
                 rb.isKinematic = false;
-                rb.detectCollisions = _savedDetectCollisions;
+                if (_hasPhysicsSnapshot)
+                    rb.detectCollisions = _savedDetectCollisions;
+                else
+                    rb.detectCollisions = true;
             }
 
             _hasPhysicsSnapshot = false;
@@ -702,10 +710,10 @@ namespace IssaPlugin.Items
             {
                 if (!rb.isKinematic)
                     rb.isKinematic = true;
+                // Position only — do not write linear/angular velocity on a
+                // kinematic body (Unity logs a warning and ignores the write).
                 rb.position = target;
                 rb.rotation = Quaternion.identity;
-                rb.linearVelocity = Vector3.zero;
-                rb.angularVelocity = Vector3.zero;
                 // Keep Transform in sync for NetworkTransform / non-physics readers.
                 ball.transform.SetPositionAndRotation(target, Quaternion.identity);
             }
@@ -819,12 +827,17 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            // Ignore stale releases from a previous session.
+            // Ignore stale releases from a previous session (listen-host already
+            // cleared state in ServerRelease before SendToAll).
             if (bridge.CurrentSessionId != msg.SessionId)
             {
                 GloveHoldIndicatorOverlay.Instance?.Hide(msg.HolderNetId);
                 return;
             }
+
+            // Clear holding / suppress attach before restoring physics so
+            // TickAttachBall cannot overwrite the launch on this frame.
+            bridge.ApplyClientReleaseState(msg.SessionId);
 
             var ball = bridge.GetComponent<PlayerInfo>()?.AsGolfer?.OwnBall;
             if (ball != null && bridge._hasPhysicsSnapshot)
@@ -848,7 +861,6 @@ namespace IssaPlugin.Items
                 bridge.RestoreCollisionStateOnly();
             }
 
-            bridge.ApplyClientReleaseState(msg.SessionId);
             GloveHoldIndicatorOverlay.Instance?.Hide(msg.HolderNetId);
         }
 
@@ -898,6 +910,7 @@ namespace IssaPlugin.Items
             CancelLocalCharge();
             // Pickup uses LMB — require a full release before charge/throw can start.
             _throwInputArmed = false;
+            _suppressAttach = false;
 
             if (isOwned)
                 GloveOverlay.Instance?.SetHolding(true, timeRemaining);
@@ -913,6 +926,7 @@ namespace IssaPlugin.Items
             CurrentSessionId = 0;
             CancelLocalCharge();
             _throwInputArmed = false;
+            _suppressAttach = false;
 
             if (isOwned)
                 GloveOverlay.Instance?.ForceClose();
@@ -950,6 +964,7 @@ namespace IssaPlugin.Items
         {
             CancelLocalCharge();
             _throwInputArmed = false;
+            _suppressAttach = false;
 
             // Pure clients may run hole cleanup before Released arrives — always
             // restore physics/colliders if we still hold a snapshot.
