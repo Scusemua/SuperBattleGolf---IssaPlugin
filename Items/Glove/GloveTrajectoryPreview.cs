@@ -1,4 +1,5 @@
 using UnityEngine;
+using IssaPlugin.Patches;
 
 namespace IssaPlugin.Items
 {
@@ -32,11 +33,19 @@ namespace IssaPlugin.Items
             _preview.GetVelocity = GetThrowVelocity;
             _preview.RingRadius = () => LandingRingRadius;
             // Match GolfBall.ApplyLinearDamping → Hittable.ApplyAirDamping so the
-            // preview does not overestimate range on flatter throws.
+            // preview does not overestimate range on flatter throws. Spinach club
+            // hits scale drag by 1/N²; mirror that when the buff is active.
             _preview.LinearAirDragFactor = () =>
-                GameManager.GolfBallSettings != null
-                    ? GameManager.GolfBallSettings.LinearAirDragFactor
-                    : 0f;
+            {
+                float k =
+                    GameManager.GolfBallSettings != null
+                        ? GameManager.GolfBallSettings.LinearAirDragFactor
+                        : 0f;
+                float n = GloveThrowMath.GetSpinachThrowSpeedMultiplier(SpinachBehaviour.IsActive);
+                if (n > 1.01f)
+                    k /= n * n;
+                return k;
+            };
         }
 
         private void Update()
@@ -59,11 +68,16 @@ namespace IssaPlugin.Items
 
         private Vector3 GetThrowOrigin()
         {
+            // Prefer the live ball pose once it is parented under the glove.
+            var ball = _inventory?.PlayerInfo?.AsGolfer?.OwnBall;
+            if (_bridge != null && _bridge.IsHolding && ball != null)
+                return ball.transform.position;
+
             var info = _inventory?.PlayerInfo;
             Transform gloveModel = null;
             if (
                 _inventory != null
-                && IssaPlugin.Patches.LocalPlayerUpdateEquipmentSwitchers.TryGetCustomHeldModel(
+                && LocalPlayerUpdateEquipmentSwitchers.TryGetCustomHeldModel(
                     _inventory,
                     out var modelTf
                 )
@@ -78,11 +92,14 @@ namespace IssaPlugin.Items
             var cam = Camera.main;
             Vector3 aim = cam != null ? cam.transform.forward : transform.forward;
             float charge01 = _bridge != null && _bridge.IsCharging ? _bridge.Charge01 : 0f;
+            float spinachMult = GloveThrowMath.GetSpinachThrowSpeedMultiplier(
+                SpinachBehaviour.IsActive
+            );
             return GloveThrowMath.ComputeThrowVelocity(
                 aim,
                 charge01,
-                ModConfig.Glove.MinimumThrowSpeed.Value,
-                ModConfig.Glove.MaximumThrowSpeed.Value,
+                ModConfig.Glove.MinimumThrowSpeed.Value * spinachMult,
+                ModConfig.Glove.MaximumThrowSpeed.Value * spinachMult,
                 ModConfig.Glove.ThrowUpwardBias.Value
             );
         }

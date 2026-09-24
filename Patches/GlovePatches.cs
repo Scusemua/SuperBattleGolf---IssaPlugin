@@ -51,16 +51,20 @@ namespace IssaPlugin.Patches
 
     /// <summary>
     /// While carrying a ball with the Glove, block switching to another inventory
-    /// slot. Deselect remains allowed so consuming the Glove on release can re-equip
-    /// the club. If the player somehow unequips anyway, the server drops the ball
-    /// and consumes the Glove.
+    /// slot. Deselect (negative index) remains allowed so consuming the Glove on
+    /// release can re-equip the club. If the player somehow unequips anyway, the
+    /// server drops the ball and consumes the Glove.
     /// </summary>
     [HarmonyPatch(typeof(PlayerInventory), nameof(PlayerInventory.CanSelectItemAt))]
     static class GloveBlockItemSwitchWhileHoldingPatch
     {
-        static void Postfix(PlayerInventory __instance, ref bool __result)
+        static void Postfix(PlayerInventory __instance, int __0, ref bool __result)
         {
             if (!__result)
+                return;
+
+            // Allow deselect / clear so release-consume can put a club back in hand.
+            if (__0 < 0)
                 return;
 
             var glove = __instance.GetComponent<GloveNetworkBridge>();

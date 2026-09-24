@@ -49,6 +49,8 @@ namespace IssaPlugin.Patches
         static MethodBase TargetMethod() =>
             AccessTools.Method(typeof(Hittable), "HitWithGolfSwingInternal");
 
+        private static Coroutine _flightTrackCoroutine;
+
         private static IEnumerator TrackVelocityAfterHit(Rigidbody rb)
         {
             float elapsed = 0f;
@@ -62,6 +64,34 @@ namespace IssaPlugin.Patches
             }
             RecentHit = false;
             TotalMultiplier = 1f;
+            _flightTrackCoroutine = null;
+        }
+
+        /// <summary>
+        /// Marks a non-swing launch (e.g. Spinach-boosted Glove throw) so
+        /// <see cref="ApplyAirDampingStablePatch"/> scales drag by 1/N² for ~N× distance.
+        /// </summary>
+        internal static void BeginBoostedFlight(
+            MonoBehaviour runner,
+            Rigidbody rb,
+            float multiplier
+        )
+        {
+            if (runner == null || rb == null || multiplier <= 1.01f)
+                return;
+
+            TotalMultiplier = multiplier;
+            RecentHit = true;
+            BatActive = false;
+            WasRocketDriver = false;
+
+            if (_flightTrackCoroutine != null && IssaPluginPlugin.Instance != null)
+                IssaPluginPlugin.Instance.StopCoroutine(_flightTrackCoroutine);
+
+            // Prefer the plugin host so the track outlives a short-lived runner, and
+            // so club-hit + glove-throw paths share one clearable coroutine.
+            var host = IssaPluginPlugin.Instance != null ? (MonoBehaviour)IssaPluginPlugin.Instance : runner;
+            _flightTrackCoroutine = host.StartCoroutine(TrackVelocityAfterHit(rb));
         }
 
         // public enum SwingType
@@ -232,7 +262,11 @@ namespace IssaPlugin.Patches
                 $"[BatSpinach Postfix] N={TotalMultiplier:F2} vel={rb.linearVelocity} (mag={rb.linearVelocity.magnitude:F2})"
             );
 
-            IssaPluginPlugin.Instance.StartCoroutine(TrackVelocityAfterHit(rb));
+            if (_flightTrackCoroutine != null && IssaPluginPlugin.Instance != null)
+                IssaPluginPlugin.Instance.StopCoroutine(_flightTrackCoroutine);
+            _flightTrackCoroutine = IssaPluginPlugin.Instance.StartCoroutine(
+                TrackVelocityAfterHit(rb)
+            );
 
             // OnFinishedSwinging handles decrement for player hits; golf ball hits don't trigger it.
             if (

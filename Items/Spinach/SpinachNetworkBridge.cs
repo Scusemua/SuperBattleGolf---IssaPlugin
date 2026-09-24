@@ -11,6 +11,9 @@ namespace IssaPlugin.Items
         private bool _serverSessionActive;
         private Coroutine _serverTimeout;
 
+        /// <summary>True on the server while this player's Spinach buff session is active.</summary>
+        public bool ServerIsBuffActive => _serverSessionActive;
+
         // ── Client state ─────────────────────────────────────────────────────
         private GameObject _trail;
         private Coroutine _clientHideCoroutine;

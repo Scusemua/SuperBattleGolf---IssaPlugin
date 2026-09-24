@@ -99,6 +99,11 @@ namespace IssaPlugin.Items
         public GloveReleaseReason Reason;
         public Vector3 WorldPosition;
         public Vector3 Velocity;
+        /// <summary>
+        /// Spinach (etc.) speed multiplier baked into <see cref="Velocity"/>.
+        /// Clients use this to scale air drag the same way club hits do.
+        /// </summary>
+        public float PowerMultiplier;
     }
 
     public static class GloveReleasedMessageSerialization
@@ -110,6 +115,7 @@ namespace IssaPlugin.Items
             w.WriteByte((byte)msg.Reason);
             w.WriteVector3(msg.WorldPosition);
             w.WriteVector3(msg.Velocity);
+            w.WriteFloat(msg.PowerMultiplier > 0f ? msg.PowerMultiplier : 1f);
         }
 
         public static GloveReleasedMessage ReadGloveReleasedMessage(NetworkReader r) =>
@@ -120,6 +126,7 @@ namespace IssaPlugin.Items
                 Reason = (GloveReleaseReason)r.ReadByte(),
                 WorldPosition = r.ReadVector3(),
                 Velocity = r.ReadVector3(),
+                PowerMultiplier = Mathf.Max(0.01f, r.ReadFloat()),
             };
     }
 

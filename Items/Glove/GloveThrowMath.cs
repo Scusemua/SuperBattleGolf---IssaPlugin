@@ -31,6 +31,18 @@ namespace IssaPlugin.Items
         /// <summary>Upward bias used for knockout fling when not otherwise configured.</summary>
         public const float KnockoutUpwardBias = 0.45f;
 
+        /// <summary>
+        /// Spinach golf-ball power multiplier when the buff is active; otherwise 1.
+        /// Same config value used by club hits (<see cref="SpinachConfig.GolfBallPowerMultiplier"/>).
+        /// </summary>
+        public static float GetSpinachThrowSpeedMultiplier(bool spinachActive)
+        {
+            if (!spinachActive)
+                return 1f;
+            float m = ModConfig.Spinach.GolfBallPowerMultiplier.Value;
+            return m > 0.01f ? m : 1f;
+        }
+
         public static Vector3 ComputeThrowVelocity(
             Vector3 aimDirection,
             float charge01,
