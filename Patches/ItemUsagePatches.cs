@@ -211,6 +211,24 @@ namespace IssaPlugin.Patches
         public static bool HasCustomModel(PlayerInventory inventory) =>
             _states.TryGetValue(inventory, out var state) && state.Model != null;
 
+        /// <summary>
+        /// Active custom held-model root for <paramref name="inventory"/>, if any
+        /// (e.g. the Glove mesh parented under the right-hand equipment switcher).
+        /// </summary>
+        public static bool TryGetCustomHeldModel(
+            PlayerInventory inventory,
+            out Transform modelTransform
+        )
+        {
+            modelTransform = null;
+            if (inventory == null || !_states.TryGetValue(inventory, out var state))
+                return false;
+            if (state.Model == null)
+                return false;
+            modelTransform = state.Model.transform;
+            return true;
+        }
+
         private struct CustomEquipState
         {
             public GameObject Model;

@@ -57,11 +57,21 @@ namespace IssaPlugin.Items
             return input != null && input.IsHoldingAimSwing;
         }
 
-        private Vector3 GetThrowOrigin() =>
-            GloveThrowMath.GetHeldWorldPosition(
-                transform,
-                _inventory?.PlayerInfo?.Rigidbody
-            );
+        private Vector3 GetThrowOrigin()
+        {
+            var info = _inventory?.PlayerInfo;
+            Transform gloveModel = null;
+            if (
+                _inventory != null
+                && IssaPlugin.Patches.LocalPlayerUpdateEquipmentSwitchers.TryGetCustomHeldModel(
+                    _inventory,
+                    out var modelTf
+                )
+            )
+                gloveModel = modelTf;
+
+            return GloveThrowMath.GetHeldWorldPosition(info, gloveModel);
+        }
 
         private Vector3 GetThrowVelocity()
         {

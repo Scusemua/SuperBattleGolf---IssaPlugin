@@ -86,8 +86,8 @@ namespace IssaPlugin.Items
         private Vector3 _lastAttachTarget;
         private float _attachBallRadius = 0.05f;
 
-        /// <summary>Seconds for SmoothDamp to catch the hand target — small lag feels carried.</summary>
-        private const float AttachFollowSmoothTime = 0.07f;
+        /// <summary>Seconds for SmoothDamp to catch the glove — keep tight so it stays in-hand.</summary>
+        private const float AttachFollowSmoothTime = 0.035f;
 
         /// <summary>Hard-snap if the hand target warps farther than this (teleport / seat).</summary>
         private const float AttachTeleportSnapDistance = 2.5f;
@@ -713,9 +713,7 @@ namespace IssaPlugin.Items
                 return;
 
             var rb = ball.Rigidbody ?? entity?.Rigidbody;
-            // Prefer the player's Rigidbody pose so warps (Position Swap, Teleporter,
-            // cart seating) that write the body first still carry the ball along.
-            Vector3 target = GloveThrowMath.GetHeldWorldPosition(transform, info?.Rigidbody);
+            Vector3 target = ResolveHeldBallTarget(info);
 
             if (!_attachPoseInitialized)
                 InitAttachPose(ball, rb);
@@ -774,7 +772,7 @@ namespace IssaPlugin.Items
         private void InitAttachPose(GolfBall ball, Rigidbody rb)
         {
             var info = GetComponent<PlayerInfo>();
-            Vector3 target = GloveThrowMath.GetHeldWorldPosition(transform, info?.Rigidbody);
+            Vector3 target = ResolveHeldBallTarget(info);
             _attachPos = target;
             _attachPosVelocity = Vector3.zero;
             _lastAttachTarget = target;
@@ -782,6 +780,22 @@ namespace IssaPlugin.Items
                 rb != null ? rb.rotation : (ball != null ? ball.transform.rotation : Quaternion.identity);
             _attachBallRadius = EstimateBallRadius(ball);
             _attachPoseInitialized = true;
+        }
+
+        private Vector3 ResolveHeldBallTarget(PlayerInfo info)
+        {
+            Transform gloveModel = null;
+            var inventory = info?.Inventory ?? CachedInventory;
+            if (
+                inventory != null
+                && IssaPlugin.Patches.LocalPlayerUpdateEquipmentSwitchers.TryGetCustomHeldModel(
+                    inventory,
+                    out var modelTf
+                )
+            )
+                gloveModel = modelTf;
+
+            return GloveThrowMath.GetHeldWorldPosition(info, gloveModel);
         }
 
         private static float EstimateBallRadius(GolfBall ball)

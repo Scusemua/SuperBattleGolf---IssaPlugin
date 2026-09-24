@@ -11,10 +11,22 @@ namespace IssaPlugin.Items
     public static class GloveThrowMath
     {
         /// <summary>
-        /// Code-default hand offset relative to the player's transform while holding.
-        /// Tunable later via config if needed.
+        /// Local offset from the right-hand equipment / glove model into the palm.
+        /// Used when renderer bounds are unavailable.
         /// </summary>
-        public static readonly Vector3 HeldBallLocalOffset = new Vector3(0.35f, 1.15f, 0.45f);
+        public static readonly Vector3 HeldBallHandLocalOffset = new Vector3(0.05f, 0.02f, 0.2f);
+
+        /// <summary>
+        /// Fallback body-relative offset when no hand equipment transform exists.
+        /// </summary>
+        public static readonly Vector3 HeldBallBodyLocalOffset = new Vector3(0.35f, 1.15f, 0.45f);
+
+        /// <summary>
+        /// Nudge from the glove mesh bounds center along the hand forward/up so the
+        /// ball sits in the pocket rather than inside the mesh.
+        /// </summary>
+        public const float HeldBallPalmForward = 0.07f;
+        public const float HeldBallPalmUp = 0.02f;
 
         /// <summary>Upward bias used for knockout fling when not otherwise configured.</summary>
         public const float KnockoutUpwardBias = 0.45f;
@@ -63,20 +75,45 @@ namespace IssaPlugin.Items
             return spinAxis * Mathf.Lerp(6f, 14f, Mathf.Clamp01(speed / 25f));
         }
 
-        public static Vector3 GetHeldWorldPosition(Transform holder)
-        {
-            return GetHeldWorldPosition(holder, holderBody: null);
-        }
-
         /// <summary>
-        /// Prefer the holder's Rigidbody pose when available so the ball follows
-        /// teleports / warps that update the body before the Transform catches up.
+        /// World position for the held ball, preferring the glove / right-hand
+        /// equipment so it tracks the hand pose instead of floating at chest height.
         /// </summary>
-        public static Vector3 GetHeldWorldPosition(Transform holder, Rigidbody holderBody)
+        /// <param name="info">Holding player.</param>
+        /// <param name="gloveModel">Optional custom held-model root (glove mesh).</param>
+        public static Vector3 GetHeldWorldPosition(PlayerInfo info, Transform gloveModel = null)
         {
-            if (holderBody != null)
-                return holderBody.position + holderBody.rotation * HeldBallLocalOffset;
-            return holder.TransformPoint(HeldBallLocalOffset);
+            Transform hand = info?.RightHandEquipmentSwitcher?.transform;
+
+            if (gloveModel != null)
+            {
+                var renderer = gloveModel.GetComponentInChildren<Renderer>();
+                if (renderer != null)
+                {
+                    Vector3 forward = hand != null ? hand.forward : gloveModel.forward;
+                    Vector3 up = hand != null ? hand.up : gloveModel.up;
+                    return renderer.bounds.center
+                        + forward * HeldBallPalmForward
+                        + up * HeldBallPalmUp;
+                }
+
+                return gloveModel.TransformPoint(HeldBallHandLocalOffset);
+            }
+
+            if (hand != null)
+                return hand.TransformPoint(HeldBallHandLocalOffset);
+
+            // Last resort: body-relative (no hand switcher yet / edge cases).
+            if (info?.Rigidbody != null)
+            {
+                var body = info.Rigidbody;
+                return body.position + body.rotation * HeldBallBodyLocalOffset;
+            }
+
+            if (info != null)
+                return info.transform.TransformPoint(HeldBallBodyLocalOffset);
+
+            return Vector3.zero;
         }
     }
 }
