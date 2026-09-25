@@ -31,8 +31,8 @@ namespace IssaPlugin
             );
             MaxRange = cfg.Bind(
                 Section,
-                "M0axRange",
-                500f,
+                "MaxRange",
+                800f,
                 "Longest distance (m) the hook can attach. The rope starts at the distance of the hit."
             );
             MinLength = cfg.Bind(
