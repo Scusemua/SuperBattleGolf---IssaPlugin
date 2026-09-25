@@ -68,7 +68,12 @@ namespace IssaPlugin.Items
         /// <summary>Extra reach so the check uses the players' feet, not the barrel.</summary>
         private const float RangeSlack = 8f;
 
-        private static readonly Dictionary<int, float> LastAcceptTime = new Dictionary<int, float>();
+        private static readonly Dictionary<int, Dictionary<uint, float>> LastAcceptTime =
+            new Dictionary<int, Dictionary<uint, float>>();
+
+        public static void ForgetConnection(int connectionId) => LastAcceptTime.Remove(connectionId);
+
+        public static void Reset() => LastAcceptTime.Clear();
 
         public static void Send(Hittable hittable, Vector3 direction, float force)
         {
@@ -100,7 +105,9 @@ namespace IssaPlugin.Items
         {
             if (conn?.identity == null)
                 return;
-            if (msg.Force <= 0f || msg.Force > MaxForce)
+            if (!float.IsFinite(msg.Force) || msg.Force <= 0f || msg.Force > MaxForce)
+                return;
+            if (!IsFinite(msg.Direction))
                 return;
             if (!NetworkServer.spawned.TryGetValue(msg.VictimNetId, out var victim) || victim == null)
                 return;
@@ -110,7 +117,8 @@ namespace IssaPlugin.Items
             float minInterval = Mathf.Max(0.05f, ModConfig.AA12.FireRate.Value * 0.75f);
             float now = Time.time;
             if (
-                LastAcceptTime.TryGetValue(conn.connectionId, out float last)
+                LastAcceptTime.TryGetValue(conn.connectionId, out var perVictim)
+                && perVictim.TryGetValue(msg.VictimNetId, out float last)
                 && now - last < minInterval
             )
                 return;
@@ -124,7 +132,12 @@ namespace IssaPlugin.Items
             if (dist > maxRange)
                 return;
 
-            LastAcceptTime[conn.connectionId] = now;
+            if (perVictim == null)
+            {
+                perVictim = new Dictionary<uint, float>();
+                LastAcceptTime[conn.connectionId] = perVictim;
+            }
+            perVictim[msg.VictimNetId] = now;
             Deliver(victim, msg.Direction, msg.Force);
         }
 
@@ -143,40 +156,23 @@ namespace IssaPlugin.Items
 
         private static void ApplyLocal(Vector3 direction, float force)
         {
-            if (force <= 0f || force > MaxForce)
+            if (!float.IsFinite(force) || force <= 0f || force > MaxForce)
+                return;
+            if (!IsFinite(direction))
                 return;
 
             var rb = GameManager.LocalPlayerInfo?.Rigidbody;
-            if (rb == null)
+            if (rb == null || rb.isKinematic)
                 return;
 
             direction.y = Mathf.Max(direction.y, 0.15f);
             if (direction.sqrMagnitude < 0.0001f)
                 return;
 
-            Vector3 impulse = direction.normalized * force;
-
-            // The elephant-gun hit often locks the root body. Ragdoll bones stay dynamic.
-            if (rb.isKinematic)
-            {
-                var bones = rb.GetComponentsInChildren<Rigidbody>();
-                bool applied = false;
-                for (int i = 0; i < bones.Length; i++)
-                {
-                    var bone = bones[i];
-                    if (bone == null || bone == rb || bone.isKinematic)
-                        continue;
-                    bone.AddForce(impulse, ForceMode.VelocityChange);
-                    applied = true;
-                }
-                if (applied)
-                    return;
-
-                rb.isKinematic = false;
-                rb.useGravity = true;
-            }
-
-            rb.AddForce(impulse, ForceMode.VelocityChange);
+            rb.AddForce(direction.normalized * force, ForceMode.VelocityChange);
         }
+
+        private static bool IsFinite(Vector3 value) =>
+            float.IsFinite(value.x) && float.IsFinite(value.y) && float.IsFinite(value.z);
     }
 }

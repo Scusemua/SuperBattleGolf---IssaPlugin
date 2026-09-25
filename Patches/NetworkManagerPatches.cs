@@ -2124,6 +2124,25 @@ namespace IssaPlugin.Patches
             yield return AccessTools.Method(typeof(BNetworkManager), "OnStopServer");
         }
 
-        static void Postfix() => ItemConfigSyncer.ResetSyncState();
+        static void Postfix()
+        {
+            ItemConfigSyncer.ResetSyncState();
+            FirearmKnockback.Reset();
+        }
+    }
+
+    /// Drops that player's knockback rate-limit entry when they leave, so a reused
+    /// connection id cannot inherit the previous player's timer.
+    [HarmonyPatch]
+    static class FirearmKnockbackDisconnectPatch
+    {
+        static MethodBase TargetMethod() =>
+            AccessTools.Method(typeof(BNetworkManager), "OnServerDisconnect");
+
+        static void Postfix(NetworkConnectionToClient conn)
+        {
+            if (conn != null)
+                FirearmKnockback.ForgetConnection(conn.connectionId);
+        }
     }
 }
