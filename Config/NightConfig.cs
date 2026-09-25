@@ -19,7 +19,7 @@ namespace IssaPlugin
         public const float DefaultAmbientIntensity = 0.25f;
         public static readonly Color DefaultSunColor = new Color(0.65f, 0.75f, 1f);
         public const float DefaultSunIntensity = 0.15f;
-        public const float DefaultReflectionIntensity = 0.05f;
+        public const float DefaultReflectionIntensity = 0.075f;
 
         public ConfigEntry<Key> GiveKey { get; private set; }
         public ConfigEntry<float> Uses { get; private set; }

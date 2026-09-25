@@ -17,6 +17,7 @@ namespace IssaPlugin
         // ── First Place Star ──────────────────────────────────────────────────
         public ConfigEntry<bool> FirstPlaceStarEnabled { get; private set; }
         public ConfigEntry<float> FirstPlaceStarHeight { get; private set; }
+        public ConfigEntry<bool> ForceNightMode { get; private set; }
 
         // ── Diagnostics section ───────────────────────────────────────────────
         public ConfigEntry<bool> NetworkDiagnosticsEnabled { get; private set; }
@@ -146,6 +147,13 @@ namespace IssaPlugin
                 "FirstPlaceStarHeight",
                 1.5f,
                 "Height in Unity units above the player's origin at which the gold star appears."
+            );
+
+            ForceNightMode = cfg.Bind(
+                "IssaPlugin",
+                "ForceNightMode",
+                false,
+                "Keep night lighting on all the time. While this is on, the Night Time item is disabled and will not drop from item boxes."
             );
 
             // ── Diagnostics ────────────────────────────────────────────────────

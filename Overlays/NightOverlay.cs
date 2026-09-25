@@ -35,6 +35,13 @@ namespace IssaPlugin.Overlays
 
         private void Update()
         {
+            if (ModConfig.Global.ForceNightMode.Value)
+            {
+                NightLighting.SetForced(true);
+                return;
+            }
+
+            NightLighting.SetForced(false);
             if (NightItem.IsActive)
                 NightLighting.Maintain();
         }

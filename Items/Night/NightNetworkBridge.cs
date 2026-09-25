@@ -38,6 +38,14 @@ namespace IssaPlugin.Items
             if (!isServer)
                 return;
 
+            if (ModConfig.Global.ForceNightMode.Value)
+            {
+                IssaPluginPlugin.Log.LogWarning(
+                    "[Night] ForceNightMode is on — the Night Time item does nothing."
+                );
+                return;
+            }
+
             if (_globalSessionActive)
             {
                 IssaPluginPlugin.Log.LogWarning("[Night] A night session is already active.");
@@ -70,6 +78,9 @@ namespace IssaPlugin.Items
 
         public static void HandleBegin(NightBeginMessage msg)
         {
+            if (ModConfig.Global.ForceNightMode.Value)
+                return;
+
             bool exempt =
                 ModConfig.Night.ExcludeActivator.Value
                 && NetworkClient.localPlayer != null

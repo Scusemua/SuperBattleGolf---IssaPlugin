@@ -4,13 +4,14 @@ using UnityEngine.Rendering;
 namespace IssaPlugin.Items
 {
     /// Applies and restores the night grade on the live skybox and directional light.
-    /// Does not take the skybox back if Moon or a hole load replaces it.
-    /// Ambient is left alone while Freeze or Low Gravity is driving it.
+    /// An item session leaves the sky alone if Moon replaces it. Force-night takes
+    /// a new hole's sky back. Ambient is left alone while Freeze or Low Gravity owns it.
     internal static class NightLighting
     {
         private static Material _nightSky;
         private static Material _sourceSky;
         private static bool _applied;
+        private static bool _heldByForce;
 
         private static AmbientMode _savedAmbientMode;
         private static Color _savedAmbientLight;
@@ -34,7 +35,31 @@ namespace IssaPlugin.Items
         private static Color _ambientLight;
         private static Color _sunColor;
 
+        private static Texture2D _blackCloudTex;
+        private static Texture2D _nightGradientTex;
         private static bool _loggedMissingShader;
+
+        /// Keeps night on without an item session. Turning it off restores daylight
+        /// unless a Night Time item session is still running.
+        public static void SetForced(bool forced)
+        {
+            if (forced)
+            {
+                _heldByForce = true;
+                if (!_applied)
+                    Begin();
+                else
+                    Maintain();
+                return;
+            }
+
+            if (!_heldByForce)
+                return;
+
+            _heldByForce = false;
+            if (!NightItem.IsActive)
+                End();
+        }
 
         public static void Begin()
         {
@@ -47,6 +72,8 @@ namespace IssaPlugin.Items
             _sun = null;
             RefreshGradeCache(force: true);
             EnsureSky();
+            if (RenderSettings.skybox == _nightSky)
+                ApplyGrade();
             ApplyLights();
         }
 
@@ -56,15 +83,18 @@ namespace IssaPlugin.Items
                 return;
 
             RefreshGradeCache(force: false);
-
+            if (_heldByForce && RenderSettings.skybox != _nightSky)
+                EnsureSky();
             if (RenderSettings.skybox == _nightSky)
                 ApplyGrade();
-
             ApplyLights();
         }
 
         public static void End()
         {
+            if (_heldByForce)
+                return;
+
             if (!_applied && _nightSky == null)
                 return;
 
@@ -82,6 +112,16 @@ namespace IssaPlugin.Items
 
             _sourceSky = null;
             _sun = null;
+            if (_blackCloudTex != null)
+            {
+                Object.Destroy(_blackCloudTex);
+                _blackCloudTex = null;
+            }
+            if (_nightGradientTex != null)
+            {
+                Object.Destroy(_nightGradientTex);
+                _nightGradientTex = null;
+            }
             _applied = false;
             _ownsAmbient = false;
             _ownsSun = false;
@@ -94,13 +134,52 @@ namespace IssaPlugin.Items
             if (sky == null || sky == _nightSky)
                 return;
 
+            // A new hole may have reset the sun and ambient. Keep the saved
+            // daylight only while those values are still the night grade we wrote.
+            NoteSceneReset();
             _sourceSky = sky;
             if (_nightSky != null)
                 Object.Destroy(_nightSky);
             _nightSky = Object.Instantiate(sky);
             RenderSettings.skybox = _nightSky;
-            ApplyGrade();
+            // The daytime sky gradient and cloud noise stay bright if only the
+            // color properties change. Replace them so the sky actually goes dark.
+            DarkenSkyTextures(_nightSky);
             DynamicGI.UpdateEnvironment();
+        }
+
+        private static void NoteSceneReset()
+        {
+            var cfg = ModConfig.Night;
+            if (
+                _ownsAmbient
+                && (
+                    RenderSettings.ambientMode != AmbientMode.Flat
+                    || !ColorsClose(RenderSettings.ambientLight, _ambientLight)
+                    || !Mathf.Approximately(RenderSettings.ambientIntensity, cfg.AmbientIntensity.Value)
+                )
+            )
+                _ownsAmbient = false;
+
+            if (
+                _ownsSun
+                && _sun != null
+                && (
+                    !ColorsClose(_sun.color, _sunColor)
+                    || !Mathf.Approximately(_sun.intensity, cfg.SunIntensity.Value)
+                )
+            )
+            {
+                _ownsSun = false;
+                _sun = null;
+            }
+        }
+
+        private static bool ColorsClose(Color a, Color b)
+        {
+            return Mathf.Abs(a.r - b.r) < 0.02f
+                && Mathf.Abs(a.g - b.g) < 0.02f
+                && Mathf.Abs(a.b - b.b) < 0.02f;
         }
 
         private static void ApplyGrade()
@@ -121,10 +200,37 @@ namespace IssaPlugin.Items
             SetFloat(_nightSky, "_AmbientIntensity", cfg.SkyAmbient.Value);
         }
 
+        private static void DarkenSkyTextures(Material sky)
+        {
+            if (_blackCloudTex == null)
+            {
+                _blackCloudTex = new Texture2D(1, 1, TextureFormat.RGB24, false);
+                _blackCloudTex.SetPixel(0, 0, Color.black);
+                _blackCloudTex.Apply();
+            }
+
+            if (_nightGradientTex == null)
+            {
+                _nightGradientTex = new Texture2D(1, 64, TextureFormat.RGB24, false);
+                _nightGradientTex.wrapMode = TextureWrapMode.Clamp;
+                var pixels = new Color[64];
+                for (int i = 0; i < 64; i++)
+                {
+                    float t = i / 63f;
+                    pixels[i] = Color.Lerp(new Color(0f, 0.01f, 0.05f), new Color(0f, 0f, 0.01f), t);
+                }
+                _nightGradientTex.SetPixels(pixels);
+                _nightGradientTex.Apply();
+            }
+
+            SetTexture(sky, "_PerlinTex", _blackCloudTex);
+            SetTexture(sky, "_VoronoiTex", _blackCloudTex);
+            SetTexture(sky, "_SkyGradientTex", _nightGradientTex);
+        }
+
         private static void ApplyLights()
         {
-            // Moon or a new hole now owns the sky. Stop writing lights so we
-            // don't fight them. End() still restores what we captured.
+            // Moon replaced the sky during an item session. Leave its lights alone.
             if (_nightSky != null && RenderSettings.skybox != _nightSky)
                 return;
 
@@ -147,9 +253,6 @@ namespace IssaPlugin.Items
                 RenderSettings.ambientIntensity = cfg.AmbientIntensity.Value;
                 RenderSettings.reflectionIntensity = cfg.ReflectionIntensity.Value;
             }
-
-            if (RenderSettings.skybox != _nightSky)
-                return;
 
             if (_sun == null)
             {
@@ -243,6 +346,14 @@ namespace IssaPlugin.Items
         {
             if (mat.HasProperty(name))
                 mat.SetVector(name, value);
+            else
+                LogMissing(mat, name);
+        }
+
+        private static void SetTexture(Material mat, string name, Texture value)
+        {
+            if (mat.HasProperty(name))
+                mat.SetTexture(name, value);
             else
                 LogMissing(mat, name);
         }

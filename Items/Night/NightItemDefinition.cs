@@ -25,6 +25,12 @@ namespace IssaPlugin.Items
 
         public override Key GiveKey => ModConfig.Night.GiveKey.Value;
 
+        public override bool Enabled
+        {
+            get => !ModConfig.Global.ForceNightMode.Value && base.Enabled;
+            set => base.Enabled = value;
+        }
+
         public override EquipmentType EquipmentType => EquipmentType.OrbitalLaser;
         public override ItemType AnimatorItemType => ItemType.OrbitalLaser;
         public override ItemType AnimatorChangedItemType => ItemType.OrbitalLaser;
@@ -32,6 +38,9 @@ namespace IssaPlugin.Items
 
         public override void OnUse(PlayerInventory inventory)
         {
+            if (ModConfig.Global.ForceNightMode.Value)
+                return;
+
             NetworkClient.Send(new NightActivateMessage());
         }
     }
