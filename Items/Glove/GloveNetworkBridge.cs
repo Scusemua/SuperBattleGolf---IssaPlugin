@@ -1128,11 +1128,20 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            // Ignore stale releases from a previous session (listen-host already
-            // cleared state in ServerRelease before SendToAll). Do not clear busy
-            // or hide the indicator — a newer hold of the same ball may be active.
+            // Session mismatch: either listen-host already cleared in ServerRelease
+            // (CurrentSessionId == 0), or a newer hold replaced this one.
             if (bridge.CurrentSessionId != msg.SessionId)
+            {
+                if (bridge.CurrentSessionId == 0)
+                {
+                    // Already released locally — finish UX only (no second launch).
+                    if (msg.BallOwnerNetId != 0)
+                        ClientBusyBalls.Remove(msg.BallOwnerNetId);
+                    GloveHoldIndicatorOverlay.Instance?.Hide(msg.HolderNetId);
+                }
+                // else: newer session still holding — leave busy + indicator alone.
                 return;
+            }
 
             if (msg.BallOwnerNetId != 0)
                 ClientBusyBalls.Remove(msg.BallOwnerNetId);
