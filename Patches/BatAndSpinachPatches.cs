@@ -342,11 +342,15 @@ namespace IssaPlugin.Patches
             if (!__instance.AsEntity.IsGolfBall || !__instance.AsEntity.HasRigidbody)
                 return true;
 
+            var rb = __instance.AsEntity.Rigidbody;
+            // Glove hold / any kinematic ball — never write velocity.
+            if (rb == null || rb.isKinematic)
+                return false;
+
             float N = HitWithGolfSwingInternalPatch.TotalMultiplier;
             if (N <= 1f)
                 return true;
 
-            var rb = __instance.AsEntity.Rigidbody;
             Vector3 vel = rb.linearVelocity;
             float sqrMag = vel.sqrMagnitude;
 

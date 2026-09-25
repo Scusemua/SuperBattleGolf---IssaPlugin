@@ -329,6 +329,14 @@ Assets used in the project:
     (https://skfb.ly/ovuOB) by Karamveer Singh 
     Licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
 
+-   "Low-Poly AA-12" \
+    (https://skfb.ly/o6qXA) by TastyTony 
+    Licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
+
+-   "Remington 870 Shotgun" \
+    (https://skfb.ly/o9MZx) by Andrei Milin 
+    Licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
+
 ---
 
 *IssaPlugin is a fan-made mod and is not affiliated with Brimstone or Oro Interactive.*

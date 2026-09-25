@@ -100,6 +100,21 @@ namespace IssaPlugin.Items
             return ClientBusyBalls.Contains(ballOwnerNetId);
         }
 
+        /// <summary>
+        /// True while any glove session is carrying this ball (server busy map or
+        /// client mirror). Used to keep <see cref="GolfBall.UpdatePhysics"/> from
+        /// undoing kinematic hold and to skip gravity/damping velocity writes.
+        /// </summary>
+        public static bool IsBallHeldByGlove(GolfBall ball)
+        {
+            if (ball == null)
+                return false;
+
+            var owner = ball.Networkowner?.PlayerInfo;
+            uint ownerNetId = PlayerBallResolver.GetPlayerNetId(owner);
+            return IsBallBusy(ownerNetId);
+        }
+
         private static bool ServerIsBallBusy(uint ballOwnerNetId) =>
             ballOwnerNetId != 0 && ServerBusyBalls.ContainsKey(ballOwnerNetId);
 
@@ -931,8 +946,14 @@ namespace IssaPlugin.Items
 
             _hasPhysicsSnapshot = false;
 
-            rb.isKinematic = false;
+            // Busy flag is already cleared before launch, so UpdatePhysics will stop
+            // forcing kinematic. Clear it here before writing launch velocities.
+            if (rb.isKinematic)
+                rb.isKinematic = false;
             rb.detectCollisions = true;
+            // Zero first so a stale kinematic write cannot linger, then apply launch.
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
             rb.linearVelocity = velocity;
             rb.angularVelocity = GloveThrowMath.ComputeThrowAngularVelocity(velocity);
 
@@ -1128,11 +1149,20 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            // Ignore stale releases from a previous session (listen-host already
-            // cleared state in ServerRelease before SendToAll). Do not clear busy
-            // or hide the indicator — a newer hold of the same ball may be active.
+            // Session mismatch: either listen-host already cleared in ServerRelease
+            // (CurrentSessionId == 0), or a newer hold replaced this one.
             if (bridge.CurrentSessionId != msg.SessionId)
+            {
+                if (bridge.CurrentSessionId == 0)
+                {
+                    // Already released locally — finish UX only (no second launch).
+                    if (msg.BallOwnerNetId != 0)
+                        ClientBusyBalls.Remove(msg.BallOwnerNetId);
+                    GloveHoldIndicatorOverlay.Instance?.Hide(msg.HolderNetId);
+                }
+                // else: newer session still holding — leave busy + indicator alone.
                 return;
+            }
 
             if (msg.BallOwnerNetId != 0)
                 ClientBusyBalls.Remove(msg.BallOwnerNetId);
