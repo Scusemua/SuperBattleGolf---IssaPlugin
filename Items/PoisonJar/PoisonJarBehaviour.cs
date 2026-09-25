@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
 
@@ -11,9 +12,10 @@ namespace IssaPlugin.Items
     ///   grace period to clear the thrower's own colliders, the first contact
     ///   triggers landing.
     ///
-    /// Phase 2 — Landed: Broadcasts PoisonJarLandedMessage to all clients so they
-    ///   can spawn local splash VFX and apply the poison overlay if within radius.
-    ///   The networked jar object is then destroyed immediately.
+    /// Phase 2 — Landed: Chooses who is poisoned (shielded players are skipped),
+    ///   broadcasts PoisonJarLandedMessage so clients can spawn splash VFX, a
+    ///   burst above each poisoned player, and the local overlay. The networked
+    ///   jar object is then destroyed immediately.
     /// </summary>
     public class PoisonJarBehaviour : MonoBehaviour
     {
@@ -58,29 +60,71 @@ namespace IssaPlugin.Items
 
         private void Land()
         {
+            if (_landed)
+                return;
             _landed = true;
 
             if (_rb != null)
             {
-                _rb.isKinematic = true;
+                // Zero velocity while the body is still dynamic. Setting it after
+                // isKinematic = true logs "kinematic body" warnings and is ignored.
                 _rb.linearVelocity = Vector3.zero;
                 _rb.angularVelocity = Vector3.zero;
+                _rb.isKinematic = true;
             }
 
             float radius = ModConfig.PoisonJar.Radius.Value;
             float duration = ModConfig.PoisonJar.Duration.Value;
+            Vector3 origin = transform.position;
 
             NetworkServer.SendToAll(
                 new PoisonJarLandedMessage
                 {
-                    Position = transform.position,
+                    Position = origin,
                     Radius = radius,
                     Duration = duration,
                     ThrowerNetId = ThrowerNetId,
+                    PoisonedNetIds = CollectPoisonedNetIds(origin, radius),
                 }
             );
 
             NetworkServer.Destroy(gameObject);
+        }
+
+        /// <summary>
+        /// Players inside the cloud, excluding anyone whose electromagnetic shield
+        /// is up. Shield state is read here, on the server, so every client shows
+        /// the burst on the same people.
+        /// </summary>
+        private static uint[] CollectPoisonedNetIds(Vector3 origin, float radius)
+        {
+            float radiusSqr = radius * radius;
+            var poisoned = new List<uint>();
+
+            foreach (var entry in NetworkServer.spawned)
+            {
+                var identity = entry.Value;
+                if (identity == null)
+                    continue;
+
+                var info = identity.GetComponent<PlayerInfo>();
+                if (info == null)
+                    continue;
+
+                if ((info.transform.position - origin).sqrMagnitude > radiusSqr)
+                    continue;
+
+                if (info.IsElectromagnetShieldActive)
+                {
+                    Vector3 hitDir = (info.transform.position - origin).normalized;
+                    info.PlayElectromagnetShieldHitForAllClients(hitDir);
+                    continue;
+                }
+
+                poisoned.Add(identity.netId);
+            }
+
+            return poisoned.ToArray();
         }
     }
 }
