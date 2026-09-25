@@ -138,10 +138,7 @@ namespace IssaPlugin.Items
             if (attacker == null || msg.BearDirection.sqrMagnitude < 0.0001f)
                 return;
 
-            float range = Mathf.Min(
-                BearWeaponHitHelper.MaxGunRange,
-                Mathf.Max(0f, msg.BearRange)
-            );
+            float range = Mathf.Min(BearWeaponHitHelper.MaxGunRange, Mathf.Max(0f, msg.BearRange));
             BearWeaponHitHelper.TryHitBearAlongRay(
                 attacker,
                 msg.Origin,
@@ -153,7 +150,19 @@ namespace IssaPlugin.Items
 
         private static void Spawn(ShotgunTracerMessage msg)
         {
-            var prefab = AssetLoader.ShotgunBulletPrefab;
+            GameObject prefab;
+
+            if (ModConfig.AA12.BulletPrefab.Value < 2)
+            {
+                prefab = AssetLoader.ShotgunBulletPrefab;
+                IssaPluginPlugin.Log.LogInfo($"[Shotgun] Using shotgun bullet prefab #1.");
+            }
+            else
+            {
+                prefab = AssetLoader.ShotgunBulletPrefab2;
+                IssaPluginPlugin.Log.LogInfo($"[Shotgun] Using shotgun bullet prefab #2.");
+            }
+
             if (prefab != null && msg.Ends != null)
             {
                 int count = Mathf.Min(msg.Ends.Length, MaxPellets);
@@ -179,7 +188,7 @@ namespace IssaPlugin.Items
                         rb.detectCollisions = false;
                         rb.useGravity = false;
                         rb.isKinematic = false;
-                        rb.velocity = velocity;
+                        rb.linearVelocity = velocity;
                     }
 
                     foreach (var particles in go.GetComponentsInChildren<ParticleSystem>())
@@ -189,6 +198,9 @@ namespace IssaPlugin.Items
                     bullet.Launch(end, Speed);
                 }
             }
+
+            if (msg.Ends != null && msg.Ends.Length > 0)
+                SpawnMuzzleFlash(msg);
 
             if (msg.BloodPoints == null)
                 return;
@@ -200,6 +212,41 @@ namespace IssaPlugin.Items
                     continue;
                 BloodSplatterHelper.SpawnBloodSplatter(msg.BloodPoints[i], msg.Origin);
             }
+        }
+
+        private static void SpawnMuzzleFlash(ShotgunTracerMessage msg)
+        {
+            var prefab = AssetLoader.ShotgunMuzzleFlashPrefab;
+            if (prefab == null || !IsFinite(msg.Origin))
+                return;
+
+            Vector3 forward = msg.BearDirection;
+            if (forward.sqrMagnitude < 0.0001f && msg.Ends != null && msg.Ends.Length > 0)
+                forward = msg.Ends[0] - msg.Origin;
+            if (forward.sqrMagnitude < 0.0001f || !IsFinite(forward))
+                return;
+
+            forward.Normalize();
+
+            // The loaded prefab stays alive and play-on-awake spends its one-particle
+            // burst at the origin. Instances copied from that spent system emit nothing.
+            if (prefab.activeSelf)
+                prefab.SetActive(false);
+
+            var go = Object.Instantiate(
+                prefab,
+                msg.Origin + forward * 0.2f,
+                Quaternion.LookRotation(forward)
+            );
+            go.SetActive(true);
+            foreach (var particles in go.GetComponentsInChildren<ParticleSystem>(true))
+            {
+                particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                particles.Clear(true);
+                particles.Play(true);
+            }
+
+            Object.Destroy(go, 2.1f);
         }
 
         private static bool IsFinite(Vector3 value) =>
@@ -224,11 +271,7 @@ namespace IssaPlugin.Items
             if (_done)
                 return;
 
-            Vector3 next = Vector3.MoveTowards(
-                transform.position,
-                _end,
-                _speed * Time.deltaTime
-            );
+            Vector3 next = Vector3.MoveTowards(transform.position, _end, _speed * Time.deltaTime);
             Vector3 step = next - transform.position;
             transform.position = next;
 
@@ -236,7 +279,7 @@ namespace IssaPlugin.Items
             {
                 Vector3 velocity = step / Time.deltaTime;
                 foreach (var rb in GetComponentsInChildren<Rigidbody>())
-                    rb.velocity = velocity;
+                    rb.linearVelocity = velocity;
             }
 
             if ((next - _end).sqrMagnitude > 0.0001f)
@@ -244,7 +287,7 @@ namespace IssaPlugin.Items
 
             _done = true;
             foreach (var rb in GetComponentsInChildren<Rigidbody>())
-                rb.velocity = Vector3.zero;
+                rb.linearVelocity = Vector3.zero;
             foreach (var particles in GetComponentsInChildren<ParticleSystem>())
                 particles.Stop(true, ParticleSystemStopBehavior.StopEmitting);
             Destroy(gameObject, 0.5f);

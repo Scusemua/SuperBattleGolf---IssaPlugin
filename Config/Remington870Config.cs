@@ -58,7 +58,7 @@ namespace IssaPlugin
             MaxShotDistance = cfg.Bind(
                 Section,
                 "MaxShotDistance",
-                36f,
+                38f,
                 "Max distance a pellet travels. Past this, the pellet does not hit."
             );
             ScreenShakeIntensity = cfg.Bind(
@@ -70,7 +70,7 @@ namespace IssaPlugin
             BonusKnockback = cfg.Bind(
                 Section,
                 "BonusKnockback",
-                10f,
+                14f,
                 "Extra velocity change applied to a player hit by a shell, on top of the elephant-gun knockback. 0 disables the bonus. Applies on the machine that simulates that player."
             );
         }

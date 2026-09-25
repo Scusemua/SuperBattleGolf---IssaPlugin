@@ -276,6 +276,10 @@ namespace IssaPlugin.Items
         public static GameObject ShotgunBulletPrefab => Vfx(_shotgunBulletPrefab);
         public static GameObject ShotgunBulletPrefab2 => Vfx(_shotgunBulletPrefab2);
 
+        /// One-shot muzzle burst. Plays on awake, does not loop, and simulates in world space.
+        private static GameObject _shotgunMuzzleFlashPrefab;
+        public static GameObject ShotgunMuzzleFlashPrefab => Vfx(_shotgunMuzzleFlashPrefab);
+
         /// The blood splatter prefab ignoring the VFX toggle.
         ///
         /// This one is registered with Mirror as a spawnable networked prefab, and that
@@ -601,6 +605,7 @@ namespace IssaPlugin.Items
                 LocalVfxPrefab(p => _bloodSplatterPrefab = p, "blood_explosion_vfx.prefab"),
                 LocalVfxPrefab(p => _shotgunBulletPrefab = p, "shotgun_bullet.prefab"),
                 LocalVfxPrefab(p => _shotgunBulletPrefab2 = p, "shotgun_bullet2.prefab"),
+                LocalVfxPrefab(p => _shotgunMuzzleFlashPrefab = p, "shotgun_muzzle_flash.prefab"),
                 LocalVfxPrefab(p => _javelinTrailVfxPrefab = p, "javelin_trail.prefab"),
                 // ── Audio ─────────────────────────────────────────────────────
                 // AudioClips are addressed without file extensions — Unity compiles

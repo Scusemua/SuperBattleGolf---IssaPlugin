@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 75339035
+CRC: 2765448432
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: aeb0222cb71f74432e5804bebdda8a55
+    Hash: e6f2e8fef7fc0a45c0383336c1c99fcd
   TypeTreeHash:
     serializedVersion: 2
     Hash: 5a8cce00eebcad12dd14cf3a32c3a8ad
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 246de10ad3b5518b0898b31ac56be43b
+    Hash: 3d094f7037d62d613227b2d1cf3086a3
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -97,6 +97,7 @@ Assets:
 - Assets/Assets/teleporter_handheld.prefab
 - Assets/Assets/bear.prefab
 - Assets/Assets/super_donut_icon.png
+- Assets/Assets/shotgun_muzzle_flash.prefab
 - Assets/Assets/wind_storm_icon.png
 - Assets/Assets/GolfBalls/golf_ball_pyramid.prefab
 - Assets/Assets/cannon.prefab

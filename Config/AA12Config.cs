@@ -76,9 +76,12 @@ namespace IssaPlugin
             );
             BulletPrefab = cfg.Bind(
                 Section,
-                "BonusKnockback",
-                1f,
-                "Bullet prefab 1 or 2."
+                "BulletPrefab",
+                1.0f,
+                new ConfigDescription(
+                    "Bullet prefab 1 or 2.",
+                    new AcceptableValueRange<float>(1f, 2f)
+                )
             );
         }
     }
