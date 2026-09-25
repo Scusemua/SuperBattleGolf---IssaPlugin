@@ -719,7 +719,7 @@ namespace IssaPlugin.Items
                 SpriteAsset(p => EvilGloveIcon = p, "evil_glove_icon.png", optional: true),
                 HandheldPrefab(
                     p => EvilGloveHandheldPrefab = p,
-                    "evil_baseball_glove.prefab",
+                    "baseball_glove_evil.prefab",
                     optional: true
                 ),
             };
