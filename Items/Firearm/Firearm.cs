@@ -364,11 +364,11 @@ namespace IssaPlugin.Items
         }
 
         /// <summary>
-        /// A single pellet keeps the rifle path: one miss tracer, or the hit effects
-        /// already played, never both. A shotgun draws a pooled tracer for each
-        /// pellet that missed and a pooled impact for each pellet that connected.
-        /// Those pooled effects do not run the bear ray. One elephant-gun miss,
-        /// down the aim center, runs only when every pellet missed.
+        /// A single pellet keeps the rifle path: one elephant-gun miss, or the hit
+        /// effects already played, never both. A shotgun draws a pooled tracer for
+        /// every pellet, hit or miss, and a pooled impact for each pellet that
+        /// connected. Those pooled effects do not run the bear ray. One elephant-gun
+        /// miss, down the aim center, runs only when every pellet missed.
         /// </summary>
         private static void PlayPelletVisuals(
             PlayerInventory inventory,
@@ -404,22 +404,10 @@ namespace IssaPlugin.Items
                 if (visual.Direction.sqrMagnitude < 0.0001f)
                     continue;
 
+                Quaternion rotation = Quaternion.LookRotation(visual.Direction);
+                ItemHelper.PlayShotVfx(VfxType.ShotgunTracer, barrelEnd, rotation);
                 if (visual.Connected)
-                {
-                    ItemHelper.PlayShotVfx(
-                        VfxType.ShotgunImpact,
-                        visual.WorldPoint,
-                        Quaternion.LookRotation(visual.Direction)
-                    );
-                }
-                else
-                {
-                    ItemHelper.PlayShotVfx(
-                        VfxType.ShotgunTracer,
-                        barrelEnd,
-                        Quaternion.LookRotation(visual.Direction)
-                    );
-                }
+                    ItemHelper.PlayShotVfx(VfxType.ShotgunImpact, visual.WorldPoint, rotation);
             }
 
             if (!anyConnected)
