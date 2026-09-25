@@ -22,10 +22,10 @@ namespace IssaPlugin.Overlays
 
         private static readonly string[] Lines =
         {
-            "Click - attach to what you aim at",
-            "Hold click - reel in",
-            "Click again - hook a new point",
-            "R - let go and keep your speed",
+            "Left click - attach to what you aim at",
+            "R - reel in",
+            "Right click - let go and keep your speed",
+            "Left click again - hook a new point",
         };
 
         private static float PanelHeight => Pad + TitleHeight + Lines.Length * LineHeight + Pad;

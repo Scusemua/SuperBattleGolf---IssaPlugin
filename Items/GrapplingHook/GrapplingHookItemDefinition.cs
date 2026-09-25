@@ -27,7 +27,12 @@ namespace IssaPlugin.Items
         public override Key GiveKey => ModConfig.GrapplingHook.GiveKey.Value;
         public override bool InheritAnimatorOverrideController => true;
 
-        public override void OnUse(PlayerInventory inventory) =>
-            inventory.StartCoroutine(GrapplingHookItem.Use(inventory));
+        public override void OnEquip(PlayerInventory inventory)
+        {
+            if (inventory.GetComponent<GrapplingHookAimMarker>() == null)
+                inventory.gameObject.AddComponent<GrapplingHookAimMarker>();
+        }
+
+        public override void OnUse(PlayerInventory inventory) => GrapplingHookItem.OnUse(inventory);
     }
 }

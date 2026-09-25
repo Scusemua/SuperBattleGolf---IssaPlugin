@@ -1,4 +1,3 @@
-using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -6,87 +5,49 @@ namespace IssaPlugin.Items
 {
     public static class GrapplingHookItem
     {
-        private static bool _holding;
+        private const float MinAttachDistance = 0.75f;
 
-        public static IEnumerator Use(PlayerInventory inventory)
+        // TryUseItem can fire again while the button is still held. One click
+        // attaches once; the next click is a new press.
+        private static bool _firedWhileHeld;
+
+        internal readonly struct AimSample
         {
-            if (_holding)
-                yield break;
+            public readonly bool Hit;
+            public readonly bool Valid;
+            public readonly Vector3 Point;
+            public readonly Vector3 Normal;
 
+            public AimSample(bool hit, bool valid, Vector3 point, Vector3 normal)
+            {
+                Hit = hit;
+                Valid = valid;
+                Point = point;
+                Normal = normal;
+            }
+        }
+
+        public static void ClearFireLatch() => _firedWhileHeld = false;
+
+        public static void OnUse(PlayerInventory inventory)
+        {
             if (Mouse.current == null || !Mouse.current.leftButton.isPressed)
-                yield break;
+                return;
+            if (_firedWhileHeld)
+                return;
 
-            if (inventory.GetEffectivelyEquippedItem(true) != ItemRegistry.GrapplingHookItemType)
-                yield break;
-
-            _holding = true;
-            try
-            {
-                TryFire(inventory);
-                if (!GrapplingHookSession.IsAttached)
-                    yield break;
-
-                GrapplingHookSession.IsReeling = true;
-                while (
-                    Mouse.current != null
-                    && Mouse.current.leftButton.isPressed
-                    && GrapplingHookSession.IsAttached
-                )
-                    yield return new WaitForFixedUpdate();
-            }
-            finally
-            {
-                GrapplingHookSession.IsReeling = false;
-                _holding = false;
-            }
+            _firedWhileHeld = true;
+            TryFire(inventory);
         }
 
-        private static void TryFire(PlayerInventory inventory)
+        internal static AimSample EvaluateAim(PlayerInventory inventory)
         {
-            int slot = inventory.EquippedItemIndex;
-            if (slot < 0 || slot >= inventory.slots.Count)
-                return;
-            if (inventory.slots[slot].itemType != ItemRegistry.GrapplingHookItemType)
-                return;
-            if (inventory.slots[slot].remainingUses <= 0)
-                return;
-
-            var movement = inventory.PlayerInfo?.Movement;
-            if (
-                movement == null
-                || !movement.IsVisible
-                || movement.IsKnockedOutOrRecovering
-                || movement.IsRespawningOrDrowning
-                || movement.DivingState != DivingState.None
-            )
-                return;
-            if (inventory.PlayerInfo.ActiveGolfCartSeat.IsValid())
-                return;
-            if (inventory.PlayerInfo.AsHittable?.FrozenState == FrozenState.Frozen)
-                return;
-
-            if (!TryGetAnchor(inventory, movement, out Vector3 anchor, out float length))
-                return;
-
-            Vector3 velocity = movement.Velocity;
-            GrapplingHookSession.Attach(anchor, length, velocity);
-            GrapplingHookNetworkBridge.ShowLocalRope(anchor);
-            GrapplingHookNetworkBridge.SendFire(anchor, slot, GrapplingHookSession.Token);
-        }
-
-        private static bool TryGetAnchor(
-            PlayerInventory inventory,
-            PlayerMovement movement,
-            out Vector3 anchor,
-            out float length
-        )
-        {
-            anchor = default;
-            length = 0f;
+            if (!CanFire(inventory, out PlayerMovement movement))
+                return default;
 
             Camera cam = Camera.main;
             if (cam == null)
-                return false;
+                return default;
 
             float maxRange = Mathf.Max(1f, ModConfig.GrapplingHook.MaxRange.Value);
             Ray ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
@@ -99,21 +60,59 @@ namespace IssaPlugin.Items
                     QueryTriggerInteraction.Ignore
                 )
             )
-                return false;
+                return default;
 
             if (hit.collider != null && hit.collider.transform.IsChildOf(inventory.transform))
-                return false;
+                return default;
 
             // The ray starts at the camera, which can sit well behind the player.
             // Range is from the body, or a third-person shot past the limit still
             // attaches locally and the server then tears it off.
-            Vector3 origin = movement.Position;
-            length = Vector3.Distance(origin, hit.point);
-            if (length < 0.75f || length > maxRange)
-                return false;
+            float length = Vector3.Distance(movement.Position, hit.point);
+            bool valid =
+                HasUse(inventory) && length >= MinAttachDistance && length <= maxRange;
+            return new AimSample(true, valid, hit.point, hit.normal);
+        }
 
-            anchor = hit.point;
+        private static void TryFire(PlayerInventory inventory)
+        {
+            AimSample aim = EvaluateAim(inventory);
+            if (!aim.Valid)
+                return;
+
+            int slot = inventory.EquippedItemIndex;
+            var movement = inventory.PlayerInfo.Movement;
+            float length = Vector3.Distance(movement.Position, aim.Point);
+            GrapplingHookSession.Attach(aim.Point, length, movement.Velocity);
+            GrapplingHookNetworkBridge.ShowLocalRope(aim.Point);
+            GrapplingHookNetworkBridge.SendFire(aim.Point, slot, GrapplingHookSession.Token);
+        }
+
+        private static bool CanFire(PlayerInventory inventory, out PlayerMovement movement)
+        {
+            movement = inventory?.PlayerInfo?.Movement;
+            if (
+                movement == null
+                || !movement.IsVisible
+                || movement.IsKnockedOutOrRecovering
+                || movement.IsRespawningOrDrowning
+                || movement.DivingState != DivingState.None
+            )
+                return false;
+            if (inventory.PlayerInfo.ActiveGolfCartSeat.IsValid())
+                return false;
+            if (inventory.PlayerInfo.AsHittable?.FrozenState == FrozenState.Frozen)
+                return false;
             return true;
+        }
+
+        private static bool HasUse(PlayerInventory inventory)
+        {
+            int slot = inventory.EquippedItemIndex;
+            if (slot < 0 || slot >= inventory.slots.Count)
+                return false;
+            var held = inventory.slots[slot];
+            return held.itemType == ItemRegistry.GrapplingHookItemType && held.remainingUses > 0;
         }
     }
 }

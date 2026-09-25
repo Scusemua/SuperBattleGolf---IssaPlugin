@@ -1,6 +1,5 @@
 using Mirror;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace IssaPlugin.Items
 {
@@ -141,16 +140,6 @@ namespace IssaPlugin.Items
             HideRope();
             if (isLocalPlayer)
                 GrapplingHookSession.ForceStop(false);
-        }
-
-        private void Update()
-        {
-            if (!isLocalPlayer || !GrapplingHookSession.IsAttached)
-                return;
-
-            var keyboard = Keyboard.current;
-            if (keyboard != null && keyboard.rKey.wasPressedThisFrame)
-                GrapplingHookSession.Release();
         }
 
         private void LateUpdate()
