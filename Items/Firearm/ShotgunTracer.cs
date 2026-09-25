@@ -150,19 +150,7 @@ namespace IssaPlugin.Items
 
         private static void Spawn(ShotgunTracerMessage msg)
         {
-            GameObject prefab;
-
-            if (ModConfig.AA12.BulletPrefab.Value < 2)
-            {
-                prefab = AssetLoader.ShotgunBulletPrefab;
-                IssaPluginPlugin.Log.LogInfo($"[Shotgun] Using shotgun bullet prefab #1.");
-            }
-            else
-            {
-                prefab = AssetLoader.ShotgunBulletPrefab2;
-                IssaPluginPlugin.Log.LogInfo($"[Shotgun] Using shotgun bullet prefab #2.");
-            }
-
+            GameObject prefab = AssetLoader.ShotgunBulletPrefab;
             if (prefab != null && msg.Ends != null)
             {
                 int count = Mathf.Min(msg.Ends.Length, MaxPellets);

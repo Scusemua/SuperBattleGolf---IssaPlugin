@@ -16,7 +16,6 @@ namespace IssaPlugin
         public ConfigEntry<float> MaxShotDistance { get; private set; }
         public ConfigEntry<float> ScreenShakeIntensity { get; private set; }
         public ConfigEntry<float> BonusKnockback { get; private set; }
-        public ConfigEntry<float> BulletPrefab { get; private set; }
 
         public AA12Config(ConfigFile cfg, GlobalConfig global)
         {
@@ -59,7 +58,7 @@ namespace IssaPlugin
             MaxShotDistance = cfg.Bind(
                 Section,
                 "MaxShotDistance",
-                26f,
+                22f,
                 "Max distance a pellet travels. Past this, the pellet does not hit."
             );
             ScreenShakeIntensity = cfg.Bind(
@@ -73,15 +72,6 @@ namespace IssaPlugin
                 "BonusKnockback",
                 8f,
                 "Extra velocity change applied to a player hit by a shell, on top of the elephant-gun knockback. 0 disables the bonus. Applies on the machine that simulates that player."
-            );
-            BulletPrefab = cfg.Bind(
-                Section,
-                "BulletPrefab",
-                1.0f,
-                new ConfigDescription(
-                    "Bullet prefab 1 or 2.",
-                    new AcceptableValueRange<float>(1f, 2f)
-                )
             );
         }
     }

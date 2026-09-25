@@ -272,9 +272,7 @@ namespace IssaPlugin.Items
         /// Shotgun pellet. The particle system only draws while the object is moving,
         /// so callers fly an instance from the barrel to the pellet's end point.
         private static GameObject _shotgunBulletPrefab;
-        private static GameObject _shotgunBulletPrefab2;
         public static GameObject ShotgunBulletPrefab => Vfx(_shotgunBulletPrefab);
-        public static GameObject ShotgunBulletPrefab2 => Vfx(_shotgunBulletPrefab2);
 
         /// One-shot muzzle burst. Plays on awake, does not loop, and simulates in world space.
         private static GameObject _shotgunMuzzleFlashPrefab;
@@ -604,7 +602,6 @@ namespace IssaPlugin.Items
                 LocalVfxPrefab(p => _confettiBlastRainbow = p, "ConfettiBlastRainbow.prefab"),
                 LocalVfxPrefab(p => _bloodSplatterPrefab = p, "blood_explosion_vfx.prefab"),
                 LocalVfxPrefab(p => _shotgunBulletPrefab = p, "shotgun_bullet.prefab"),
-                LocalVfxPrefab(p => _shotgunBulletPrefab2 = p, "shotgun_bullet2.prefab"),
                 LocalVfxPrefab(p => _shotgunMuzzleFlashPrefab = p, "shotgun_muzzle_flash.prefab"),
                 LocalVfxPrefab(p => _javelinTrailVfxPrefab = p, "javelin_trail.prefab"),
                 // ── Audio ─────────────────────────────────────────────────────

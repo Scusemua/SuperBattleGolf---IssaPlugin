@@ -58,7 +58,7 @@ namespace IssaPlugin
             MaxShotDistance = cfg.Bind(
                 Section,
                 "MaxShotDistance",
-                38f,
+                35f,
                 "Max distance a pellet travels. Past this, the pellet does not hit."
             );
             ScreenShakeIntensity = cfg.Bind(
