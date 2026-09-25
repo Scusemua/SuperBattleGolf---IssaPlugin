@@ -123,6 +123,27 @@ namespace IssaPlugin.Items
         /// instant-use and must stay usable without aiming.
         public virtual bool RequiresAimToUse => false;
 
+        /// <summary>
+        /// When set, <c>GetEffectivelyEquippedItem(false)</c> reports this base-game
+        /// item so aim pose and body rotation match it. Elephant-gun stance guns set
+        /// <see cref="ItemType.ElephantGun"/>. Equipment type alone is not enough:
+        /// the flamethrower, gravity gun, and rocket tether also use that equipment.
+        /// </summary>
+        public virtual ItemType? EffectiveItemProxy => null;
+
+        /// <summary>
+        /// Degrees of spread drawn as the aim ring, while right-click is held.
+        /// Null hides the ring. The sniper stays null and uses its scope instead.
+        /// </summary>
+        public virtual float? GetAimSpreadDegrees() => null;
+
+        /// <summary>
+        /// Max distance of this item's hitscan shot. The bear gun-hit ray uses it
+        /// so a short-range firearm cannot wound a bear past its pellets.
+        /// Null leaves the bear patch's own range.
+        /// </summary>
+        public virtual float? FirearmMaxShotDistance => null;
+
         // Called from TryUseItemPatch.Prefix with the local PlayerInventory.
         // Items that need a coroutine call inventory.StartCoroutine(...) here directly —
         // PlayerInventory is a MonoBehaviour so StartCoroutine is available.

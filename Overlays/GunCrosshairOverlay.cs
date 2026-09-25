@@ -6,15 +6,15 @@ namespace IssaPlugin.Overlays
 {
     /// <summary>
     /// Draws a circular crosshair for gun-type items:
-    ///   - AK47: shown while right-click is held; ring radius maps the inaccuracy
-    ///     config angle onto screen space so bullets land within the ring.
+    ///   - AK-47, AA-12, and Remington 870: shown while right-click is held; ring radius
+    ///     maps that item's spread angle onto screen space so pellets land within the ring.
     ///   - Flamethrower: always shown; fixed small ring indicating centre aim.
     ///   - Hunter Drone: shown while right-click is held; fixed small ring indicating
     ///     the target point where the drone will be sent.
     ///
     /// Also corrects the player model's horizontal rotation each frame so the
     /// held weapon tracks the camera:
-    ///   - AK47: corrected while right-click is held.
+    ///   - AK-47, AA-12, and Remington 870: corrected while right-click is held.
     ///   - Hunter Drone: corrected while right-click is held.
     ///   - Flamethrower: corrected always so flame particles track the camera
     ///     regardless of fire or aim-in state.
@@ -61,18 +61,20 @@ namespace IssaPlugin.Overlays
                 return;
 
             var equipped = localInfo.Inventory.GetEffectivelyEquippedItem(true);
-            bool isAK47 = equipped == ItemRegistry.AK47ItemType;
+            var equippedDef = ItemRegistry.GetDefinition(equipped);
+            float? spread = equippedDef?.GetAimSpreadDegrees();
+            bool isSpreadGun = spread.HasValue;
             bool isFlamethrower = equipped == ItemRegistry.FlamethrowerItemType;
             bool isHunterDrone = equipped == ItemRegistry.HunterDroneItemType;
 
-            if (!isAK47 && !isFlamethrower && !isHunterDrone)
+            if (!isSpreadGun && !isFlamethrower && !isHunterDrone)
                 return;
 
             float screenRadius;
 
-            if (isAK47)
+            if (isSpreadGun)
             {
-                // AK47: only show while aiming in (right-click held).
+                // Spread guns: only show while aiming in (right-click held).
                 if (Mouse.current == null || !Mouse.current.rightButton.isPressed)
                 {
                     if (_aimingIn)
@@ -83,7 +85,7 @@ namespace IssaPlugin.Overlays
 
                 _aimingIn = true;
 
-                float inaccuracy = ModConfig.AK47.Inaccuracy.Value;
+                float inaccuracy = spread.Value;
                 if (inaccuracy <= 0f || _mat == null)
                     return;
 
@@ -134,7 +136,7 @@ namespace IssaPlugin.Overlays
 
             GL.PopMatrix();
 
-            if (isAK47 || isHunterDrone)
+            if (isSpreadGun || isHunterDrone)
                 CorrectAimRotation();
         }
 
@@ -163,8 +165,9 @@ namespace IssaPlugin.Overlays
                 return;
 
             var equipped = li.Inventory.GetEffectivelyEquippedItem(true);
+            var equippedDef = ItemRegistry.GetDefinition(equipped);
 
-            if (equipped == ItemRegistry.AK47ItemType || equipped == ItemRegistry.HunterDroneItemType)
+            if (equippedDef?.GetAimSpreadDegrees() != null || equipped == ItemRegistry.HunterDroneItemType)
             {
                 CorrectAimRotation();
                 return;

@@ -27,6 +27,9 @@ namespace IssaPlugin.Items
         public override EquipmentType EquipmentType => EquipmentType.ElephantGun;
         public override ItemType AnimatorItemType => ItemType.ElephantGun;
         public override ItemType AnimatorChangedItemType => ItemType.ElephantGun;
+        public override ItemType? EffectiveItemProxy => ItemType.ElephantGun;
+        public override float? GetAimSpreadDegrees() => ModConfig.AK47.Inaccuracy.Value;
+        public override float? FirearmMaxShotDistance => ModConfig.AK47.MaxShotDistance.Value;
 
         // Starts the fire loop coroutine on button-down. The coroutine itself loops
         // while the button is held, consuming one use per bullet.

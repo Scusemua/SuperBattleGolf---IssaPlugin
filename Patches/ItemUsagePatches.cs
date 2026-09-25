@@ -650,7 +650,8 @@ namespace IssaPlugin.Patches
     /// <summary>
     /// Makes GetEffectivelyEquippedItem(false) return a base-game ItemType for custom
     /// items that borrow that item's stance / aim / use animation:
-    ///   • Sniper / AK47 → ElephantGun
+    ///   • Sniper, AK-47, AA-12, Remington 870 → ElephantGun
+    ///     (items whose EffectiveItemProxy is ElephantGun)
     ///   • Golf Cart Launcher / Javelin / Cannon → RocketLauncher
     ///   • Freeze / Low Gravity / Wind Storm / Glove / Evil Glove / AC130 /
     ///     Predator Missile / Stealth Bomber / Harrier / Moon / UFO Abduction /
@@ -699,7 +700,8 @@ namespace IssaPlugin.Patches
             // tripling the invocation count of a method already called ~6 times per
             // frame, with both calls returning the same value.
             var actual = __instance.GetEffectivelyEquippedItem(true);
-            if (actual == ItemRegistry.SniperRifleItemType || actual == ItemRegistry.AK47ItemType)
+            var actualDef = ItemRegistry.GetDefinition(actual);
+            if (actualDef?.EffectiveItemProxy == ItemType.ElephantGun)
                 __result = ItemType.ElephantGun;
             else if (
                 actual == ItemRegistry.GolfCartLauncherItemType
@@ -764,13 +766,13 @@ namespace IssaPlugin.Patches
             // Resolve once: this runs every frame, and each call re-enters the patched
             // GetEffectivelyEquippedItem, paying Harmony dispatch again.
             var equipped = __instance.GetEffectivelyEquippedItem(true);
-            if (
-                equipped != ItemRegistry.SniperRifleItemType
-                && equipped != ItemRegistry.AK47ItemType
-                && equipped != ItemRegistry.GolfCartLauncherItemType
-                && equipped != ItemRegistry.JavelinItemType
-                && equipped != ItemRegistry.CannonItemType
-            )
+            var equippedDef = ItemRegistry.GetDefinition(equipped);
+            bool elephantAim = equippedDef?.EffectiveItemProxy == ItemType.ElephantGun;
+            bool rocketAim =
+                equipped == ItemRegistry.GolfCartLauncherItemType
+                || equipped == ItemRegistry.JavelinItemType
+                || equipped == ItemRegistry.CannonItemType;
+            if (!elephantAim && !rocketAim)
                 return;
 
             // Everything below is gated behind the equipped check above, so the
@@ -788,14 +790,7 @@ namespace IssaPlugin.Patches
             // the raw slot ItemType, which is the custom value and matches none of its
             // cases. Play it on the aim-in edge so these items sound like the rocket
             // launcher they are modelled on.
-            if (
-                shouldAim
-                && (
-                    equipped == ItemRegistry.GolfCartLauncherItemType
-                    || equipped == ItemRegistry.JavelinItemType
-                    || equipped == ItemRegistry.CannonItemType
-                )
-            )
+            if (shouldAim && rocketAim)
                 __instance.PlayerInfo.PlayerAudio?.PlayItemAimForAllClients(
                     ItemType.RocketLauncher
                 );

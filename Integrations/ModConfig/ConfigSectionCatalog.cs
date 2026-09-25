@@ -33,6 +33,7 @@ namespace IssaPlugin.Integrations.ModConfigUI
                 Group("Diagnostics", "Diagnostics"),
                 Group("Explosive Golf Balls", "ExplosiveGolfBalls"),
 
+                Group("AA-12", "AA12"),
                 Group("AC-130 Gunship", "AC130", "AC130Mayday"),
                 Group("AK-47", "AK47"),
                 Group("Baseball Bat", "BaseballBat"),
@@ -58,6 +59,7 @@ namespace IssaPlugin.Integrations.ModConfigUI
                 Group("Position Swap", "PositionSwap"),
                 Group("Predator Missile", "PredatorMissile"),
                 Group("Red Bull", "RedBull"),
+                Group("Remington 870", "Remington870"),
                 Group("Rocket Tether", "RocketTether"),
                 Group("Rocket Tether Grenade", "RocketTetherGrenade"),
                 Group("Shape Shifter", "ShapeShifter", "ShapeShifter.Shapes"),

@@ -45,7 +45,8 @@ namespace IssaPlugin.Patches
                 shootingPlayer.PlayerInfo,
                 shootingPlayer.GetElephantGunBarrelEndPosition(),
                 direction,
-                ModConfig.Bear.DamageElephantGun.Value
+                ModConfig.Bear.DamageElephantGun.Value,
+                BearWeaponHitHelper.RangeForEquippedFirearm(shootingPlayer)
             );
         }
     }
@@ -274,7 +275,20 @@ namespace IssaPlugin.Patches
 
     static class BearWeaponHitHelper
     {
-        private const float MaxGunRange = 300f;
+        internal const float MaxGunRange = 300f;
+
+        /// <summary>
+        /// Custom firearms report their pellet range. The bear ray stays at
+        /// <see cref="MaxGunRange"/> for the vanilla elephant gun, and never extends past it.
+        /// </summary>
+        internal static float RangeForEquippedFirearm(PlayerInventory shootingPlayer)
+        {
+            var equipped = shootingPlayer.GetEffectivelyEquippedItem(true);
+            float? shotRange = ItemRegistry.GetDefinition(equipped)?.FirearmMaxShotDistance;
+            if (shotRange is float range)
+                return Mathf.Min(MaxGunRange, Mathf.Max(0f, range));
+            return MaxGunRange;
+        }
 
         /// <summary>
         /// Fires a single raycast from <paramref name="origin"/> in
@@ -286,10 +300,11 @@ namespace IssaPlugin.Patches
             PlayerInfo attacker,
             Vector3 origin,
             Vector3 direction,
-            float damage
+            float damage,
+            float maxRange = MaxGunRange
         )
         {
-            if (direction == Vector3.zero)
+            if (direction == Vector3.zero || maxRange <= 0f)
                 return;
 
             if (
@@ -297,7 +312,7 @@ namespace IssaPlugin.Patches
                     origin,
                     direction,
                     out RaycastHit hit,
-                    MaxGunRange,
+                    maxRange,
                     Physics.AllLayers,
                     QueryTriggerInteraction.Ignore
                 )

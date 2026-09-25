@@ -25,6 +25,8 @@ namespace IssaPlugin.Items
         public override EquipmentType EquipmentType => EquipmentType.ElephantGun;
         public override ItemType AnimatorItemType => ItemType.ElephantGun;
         public override ItemType AnimatorChangedItemType => ItemType.ElephantGun;
+        public override ItemType? EffectiveItemProxy => ItemType.ElephantGun;
+        public override float? FirearmMaxShotDistance => ModConfig.SniperRifle.MaxShotDistance.Value;
 
         // OnUse uses StartCoroutine — PlayerInventory is a MonoBehaviour, so this is valid.
         public override void OnUse(PlayerInventory inventory) =>

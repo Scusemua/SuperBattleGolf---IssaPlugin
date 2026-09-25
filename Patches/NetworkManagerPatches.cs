@@ -1023,6 +1023,21 @@ namespace IssaPlugin.Patches
                     BearNetworkBridge.ServerHandleSwingHit
                 );
 
+            Writer<FirearmKnockbackRequestMessage>.write =
+                FirearmKnockbackRequestMessageSerialization.WriteFirearmKnockbackRequestMessage;
+            Reader<FirearmKnockbackRequestMessage>.read =
+                FirearmKnockbackRequestMessageSerialization.ReadFirearmKnockbackRequestMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<FirearmKnockbackRequestMessage>(
+                    FirearmKnockback.ServerHandleRequest
+                );
+
+            Writer<FirearmKnockbackMessage>.write =
+                FirearmKnockbackMessageSerialization.WriteFirearmKnockbackMessage;
+            Reader<FirearmKnockbackMessage>.read =
+                FirearmKnockbackMessageSerialization.ReadFirearmKnockbackMessage;
+            NetworkClient.RegisterHandler<FirearmKnockbackMessage>(FirearmKnockback.ClientHandle);
+
             // ── Server → All Clients ─────────────────────────────────────────────────
 
             // Bear AI state changed (drives Animator on all clients)

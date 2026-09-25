@@ -55,6 +55,8 @@ namespace IssaPlugin.Items
         public static readonly ItemType CannonItemType = (ItemType)137;
         public static readonly ItemType GloveItemType = (ItemType)138;
         public static readonly ItemType EvilGloveItemType = (ItemType)139;
+        public static readonly ItemType AA12ItemType = (ItemType)140;
+        public static readonly ItemType Remington870ItemType = (ItemType)141;
 
         // Static initialization order note: AllItems is a static field initializer that only
         // instantiates the definition objects; it does not call any abstract members. Properties like
@@ -103,6 +105,8 @@ namespace IssaPlugin.Items
                 new CannonItemDefinition(),
                 new GloveItemDefinition(),
                 new EvilGloveItemDefinition(),
+                new AA12ItemDefinition(),
+                new Remington870ItemDefinition(),
             };
 
         private static IReadOnlyDictionary<int, CustomItemDefinition> _customItemDefinitionMap;

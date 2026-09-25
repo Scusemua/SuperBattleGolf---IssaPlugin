@@ -66,6 +66,8 @@ namespace IssaPlugin.Items
         public static Sprite BlackHoleGrenadeIcon { get; private set; }
         public static Sprite WallIcon { get; private set; }
         public static Sprite AK47Icon { get; private set; }
+        public static Sprite AA12Icon { get; private set; }
+        public static Sprite Remington870Icon { get; private set; }
         public static Sprite HarrierIcon { get; private set; }
         public static Sprite PositionSwapIcon { get; private set; }
         public static Sprite PoisonJarIcon { get; private set; }
@@ -93,6 +95,8 @@ namespace IssaPlugin.Items
         public static GameObject NuclearDetonatorPrefab { get; private set; }
         public static GameObject WallHandheldPrefab { get; private set; }
         public static GameObject AK47Prefab { get; private set; }
+        public static GameObject AA12Prefab { get; private set; }
+        public static GameObject Remington870Prefab { get; private set; }
         public static GameObject HarrierTabletPrefab { get; private set; }
         public static GameObject PositionSwapHandheldPrefab { get; private set; }
         public static GameObject PoisonJarHandheldPrefab { get; private set; }
@@ -438,6 +442,8 @@ namespace IssaPlugin.Items
                 SpriteAsset(p => BlackHoleGrenadeIcon = p, "black_hole_grenade_icon.png"),
                 SpriteAsset(p => WallIcon = p, "wall_icon.png"),
                 SpriteAsset(p => AK47Icon = p, "ak47_icon.png"),
+                SpriteAsset(p => AA12Icon = p, "aa12_icon.png"),
+                SpriteAsset(p => Remington870Icon = p, "remington870_icon.png"),
                 SpriteAsset(p => HarrierIcon = p, "harrier_icon.png"),
                 SpriteAsset(p => PositionSwapIcon = p, "position_swap_icon.png"),
                 SpriteAsset(p => PoisonJarIcon = p, "poison_bottle_icon.png"),
@@ -470,6 +476,8 @@ namespace IssaPlugin.Items
                     fallback: BuildWallHandheldFallback
                 ),
                 HandheldPrefab(p => AK47Prefab = p, "ak47.prefab"),
+                HandheldPrefab(p => AA12Prefab = p, "shotgun_aa12.prefab"),
+                HandheldPrefab(p => Remington870Prefab = p, "shotgun_remington870.prefab"),
                 HandheldPrefab(p => HarrierTabletPrefab = p, "harrier_tablet.prefab"),
                 HandheldPrefab(
                     p => PositionSwapHandheldPrefab = p,
