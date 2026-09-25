@@ -66,9 +66,11 @@ namespace IssaPlugin.Items
 
             if (_rb != null)
             {
-                _rb.isKinematic = true;
+                // Zero velocity while the body is still dynamic. Setting it after
+                // isKinematic = true logs "kinematic body" warnings and is ignored.
                 _rb.linearVelocity = Vector3.zero;
                 _rb.angularVelocity = Vector3.zero;
+                _rb.isKinematic = true;
             }
 
             float radius = ModConfig.PoisonJar.Radius.Value;
