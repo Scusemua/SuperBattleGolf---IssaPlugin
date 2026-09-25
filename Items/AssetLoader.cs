@@ -245,6 +245,10 @@ namespace IssaPlugin.Items
         private static GameObject _poisonSplashPrefab;
         public static GameObject PoisonSplashPrefab => Vfx(_poisonSplashPrefab);
 
+        /// One-shot particle burst shown above a player who was caught in the poison jar.
+        private static GameObject _poisonedPlayerVfxPrefab;
+        public static GameObject PoisonedPlayerVfxPrefab => Vfx(_poisonedPlayerVfxPrefab);
+
         private static GameObject _droneExplosionVfxPrefab;
         public static GameObject DroneExplosionVfxPrefab => Vfx(_droneExplosionVfxPrefab);
 
@@ -593,6 +597,7 @@ namespace IssaPlugin.Items
                 LocalVfxPrefab(p => _positionSwapOrbPrefab = p, "position_swap_orb.prefab"),
                 LocalVfxPrefab(p => _positionSwapSmokePrefab = p, "position_swap_smoke.prefab"),
                 LocalVfxPrefab(p => _poisonSplashPrefab = p, "poison_cloud_vfx.prefab"),
+                LocalVfxPrefab(p => _poisonedPlayerVfxPrefab = p, "poisoned_player_vfx.prefab"),
                 LocalVfxPrefab(p => _droneExplosionVfxPrefab = p, "drone_explosion.prefab"),
                 LocalVfxPrefab(p => _redBullTrailPrefab = p, "red_bull_trail.prefab"),
                 LocalVfxPrefab(p => _gravityGunTetherVfxPrefab = p, "gravity_gun_vfx.prefab"),

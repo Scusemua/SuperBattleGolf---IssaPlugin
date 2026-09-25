@@ -17,6 +17,12 @@ namespace IssaPlugin.Items
     /// </summary>
     public class PoisonJarNetworkBridge : NetworkBridgeBase
     {
+        /// Metres above <see cref="PlayerInfo.HeadBone"/>. Same offset as the glove ball icon.
+        private const float PoisonedVfxHeightAboveHead = 1.1f;
+
+        /// Metres above the player root when that player has no head bone.
+        private const float PoisonedVfxHeightAboveRoot = 2.2f;
+
         // ── Client → Server ────────────────────────────────────────────────
 
         /// <summary>
@@ -122,13 +128,12 @@ namespace IssaPlugin.Items
 
         /// <summary>
         /// Called on every client when the server reports the jar has landed.
-        /// Spawns a local splash VFX (scaled to the poison radius) and activates
-        /// the poison overlay on the local player if they are within range.
+        /// Spawns a local splash VFX, a one-shot burst above each poisoned player,
+        /// and activates the poison overlay when the local player was poisoned.
         /// </summary>
         public static void HandleLanded(PoisonJarLandedMessage msg)
         {
-            // Spawn local-only splash VFX, scaled proportionally to the AoE radius.
-            // The default radius (8 m) maps to a scale of 1; larger/smaller radii scale linearly.
+            // Splash scale is 1 when the landed radius matches the configured radius.
             var splashPrefab = AssetLoader.PoisonSplashPrefab;
             if (splashPrefab != null)
             {
@@ -138,27 +143,145 @@ namespace IssaPlugin.Items
                 Object.Destroy(splash, 6f);
             }
 
-            // Check if the local player is within the poison radius.
+            SpawnPoisonedPlayerVfx(msg.PoisonedNetIds);
+
             var localIdentity = NetworkClient.localPlayer;
-            if (localIdentity == null)
+            if (localIdentity == null || !WasPoisoned(msg.PoisonedNetIds, localIdentity.netId))
                 return;
 
-            float sqrDist = (localIdentity.transform.position - msg.Position).sqrMagnitude;
-            if (sqrDist <= msg.Radius * msg.Radius)
-            {
-                var localInfo = GameManager.LocalPlayerInfo;
-                if (localInfo != null && localInfo.IsElectromagnetShieldActive)
-                {
-                    Vector3 hitDir = (localIdentity.transform.position - msg.Position).normalized;
-                    localInfo.PlayElectromagnetShieldHitForAllClients(hitDir);
-                    return;
-                }
+            IssaPluginPlugin.Log.LogInfo(
+                $"[PoisonJar] Local player poisoned for {msg.Duration:F1}s"
+            );
+            PoisonOverlay.Instance?.ActivatePoison(msg.Duration);
+        }
 
-                IssaPluginPlugin.Log.LogInfo(
-                    $"[PoisonJar] Local player poisoned for {msg.Duration:F1}s"
-                );
-                PoisonOverlay.Instance?.ActivatePoison(msg.Duration);
+        /// <summary>
+        /// Local-only burst above each player the server poisoned. Each client
+        /// spawns its own copy so the thrower can see who was hit.
+        /// </summary>
+        private static void SpawnPoisonedPlayerVfx(uint[] netIds)
+        {
+            var prefab = AssetLoader.PoisonedPlayerVfxPrefab;
+            if (prefab == null || netIds == null || netIds.Length == 0)
+                return;
+
+            for (int i = 0; i < netIds.Length; i++)
+            {
+                if (
+                    !NetworkClient.spawned.TryGetValue(netIds[i], out var identity)
+                    || identity == null
+                )
+                    continue;
+
+                var info = identity.GetComponent<PlayerInfo>();
+                if (info == null)
+                    continue;
+
+                AttachPoisonVfx(info, prefab);
             }
+        }
+
+        private static bool WasPoisoned(uint[] netIds, uint netId)
+        {
+            if (netIds == null)
+                return false;
+
+            for (int i = 0; i < netIds.Length; i++)
+            {
+                if (netIds[i] == netId)
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static void AttachPoisonVfx(PlayerInfo playerInfo, GameObject prefab)
+        {
+            Transform anchor =
+                playerInfo.HeadBone != null ? playerInfo.HeadBone : playerInfo.transform;
+            float height =
+                playerInfo.HeadBone != null
+                    ? PoisonedVfxHeightAboveHead
+                    : PoisonedVfxHeightAboveRoot;
+            Vector3 localOffset = new Vector3(0f, height, 0f);
+
+            // Position is applied before Awake, so Play On Awake emits above the head.
+            var vfx = Object.Instantiate(
+                prefab,
+                anchor.TransformPoint(localOffset),
+                anchor.rotation,
+                anchor
+            );
+
+            foreach (var col in vfx.GetComponentsInChildren<Collider>(true))
+                col.enabled = false;
+
+            Object.Destroy(vfx, OneShotLifetime(vfx));
+        }
+
+        /// <summary>
+        /// Seconds until the last particle of a one-shot prefab dies, including
+        /// curve lifetimes and trails. The prefab is left to play on its own.
+        /// </summary>
+        private static float OneShotLifetime(GameObject vfx)
+        {
+            float lifetime = 0f;
+            var systems = vfx.GetComponentsInChildren<ParticleSystem>(true);
+            for (int i = 0; i < systems.Length; i++)
+                lifetime = Mathf.Max(lifetime, OneSystemLifetime(systems[i]));
+
+            if (lifetime <= 0f)
+                lifetime = 4f;
+
+            return lifetime + 0.25f;
+        }
+
+        private static float OneSystemLifetime(ParticleSystem ps)
+        {
+            var main = ps.main;
+            float seconds =
+                UpperBound(main.startDelay) + main.duration + UpperBound(main.startLifetime);
+            if (ps.trails.enabled)
+                seconds += UpperBound(ps.trails.lifetime);
+
+            float speed = main.simulationSpeed;
+            if (speed < 0.01f)
+                speed = 0.01f;
+            return seconds / speed;
+        }
+
+        private static float UpperBound(ParticleSystem.MinMaxCurve curve)
+        {
+            switch (curve.mode)
+            {
+                case ParticleSystemCurveMode.TwoConstants:
+                    return curve.constantMax;
+                case ParticleSystemCurveMode.Curve:
+                    return curve.curveMultiplier * CurvePeak(curve.curve);
+                case ParticleSystemCurveMode.TwoCurves:
+                    return curve.curveMultiplier
+                        * Mathf.Max(CurvePeak(curve.curveMin), CurvePeak(curve.curveMax));
+                default:
+                    return curve.constant;
+            }
+        }
+
+        private static float CurvePeak(AnimationCurve curve)
+        {
+            if (curve == null || curve.length == 0)
+                return 1f;
+
+            float start = curve.keys[0].time;
+            float end = curve.keys[curve.length - 1].time;
+            float peak = 0f;
+            const int steps = 8;
+            for (int i = 0; i <= steps; i++)
+            {
+                float t = Mathf.Lerp(start, end, i / (float)steps);
+                peak = Mathf.Max(peak, curve.Evaluate(t));
+            }
+
+            return peak;
         }
 
         // ── NetworkBridgeBase ──────────────────────────────────────────────

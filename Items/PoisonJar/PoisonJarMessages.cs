@@ -12,8 +12,9 @@ namespace IssaPlugin.Items
 
     /// <summary>
     /// Server → All clients: jar has landed.
-    /// Clients use this to spawn the local splash VFX and check whether the local
-    /// player falls within the poison radius.
+    /// Clients spawn the splash VFX and a one-shot burst above each player in
+    /// <see cref="PoisonedNetIds"/>. The local player applies the poison overlay
+    /// when their net id is in that list.
     /// </summary>
     public struct PoisonJarLandedMessage : NetworkMessage
     {
@@ -21,6 +22,9 @@ namespace IssaPlugin.Items
         public float Radius;
         public float Duration;
         public uint ThrowerNetId;
+
+        /// Players the server poisoned. Shielded players are omitted.
+        public uint[] PoisonedNetIds;
     }
 
     public static class PoisonJarMessageSerialization
@@ -44,15 +48,29 @@ namespace IssaPlugin.Items
             w.WriteFloat(m.Radius);
             w.WriteFloat(m.Duration);
             w.WriteUInt(m.ThrowerNetId);
+
+            uint[] ids = m.PoisonedNetIds;
+            int count = ids != null ? ids.Length : 0;
+            w.WriteInt(count);
+            for (int i = 0; i < count; i++)
+                w.WriteUInt(ids[i]);
         }
 
-        public static PoisonJarLandedMessage ReadPoisonJarLandedMessage(NetworkReader r) =>
-            new PoisonJarLandedMessage
+        public static PoisonJarLandedMessage ReadPoisonJarLandedMessage(NetworkReader r)
+        {
+            var message = new PoisonJarLandedMessage
             {
                 Position = r.ReadVector3(),
                 Radius = r.ReadFloat(),
                 Duration = r.ReadFloat(),
                 ThrowerNetId = r.ReadUInt(),
             };
+
+            int count = r.ReadInt();
+            message.PoisonedNetIds = new uint[count];
+            for (int i = 0; i < count; i++)
+                message.PoisonedNetIds[i] = r.ReadUInt();
+            return message;
+        }
     }
 }
