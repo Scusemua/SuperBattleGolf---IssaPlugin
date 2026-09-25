@@ -5,6 +5,9 @@ using UnityEngine.InputSystem;
 
 namespace IssaPlugin
 {
+    /// Night Time lighting. Two separate systems are configured here:
+    /// the skybox shader (what the sky looks like) and Unity scene lighting
+    /// (what illuminates the course). Color entries are "r, g, b" in the 0-1 range.
     public class NightConfig
     {
         private const string Section = "NightTime";
@@ -65,30 +68,32 @@ namespace IssaPlugin
                 "When true, the player who uses Night Time keeps normal lighting. "
                     + "Everyone else still sees night. When false, the user sees night too."
             );
+            // Skybox shader. These change the sky dome, not the light on the ground.
             SkyColor = cfg.Bind(
                 Section,
                 "SkyColor",
                 FormatColor(DefaultSkyColor),
-                "Sky color as r, g, b in the 0-1 range."
+                "Upper sky color, r, g, b in 0-1. This is the dome above the horizon, not the light on the course."
             );
             HorizonColor = cfg.Bind(
                 Section,
                 "HorizonColor",
                 FormatColor(DefaultHorizonColor),
-                "Horizon color as r, g, b in the 0-1 range."
+                "Color of the sky band at the horizon, r, g, b in 0-1."
             );
             SunDirection = cfg.Bind(
                 Section,
                 "SunDirection",
                 FormatVector3(DefaultSunDirection),
-                "Skybox sun direction as x, y, z. A negative y puts the sun below the horizon."
+                "Direction of the sun disc drawn on the skybox, x, y, z. "
+                    + "This does not move the scene light. A negative y puts the disc below the horizon."
             );
             MoonCycle = cfg.Bind(
                 Section,
                 "MoonCycle",
                 DefaultMoonCycle,
                 new ConfigDescription(
-                    "Moon phase on the skybox. 0 is new, 1 is full.",
+                    "Moon phase drawn on the skybox. 0 is a new moon, 1 is full.",
                     new AcceptableValueRange<float>(0f, 1f)
                 )
             );
@@ -96,43 +101,47 @@ namespace IssaPlugin
                 Section,
                 "StarsExposure",
                 DefaultStarsExposure,
-                "How bright the skybox stars are."
+                "Brightness of the stars on the skybox. Higher values make the stars easier to see."
             );
             SkyAmbient = cfg.Bind(
                 Section,
                 "SkyAmbient",
                 DefaultSkyAmbient,
-                "Ambient contribution stored on the skybox shader."
+                "Ambient term stored on the skybox shader. This tints the sky material. "
+                    + "It is separate from AmbientLight, which lights the course."
             );
+            // Scene lighting. These change how bright the ground, players, and props are.
             AmbientLight = cfg.Bind(
                 Section,
                 "AmbientLight",
                 FormatColor(DefaultAmbientLight),
-                "Scene ambient light as r, g, b in the 0-1 range."
+                "Flat ambient color filling shadows on the course, r, g, b in 0-1. "
+                    + "This is the moonlight on the ground, not the sky color."
             );
             AmbientIntensity = cfg.Bind(
                 Section,
                 "AmbientIntensity",
                 DefaultAmbientIntensity,
-                "Scene ambient intensity while night is active."
+                "Strength of AmbientLight. 0 leaves shadows black. Higher values lift the whole course."
             );
             SunColor = cfg.Bind(
                 Section,
                 "SunColor",
                 FormatColor(DefaultSunColor),
-                "Directional light color as r, g, b in the 0-1 range."
+                "Color of the directional scene light, r, g, b in 0-1. "
+                    + "This is the light casting on the course. It is separate from SunDirection."
             );
             SunIntensity = cfg.Bind(
                 Section,
                 "SunIntensity",
                 DefaultSunIntensity,
-                "Directional light intensity while night is active."
+                "Brightness of that directional light. Lower values leave the course lit mostly by AmbientLight."
             );
             ReflectionIntensity = cfg.Bind(
                 Section,
                 "ReflectionIntensity",
                 DefaultReflectionIntensity,
-                "Reflection intensity while night is active."
+                "How bright reflections are on shiny surfaces while night is active. 0 removes them."
             );
         }
 
