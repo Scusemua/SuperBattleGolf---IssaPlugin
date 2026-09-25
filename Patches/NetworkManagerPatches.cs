@@ -2139,10 +2139,10 @@ namespace IssaPlugin.Patches
         static MethodBase TargetMethod() =>
             AccessTools.Method(typeof(BNetworkManager), "OnServerDisconnect");
 
-        static void Postfix(NetworkConnectionToClient conn)
+        static void Postfix(NetworkConnectionToClient connection)
         {
-            if (conn != null)
-                FirearmKnockback.ForgetConnection(conn.connectionId);
+            if (connection != null)
+                FirearmKnockback.ForgetConnection(connection.connectionId);
         }
     }
 }

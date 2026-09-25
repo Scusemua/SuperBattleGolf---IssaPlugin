@@ -49,6 +49,7 @@ namespace IssaPlugin.Items
         private static readonly Dictionary<Hittable, PelletImpact> GlancingHits =
             new Dictionary<Hittable, PelletImpact>();
 
+        private static readonly List<PelletVisual> PelletVisuals = new List<PelletVisual>();
         private static readonly object[] ParseArgs = new object[5];
         private static bool _hasNullGlancing;
         private static PelletImpact _nullGlancing;
@@ -79,6 +80,13 @@ namespace IssaPlugin.Items
             public float Distance;
         }
 
+        private struct PelletVisual
+        {
+            public Vector3 Direction;
+            public bool Connected;
+            public Vector3 WorldPoint;
+        }
+
         public static void FireShell(PlayerInventory inventory, FirearmShellProfile profile)
         {
             if (inventory == null)
@@ -87,6 +95,7 @@ namespace IssaPlugin.Items
             DamageHits.Clear();
             ShieldHits.Clear();
             GlancingHits.Clear();
+            PelletVisuals.Clear();
             _hasNullGlancing = false;
             _shellVfxOpen = false;
 
@@ -119,7 +128,8 @@ namespace IssaPlugin.Items
             Vector3 aimDirection = aimPoint - barrelEnd;
             if (aimDirection.sqrMagnitude < 0.0001f)
                 aimDirection = barrelForward;
-            aimDirection.Normalize();
+            else
+                aimDirection.Normalize();
 
             int pellets = profile.PelletCount < 1 ? 1 : profile.PelletCount;
             bool anyParsed = false;
@@ -131,6 +141,7 @@ namespace IssaPlugin.Items
                     dir = barrelForward;
 
                 Ray ray = new Ray(barrelEnd, dir);
+                var visual = new PelletVisual { Direction = ray.direction };
                 int hitCount = Physics.RaycastNonAlloc(
                     ray,
                     PlayerGolfer.raycastHitBuffer,
@@ -149,10 +160,16 @@ namespace IssaPlugin.Items
                     TryParseFirearmRaycastResultsMethod?.Invoke(inventory, ParseArgs) ?? false
                 );
                 if (!parsed)
+                {
+                    PelletVisuals.Add(visual);
                     continue;
+                }
 
                 anyParsed = true;
                 var raycastHit = (RaycastHit)ParseArgs[3];
+                visual.Connected = true;
+                visual.WorldPoint = raycastHit.point;
+                PelletVisuals.Add(visual);
                 var hittable = ParseArgs[4] as Hittable;
 
                 bool canHit =
@@ -196,7 +213,7 @@ namespace IssaPlugin.Items
 
             if (!anyParsed)
             {
-                PlayMiss(inventory, profile, aimDirection);
+                PlayPelletVisuals(inventory, profile, barrelEnd, aimDirection);
                 return;
             }
 
@@ -216,6 +233,8 @@ namespace IssaPlugin.Items
 
             if (_hasNullGlancing)
                 PlayHit(inventory, profile, null, _nullGlancing, shield: false);
+
+            PlayPelletVisuals(inventory, profile, barrelEnd, aimDirection);
         }
 
         private static void KeepClosest(
@@ -342,6 +361,69 @@ namespace IssaPlugin.Items
                 ItemHelper.SetCurrentItemUse(inventory, ItemUseType.None);
                 Busy.Remove(itemType);
             }
+        }
+
+        /// <summary>
+        /// A single pellet keeps the rifle path: one miss tracer, or the hit effects
+        /// already played, never both. A shotgun draws a pooled tracer for each
+        /// pellet that missed and a pooled impact for each pellet that connected.
+        /// Those pooled effects do not run the bear ray. One elephant-gun miss,
+        /// down the aim center, runs only when every pellet missed.
+        /// </summary>
+        private static void PlayPelletVisuals(
+            PlayerInventory inventory,
+            FirearmShellProfile profile,
+            Vector3 barrelEnd,
+            Vector3 aimDirection
+        )
+        {
+            if (PelletVisuals.Count <= 1)
+            {
+                if (PelletVisuals.Count == 1 && !PelletVisuals[0].Connected)
+                    PlayMiss(inventory, profile, PelletVisuals[0].Direction);
+                return;
+            }
+
+            bool anyConnected = false;
+            for (int i = 0; i < PelletVisuals.Count; i++)
+            {
+                if (PelletVisuals[i].Connected)
+                    anyConnected = true;
+            }
+
+            if (!AllowVfx(profile))
+            {
+                if (!anyConnected)
+                    PlayMiss(inventory, profile, aimDirection);
+                return;
+            }
+
+            for (int i = 0; i < PelletVisuals.Count; i++)
+            {
+                PelletVisual visual = PelletVisuals[i];
+                if (visual.Direction.sqrMagnitude < 0.0001f)
+                    continue;
+
+                if (visual.Connected)
+                {
+                    ItemHelper.PlayShotVfx(
+                        VfxType.ShotgunImpact,
+                        visual.WorldPoint,
+                        Quaternion.LookRotation(visual.Direction)
+                    );
+                }
+                else
+                {
+                    ItemHelper.PlayShotVfx(
+                        VfxType.ShotgunTracer,
+                        barrelEnd,
+                        Quaternion.LookRotation(visual.Direction)
+                    );
+                }
+            }
+
+            if (!anyConnected)
+                PlayMiss(inventory, profile, aimDirection);
         }
 
         private static void PlayMiss(
