@@ -1038,6 +1038,14 @@ namespace IssaPlugin.Patches
                 FirearmKnockbackMessageSerialization.ReadFirearmKnockbackMessage;
             NetworkClient.RegisterHandler<FirearmKnockbackMessage>(FirearmKnockback.ClientHandle);
 
+            Writer<ShotgunTracerMessage>.write =
+                ShotgunTracerMessageSerialization.WriteShotgunTracerMessage;
+            Reader<ShotgunTracerMessage>.read =
+                ShotgunTracerMessageSerialization.ReadShotgunTracerMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<ShotgunTracerMessage>(ShotgunTracer.ServerHandle);
+            NetworkClient.RegisterHandler<ShotgunTracerMessage>(ShotgunTracer.ClientHandle);
+
             // ── Server → All Clients ─────────────────────────────────────────────────
 
             // Bear AI state changed (drives Animator on all clients)

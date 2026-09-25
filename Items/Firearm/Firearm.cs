@@ -50,6 +50,7 @@ namespace IssaPlugin.Items
             new Dictionary<Hittable, PelletImpact>();
 
         private static readonly List<PelletVisual> PelletVisuals = new List<PelletVisual>();
+        private static readonly List<Vector3> BloodPoints = new List<Vector3>();
         private static readonly object[] ParseArgs = new object[5];
         private static bool _hasNullGlancing;
         private static PelletImpact _nullGlancing;
@@ -96,6 +97,7 @@ namespace IssaPlugin.Items
             ShieldHits.Clear();
             GlancingHits.Clear();
             PelletVisuals.Clear();
+            BloodPoints.Clear();
             _hasNullGlancing = false;
             _shellVfxOpen = false;
 
@@ -213,7 +215,7 @@ namespace IssaPlugin.Items
 
             if (!anyParsed)
             {
-                PlayPelletVisuals(inventory, profile, barrelEnd, aimDirection);
+                PlayPelletVisuals(inventory, profile, barrelEnd, aimDirection, missedAll: true);
                 return;
             }
 
@@ -234,7 +236,7 @@ namespace IssaPlugin.Items
             if (_hasNullGlancing)
                 PlayHit(inventory, profile, null, _nullGlancing, shield: false);
 
-            PlayPelletVisuals(inventory, profile, barrelEnd, aimDirection);
+            PlayPelletVisuals(inventory, profile, barrelEnd, aimDirection, missedAll: false);
         }
 
         private static void KeepClosest(
@@ -365,53 +367,52 @@ namespace IssaPlugin.Items
 
         /// <summary>
         /// A single pellet keeps the rifle path: one elephant-gun miss, or the hit
-        /// effects already played, never both. A shotgun draws a pooled tracer for
-        /// every pellet, hit or miss, and a pooled impact for each pellet that
-        /// connected. Those pooled effects do not run the bear ray. One elephant-gun
-        /// miss, down the aim center, runs only when every pellet missed.
+        /// effects already played, never both. A shotgun flies one bullet prefab
+        /// along every pellet. Blood for a player hit is sent with those bullets.
+        /// A shell that misses entirely asks the server to ray the bear down the
+        /// aim center, without an elephant-gun tracer.
         /// </summary>
         private static void PlayPelletVisuals(
             PlayerInventory inventory,
             FirearmShellProfile profile,
             Vector3 barrelEnd,
-            Vector3 aimDirection
+            Vector3 aimDirection,
+            bool missedAll
         )
         {
             if (PelletVisuals.Count <= 1)
             {
-                if (PelletVisuals.Count == 1 && !PelletVisuals[0].Connected)
+                if (missedAll && PelletVisuals.Count == 1)
                     PlayMiss(inventory, profile, PelletVisuals[0].Direction);
                 return;
             }
 
-            bool anyConnected = false;
-            for (int i = 0; i < PelletVisuals.Count; i++)
+            bool show = AllowVfx(profile);
+            var ends = new List<Vector3>();
+            if (show)
             {
-                if (PelletVisuals[i].Connected)
-                    anyConnected = true;
+                for (int i = 0; i < PelletVisuals.Count; i++)
+                {
+                    PelletVisual visual = PelletVisuals[i];
+                    if (visual.Direction.sqrMagnitude < 0.0001f)
+                        continue;
+
+                    ends.Add(
+                        visual.Connected
+                            ? visual.WorldPoint
+                            : barrelEnd + visual.Direction * profile.MaxShotDistance
+                    );
+                }
             }
 
-            if (!AllowVfx(profile))
-            {
-                if (!anyConnected)
-                    PlayMiss(inventory, profile, aimDirection);
-                return;
-            }
-
-            for (int i = 0; i < PelletVisuals.Count; i++)
-            {
-                PelletVisual visual = PelletVisuals[i];
-                if (visual.Direction.sqrMagnitude < 0.0001f)
-                    continue;
-
-                Quaternion rotation = Quaternion.LookRotation(visual.Direction);
-                ItemHelper.PlayShotVfx(VfxType.ShotgunTracer, barrelEnd, rotation);
-                if (visual.Connected)
-                    ItemHelper.PlayShotVfx(VfxType.ShotgunImpact, visual.WorldPoint, rotation);
-            }
-
-            if (!anyConnected)
-                PlayMiss(inventory, profile, aimDirection);
+            ShotgunTracer.Play(
+                barrelEnd,
+                ends,
+                show ? BloodPoints : null,
+                missedAll,
+                aimDirection,
+                profile.MaxShotDistance
+            );
         }
 
         private static void PlayMiss(
@@ -436,6 +437,16 @@ namespace IssaPlugin.Items
         {
             if (!AllowVfx(profile))
                 return;
+
+            // The elephant-gun hit effect is itself a bullet. Shotgun pellets already
+            // fly the bullet prefab, so a second line is not drawn. Blood still has
+            // to be replicated, and the tracer message carries those points.
+            if (profile.PelletCount > 1)
+            {
+                if (!shield && hittable != null && hittable.AsEntity != null && hittable.AsEntity.IsPlayer)
+                    BloodPoints.Add(impact.WorldPoint);
+                return;
+            }
 
             VfxManager.PlayElephantGunHitForAllClients(
                 inventory,

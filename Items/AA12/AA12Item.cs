@@ -1,4 +1,5 @@
 using System.Collections;
+using UnityEngine;
 
 namespace IssaPlugin.Items
 {
@@ -24,7 +25,7 @@ namespace IssaPlugin.Items
                 MaxAimingDistance = ModConfig.AA12.MaxAimingDistance.Value,
                 MaxShotDistance = ModConfig.AA12.MaxShotDistance.Value,
                 Inaccuracy = ModConfig.AA12.Inaccuracy.Value,
-                PelletCount = ModConfig.AA12.PelletCount.Value,
+                PelletCount = Mathf.Max(1, Mathf.RoundToInt(ModConfig.AA12.PelletCount.Value)),
                 ScreenShakeIntensity = ModConfig.AA12.ScreenShakeIntensity.Value,
                 BonusKnockback = ModConfig.AA12.BonusKnockback.Value,
                 ThrottleVfx = true,

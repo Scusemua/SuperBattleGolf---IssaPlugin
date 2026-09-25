@@ -269,6 +269,13 @@ namespace IssaPlugin.Items
         private static GameObject _bloodSplatterPrefab;
         public static GameObject BloodSplatterPrefab => Vfx(_bloodSplatterPrefab);
 
+        /// Shotgun pellet. The particle system only draws while the object is moving,
+        /// so callers fly an instance from the barrel to the pellet's end point.
+        private static GameObject _shotgunBulletPrefab;
+        private static GameObject _shotgunBulletPrefab2;
+        public static GameObject ShotgunBulletPrefab => Vfx(_shotgunBulletPrefab);
+        public static GameObject ShotgunBulletPrefab2 => Vfx(_shotgunBulletPrefab2);
+
         /// The blood splatter prefab ignoring the VFX toggle.
         ///
         /// This one is registered with Mirror as a spawnable networked prefab, and that
@@ -592,6 +599,8 @@ namespace IssaPlugin.Items
                 LocalVfxPrefab(p => _maydayFireTrailPrefab = p, "fire_torch_intense.prefab"),
                 LocalVfxPrefab(p => _confettiBlastRainbow = p, "ConfettiBlastRainbow.prefab"),
                 LocalVfxPrefab(p => _bloodSplatterPrefab = p, "blood_explosion_vfx.prefab"),
+                LocalVfxPrefab(p => _shotgunBulletPrefab = p, "shotgun_bullet.prefab"),
+                LocalVfxPrefab(p => _shotgunBulletPrefab2 = p, "shotgun_bullet2.prefab"),
                 LocalVfxPrefab(p => _javelinTrailVfxPrefab = p, "javelin_trail.prefab"),
                 // ── Audio ─────────────────────────────────────────────────────
                 // AudioClips are addressed without file extensions — Unity compiles

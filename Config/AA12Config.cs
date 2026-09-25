@@ -10,12 +10,13 @@ namespace IssaPlugin
         public ConfigEntry<Key> GiveKey { get; private set; }
         public ConfigEntry<float> Uses { get; private set; }
         public ConfigEntry<float> FireRate { get; private set; }
-        public ConfigEntry<int> PelletCount { get; private set; }
+        public ConfigEntry<float> PelletCount { get; private set; }
         public ConfigEntry<float> Inaccuracy { get; private set; }
         public ConfigEntry<float> MaxAimingDistance { get; private set; }
         public ConfigEntry<float> MaxShotDistance { get; private set; }
         public ConfigEntry<float> ScreenShakeIntensity { get; private set; }
         public ConfigEntry<float> BonusKnockback { get; private set; }
+        public ConfigEntry<float> BulletPrefab { get; private set; }
 
         public AA12Config(ConfigFile cfg, GlobalConfig global)
         {
@@ -40,7 +41,7 @@ namespace IssaPlugin
             PelletCount = cfg.Bind(
                 Section,
                 "PelletCount",
-                8,
+                8f,
                 "Pellets fired in a cone per shell. Each pellet can hit a different target. One target is hit at most once per shell."
             );
             Inaccuracy = cfg.Bind(
@@ -52,19 +53,19 @@ namespace IssaPlugin
             MaxAimingDistance = cfg.Bind(
                 Section,
                 "MaxAimingDistance",
-                500f,
+                800f,
                 "Max distance used when computing the aim point. Pellets still stop at MaxShotDistance."
             );
             MaxShotDistance = cfg.Bind(
                 Section,
                 "MaxShotDistance",
-                28f,
+                26f,
                 "Max distance a pellet travels. Past this, the pellet does not hit."
             );
             ScreenShakeIntensity = cfg.Bind(
                 Section,
                 "ScreenShakeIntensity",
-                0.45f,
+                1.0f,
                 "Intensity of the screen shake when firing the AA-12. 0 disables it."
             );
             BonusKnockback = cfg.Bind(
@@ -72,6 +73,12 @@ namespace IssaPlugin
                 "BonusKnockback",
                 8f,
                 "Extra velocity change applied to a player hit by a shell, on top of the elephant-gun knockback. 0 disables the bonus. Applies on the machine that simulates that player."
+            );
+            BulletPrefab = cfg.Bind(
+                Section,
+                "BonusKnockback",
+                1f,
+                "Bullet prefab 1 or 2."
             );
         }
     }

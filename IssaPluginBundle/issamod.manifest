@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 2639580239
+CRC: 75339035
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 191b8ab315e7d69df88649a188320c98
+    Hash: aeb0222cb71f74432e5804bebdda8a55
   TypeTreeHash:
     serializedVersion: 2
     Hash: 5a8cce00eebcad12dd14cf3a32c3a8ad
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 0a366dc152fcf0ab5470479824ea087e
+    Hash: 246de10ad3b5518b0898b31ac56be43b
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -77,6 +77,7 @@ SerializeReferenceClassIdentifiers:
 - AssemblyName: UnityEngine.CoreModule
   ClassName: UnityEngine.RenderingLayerMask
 Assets:
+- Assets/Assets/black_hole_grenade.prefab
 - Assets/Assets/shotgun_remington870.prefab
 - Assets/Assets/aa12_icon.png
 - Assets/Assets/ac130_model.prefab
@@ -210,8 +211,9 @@ Assets:
 - Assets/Assets/snowball.prefab
 - Assets/Assets/NukeExplosionFire.prefab
 - Assets/Assets/jetpack_handheld.prefab
-- Assets/Assets/black_hole_grenade.prefab
+- Assets/Assets/shotgun_bullet.prefab
 - Assets/Assets/bear_icon.png
+- Assets/Assets/shotgun_bullet2.prefab
 - Assets/Assets/golf_cart_launcher_icon.png
 - Assets/Assets/nuclear_detonator.prefab
 - Assets/Assets/blood_splatter_critical.prefab

@@ -10,7 +10,7 @@ namespace IssaPlugin
         public ConfigEntry<Key> GiveKey { get; private set; }
         public ConfigEntry<float> Uses { get; private set; }
         public ConfigEntry<float> PumpDuration { get; private set; }
-        public ConfigEntry<int> PelletCount { get; private set; }
+        public ConfigEntry<float> PelletCount { get; private set; }
         public ConfigEntry<float> Inaccuracy { get; private set; }
         public ConfigEntry<float> MaxAimingDistance { get; private set; }
         public ConfigEntry<float> MaxShotDistance { get; private set; }
@@ -40,7 +40,7 @@ namespace IssaPlugin
             PelletCount = cfg.Bind(
                 Section,
                 "PelletCount",
-                8,
+                8f,
                 "Pellets fired in a cone per shell. Each pellet can hit a different target. One target is hit at most once per shell."
             );
             Inaccuracy = cfg.Bind(
@@ -52,19 +52,19 @@ namespace IssaPlugin
             MaxAimingDistance = cfg.Bind(
                 Section,
                 "MaxAimingDistance",
-                500f,
+                800f,
                 "Max distance used when computing the aim point. Pellets still stop at MaxShotDistance."
             );
             MaxShotDistance = cfg.Bind(
                 Section,
                 "MaxShotDistance",
-                32f,
+                36f,
                 "Max distance a pellet travels. Past this, the pellet does not hit."
             );
             ScreenShakeIntensity = cfg.Bind(
                 Section,
                 "ScreenShakeIntensity",
-                0.55f,
+                1.5f,
                 "Intensity of the screen shake when firing the Remington 870. 0 disables it."
             );
             BonusKnockback = cfg.Bind(

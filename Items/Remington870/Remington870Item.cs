@@ -1,4 +1,5 @@
 using System.Collections;
+using UnityEngine;
 
 namespace IssaPlugin.Items
 {
@@ -24,7 +25,10 @@ namespace IssaPlugin.Items
                 MaxAimingDistance = ModConfig.Remington870.MaxAimingDistance.Value,
                 MaxShotDistance = ModConfig.Remington870.MaxShotDistance.Value,
                 Inaccuracy = ModConfig.Remington870.Inaccuracy.Value,
-                PelletCount = ModConfig.Remington870.PelletCount.Value,
+                PelletCount = Mathf.Max(
+                    1,
+                    Mathf.RoundToInt(ModConfig.Remington870.PelletCount.Value)
+                ),
                 ScreenShakeIntensity = ModConfig.Remington870.ScreenShakeIntensity.Value,
                 BonusKnockback = ModConfig.Remington870.BonusKnockback.Value,
                 ThrottleVfx = false,
