@@ -408,6 +408,7 @@ namespace IssaPlugin
             Reg(cfg, _itemEnabledEntries, 139, "EvilGloveEnabled", "Evil Glove");
             Reg(cfg, _itemEnabledEntries, 140, "AA12Enabled", "AA-12");
             Reg(cfg, _itemEnabledEntries, 141, "Remington870Enabled", "Remington 870");
+            Reg(cfg, _itemEnabledEntries, 142, "NightTimeEnabled", "Night Time");
 
             // ── Warnings ───────────────────────────────────────────────────────
             WarningsEnabled = cfg.Bind(
@@ -614,6 +615,7 @@ namespace IssaPlugin
                 "Remington 870",
                 false
             );
+            RegWarn(cfg, _itemWarningEnabledEntries, 142, "NightTimeWarning", "Night Time", false);
 
             // GlobalConfig.BindAllItemPoolWeights binds all per-pool weights centrally.
             BindAllItemPoolWeights(cfg);

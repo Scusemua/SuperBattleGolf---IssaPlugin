@@ -716,6 +716,7 @@ namespace IssaPlugin.Patches
                 actual == ItemRegistry.FreezeItemType
                 || actual == ItemRegistry.LowGravityItemType
                 || actual == ItemRegistry.WindStormItemType
+                || actual == ItemRegistry.NightItemType
                 || actual == ItemRegistry.GloveItemType
                 || actual == ItemRegistry.EvilGloveItemType
                 || actual == ItemRegistry.AC130ItemType

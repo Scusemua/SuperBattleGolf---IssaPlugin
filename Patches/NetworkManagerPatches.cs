@@ -1735,6 +1735,19 @@ namespace IssaPlugin.Patches
                     (conn, msg) => GetBridge<WindStormNetworkBridge>(conn)?.ServerActivate()
                 );
 
+            Writer<NightActivateMessage>.write = NightMessageSerialization.WriteActivate;
+            Reader<NightActivateMessage>.read = NightMessageSerialization.ReadActivate;
+            Writer<NightBeginMessage>.write = NightMessageSerialization.WriteBegin;
+            Reader<NightBeginMessage>.read = NightMessageSerialization.ReadBegin;
+            Writer<NightEndMessage>.write = NightMessageSerialization.WriteEnd;
+            Reader<NightEndMessage>.read = NightMessageSerialization.ReadEnd;
+            NetworkClient.RegisterHandler<NightBeginMessage>(NightNetworkBridge.HandleBegin);
+            NetworkClient.RegisterHandler<NightEndMessage>(NightNetworkBridge.HandleEnd);
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<NightActivateMessage>(
+                    (conn, msg) => GetBridge<NightNetworkBridge>(conn)?.ServerActivate()
+                );
+
             // ── UFO Abduction ─────────────────────────────────────────────────────
 
             // Client → Server

@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 2765448432
+CRC: 3796308957
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: e6f2e8fef7fc0a45c0383336c1c99fcd
+    Hash: 4fe8abcb2a7f7ce203601597a0b85996
   TypeTreeHash:
     serializedVersion: 2
     Hash: 5a8cce00eebcad12dd14cf3a32c3a8ad
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 3d094f7037d62d613227b2d1cf3086a3
+    Hash: 4e753420940fb6229c2875b130ed52ee
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -77,7 +77,6 @@ SerializeReferenceClassIdentifiers:
 - AssemblyName: UnityEngine.CoreModule
   ClassName: UnityEngine.RenderingLayerMask
 Assets:
-- Assets/Assets/black_hole_grenade.prefab
 - Assets/Assets/shotgun_remington870.prefab
 - Assets/Assets/aa12_icon.png
 - Assets/Assets/ac130_model.prefab
@@ -97,6 +96,7 @@ Assets:
 - Assets/Assets/teleporter_handheld.prefab
 - Assets/Assets/bear.prefab
 - Assets/Assets/super_donut_icon.png
+- Assets/Assets/night_remote.prefab
 - Assets/Assets/shotgun_muzzle_flash.prefab
 - Assets/Assets/wind_storm_icon.png
 - Assets/Assets/GolfBalls/golf_ball_pyramid.prefab
@@ -202,6 +202,7 @@ Assets:
 - Assets/Assets/drone.prefab
 - Assets/Assets/spike_ball_icon.png
 - Assets/Assets/ufo_abduction.prefab
+- Assets/Assets/night_icon.png
 - Assets/Assets/javelin_rocket_launcher.prefab
 - Assets/Assets/smoke_trail_prefab.prefab
 - Assets/Assets/brick.prefab
@@ -212,9 +213,9 @@ Assets:
 - Assets/Assets/snowball.prefab
 - Assets/Assets/NukeExplosionFire.prefab
 - Assets/Assets/jetpack_handheld.prefab
-- Assets/Assets/shotgun_bullet.prefab
+- Assets/Assets/black_hole_grenade.prefab
 - Assets/Assets/bear_icon.png
-- Assets/Assets/shotgun_bullet2.prefab
+- Assets/Assets/shotgun_bullet.prefab
 - Assets/Assets/golf_cart_launcher_icon.png
 - Assets/Assets/nuclear_detonator.prefab
 - Assets/Assets/blood_splatter_critical.prefab

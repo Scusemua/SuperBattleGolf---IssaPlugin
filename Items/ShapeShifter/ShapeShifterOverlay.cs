@@ -145,6 +145,10 @@ namespace IssaPlugin.Items
                 slot++;
             if (LowGravityItem.IsActive)
                 slot++;
+            if (WindStormOverlay.IsActive)
+                slot++;
+            if (NightOverlay.IsActive)
+                slot++;
             float barY = EffectBarLayout.GetBarY(slot);
 
             GUI.DrawTexture(new Rect(barX, barY, barW, barH), _barBgTexture);

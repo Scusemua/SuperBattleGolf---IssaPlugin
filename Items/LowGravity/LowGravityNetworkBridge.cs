@@ -30,6 +30,7 @@ namespace IssaPlugin.Items
         private static float _savedFogDensity;
         private static Color _savedAmbientLight;
         private static bool _savedFog;
+        private static bool _deferAmbientToNight;
 
         // ================================================================
         //  Client → Server
@@ -91,6 +92,7 @@ namespace IssaPlugin.Items
                 _savedFogDensity = RenderSettings.fogDensity;
                 _savedAmbientLight = RenderSettings.ambientLight;
                 _savedFog = RenderSettings.fog;
+                _deferAmbientToNight = NightItem.IsActive;
             }
 
             RenderSettings.fog = true;
@@ -115,8 +117,10 @@ namespace IssaPlugin.Items
         {
             RenderSettings.fogColor = _savedFogColor;
             RenderSettings.fogDensity = _savedFogDensity;
-            RenderSettings.ambientLight = _savedAmbientLight;
             RenderSettings.fog = _savedFog;
+            if (!_deferAmbientToNight)
+                RenderSettings.ambientLight = _savedAmbientLight;
+            _deferAmbientToNight = false;
 
             LowGravityItem.IsActive = false;
             LowGravityOverlay.Instance?.SetActive(false);

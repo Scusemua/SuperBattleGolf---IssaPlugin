@@ -94,6 +94,7 @@ namespace IssaPlugin.Overlays
                 (FreezeItem.IsFrozen ? 1 : 0)
                 + (LowGravityItem.IsActive ? 1 : 0)
                 + (WindStormOverlay.IsActive ? 1 : 0)
+                + (NightOverlay.IsActive ? 1 : 0)
                 + (jetpackShowing ? 1 : 0);
             float barY = EffectBarLayout.GetBarY(slot);
 

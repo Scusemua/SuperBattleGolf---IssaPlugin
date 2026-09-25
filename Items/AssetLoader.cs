@@ -76,6 +76,7 @@ namespace IssaPlugin.Items
         public static Sprite ElectricGravityGunIcon { get; private set; }
         public static Sprite RedBullIcon { get; private set; }
         public static Sprite WindStormIcon { get; private set; }
+        public static Sprite NightIcon { get; private set; }
         public static Sprite UfoAbductionIcon { get; private set; }
 
         /// Falls back to DonutIcon at runtime if the asset is absent from the bundle.
@@ -104,6 +105,7 @@ namespace IssaPlugin.Items
         public static GameObject ElectricWhipHandheldPrefab { get; private set; }
         public static GameObject RedBullHandheldPrefab { get; private set; }
         public static GameObject WindStormModelPrefab { get; private set; }
+        public static GameObject NightModelPrefab { get; private set; }
 
         /// Falls back to DonutHandheldPrefab at runtime if the asset is absent.
         public static GameObject SuperDonutHandheldPrefab { get; private set; }
@@ -466,6 +468,7 @@ namespace IssaPlugin.Items
                 SpriteAsset(p => ElectricGravityGunIcon = p, "gravity_gun_icon.png"),
                 SpriteAsset(p => RedBullIcon = p, "redbull_icon.png"),
                 SpriteAsset(p => WindStormIcon = p, "wind_storm_icon.png", optional: true),
+                SpriteAsset(p => NightIcon = p, "night_icon.png", optional: true),
                 SpriteAsset(p => SuperDonutIcon = p, "super_donut_icon.png", optional: true),
                 // ── Textures ──────────────────────────────────────────────────
                 Texture(p => SniperScopeTexture = p, "sniper_scope.png"),
@@ -499,6 +502,11 @@ namespace IssaPlugin.Items
                 HandheldPrefab(
                     p => WindStormModelPrefab = p,
                     "weather_remote.prefab",
+                    optional: true
+                ),
+                HandheldPrefab(
+                    p => NightModelPrefab = p,
+                    "night_remote.prefab",
                     optional: true
                 ),
                 HandheldPrefab(
