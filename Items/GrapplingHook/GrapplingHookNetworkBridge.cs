@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -8,18 +9,50 @@ namespace IssaPlugin.Items
     /// owning client; everyone else just tracks the anchor.
     public class GrapplingHookNetworkBridge : NetworkBridgeBase
     {
-        private static Material _ropeMaterial;
+        private struct ServerGrapple
+        {
+            public Vector3 Anchor;
+            public int Token;
+        }
 
-        private bool _serverAttached;
-        private LineRenderer _line;
-        private Vector3 _anchor;
-        private bool _showing;
-        private PlayerMovement _movement;
+        private static Material _ropeMaterial;
         private static bool _loggedMissingShader;
 
-        public static void ShowLocalRope(Vector3 anchor)
+        // Server-only. Late joiners never saw the original broadcast, so the
+        // anchor has to be remembered and sent when their player object starts.
+        private static readonly Dictionary<uint, ServerGrapple> ServerGrapples = new();
+
+        // Client-only. A catch-up message can arrive before that player exists locally.
+        private static readonly Dictionary<uint, GrappleAnchorMessage> PendingAnchors = new();
+
+        // Same value on every peer. Hole changes and the results screen bump it so a
+        // message still in flight from the previous hole is ignored. A late joiner
+        // adopts whatever generation the server is already on.
+        private static int _generation = 1;
+        private static int _minGeneration = 1;
+        private static int _lastClosedGeneration = 1;
+        private static readonly List<uint> StalePending = new();
+
+        private bool _serverAttached;
+
+        // isLocalPlayer is already false by the time the object is torn down.
+        private bool _wasOwned;
+
+        private LineRenderer _line;
+        private Vector3 _anchor;
+        private int _shownToken;
+        private int _shownGeneration;
+        private bool _showing;
+        private PlayerMovement _movement;
+
+        public static void ShowLocalRope(Vector3 anchor) =>
+            ShowLocalRope(anchor, GrapplingHookSession.Token);
+
+        // Token is the shot the server still has. A rejected re-anchor restores
+        // the previous one, which is no longer GrapplingHookSession.Token.
+        internal static void ShowLocalRope(Vector3 anchor, int token)
         {
-            LocalBridge()?.ShowRope(anchor);
+            LocalBridge()?.ShowRope(anchor, token);
         }
 
         public static void HideLocalRope()
@@ -53,10 +86,102 @@ namespace IssaPlugin.Items
             );
         }
 
+        /// Results screen. The last hole does not pass through HoleOverview.
+        public static void EndMatch()
+        {
+            AdvanceGeneration();
+            if (!NetworkServer.active)
+                return;
+
+            var bridges = FindObjectsByType<GrapplingHookNetworkBridge>(FindObjectsSortMode.None);
+            for (int i = 0; i < bridges.Length; i++)
+                bridges[i].ServerHoleCleanup();
+        }
+
+        public static void AdvanceGeneration()
+        {
+            // A newer anchor can already have been applied if this peer learned
+            // about the hole change late. Closing again would skip a generation
+            // and ignore the rest of the hole.
+            if (_generation == _lastClosedGeneration)
+            {
+                _generation++;
+                _minGeneration = _generation;
+            }
+
+            _lastClosedGeneration = _generation;
+            DropStaleRopes();
+        }
+
+        public override void OnStartServer()
+        {
+            if (connectionToClient == null || ServerGrapples.Count == 0)
+                return;
+
+            foreach (var pair in ServerGrapples)
+            {
+                connectionToClient.Send(
+                    new GrappleAnchorMessage
+                    {
+                        PlayerNetId = pair.Key,
+                        Anchor = pair.Value.Anchor,
+                        Token = pair.Value.Token,
+                        Generation = _generation,
+                    }
+                );
+            }
+        }
+
+        public override void OnStartClient()
+        {
+            _wasOwned = isOwned;
+            if (!PendingAnchors.TryGetValue(netId, out var msg))
+                return;
+
+            PendingAnchors.Remove(netId);
+            ApplyAnchor(msg);
+        }
+
+        public override void OnStopServer()
+        {
+            // Hole changes keep the player object. This is a real disconnect.
+            Forget(broadcast: true);
+        }
+
+        public override void OnStopClient() => StopOwnedSession();
+
+        private void OnDestroy() => StopOwnedSession();
+
+        private void StopOwnedSession()
+        {
+            if (!_wasOwned && !isOwned)
+                return;
+
+            // The session is static and would otherwise swing the next life.
+            _wasOwned = false;
+            PendingAnchors.Remove(netId);
+            GrapplingHookSession.ForceStop(false);
+        }
+
         public void ServerHandleFire(Vector3 anchor, int slotIndex, int token)
         {
             if (!isServer)
                 return;
+
+            // A click from the previous hole can still be in the queue. Accepting
+            // it would spend a use and leave other clients with a rope the owner
+            // has already dropped.
+            if (
+                !SingletonBehaviour<DrivingRangeManager>.HasInstance
+                && (
+                    CourseManager.MatchState <= MatchState.TeeOff
+                    || CourseManager.MatchState == MatchState.Ended
+                )
+            )
+            {
+                Reject(token);
+                return;
+            }
 
             var inventory = CachedInventory;
             if (
@@ -64,6 +189,7 @@ namespace IssaPlugin.Items
                 || ItemRegistry.GetItemTypeAtSlot(inventory, slotIndex)
                     != ItemRegistry.GrapplingHookItemType
                 || ItemRegistry.GetRemainingUsesAtSlot(inventory, slotIndex) <= 0
+                || !IsFinite(anchor)
             )
             {
                 Reject(token);
@@ -81,37 +207,39 @@ namespace IssaPlugin.Items
 
             ItemHelper.ConsumeItemAtSlot(inventory, slotIndex);
             _serverAttached = true;
+            ServerGrapples[netId] = new ServerGrapple { Anchor = anchor, Token = token };
             NetworkServer.SendToAll(
                 new GrappleAnchorMessage
                 {
                     PlayerNetId = netId,
                     Anchor = anchor,
                     Token = token,
+                    Generation = _generation,
                 }
             );
         }
 
         public void ServerHandleRelease()
         {
-            if (!isServer || !_serverAttached)
+            if (!isServer)
                 return;
 
-            _serverAttached = false;
-            NetworkServer.SendToAll(new GrappleClearMessage { PlayerNetId = netId });
+            Forget(broadcast: true);
         }
 
         public static void HandleAnchor(GrappleAnchorMessage msg)
         {
+            if (!IsFinite(msg.Anchor) || !AcceptGeneration(msg.Generation))
+                return;
+
             if (!NetworkClient.spawned.TryGetValue(msg.PlayerNetId, out var identity))
+            {
+                PendingAnchors[msg.PlayerNetId] = msg;
                 return;
+            }
 
-            var bridge = identity.GetComponent<GrapplingHookNetworkBridge>();
-            if (bridge == null)
-                return;
-
-            bridge.ShowRope(msg.Anchor);
-            if (bridge.isLocalPlayer)
-                GrapplingHookSession.Confirm(msg.Token);
+            PendingAnchors.Remove(msg.PlayerNetId);
+            identity.GetComponent<GrapplingHookNetworkBridge>()?.ApplyAnchor(msg);
         }
 
         public static void HandleReject(GrappleRejectMessage msg)
@@ -121,26 +249,34 @@ namespace IssaPlugin.Items
 
         public static void HandleClear(GrappleClearMessage msg)
         {
+            if (!AcceptGeneration(msg.Generation))
+                return;
+
+            if (
+                PendingAnchors.TryGetValue(msg.PlayerNetId, out var pending)
+                && pending.Token == msg.Token
+            )
+                PendingAnchors.Remove(msg.PlayerNetId);
+
             if (!NetworkClient.spawned.TryGetValue(msg.PlayerNetId, out var identity))
                 return;
 
-            identity.GetComponent<GrapplingHookNetworkBridge>()?.HideRope();
+            identity.GetComponent<GrapplingHookNetworkBridge>()?.HideRope(msg.Token);
         }
 
         public override void ServerHoleCleanup()
         {
-            if (!_serverAttached)
-                return;
-
-            _serverAttached = false;
-            NetworkServer.SendToAll(new GrappleClearMessage { PlayerNetId = netId });
+            // Each client tears its own ropes down. A broadcast here can land on
+            // the next hole and hide a rope that was just fired.
+            Forget(broadcast: false);
         }
 
         public override void ClientHoleCleanup()
         {
-            HideRope();
+            // Generation was already closed for this hole. This only catches a
+            // rope that appeared before that close finished.
             if (isLocalPlayer)
-                GrapplingHookSession.ForceStop(false);
+                DropStaleRopes();
         }
 
         // The last use removes the item, and the aim marker with it. Reel and
@@ -169,9 +305,27 @@ namespace IssaPlugin.Items
             _line.SetPosition(1, _anchor);
         }
 
-        private void ShowRope(Vector3 anchor)
+        private void ApplyAnchor(GrappleAnchorMessage msg)
+        {
+            // The owner already drew the rope when they fired. An anchor message
+            // that arrives after they let go, or for a shot they have since
+            // replaced, must not put that rope back.
+            if (isLocalPlayer)
+            {
+                if (!GrapplingHookSession.IsAttached || msg.Token != GrapplingHookSession.Token)
+                    return;
+
+                GrapplingHookSession.Confirm(msg.Token);
+            }
+
+            ShowRope(msg.Anchor, msg.Token);
+        }
+
+        private void ShowRope(Vector3 anchor, int token)
         {
             _anchor = anchor;
+            _shownToken = token;
+            _shownGeneration = _generation;
             _showing = true;
             if (_line == null)
                 _line = CreateLine();
@@ -182,8 +336,87 @@ namespace IssaPlugin.Items
         private void HideRope()
         {
             _showing = false;
+            _shownToken = 0;
+            _shownGeneration = 0;
             if (_line != null)
                 _line.enabled = false;
+        }
+
+        private void HideRope(int token)
+        {
+            if (_shownToken != token)
+                return;
+
+            HideRope();
+        }
+
+        private void Forget(bool broadcast)
+        {
+            if (!_serverAttached && !ServerGrapples.ContainsKey(netId))
+                return;
+
+            int token = 0;
+            if (ServerGrapples.TryGetValue(netId, out var state))
+                token = state.Token;
+
+            _serverAttached = false;
+            ServerGrapples.Remove(netId);
+
+            if (!broadcast)
+                return;
+
+            NetworkServer.SendToAll(
+                new GrappleClearMessage
+                {
+                    PlayerNetId = netId,
+                    Token = token,
+                    Generation = _generation,
+                }
+            );
+        }
+
+        private static bool AcceptGeneration(int generation)
+        {
+            if (generation < _minGeneration)
+                return false;
+
+            // A player who joined mid-match has not seen the earlier hole changes.
+            if (generation > _generation)
+            {
+                _generation = generation;
+                _minGeneration = generation;
+            }
+
+            return true;
+        }
+
+        private static void DropStaleRopes()
+        {
+            StalePending.Clear();
+            foreach (var pair in PendingAnchors)
+            {
+                if (pair.Value.Generation < _minGeneration)
+                    StalePending.Add(pair.Key);
+            }
+
+            for (int i = 0; i < StalePending.Count; i++)
+                PendingAnchors.Remove(StalePending[i]);
+
+            bool stopLocal = false;
+            var bridges = FindObjectsByType<GrapplingHookNetworkBridge>(FindObjectsSortMode.None);
+            for (int i = 0; i < bridges.Length; i++)
+            {
+                var bridge = bridges[i];
+                if (bridge._shownGeneration >= _minGeneration)
+                    continue;
+
+                bridge.HideRope();
+                if (bridge.isLocalPlayer || bridge._wasOwned)
+                    stopLocal = true;
+            }
+
+            if (stopLocal)
+                GrapplingHookSession.ForceStop(false);
         }
 
         private void Reject(int token)
@@ -194,6 +427,9 @@ namespace IssaPlugin.Items
             else if (connectionToClient != null)
                 connectionToClient.Send(msg);
         }
+
+        private static bool IsFinite(Vector3 v) =>
+            float.IsFinite(v.x) && float.IsFinite(v.y) && float.IsFinite(v.z);
 
         private LineRenderer CreateLine()
         {

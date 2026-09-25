@@ -17,6 +17,7 @@ namespace IssaPlugin.Items
 
         private PlayerInventory _inventory;
         private LineRenderer _ring;
+        private Material _ringMaterial;
         private readonly Vector3[] _ringPositions = new Vector3[RingSegments];
 
         private void Awake()
@@ -37,7 +38,10 @@ namespace IssaPlugin.Items
 
             var shader = Shader.Find("Sprites/Default");
             if (shader != null)
-                _ring.material = new Material(shader);
+            {
+                _ringMaterial = new Material(shader);
+                _ring.sharedMaterial = _ringMaterial;
+            }
         }
 
         private void Update()
@@ -95,6 +99,8 @@ namespace IssaPlugin.Items
 
         private void OnDestroy()
         {
+            if (_ringMaterial != null)
+                Destroy(_ringMaterial);
             if (_ring != null)
                 Destroy(_ring.gameObject);
         }

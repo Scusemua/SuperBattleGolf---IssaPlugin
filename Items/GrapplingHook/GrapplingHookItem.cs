@@ -10,6 +10,7 @@ namespace IssaPlugin.Items
         // TryUseItem can fire again while the button is still held. One click
         // attaches once; the next click is a new press.
         private static bool _firedWhileHeld;
+        private static readonly RaycastHit[] AimHits = new RaycastHit[32];
 
         internal readonly struct AimSample
         {
@@ -51,21 +52,44 @@ namespace IssaPlugin.Items
 
             float maxRange = Mathf.Max(1f, ModConfig.GrapplingHook.MaxRange.Value);
             Ray ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-            if (
-                !Physics.Raycast(
-                    ray,
-                    out RaycastHit hit,
-                    maxRange,
-                    GameManager.LayerSettings.PlayerGroundableMask,
-                    QueryTriggerInteraction.Ignore
-                )
-            )
+            // The camera sits behind the body in third person. Extend the cast by
+            // that gap, then accept the hit only if the body is still in range.
+            float castRange =
+                maxRange
+                + Mathf.Min(80f, Vector3.Distance(cam.transform.position, movement.Position));
+            int hitCount = Physics.RaycastNonAlloc(
+                ray,
+                AimHits,
+                castRange,
+                GameManager.LayerSettings.PlayerGroundableMask,
+                QueryTriggerInteraction.Ignore
+            );
+
+            var body = inventory.PlayerInfo.Rigidbody;
+            bool found = false;
+            float bestDistance = float.MaxValue;
+            RaycastHit hit = default;
+            for (int i = 0; i < hitCount; i++)
+            {
+                RaycastHit candidate = AimHits[i];
+                Collider col = candidate.collider;
+                if (col == null)
+                    continue;
+                if (col.transform.IsChildOf(inventory.transform))
+                    continue;
+                if (body != null && col.attachedRigidbody == body)
+                    continue;
+                if (candidate.distance >= bestDistance)
+                    continue;
+
+                bestDistance = candidate.distance;
+                hit = candidate;
+                found = true;
+            }
+
+            if (!found)
                 return default;
 
-            if (hit.collider != null && hit.collider.transform.IsChildOf(inventory.transform))
-                return default;
-
-            // The ray starts at the camera, which can sit well behind the player.
             // Range is from the body, or a third-person shot past the limit still
             // attaches locally and the server then tears it off.
             float length = Vector3.Distance(movement.Position, hit.point);

@@ -15,6 +15,7 @@ namespace IssaPlugin.Items
         public uint PlayerNetId;
         public Vector3 Anchor;
         public int Token;
+        public int Generation;
     }
 
     public struct GrappleRejectMessage : NetworkMessage
@@ -27,6 +28,8 @@ namespace IssaPlugin.Items
     public struct GrappleClearMessage : NetworkMessage
     {
         public uint PlayerNetId;
+        public int Token;
+        public int Generation;
     }
 
     public static class GrappleMessageSerialization
@@ -51,6 +54,7 @@ namespace IssaPlugin.Items
             writer.WriteUInt(msg.PlayerNetId);
             writer.WriteVector3(msg.Anchor);
             writer.WriteInt(msg.Token);
+            writer.WriteInt(msg.Generation);
         }
 
         public static GrappleAnchorMessage ReadAnchor(NetworkReader reader) =>
@@ -59,6 +63,7 @@ namespace IssaPlugin.Items
                 PlayerNetId = reader.ReadUInt(),
                 Anchor = reader.ReadVector3(),
                 Token = reader.ReadInt(),
+                Generation = reader.ReadInt(),
             };
 
         public static void WriteReject(NetworkWriter writer, GrappleRejectMessage msg) =>
@@ -72,10 +77,19 @@ namespace IssaPlugin.Items
         public static GrappleReleaseMessage ReadRelease(NetworkReader reader) =>
             new GrappleReleaseMessage();
 
-        public static void WriteClear(NetworkWriter writer, GrappleClearMessage msg) =>
+        public static void WriteClear(NetworkWriter writer, GrappleClearMessage msg)
+        {
             writer.WriteUInt(msg.PlayerNetId);
+            writer.WriteInt(msg.Token);
+            writer.WriteInt(msg.Generation);
+        }
 
         public static GrappleClearMessage ReadClear(NetworkReader reader) =>
-            new GrappleClearMessage { PlayerNetId = reader.ReadUInt() };
+            new GrappleClearMessage
+            {
+                PlayerNetId = reader.ReadUInt(),
+                Token = reader.ReadInt(),
+                Generation = reader.ReadInt(),
+            };
     }
 }

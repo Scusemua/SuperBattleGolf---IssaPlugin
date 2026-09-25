@@ -29,6 +29,7 @@ namespace IssaPlugin.Items
 
         private static bool _hasUndo;
         private static bool _undoAttached;
+        private static int _undoToken;
         private static Vector3 _undoAnchor;
         private static float _undoLength;
         private static Vector3 _undoVelocity;
@@ -36,6 +37,7 @@ namespace IssaPlugin.Items
         public static void Attach(Vector3 anchor, float length, Vector3 velocity)
         {
             _undoAttached = IsAttached;
+            _undoToken = Token;
             _undoAnchor = _anchor;
             _undoLength = _ropeLength;
             _undoVelocity = _savedVelocity;
@@ -48,6 +50,9 @@ namespace IssaPlugin.Items
             _anchor = anchor;
             _ropeLength = Mathf.Max(0.5f, length);
             _savedVelocity = velocity;
+            // A teleport between swings must not look like a discontinuity on the
+            // first step of the new rope.
+            _hasLastPosition = false;
         }
 
         public static void Confirm(int token)
@@ -69,7 +74,7 @@ namespace IssaPlugin.Items
                 _anchor = _undoAnchor;
                 _ropeLength = _undoLength;
                 _savedVelocity = _undoVelocity;
-                GrapplingHookNetworkBridge.ShowLocalRope(_anchor);
+                GrapplingHookNetworkBridge.ShowLocalRope(_anchor, _undoToken);
                 return;
             }
 

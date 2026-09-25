@@ -202,13 +202,22 @@ namespace IssaPlugin
             // fire after the final hole, which would otherwise leave the local player
             // giant through the results screen.
             if (currentState == MatchState.Ended)
+            {
                 SuperJumboBurgerBehaviour.ForceReset();
+                // The final hole skips HoleOverview, so a rope would otherwise
+                // keep simulating on the results screen.
+                GrapplingHookNetworkBridge.EndMatch();
+            }
 
             // When a new hole begins, force-end any item sessions that survived the
             // scene transition (player objects are DontDestroyOnLoad; OnStopServer
             // only fires on disconnect, not on hole-to-hole scene changes).
             if (currentState != MatchState.HoleOverview)
                 return;
+
+            // Bumped once per peer so an anchor still in flight from the
+            // previous hole cannot attach on this one.
+            GrapplingHookNetworkBridge.AdvanceGeneration();
 
             // ── Server-side cleanup ───────────────────────────────────────────
             if (NetworkServer.active)

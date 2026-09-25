@@ -3,7 +3,8 @@ using UnityEngine;
 
 namespace IssaPlugin.Overlays
 {
-    /// How to use the grappling hook. Shown while the local player has it equipped.
+    /// How to use the grappling hook. Shown while it is equipped, and while a
+    /// rope is still attached after the last use.
     public class GrapplingHookOverlay : MonoBehaviour
     {
         private GUIStyle _titleStyle;
