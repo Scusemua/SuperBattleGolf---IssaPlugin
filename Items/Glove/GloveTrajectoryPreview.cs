@@ -95,34 +95,10 @@ namespace IssaPlugin.Items
                 SpinachBehaviour.IsActive
             );
 
-            float minSpeed;
-            float maxSpeed;
-            float upwardBias;
-            if (_bridge != null && _bridge.IsHolding)
-            {
-                minSpeed = _bridge.ConfigMinimumThrowSpeed * spinachMult;
-                maxSpeed = _bridge.ConfigMaximumThrowSpeed * spinachMult;
-                upwardBias = _bridge.ConfigThrowUpwardBias;
-            }
-            else
-            {
-                bool evil =
-                    _inventory != null
-                    && PlayerBallResolver.IsEvilGlove(
-                        _inventory.GetEffectivelyEquippedItem(true)
-                    );
-                minSpeed =
-                    (evil
-                        ? ModConfig.EvilGlove.MinimumThrowSpeed.Value
-                        : ModConfig.Glove.MinimumThrowSpeed.Value) * spinachMult;
-                maxSpeed =
-                    (evil
-                        ? ModConfig.EvilGlove.MaximumThrowSpeed.Value
-                        : ModConfig.Glove.MaximumThrowSpeed.Value) * spinachMult;
-                upwardBias = evil
-                    ? ModConfig.EvilGlove.ThrowUpwardBias.Value
-                    : ModConfig.Glove.ThrowUpwardBias.Value;
-            }
+            // IsPreviewActive requires a hold, so session config is always available.
+            float minSpeed = _bridge.ConfigMinimumThrowSpeed * spinachMult;
+            float maxSpeed = _bridge.ConfigMaximumThrowSpeed * spinachMult;
+            float upwardBias = _bridge.ConfigThrowUpwardBias;
 
             if (maxSpeed < minSpeed)
                 (minSpeed, maxSpeed) = (maxSpeed, minSpeed);

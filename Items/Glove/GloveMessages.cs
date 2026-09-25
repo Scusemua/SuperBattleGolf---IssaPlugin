@@ -24,10 +24,10 @@ namespace IssaPlugin.Items
         /// </summary>
         public uint BallOwnerNetId;
         /// <summary>
-        /// Evil Glove: client camera aim ray so the server can re-select authoritatively
-        /// (Hunter Drone pattern). Glove leaves these at default/zero.
+        /// Evil Glove: client aim direction. Server pairs this with a
+        /// server-derived origin at the holder's head (client origin is not trusted).
+        /// Glove leaves this at default/zero.
         /// </summary>
-        public Vector3 AimOrigin;
         public Vector3 AimDirection;
     }
 
@@ -40,7 +40,6 @@ namespace IssaPlugin.Items
         {
             w.WriteInt(msg.EquippedSlotIndex);
             w.WriteUInt(msg.BallOwnerNetId);
-            w.WriteVector3(msg.AimOrigin);
             w.WriteVector3(msg.AimDirection);
         }
 
@@ -49,7 +48,6 @@ namespace IssaPlugin.Items
             {
                 EquippedSlotIndex = r.ReadInt(),
                 BallOwnerNetId = r.ReadUInt(),
-                AimOrigin = r.ReadVector3(),
                 AimDirection = r.ReadVector3(),
             };
     }

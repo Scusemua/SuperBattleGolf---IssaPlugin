@@ -21,7 +21,15 @@ namespace IssaPlugin.Patches
                     m.Name.Contains("ShouldOwnedBallDisplayNotAllowedVisuals")
                 );
 
-        static bool Prepare() => TargetMethod() != null;
+        static bool Prepare()
+        {
+            if (TargetMethod() != null)
+                return true;
+            IssaPluginPlugin.Log.LogWarning(
+                "[Glove] ShouldOwnedBallDisplayNotAllowedVisuals not found — tint patch skipped."
+            );
+            return false;
+        }
 
         static void Postfix(GolfBall __instance, ref bool __result)
         {
@@ -68,12 +76,11 @@ namespace IssaPlugin.Patches
     }
 
     /// <summary>
-    /// Evil Glove aim lock: tint another player's ball when it is the BestTarget.
-    /// Also suppresses the OL-pose "all unowned balls" tint while Evil Glove is
-    /// equipped so only the locked ball lights up.
+    /// Suppresses the Orbital-Laser-pose "all unowned balls" tint while a glove-like
+    /// item is equipped. Evil Glove re-enables tint only on the aim-locked ball.
     /// </summary>
     [HarmonyPatch]
-    static class EvilGloveUnownedBallNotAllowedVisualsPatch
+    static class GloveUnownedBallNotAllowedVisualsPatch
     {
         static MethodBase TargetMethod() =>
             typeof(GolfBall)
@@ -82,7 +89,15 @@ namespace IssaPlugin.Patches
                     m.Name.Contains("ShouldUnownedBallDisplayNotAllowedVisuals")
                 );
 
-        static bool Prepare() => TargetMethod() != null;
+        static bool Prepare()
+        {
+            if (TargetMethod() != null)
+                return true;
+            IssaPluginPlugin.Log.LogWarning(
+                "[Glove] ShouldUnownedBallDisplayNotAllowedVisuals not found — tint patch skipped."
+            );
+            return false;
+        }
 
         static void Postfix(GolfBall __instance, ref bool __result)
         {
@@ -90,7 +105,8 @@ namespace IssaPlugin.Patches
             if (local == null)
                 return;
 
-            if (local.Inventory?.GetEffectivelyEquippedItem(true) != ItemRegistry.EvilGloveItemType)
+            var equipped = local.Inventory?.GetEffectivelyEquippedItem(true) ?? ItemType.None;
+            if (!PlayerBallResolver.IsGloveLike(equipped))
                 return;
 
             var bridge = local.GetComponent<GloveNetworkBridge>();
@@ -100,6 +116,14 @@ namespace IssaPlugin.Patches
                 return;
             }
 
+            if (equipped == ItemRegistry.GloveItemType)
+            {
+                // Regular Glove never tints other players' balls.
+                __result = false;
+                return;
+            }
+
+            // Evil Glove: tint only the aim-locked ball.
             __result =
                 EvilGloveOverlay.Instance != null
                 && EvilGloveOverlay.Instance.BestTargetBall == __instance;

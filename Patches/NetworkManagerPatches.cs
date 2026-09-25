@@ -1931,7 +1931,6 @@ namespace IssaPlugin.Patches
                             ?.ServerHandlePickupRequest(
                                 msg.EquippedSlotIndex,
                                 msg.BallOwnerNetId,
-                                msg.AimOrigin,
                                 msg.AimDirection
                             );
                     }

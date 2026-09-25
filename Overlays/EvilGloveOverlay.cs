@@ -19,7 +19,6 @@ namespace IssaPlugin.Overlays
         private bool _aimingIn;
         private bool _hasTarget;
         private Vector3 _targetScreenPos;
-        private float _sw;
         private float _sh;
 
         /// <summary>Player netId of the locked ball owner, or 0.</summary>
@@ -60,7 +59,6 @@ namespace IssaPlugin.Overlays
                 return;
 
             _aimingIn = true;
-            _sw = Screen.width;
             _sh = Screen.height;
 
             var cam = Camera.main;

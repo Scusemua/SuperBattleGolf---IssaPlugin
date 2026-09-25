@@ -17,11 +17,6 @@ namespace IssaPlugin.Items
     /// </summary>
     public class GloveNetworkBridge : NetworkBridgeBase
     {
-        private static readonly FieldInfo IsInHoleField = AccessTools.Field(
-            typeof(GolfBall),
-            "isInHole"
-        );
-
         private static readonly PropertyInfo ServerLastStrokePositionProp = AccessTools.Property(
             typeof(GolfBall),
             "ServerLastStrokePosition"
@@ -193,7 +188,6 @@ namespace IssaPlugin.Items
                 {
                     EquippedSlotIndex = slot,
                     BallOwnerNetId = netId,
-                    AimOrigin = Vector3.zero,
                     AimDirection = Vector3.zero,
                 }
             );
@@ -201,8 +195,9 @@ namespace IssaPlugin.Items
 
         /// <summary>
         /// Evil Glove: require an aim lock from <see cref="EvilGloveOverlay"/>, then
-        /// send pickup with the camera aim ray. Server re-runs cone selection and
-        /// does not trust <c>BallOwnerNetId</c>. No lock → no send (no consume).
+        /// send pickup with the camera aim direction. Server re-runs cone selection
+        /// from the holder's head and does not trust <c>BallOwnerNetId</c>.
+        /// No lock → no send (no consume).
         /// </summary>
         public void ClientRequestEvilPickup()
         {
@@ -239,7 +234,6 @@ namespace IssaPlugin.Items
                 {
                     EquippedSlotIndex = slot,
                     BallOwnerNetId = targetOwnerNetId,
-                    AimOrigin = cam.transform.position,
                     AimDirection = cam.transform.forward,
                 }
             );
@@ -335,7 +329,6 @@ namespace IssaPlugin.Items
         public void ServerHandlePickupRequest(
             int equippedSlotIndex,
             uint ballOwnerNetId,
-            Vector3 aimOrigin,
             Vector3 aimDirection
         )
         {
@@ -384,15 +377,16 @@ namespace IssaPlugin.Items
             }
             else
             {
-                // Authoritative aim-cone selection (Hunter Drone pattern). Client
-                // BallOwnerNetId is a hint only — the aim ray drives selection.
+                // Authoritative aim-cone selection. Origin is server-derived at the
+                // holder's head so a forged client AimOrigin cannot teleport the cone.
                 uint clientClaim = ballOwnerNetId;
-                if (!IsFinite(aimOrigin) || !IsFinite(aimDirection) || aimDirection.sqrMagnitude < 0.0001f)
+                if (!IsFinite(aimDirection) || aimDirection.sqrMagnitude < 0.0001f)
                 {
-                    IssaPluginPlugin.Log.LogDebug("[EvilGlove] Pickup rejected: invalid aim ray.");
+                    IssaPluginPlugin.Log.LogDebug("[EvilGlove] Pickup rejected: invalid aim direction.");
                     return;
                 }
 
+                Vector3 aimOrigin = GetServerAimOrigin(info);
                 var selected = GolfBallAimTargeting.SelectBallOwner(
                     aimOrigin,
                     aimDirection,
@@ -567,26 +561,39 @@ namespace IssaPlugin.Items
         private static bool ServerBallAllowed(GolfBall ball, out string reason)
         {
             reason = null;
-
-            if (ball.IsHidden)
+            if (ball == null)
             {
-                reason = "ball hidden";
+                reason = "no ball";
                 return false;
             }
 
-            if (ball.OutOfBoundsReturnState != BallOutOfBoundsReturnState.None)
+            // Shared eligibility with GolfBallAimTargeting (hidden / OOB / in-hole).
+            if (!GolfBallAimTargeting.IsBallEligible(ball))
             {
-                reason = "ball returning from OOB";
-                return false;
-            }
-
-            if (IsInHoleField != null && (bool)IsInHoleField.GetValue(ball))
-            {
-                reason = "ball in hole";
+                if (ball.IsHidden)
+                    reason = "ball hidden";
+                else if (ball.OutOfBoundsReturnState != BallOutOfBoundsReturnState.None)
+                    reason = "ball returning from OOB";
+                else
+                    reason = "ball in hole";
                 return false;
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Server-side aim origin for Evil Glove cone selection — holder head/eyes,
+        /// never a client-supplied point.
+        /// </summary>
+        private static Vector3 GetServerAimOrigin(PlayerInfo info)
+        {
+            if (info?.HeadBone != null)
+                return info.HeadBone.position;
+            // Fallback: approximate eye height above the player root.
+            return info != null
+                ? info.transform.position + Vector3.up * 1.6f
+                : Vector3.zero;
         }
 
         // ================================================================
@@ -1112,22 +1119,23 @@ namespace IssaPlugin.Items
 
         public static void HandleReleased(GloveReleasedMessage msg)
         {
-            if (msg.BallOwnerNetId != 0)
-                ClientBusyBalls.Remove(msg.BallOwnerNetId);
-
             if (!TryGetBridge(msg.HolderNetId, out var bridge))
             {
+                // Holder gone — drop any stale busy flag for this ball.
+                if (msg.BallOwnerNetId != 0)
+                    ClientBusyBalls.Remove(msg.BallOwnerNetId);
                 GloveHoldIndicatorOverlay.Instance?.Hide(msg.HolderNetId);
                 return;
             }
 
             // Ignore stale releases from a previous session (listen-host already
-            // cleared state in ServerRelease before SendToAll).
+            // cleared state in ServerRelease before SendToAll). Do not clear busy
+            // or hide the indicator — a newer hold of the same ball may be active.
             if (bridge.CurrentSessionId != msg.SessionId)
-            {
-                GloveHoldIndicatorOverlay.Instance?.Hide(msg.HolderNetId);
                 return;
-            }
+
+            if (msg.BallOwnerNetId != 0)
+                ClientBusyBalls.Remove(msg.BallOwnerNetId);
 
             // Prefer message owner; fall back to session field before release clears it.
             var ball =
