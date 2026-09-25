@@ -8,11 +8,12 @@ namespace IssaPlugin.Overlays
 {
     /// <summary>
     /// Local-only held-ball indicators above every player currently carrying
-    /// their ball with the Glove. One instance per holder netId — every client
-    /// spawns its own copy when it receives <c>GloveHoldStartedMessage</c>.
+    /// a golf ball with the Glove or Evil Glove. One instance per holder netId —
+    /// every client spawns its own copy when it receives <c>GloveHoldStartedMessage</c>.
     ///
     /// Built at runtime from <see cref="AssetLoader.GloveBallIndicatorIcon"/> (a PNG
-    /// sprite) — no prefab required.
+    /// sprite) — no prefab required. Height uses <see cref="ModConfig.Glove"/>'s
+    /// IndicatorHeight for both glove types.
     /// </summary>
     public class GloveHoldIndicatorOverlay : MonoBehaviour
     {

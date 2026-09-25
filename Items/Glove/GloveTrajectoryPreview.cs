@@ -4,12 +4,9 @@ using IssaPlugin.Patches;
 namespace IssaPlugin.Items
 {
     /// <summary>
-    /// Client-only throw-arc preview while the Glove is equipped.
-    ///
-    /// Shows the ballistic path from the held-ball origin using
-    /// <see cref="GloveThrowMath"/> (same formula as the server throw), while the
-    /// local player is holding their ball and aiming. Charge fills the arc speed
-    /// from min→max; aiming without charging previews minimum throw speed.
+    /// Client-only throw-arc preview while Glove or Evil Glove is equipped and
+    /// a ball is held. Uses the same throw math as the server, with speeds from
+    /// the session item's config on the bridge.
     /// </summary>
     public class GloveTrajectoryPreview : MonoBehaviour
     {
@@ -27,7 +24,9 @@ namespace IssaPlugin.Items
             _preview = gameObject.AddComponent<BallisticTrajectoryPreview>();
             _preview.ShouldKeepAlive = () =>
                 _inventory != null
-                && _inventory.GetEffectivelyEquippedItem(true) == ItemRegistry.GloveItemType;
+                && PlayerBallResolver.IsGloveLike(
+                    _inventory.GetEffectivelyEquippedItem(true)
+                );
             _preview.IsActive = IsPreviewActive;
             _preview.GetOrigin = GetThrowOrigin;
             _preview.GetVelocity = GetThrowVelocity;
@@ -52,7 +51,7 @@ namespace IssaPlugin.Items
         {
             if (
                 _inventory == null
-                || _inventory.GetEffectivelyEquippedItem(true) != ItemRegistry.GloveItemType
+                || !PlayerBallResolver.IsGloveLike(_inventory.GetEffectivelyEquippedItem(true))
             )
                 Destroy(this);
         }
@@ -68,9 +67,9 @@ namespace IssaPlugin.Items
 
         private Vector3 GetThrowOrigin()
         {
-            // Prefer the live ball pose while it is snapped to the glove.
-            var ball = _inventory?.PlayerInfo?.AsGolfer?.OwnBall;
-            if (_bridge != null && _bridge.IsHolding && ball != null)
+            // Prefer the live held-ball pose (may be another player's ball for Evil).
+            var ball = _bridge != null && _bridge.IsHolding ? _bridge.HeldBall : null;
+            if (ball != null)
                 return ball.transform.position;
 
             var info = _inventory?.PlayerInfo;
@@ -95,8 +94,36 @@ namespace IssaPlugin.Items
             float spinachMult = GloveThrowMath.GetSpinachThrowSpeedMultiplier(
                 SpinachBehaviour.IsActive
             );
-            float minSpeed = ModConfig.Glove.MinimumThrowSpeed.Value * spinachMult;
-            float maxSpeed = ModConfig.Glove.MaximumThrowSpeed.Value * spinachMult;
+
+            float minSpeed;
+            float maxSpeed;
+            float upwardBias;
+            if (_bridge != null && _bridge.IsHolding)
+            {
+                minSpeed = _bridge.ConfigMinimumThrowSpeed * spinachMult;
+                maxSpeed = _bridge.ConfigMaximumThrowSpeed * spinachMult;
+                upwardBias = _bridge.ConfigThrowUpwardBias;
+            }
+            else
+            {
+                bool evil =
+                    _inventory != null
+                    && PlayerBallResolver.IsEvilGlove(
+                        _inventory.GetEffectivelyEquippedItem(true)
+                    );
+                minSpeed =
+                    (evil
+                        ? ModConfig.EvilGlove.MinimumThrowSpeed.Value
+                        : ModConfig.Glove.MinimumThrowSpeed.Value) * spinachMult;
+                maxSpeed =
+                    (evil
+                        ? ModConfig.EvilGlove.MaximumThrowSpeed.Value
+                        : ModConfig.Glove.MaximumThrowSpeed.Value) * spinachMult;
+                upwardBias = evil
+                    ? ModConfig.EvilGlove.ThrowUpwardBias.Value
+                    : ModConfig.Glove.ThrowUpwardBias.Value;
+            }
+
             if (maxSpeed < minSpeed)
                 (minSpeed, maxSpeed) = (maxSpeed, minSpeed);
 
@@ -105,7 +132,7 @@ namespace IssaPlugin.Items
                 charge01,
                 minSpeed,
                 maxSpeed,
-                ModConfig.Glove.ThrowUpwardBias.Value
+                upwardBias
             );
         }
 

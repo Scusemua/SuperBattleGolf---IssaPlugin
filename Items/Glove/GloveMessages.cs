@@ -17,6 +17,18 @@ namespace IssaPlugin.Items
     public struct GlovePickupRequestMessage : NetworkMessage
     {
         public int EquippedSlotIndex;
+        /// <summary>
+        /// Player NetworkIdentity netId whose OwnBall to pick up.
+        /// Glove sends self. Evil Glove may send the client lock for logging;
+        /// the server re-runs aim selection and does not trust this id.
+        /// </summary>
+        public uint BallOwnerNetId;
+        /// <summary>
+        /// Evil Glove: client camera aim ray so the server can re-select authoritatively
+        /// (Hunter Drone pattern). Glove leaves these at default/zero.
+        /// </summary>
+        public Vector3 AimOrigin;
+        public Vector3 AimDirection;
     }
 
     public static class GlovePickupRequestMessageSerialization
@@ -24,10 +36,22 @@ namespace IssaPlugin.Items
         public static void WriteGlovePickupRequestMessage(
             NetworkWriter w,
             GlovePickupRequestMessage msg
-        ) => w.WriteInt(msg.EquippedSlotIndex);
+        )
+        {
+            w.WriteInt(msg.EquippedSlotIndex);
+            w.WriteUInt(msg.BallOwnerNetId);
+            w.WriteVector3(msg.AimOrigin);
+            w.WriteVector3(msg.AimDirection);
+        }
 
         public static GlovePickupRequestMessage ReadGlovePickupRequestMessage(NetworkReader r) =>
-            new() { EquippedSlotIndex = r.ReadInt() };
+            new()
+            {
+                EquippedSlotIndex = r.ReadInt(),
+                BallOwnerNetId = r.ReadUInt(),
+                AimOrigin = r.ReadVector3(),
+                AimDirection = r.ReadVector3(),
+            };
     }
 
     /// <summary>
@@ -70,6 +94,8 @@ namespace IssaPlugin.Items
         public uint SessionId;
         public float Duration;
         public float TimeRemaining;
+        /// <summary>Player netId whose OwnBall is being carried.</summary>
+        public uint BallOwnerNetId;
     }
 
     public static class GloveHoldStartedMessageSerialization
@@ -80,6 +106,7 @@ namespace IssaPlugin.Items
             w.WriteUInt(msg.SessionId);
             w.WriteFloat(msg.Duration);
             w.WriteFloat(msg.TimeRemaining);
+            w.WriteUInt(msg.BallOwnerNetId);
         }
 
         public static GloveHoldStartedMessage ReadGloveHoldStartedMessage(NetworkReader r) =>
@@ -89,6 +116,7 @@ namespace IssaPlugin.Items
                 SessionId = r.ReadUInt(),
                 Duration = r.ReadFloat(),
                 TimeRemaining = r.ReadFloat(),
+                BallOwnerNetId = r.ReadUInt(),
             };
     }
 
@@ -104,6 +132,7 @@ namespace IssaPlugin.Items
         /// Clients use this to scale air drag the same way club hits do.
         /// </summary>
         public float PowerMultiplier;
+        public uint BallOwnerNetId;
     }
 
     public static class GloveReleasedMessageSerialization
@@ -116,6 +145,7 @@ namespace IssaPlugin.Items
             w.WriteVector3(msg.WorldPosition);
             w.WriteVector3(msg.Velocity);
             w.WriteFloat(msg.PowerMultiplier > 0f ? msg.PowerMultiplier : 1f);
+            w.WriteUInt(msg.BallOwnerNetId);
         }
 
         public static GloveReleasedMessage ReadGloveReleasedMessage(NetworkReader r) =>
@@ -127,6 +157,7 @@ namespace IssaPlugin.Items
                 WorldPosition = r.ReadVector3(),
                 Velocity = r.ReadVector3(),
                 PowerMultiplier = Mathf.Max(1f, r.ReadFloat()),
+                BallOwnerNetId = r.ReadUInt(),
             };
     }
 

@@ -299,8 +299,8 @@ namespace IssaPlugin.Patches
             if (inventory == null)
                 return true;
 
-            // Block swinging while carrying a ball with the Glove — the item is
-            // consumed on pickup, so the player may re-equip a club mid-hold.
+            // Block swinging while carrying a ball with Glove / Evil Glove —
+            // the item stays equipped until release, but swing must not fire.
             var glove = inventory.GetComponent<GloveNetworkBridge>();
             if (glove != null && glove.IsHolding)
             {
@@ -652,11 +652,12 @@ namespace IssaPlugin.Patches
     /// items that borrow that item's stance / aim / use animation:
     ///   • Sniper / AK47 → ElephantGun
     ///   • Golf Cart Launcher / Javelin / Cannon → RocketLauncher
-    ///   • Freeze / Low Gravity / Wind Storm / Glove / AC130 / Predator Missile /
-    ///     Stealth Bomber / Harrier / Moon / UFO Abduction / Shape Shifter /
-    ///     Super Shape Shifter / Spinach / Hunter Drone / Sticky Grenade / Bear /
-    ///     Nuke / Black Hole Grenade / Donut / Super Donut / Poison Jar /
-    ///     Drone Swarm / Rocket Tether Grenade → OrbitalLaser
+    ///   • Freeze / Low Gravity / Wind Storm / Glove / Evil Glove / AC130 /
+    ///     Predator Missile / Stealth Bomber / Harrier / Moon / UFO Abduction /
+    ///     Shape Shifter / Super Shape Shifter / Spinach / Hunter Drone /
+    ///     Sticky Grenade / Bear / Nuke / Black Hole Grenade / Donut /
+    ///     Super Donut / Poison Jar / Drone Swarm / Rocket Tether Grenade
+    ///     → OrbitalLaser
     ///
     /// GetEffectivelyEquippedItem(false) returns None for all custom items because
     /// the game's visual hiding system doesn't know about them.  Every rotation and
@@ -714,6 +715,7 @@ namespace IssaPlugin.Patches
                 || actual == ItemRegistry.LowGravityItemType
                 || actual == ItemRegistry.WindStormItemType
                 || actual == ItemRegistry.GloveItemType
+                || actual == ItemRegistry.EvilGloveItemType
                 || actual == ItemRegistry.AC130ItemType
                 || actual == ItemRegistry.PredatorMissileItemType
                 || actual == ItemRegistry.StealthBomberItemType

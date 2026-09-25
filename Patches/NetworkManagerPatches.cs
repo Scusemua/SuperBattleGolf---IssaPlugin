@@ -1928,7 +1928,12 @@ namespace IssaPlugin.Patches
                     (conn, msg) =>
                     {
                         GetBridge<GloveNetworkBridge>(conn)
-                            ?.ServerHandlePickupRequest(msg.EquippedSlotIndex);
+                            ?.ServerHandlePickupRequest(
+                                msg.EquippedSlotIndex,
+                                msg.BallOwnerNetId,
+                                msg.AimOrigin,
+                                msg.AimDirection
+                            );
                     }
                 );
 

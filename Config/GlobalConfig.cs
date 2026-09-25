@@ -405,6 +405,7 @@ namespace IssaPlugin
                 "Cannon"
             );
             Reg(cfg, _itemEnabledEntries, 138, "GloveEnabled", "Glove");
+            Reg(cfg, _itemEnabledEntries, 139, "EvilGloveEnabled", "Evil Glove");
 
             // ── Warnings ───────────────────────────────────────────────────────
             WarningsEnabled = cfg.Bind(
@@ -594,6 +595,14 @@ namespace IssaPlugin
                 false
             );
             RegWarn(cfg, _itemWarningEnabledEntries, 138, "GloveWarning", "Glove", false);
+            RegWarn(
+                cfg,
+                _itemWarningEnabledEntries,
+                139,
+                "EvilGloveWarning",
+                "Evil Glove",
+                true
+            );
 
             // GlobalConfig.BindAllItemPoolWeights binds all per-pool weights centrally.
             BindAllItemPoolWeights(cfg);

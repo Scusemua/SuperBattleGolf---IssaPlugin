@@ -10,9 +10,10 @@ using UnityEngine;
 namespace IssaPlugin.Items
 {
     /// <summary>
-    /// Per-player Glove session. Server owns pickup / timeout / release decisions.
-    /// While held, the simulating peer (and visual peers) snap the ball to the glove
-    /// world pose each LateUpdate using a kinematic Rigidbody — no Transform parenting.
+    /// Per-player Glove / Evil Glove session. Server owns pickup / timeout / release
+    /// decisions. While held, the simulating peer (and visual peers) snap the ball to
+    /// the glove world pose each LateUpdate using a kinematic Rigidbody — no Transform
+    /// parenting. Evil Glove may hold any player's ball (tracked by BallOwnerNetId).
     /// </summary>
     public class GloveNetworkBridge : NetworkBridgeBase
     {
@@ -33,11 +34,21 @@ namespace IssaPlugin.Items
 
         private static readonly Dictionary<uint, ActiveHold> ServerActiveHolds = new();
 
+        /// <summary>Server: ballOwnerNetId → holderNetId for exclusive holds.</summary>
+        private static readonly Dictionary<uint, uint> ServerBusyBalls = new();
+
+        /// <summary>
+        /// Client mirror of busy ball owners, updated from HoldStarted / Released so
+        /// aim lock-on can skip balls already held without waiting on the server.
+        /// </summary>
+        private static readonly HashSet<uint> ClientBusyBalls = new();
+
         private struct ActiveHold
         {
             public uint SessionId;
             public float EndTime;
             public float Duration;
+            public uint BallOwnerNetId;
         }
 
         // ── Server session ────────────────────────────────────────────────
@@ -46,16 +57,23 @@ namespace IssaPlugin.Items
         private float _serverEndTime;
         private float _serverDuration;
         private uint _nextSessionId = 1;
-        /// <summary>Inventory slot that holds the Glove for this session (consumed on release).</summary>
+        /// <summary>Inventory slot that holds the glove for this session (consumed on release).</summary>
         private int _wielderSlot = -1;
+
+        /// <summary>Player netId whose OwnBall is being carried this session.</summary>
+        private uint _heldBallOwnerNetId;
+
+        /// <summary>Glove or EvilGlove item type that started this session.</summary>
+        private ItemType _sessionItemType;
 
         private bool _savedDetectCollisions;
         private bool _hasPhysicsSnapshot;
         private readonly List<(Collider a, Collider b)> _ignoredPairs = new();
         private readonly List<(Collider col, bool wasEnabled)> _disabledBallColliders = new();
+        private readonly List<(PlayerInfo owner, float angle, float sqDist)> _aimScratch = new();
 
         // ── Replicated hold flag (all peers) ──────────────────────────────
-        /// <summary>True while this player is carrying their ball (server + clients).</summary>
+        /// <summary>True while this player is carrying a ball (server + clients).</summary>
         public bool IsHolding { get; private set; }
 
         public uint CurrentSessionId { get; private set; }
@@ -74,6 +92,83 @@ namespace IssaPlugin.Items
         private bool _throwInputArmed;
 
         // ================================================================
+        //  Busy map (server + client mirror)
+        // ================================================================
+
+        /// <summary>True if <paramref name="ballOwnerNetId"/>'s ball is already held.</summary>
+        public static bool IsBallBusy(uint ballOwnerNetId)
+        {
+            if (ballOwnerNetId == 0)
+                return false;
+            if (NetworkServer.active)
+                return ServerIsBallBusy(ballOwnerNetId);
+            return ClientBusyBalls.Contains(ballOwnerNetId);
+        }
+
+        private static bool ServerIsBallBusy(uint ballOwnerNetId) =>
+            ballOwnerNetId != 0 && ServerBusyBalls.ContainsKey(ballOwnerNetId);
+
+        private static void ServerRegisterBusy(uint ballOwnerNetId, uint holderNetId)
+        {
+            if (ballOwnerNetId == 0)
+                return;
+            ServerBusyBalls[ballOwnerNetId] = holderNetId;
+        }
+
+        private static void ServerClearBusy(uint ballOwnerNetId)
+        {
+            if (ballOwnerNetId == 0)
+                return;
+            ServerBusyBalls.Remove(ballOwnerNetId);
+        }
+
+        private GolfBall ResolveHeldBall() =>
+            PlayerBallResolver.TryGetOwnBall(_heldBallOwnerNetId);
+
+        /// <summary>Ball currently held, or null.</summary>
+        public GolfBall HeldBall => ResolveHeldBall();
+
+        /// <summary>Item type that started this hold (Glove or EvilGlove).</summary>
+        public ItemType SessionItemType => _sessionItemType;
+
+        /// <summary>Throw tuning for the active session (Glove vs Evil config).</summary>
+        public float ConfigMinimumThrowSpeed => SessionMinimumThrowSpeed;
+        public float ConfigMaximumThrowSpeed => SessionMaximumThrowSpeed;
+        public float ConfigThrowUpwardBias => SessionThrowUpwardBias;
+
+        private bool SessionIsEvil => PlayerBallResolver.IsEvilGlove(_sessionItemType);
+
+        private float SessionHoldDurationConfig =>
+            SessionIsEvil
+                ? ModConfig.EvilGlove.HoldDuration.Value
+                : ModConfig.Glove.HoldDuration.Value;
+
+        private float SessionChargeDurationConfig =>
+            SessionIsEvil
+                ? ModConfig.EvilGlove.ChargeDuration.Value
+                : ModConfig.Glove.ChargeDuration.Value;
+
+        private float SessionMinimumThrowSpeed =>
+            SessionIsEvil
+                ? ModConfig.EvilGlove.MinimumThrowSpeed.Value
+                : ModConfig.Glove.MinimumThrowSpeed.Value;
+
+        private float SessionMaximumThrowSpeed =>
+            SessionIsEvil
+                ? ModConfig.EvilGlove.MaximumThrowSpeed.Value
+                : ModConfig.Glove.MaximumThrowSpeed.Value;
+
+        private float SessionThrowUpwardBias =>
+            SessionIsEvil
+                ? ModConfig.EvilGlove.ThrowUpwardBias.Value
+                : ModConfig.Glove.ThrowUpwardBias.Value;
+
+        private float SessionKnockoutEjectSpeed =>
+            SessionIsEvil
+                ? ModConfig.EvilGlove.KnockoutEjectSpeed.Value
+                : ModConfig.Glove.KnockoutEjectSpeed.Value;
+
+        // ================================================================
         //  Client — pickup / charge / throw input
         // ================================================================
 
@@ -90,7 +185,64 @@ namespace IssaPlugin.Items
             if (slot < 0)
                 return;
 
-            NetworkClient.Send(new GlovePickupRequestMessage { EquippedSlotIndex = slot });
+            if (ItemRegistry.GetItemTypeAtSlot(inventory, slot) != ItemRegistry.GloveItemType)
+                return;
+
+            NetworkClient.Send(
+                new GlovePickupRequestMessage
+                {
+                    EquippedSlotIndex = slot,
+                    BallOwnerNetId = netId,
+                    AimOrigin = Vector3.zero,
+                    AimDirection = Vector3.zero,
+                }
+            );
+        }
+
+        /// <summary>
+        /// Evil Glove: require an aim lock from <see cref="EvilGloveOverlay"/>, then
+        /// send pickup with the camera aim ray. Server re-runs cone selection and
+        /// does not trust <c>BallOwnerNetId</c>. No lock → no send (no consume).
+        /// </summary>
+        public void ClientRequestEvilPickup()
+        {
+            if (!isOwned || IsHolding)
+                return;
+
+            var inventory = CachedInventory;
+            if (inventory == null)
+                return;
+
+            int slot = inventory.EquippedItemIndex;
+            if (slot < 0)
+                return;
+
+            if (ItemRegistry.GetItemTypeAtSlot(inventory, slot) != ItemRegistry.EvilGloveItemType)
+                return;
+
+            var info = GetComponent<PlayerInfo>();
+            var input = info?.Input;
+            if (input == null || !input.IsHoldingAimSwing)
+                return;
+
+            var overlay = EvilGloveOverlay.Instance;
+            uint targetOwnerNetId = overlay != null ? overlay.BestTargetOwnerNetId : 0u;
+            if (targetOwnerNetId == 0)
+                return;
+
+            var cam = Camera.main;
+            if (cam == null)
+                return;
+
+            NetworkClient.Send(
+                new GlovePickupRequestMessage
+                {
+                    EquippedSlotIndex = slot,
+                    BallOwnerNetId = targetOwnerNetId,
+                    AimOrigin = cam.transform.position,
+                    AimDirection = cam.transform.forward,
+                }
+            );
         }
 
         private void Update()
@@ -154,7 +306,7 @@ namespace IssaPlugin.Items
                 Charge01 = 0f;
             }
 
-            float duration = Mathf.Max(0.05f, ModConfig.Glove.ChargeDuration.Value);
+            float duration = Mathf.Max(0.05f, SessionChargeDurationConfig);
             Charge01 = Mathf.Clamp01((Time.time - _chargeStartTime) / duration);
         }
 
@@ -180,7 +332,12 @@ namespace IssaPlugin.Items
         //  Server — pickup
         // ================================================================
 
-        public void ServerHandlePickupRequest(int equippedSlotIndex)
+        public void ServerHandlePickupRequest(
+            int equippedSlotIndex,
+            uint ballOwnerNetId,
+            Vector3 aimOrigin,
+            Vector3 aimDirection
+        )
         {
             if (!NetworkServer.active || _serverHolding)
                 return;
@@ -192,37 +349,129 @@ namespace IssaPlugin.Items
             if (inventory == null || info == null || movement == null)
                 return;
 
-            if (
-                ItemRegistry.GetItemTypeAtSlot(inventory, equippedSlotIndex)
-                != ItemRegistry.GloveItemType
-            )
+            if (equippedSlotIndex < 0)
+                return;
+
+            // Require the claimed slot to be the currently equipped one.
+            int equippedNow = ServerGetEquippedSlotIndex(inventory, info);
+            if (equippedNow != equippedSlotIndex)
             {
-                IssaPluginPlugin.Log.LogWarning("[Glove] Pickup rejected: Glove not in slot.");
+                IssaPluginPlugin.Log.LogDebug(
+                    "[Glove] Pickup rejected: slot is not currently equipped."
+                );
                 return;
             }
 
-            if (!ServerCanBeginHold(info, movement, out var ball, out string rejectReason))
+            ItemType itemType = ItemRegistry.GetItemTypeAtSlot(inventory, equippedSlotIndex);
+            if (!PlayerBallResolver.IsGloveLike(itemType))
+            {
+                IssaPluginPlugin.Log.LogWarning("[Glove] Pickup rejected: glove-like item not in slot.");
+                return;
+            }
+
+            bool isEvil = PlayerBallResolver.IsEvilGlove(itemType);
+
+            if (!ServerHolderAllowed(info, movement, out string rejectReason, requireOnFoot: true))
             {
                 IssaPluginPlugin.Log.LogDebug($"[Glove] Pickup rejected: {rejectReason}");
                 return;
             }
 
-            // Keep the Glove equipped for the hold; consume on throw / timeout / KO / unequip.
+            if (!isEvil)
+            {
+                // Normal Glove always grabs the holder's own ball.
+                ballOwnerNetId = netId;
+            }
+            else
+            {
+                // Authoritative aim-cone selection (Hunter Drone pattern). Client
+                // BallOwnerNetId is a hint only — the aim ray drives selection.
+                uint clientClaim = ballOwnerNetId;
+                if (!IsFinite(aimOrigin) || !IsFinite(aimDirection) || aimDirection.sqrMagnitude < 0.0001f)
+                {
+                    IssaPluginPlugin.Log.LogDebug("[EvilGlove] Pickup rejected: invalid aim ray.");
+                    return;
+                }
+
+                var selected = GolfBallAimTargeting.SelectBallOwner(
+                    aimOrigin,
+                    aimDirection,
+                    ModConfig.EvilGlove.MaxAimAngle.Value,
+                    ModConfig.EvilGlove.MaxTargetDistance.Value,
+                    _aimScratch,
+                    ServerIsBallBusy
+                );
+                ballOwnerNetId = PlayerBallResolver.GetPlayerNetId(selected);
+                if (ballOwnerNetId == 0)
+                {
+                    IssaPluginPlugin.Log.LogDebug(
+                        "[EvilGlove] Pickup rejected: no ball in aim cone."
+                    );
+                    return;
+                }
+
+                if (clientClaim != 0 && clientClaim != ballOwnerNetId)
+                {
+                    IssaPluginPlugin.Log.LogDebug(
+                        $"[EvilGlove] Client lock {clientClaim} ≠ server pick {ballOwnerNetId}; using server."
+                    );
+                }
+            }
+
+            if (ServerIsBallBusy(ballOwnerNetId))
+            {
+                IssaPluginPlugin.Log.LogDebug(
+                    $"[Glove] Pickup rejected: ball owner {ballOwnerNetId} already held."
+                );
+                return;
+            }
+
+            var ball = PlayerBallResolver.TryGetOwnBall(ballOwnerNetId);
+            if (ball == null)
+            {
+                IssaPluginPlugin.Log.LogDebug(
+                    $"[Glove] Pickup rejected: no ball for owner {ballOwnerNetId}."
+                );
+                return;
+            }
+
+            if (!ServerBallAllowed(ball, out rejectReason))
+            {
+                IssaPluginPlugin.Log.LogDebug($"[Glove] Pickup rejected: {rejectReason}");
+                return;
+            }
+
+            if (!isEvil)
+            {
+                float radius = ModConfig.Glove.PickupRadius.Value;
+                if ((ball.transform.position - transform.position).sqrMagnitude > radius * radius)
+                {
+                    IssaPluginPlugin.Log.LogDebug("[Glove] Pickup rejected: out of pickup radius.");
+                    return;
+                }
+            }
+
+            // Keep the glove equipped for the hold; consume on throw / timeout / KO / unequip.
             _wielderSlot = equippedSlotIndex;
+            _sessionItemType = itemType;
+            _heldBallOwnerNetId = ballOwnerNetId;
 
             _serverSessionId = _nextSessionId++;
             if (_nextSessionId == 0)
                 _nextSessionId = 1;
 
-            _serverDuration = Mathf.Max(0.1f, ModConfig.Glove.HoldDuration.Value);
+            _serverDuration = Mathf.Max(0.1f, SessionHoldDurationConfig);
             _serverEndTime = Time.time + _serverDuration;
             _serverHolding = true;
+
+            ServerRegisterBusy(ballOwnerNetId, netId);
 
             ServerActiveHolds[netId] = new ActiveHold
             {
                 SessionId = _serverSessionId,
                 EndTime = _serverEndTime,
                 Duration = _serverDuration,
+                BallOwnerNetId = ballOwnerNetId,
             };
 
             // Apply on the server peer first so dedicated servers (no local client
@@ -240,53 +489,22 @@ namespace IssaPlugin.Items
                     SessionId = _serverSessionId,
                     Duration = _serverDuration,
                     TimeRemaining = _serverDuration,
+                    BallOwnerNetId = ballOwnerNetId,
                 }
             );
 
+            string displayName = isEvil ? "Evil Glove" : "Glove";
             ItemWarningBroadcaster.Broadcast(
                 info.PlayerId?.PlayerName ?? "Player",
-                ItemRegistry.GloveItemType,
-                "Glove",
+                itemType,
+                displayName,
                 trackedNetId: netId,
                 senderNetId: netId
             );
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[Glove] Hold started session={_serverSessionId} for {_serverDuration:F1}s."
+                $"[{displayName}] Hold started session={_serverSessionId} ballOwner={ballOwnerNetId} for {_serverDuration:F1}s."
             );
-        }
-
-        private bool ServerCanBeginHold(
-            PlayerInfo info,
-            PlayerMovement movement,
-            out GolfBall ball,
-            out string reason
-        )
-        {
-            ball = null;
-            reason = null;
-
-            if (!ServerHolderAllowed(info, movement, out reason, requireOnFoot: true))
-                return false;
-
-            ball = info.AsGolfer?.OwnBall;
-            if (ball == null)
-            {
-                reason = "no OwnBall";
-                return false;
-            }
-
-            if (!ServerBallAllowed(ball, out reason))
-                return false;
-
-            float radius = ModConfig.Glove.PickupRadius.Value;
-            if ((ball.transform.position - transform.position).sqrMagnitude > radius * radius)
-            {
-                reason = "out of pickup radius";
-                return false;
-            }
-
-            return true;
         }
 
         private static bool ServerHolderAllowed(
@@ -394,7 +612,7 @@ namespace IssaPlugin.Items
             if (!ServerHolderAllowed(info, movement, out _, requireOnFoot: false))
                 return;
 
-            var ball = info?.AsGolfer?.OwnBall;
+            var ball = ResolveHeldBall();
             if (ball == null || !ServerBallAllowed(ball, out _))
             {
                 ServerRelease(GloveReleaseReason.Cleanup, Vector3.zero);
@@ -404,8 +622,8 @@ namespace IssaPlugin.Items
             float spinachMult = GloveThrowMath.GetSpinachThrowSpeedMultiplier(
                 GetComponent<SpinachNetworkBridge>()?.ServerIsBuffActive == true
             );
-            float minSpeed = ModConfig.Glove.MinimumThrowSpeed.Value * spinachMult;
-            float maxSpeed = ModConfig.Glove.MaximumThrowSpeed.Value * spinachMult;
+            float minSpeed = SessionMinimumThrowSpeed * spinachMult;
+            float maxSpeed = SessionMaximumThrowSpeed * spinachMult;
             if (maxSpeed < minSpeed)
                 (minSpeed, maxSpeed) = (maxSpeed, minSpeed);
 
@@ -414,7 +632,7 @@ namespace IssaPlugin.Items
                 charge01,
                 minSpeed,
                 maxSpeed,
-                ModConfig.Glove.ThrowUpwardBias.Value
+                SessionThrowUpwardBias
             );
 
             if (!IsFinite(velocity))
@@ -428,7 +646,7 @@ namespace IssaPlugin.Items
         {
             var info = GetComponent<PlayerInfo>();
             var movement = info?.Movement;
-            var ball = info?.AsGolfer?.OwnBall;
+            var ball = ResolveHeldBall();
             var inventory = CachedInventory;
 
             if (ball == null)
@@ -437,7 +655,7 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            // Switched away from the Glove or dropped it — drop the ball and consume.
+            // Switched away from the glove or dropped it — drop the ball and consume.
             if (!ServerStillWieldingGlove(inventory))
             {
                 ServerRelease(GloveReleaseReason.Interrupt, Vector3.zero);
@@ -450,11 +668,11 @@ namespace IssaPlugin.Items
             )
             {
                 Vector3 eject = GloveThrowMath.ComputeKnockoutEjectVelocity(
-                    ModConfig.Glove.KnockoutEjectSpeed.Value,
+                    SessionKnockoutEjectSpeed,
                     GloveThrowMath.KnockoutUpwardBias
                 );
                 if (!IsFinite(eject))
-                    eject = Vector3.up * ModConfig.Glove.KnockoutEjectSpeed.Value;
+                    eject = Vector3.up * SessionKnockoutEjectSpeed;
                 ServerRelease(GloveReleaseReason.Knockout, eject);
                 return;
             }
@@ -487,26 +705,27 @@ namespace IssaPlugin.Items
                 return false;
 
             if (
-                ItemRegistry.GetItemTypeAtSlot(inventory, _wielderSlot)
-                != ItemRegistry.GloveItemType
+                !PlayerBallResolver.IsGloveLike(
+                    ItemRegistry.GetItemTypeAtSlot(inventory, _wielderSlot)
+                )
             )
                 return false;
 
+            var playerInfo = inventory.PlayerInfo ?? GetComponent<PlayerInfo>();
+            return ServerGetEquippedSlotIndex(inventory, playerInfo) == _wielderSlot;
+        }
+
+        private static int ServerGetEquippedSlotIndex(PlayerInventory inventory, PlayerInfo info)
+        {
             // Prefer networked equipped index for remote clients on the server.
-            int equipped;
-            if (!inventory.isLocalPlayer && NetworkServer.active)
+            if (inventory != null && !inventory.isLocalPlayer && NetworkServer.active)
             {
-                var playerInfo = inventory.PlayerInfo;
-                if (playerInfo == null)
-                    return false;
-                equipped = playerInfo.NetworkedEquippedItemIndex;
-            }
-            else
-            {
-                equipped = inventory.EquippedItemIndex;
+                if (info == null)
+                    return -1;
+                return info.NetworkedEquippedItemIndex;
             }
 
-            return equipped == _wielderSlot;
+            return inventory != null ? inventory.EquippedItemIndex : -1;
         }
 
         private void ServerRelease(
@@ -519,11 +738,15 @@ namespace IssaPlugin.Items
                 return;
 
             uint sessionId = _serverSessionId;
+            uint ballOwnerNetId = _heldBallOwnerNetId;
+            ItemType sessionItemType = _sessionItemType;
+            var ball = ResolveHeldBall();
+
             _serverHolding = false;
             ServerActiveHolds.Remove(netId);
+            ServerClearBusy(ballOwnerNetId);
 
             var info = GetComponent<PlayerInfo>();
-            var ball = info?.AsGolfer?.OwnBall;
 
             Vector3 releasePos = transform.position;
             bool snapToFeet =
@@ -544,10 +767,14 @@ namespace IssaPlugin.Items
             // Clear IsHolding before restore so TickAttachBall cannot overwrite launch.
             ApplyClientReleaseState(sessionId);
 
-            // Consume the Glove now that the hold ends. Stroke counting skips hole
+            // Consume the glove now that the hold ends. Stroke counting skips hole
             // Cleanup so ending a hole mid-hold does not inflate the scorecard.
+            // Evil Glove never registers a stroke.
             ServerConsumeGloveIfPresent();
-            if (reason != GloveReleaseReason.Cleanup)
+            if (
+                reason != GloveReleaseReason.Cleanup
+                && !PlayerBallResolver.IsEvilGlove(sessionItemType)
+            )
                 ServerRegisterGloveStroke(info, ball, releasePos);
 
             if (
@@ -560,7 +787,7 @@ namespace IssaPlugin.Items
             }
             else
                 // Still undo ignore/collider state if we captured on this peer.
-                RestoreCollisionStateOnly();
+                RestoreCollisionStateOnly(ball);
 
             NetworkServer.SendToAll(
                 new GloveReleasedMessage
@@ -571,6 +798,7 @@ namespace IssaPlugin.Items
                     WorldPosition = releasePos,
                     Velocity = velocity,
                     PowerMultiplier = powerMultiplier,
+                    BallOwnerNetId = ballOwnerNetId,
                 }
             );
 
@@ -596,6 +824,7 @@ namespace IssaPlugin.Items
         /// <see cref="PlayerGolfer.PlayerHitOwnBall"/> path as a real club hit
         /// (CourseManager.OnServerPlayerHitOwnBall), and stamps last-stroke position
         /// at the release point for chip-in / scoring helpers.
+        /// Skipped entirely for Evil Glove sessions.
         /// </summary>
         private static void ServerRegisterGloveStroke(
             PlayerInfo info,
@@ -624,7 +853,7 @@ namespace IssaPlugin.Items
             var inventory = CachedInventory;
             if (
                 inventory != null
-                && ItemRegistry.GetItemTypeAtSlot(inventory, slot) == ItemRegistry.GloveItemType
+                && PlayerBallResolver.IsGloveLike(ItemRegistry.GetItemTypeAtSlot(inventory, slot))
             )
                 ItemHelper.ConsumeItemAtSlot(inventory, slot);
         }
@@ -708,10 +937,12 @@ namespace IssaPlugin.Items
         /// <summary>
         /// Restores ignore-pairs and collider enables without moving the ball.
         /// Used when this peer is not the simulator, or on hole cleanup.
+        /// Pass <paramref name="ball"/> when calling after
+        /// <see cref="ApplyClientReleaseState"/> cleared <c>_heldBallOwnerNetId</c>.
         /// </summary>
-        private void RestoreCollisionStateOnly()
+        private void RestoreCollisionStateOnly(GolfBall ball = null)
         {
-            var ball = GetComponent<PlayerInfo>()?.AsGolfer?.OwnBall;
+            ball ??= ResolveHeldBall();
             RestoreBallHittability();
             IgnoreCollisionsWithHolder(ball, GetComponent<PlayerInfo>(), ignore: false);
 
@@ -735,7 +966,7 @@ namespace IssaPlugin.Items
         private void TickAttachBall()
         {
             var info = GetComponent<PlayerInfo>();
-            var ball = info?.AsGolfer?.OwnBall;
+            var ball = ResolveHeldBall();
             if (ball == null || info == null)
                 return;
 
@@ -840,14 +1071,19 @@ namespace IssaPlugin.Items
             if (!TryGetBridge(msg.HolderNetId, out var bridge))
                 return;
 
+            if (msg.BallOwnerNetId != 0)
+                ClientBusyBalls.Add(msg.BallOwnerNetId);
+
             bool alreadyThisSession =
                 bridge.IsHolding && bridge.CurrentSessionId == msg.SessionId;
 
             if (!alreadyThisSession)
             {
+                bridge._heldBallOwnerNetId = msg.BallOwnerNetId;
+                bridge.TryCaptureSessionItemTypeFromInventory();
                 bridge.ApplyClientHoldState(msg.SessionId, msg.Duration, msg.TimeRemaining);
 
-                var ball = bridge.GetComponent<PlayerInfo>()?.AsGolfer?.OwnBall;
+                var ball = bridge.ResolveHeldBall();
                 var holder = bridge.GetComponent<PlayerInfo>();
                 if (ball != null && holder != null)
                 {
@@ -865,12 +1101,20 @@ namespace IssaPlugin.Items
                     }
                 }
             }
+            else
+            {
+                // Listen-host already applied hold on the server path — still sync owner.
+                bridge._heldBallOwnerNetId = msg.BallOwnerNetId;
+            }
 
             GloveHoldIndicatorOverlay.Instance?.Show(msg.HolderNetId);
         }
 
         public static void HandleReleased(GloveReleasedMessage msg)
         {
+            if (msg.BallOwnerNetId != 0)
+                ClientBusyBalls.Remove(msg.BallOwnerNetId);
+
             if (!TryGetBridge(msg.HolderNetId, out var bridge))
             {
                 GloveHoldIndicatorOverlay.Instance?.Hide(msg.HolderNetId);
@@ -885,11 +1129,14 @@ namespace IssaPlugin.Items
                 return;
             }
 
+            // Prefer message owner; fall back to session field before release clears it.
+            var ball =
+                PlayerBallResolver.TryGetOwnBall(msg.BallOwnerNetId) ?? bridge.ResolveHeldBall();
+
             // Clear holding before restoring physics so TickAttachBall
             // cannot overwrite the launch on this frame.
             bridge.ApplyClientReleaseState(msg.SessionId);
 
-            var ball = bridge.GetComponent<PlayerInfo>()?.AsGolfer?.OwnBall;
             if (ball != null && bridge._hasPhysicsSnapshot)
             {
                 var entity = ball.AsEntity;
@@ -904,12 +1151,12 @@ namespace IssaPlugin.Items
                 }
                 else
                 {
-                    bridge.RestoreCollisionStateOnly();
+                    bridge.RestoreCollisionStateOnly(ball);
                 }
             }
             else
             {
-                bridge.RestoreCollisionStateOnly();
+                bridge.RestoreCollisionStateOnly(ball);
             }
 
             GloveHoldIndicatorOverlay.Instance?.Hide(msg.HolderNetId);
@@ -942,6 +1189,7 @@ namespace IssaPlugin.Items
                         SessionId = kv.Value.SessionId,
                         Duration = kv.Value.Duration,
                         TimeRemaining = remaining,
+                        BallOwnerNetId = kv.Value.BallOwnerNetId,
                     }
                 );
             }
@@ -950,6 +1198,21 @@ namespace IssaPlugin.Items
                 return;
 
             conn.Send(new GloveActiveHoldsMessage { Holds = list.ToArray() });
+        }
+
+        private void TryCaptureSessionItemTypeFromInventory()
+        {
+            var inventory = CachedInventory ?? GetComponent<PlayerInventory>();
+            if (inventory == null)
+                return;
+
+            int equipped = inventory.EquippedItemIndex;
+            if (equipped < 0)
+                return;
+
+            ItemType type = ItemRegistry.GetItemTypeAtSlot(inventory, equipped);
+            if (PlayerBallResolver.IsGloveLike(type))
+                _sessionItemType = type;
         }
 
         private void ApplyClientHoldState(uint sessionId, float duration, float timeRemaining)
@@ -974,6 +1237,8 @@ namespace IssaPlugin.Items
 
             IsHolding = false;
             CurrentSessionId = 0;
+            _heldBallOwnerNetId = 0;
+            _sessionItemType = default;
             CancelLocalCharge();
             _throwInputArmed = false;
 
@@ -1042,25 +1307,30 @@ namespace IssaPlugin.Items
                 || _disabledBallColliders.Count > 0
             )
             {
-                var ball = GetComponent<PlayerInfo>()?.AsGolfer?.OwnBall;
+                uint ownedBall = _heldBallOwnerNetId;
+                var ball = ResolveHeldBall();
                 if (ball != null && _hasPhysicsSnapshot)
                 {
                     var entity = ball.AsEntity;
                     if (entity == null || entity.IsSimulatingRigidbody())
                         RestoreAndLaunchBall(ball, GetFeetDropPosition(), Vector3.zero, snapToFeet: true);
                     else
-                        RestoreCollisionStateOnly();
+                        RestoreCollisionStateOnly(ball);
                 }
                 else
                 {
-                    RestoreCollisionStateOnly();
+                    RestoreCollisionStateOnly(ball);
                 }
+
+                if (ownedBall != 0)
+                    ClientBusyBalls.Remove(ownedBall);
 
                 if (IsHolding)
                     ApplyClientReleaseState(CurrentSessionId);
             }
 
             GloveHoldIndicatorOverlay.Instance?.ClearAll();
+            ClientBusyBalls.Clear();
             if (isOwned)
                 GloveOverlay.Instance?.ForceClose();
         }
@@ -1073,10 +1343,15 @@ namespace IssaPlugin.Items
 
         public override void OnStopClient()
         {
+            if (_heldBallOwnerNetId != 0)
+                ClientBusyBalls.Remove(_heldBallOwnerNetId);
+
             if (_hasPhysicsSnapshot || _disabledBallColliders.Count > 0 || _ignoredPairs.Count > 0)
                 RestoreCollisionStateOnly();
             IsHolding = false;
             CurrentSessionId = 0;
+            _heldBallOwnerNetId = 0;
+            _sessionItemType = default;
             CancelLocalCharge();
             if (isOwned)
                 GloveOverlay.Instance?.ForceClose();

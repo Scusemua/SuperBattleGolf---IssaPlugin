@@ -2,15 +2,14 @@ using System.Linq;
 using System.Reflection;
 using HarmonyLib;
 using IssaPlugin.Items;
+using IssaPlugin.Overlays;
 using UnityEngine;
 
 namespace IssaPlugin.Patches
 {
     /// <summary>
-    /// Drives the base-game reddish "not allowed" ball material while the Glove is
-    /// equipped and the local player's OwnBall is within pickup range — without
-    /// requiring RMB. Also suppresses that tint when the ball is out of range
-    /// (so Orbital-Laser-pose aiming no longer lights up a distant OwnBall).
+    /// Drives the base-game reddish "not allowed" ball material for Glove
+    /// (OwnBall in pickup range, no RMB) and Evil Glove (aim-locked ball only).
     /// </summary>
     [HarmonyPatch]
     static class GloveOwnedBallNotAllowedVisualsPatch
@@ -34,7 +33,64 @@ namespace IssaPlugin.Patches
             if (local.AsGolfer?.OwnBall != __instance)
                 return;
 
-            if (local.Inventory?.GetEffectivelyEquippedItem(true) != ItemRegistry.GloveItemType)
+            var equipped = local.Inventory?.GetEffectivelyEquippedItem(true);
+            var bridge = local.GetComponent<GloveNetworkBridge>();
+
+            if (equipped == ItemRegistry.GloveItemType)
+            {
+                if (bridge != null && bridge.IsHolding)
+                {
+                    __result = false;
+                    return;
+                }
+
+                float radius = ModConfig.Glove.PickupRadius.Value;
+                float sqr = radius * radius;
+                Vector3 delta = __instance.transform.position - local.transform.position;
+                __result = delta.sqrMagnitude <= sqr;
+                return;
+            }
+
+            if (equipped == ItemRegistry.EvilGloveItemType)
+            {
+                if (bridge != null && bridge.IsHolding)
+                {
+                    __result = false;
+                    return;
+                }
+
+                // Tint only the aim-locked ball (reticle + tint).
+                __result =
+                    EvilGloveOverlay.Instance != null
+                    && EvilGloveOverlay.Instance.BestTargetBall == __instance;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Evil Glove aim lock: tint another player's ball when it is the BestTarget.
+    /// Also suppresses the OL-pose "all unowned balls" tint while Evil Glove is
+    /// equipped so only the locked ball lights up.
+    /// </summary>
+    [HarmonyPatch]
+    static class EvilGloveUnownedBallNotAllowedVisualsPatch
+    {
+        static MethodBase TargetMethod() =>
+            typeof(GolfBall)
+                .GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
+                .FirstOrDefault(m =>
+                    m.Name.Contains("ShouldUnownedBallDisplayNotAllowedVisuals")
+                );
+
+        static bool Prepare() => TargetMethod() != null;
+
+        static void Postfix(GolfBall __instance, ref bool __result)
+        {
+            var local = GameManager.LocalPlayerInfo;
+            if (local == null)
+                return;
+
+            if (local.Inventory?.GetEffectivelyEquippedItem(true) != ItemRegistry.EvilGloveItemType)
                 return;
 
             var bridge = local.GetComponent<GloveNetworkBridge>();
@@ -44,18 +100,16 @@ namespace IssaPlugin.Patches
                 return;
             }
 
-            float radius = ModConfig.Glove.PickupRadius.Value;
-            float sqr = radius * radius;
-            Vector3 delta = __instance.transform.position - local.transform.position;
-            __result = delta.sqrMagnitude <= sqr;
+            __result =
+                EvilGloveOverlay.Instance != null
+                && EvilGloveOverlay.Instance.BestTargetBall == __instance;
         }
     }
 
     /// <summary>
-    /// While carrying a ball with the Glove, block switching to another inventory
-    /// slot. Deselect (negative index) remains allowed so consuming the Glove on
-    /// release can re-equip the club. If the player somehow unequips anyway, the
-    /// server drops the ball and consumes the Glove.
+    /// While carrying a ball with the Glove / Evil Glove, block switching to another
+    /// inventory slot. Deselect (negative index) remains allowed so consuming the
+    /// glove on release can re-equip the club.
     /// </summary>
     [HarmonyPatch(typeof(PlayerInventory), nameof(PlayerInventory.CanSelectItemAt))]
     static class GloveBlockItemSwitchWhileHoldingPatch

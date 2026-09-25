@@ -169,6 +169,13 @@ namespace IssaPlugin.Items
         /// Icon shown above a player holding their ball. Falls back to <see cref="GloveIcon"/>.
         public static Sprite GloveBallIndicatorIcon { get; private set; }
 
+        // ── Evil Glove ────────────────────────────────────────────────────────
+        /// Item icon for the Evil Glove. Falls back to <see cref="GloveIcon"/>.
+        public static Sprite EvilGloveIcon { get; private set; }
+
+        /// Handheld Evil Glove model. Falls back to <see cref="GloveHandheldPrefab"/>.
+        public static GameObject EvilGloveHandheldPrefab { get; private set; }
+
         // ── ShapeShifter / SuperShapeShifter ──────────────────────────────────
         // ── ShapeShifter shape prefabs ────────────────────────────────────────
         /// Visual-only shape prefabs spawned as children of the golf ball.
@@ -708,6 +715,13 @@ namespace IssaPlugin.Items
                     "baseball_glove.prefab",
                     optional: true
                 ),
+                // ── Evil Glove (optional; fall back to Glove assets) ───────────
+                SpriteAsset(p => EvilGloveIcon = p, "evil_glove_icon.png", optional: true),
+                HandheldPrefab(
+                    p => EvilGloveHandheldPrefab = p,
+                    "evil_baseball_glove.prefab",
+                    optional: true
+                ),
             };
         }
 
@@ -757,6 +771,10 @@ namespace IssaPlugin.Items
 
             // Held-ball indicator can reuse the inventory icon when a dedicated PNG is absent.
             GloveBallIndicatorIcon ??= GloveIcon;
+
+            // Evil Glove reuses Glove art until dedicated assets are shipped.
+            EvilGloveIcon ??= GloveIcon;
+            EvilGloveHandheldPrefab ??= GloveHandheldPrefab;
         }
 
         // ─────────────────────────────────────────────────────────────────────
