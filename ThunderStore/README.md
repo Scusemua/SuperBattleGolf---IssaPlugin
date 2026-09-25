@@ -337,6 +337,10 @@ Assets used in the project:
     (https://skfb.ly/o9MZx) by Andrei Milin 
     Licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
 
+-   "Hair Dryer" \
+    (https://skfb.ly/oANKW) by Atilla Kutluay Erdoğay 
+    Licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
+
 ---
 
 *IssaPlugin is a fan-made mod and is not affiliated with Brimstone or Oro Interactive.*

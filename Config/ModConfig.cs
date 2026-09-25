@@ -54,6 +54,7 @@ namespace IssaPlugin
         public static AA12Config AA12 { get; private set; }
         public static Remington870Config Remington870 { get; private set; }
         public static NightConfig Night { get; private set; }
+        public static GrapplingHookConfig GrapplingHook { get; private set; }
 
         public static void Initialize(ConfigFile cfg)
         {
@@ -103,6 +104,7 @@ namespace IssaPlugin
             AA12 = new AA12Config(cfg, Global);
             Remington870 = new Remington870Config(cfg, Global);
             Night = new NightConfig(cfg, Global);
+            GrapplingHook = new GrapplingHookConfig(cfg, Global);
         }
 
         // ── Pass-through helper methods (from GlobalConfig) ───────────────────
