@@ -28,7 +28,14 @@ namespace IssaPlugin.Overlays
             "Left click again - hook a new point",
         };
 
-        private static float PanelHeight => Pad + TitleHeight + Lines.Length * LineHeight + Pad;
+        private static readonly string[] AttachedLines =
+        {
+            "R - reel in",
+            "Right click - let go and keep your speed",
+        };
+
+        private static float PanelHeight(int lineCount) =>
+            Pad + TitleHeight + lineCount * LineHeight + Pad;
 
         private static float UiScale => Mathf.Max(1f, Screen.height / ReferenceHeight);
 
@@ -38,19 +45,18 @@ namespace IssaPlugin.Overlays
                 return;
 
             var inventory = GameManager.LocalPlayerInfo?.Inventory;
-            if (inventory == null)
-                return;
-            if (
-                inventory.GetEffectivelyEquippedItem(true)
-                != ItemRegistry.GrapplingHookItemType
-            )
+            bool hasItem =
+                inventory != null
+                && inventory.GetEffectivelyEquippedItem(true) == ItemRegistry.GrapplingHookItemType;
+            if (!hasItem && !GrapplingHookSession.IsAttached)
                 return;
 
+            string[] lines = hasItem ? Lines : AttachedLines;
             EnsureStyles();
 
             float scale = UiScale;
             float panelW = PanelWidth * scale;
-            float panelH = PanelHeight * scale;
+            float panelH = PanelHeight(lines.Length) * scale;
             var panel = new Rect(
                 MarginX * scale,
                 Screen.height - (MarginY * scale) - panelH,
@@ -72,11 +78,11 @@ namespace IssaPlugin.Overlays
 
             float lineH = LineHeight * scale;
             float y = panel.y + pad + titleH;
-            for (int i = 0; i < Lines.Length; i++)
+            for (int i = 0; i < lines.Length; i++)
             {
                 GUI.Label(
                     new Rect(panel.x + pad, y, panel.width - pad * 2f, lineH),
-                    Lines[i],
+                    lines[i],
                     _lineStyle
                 );
                 y += lineH;

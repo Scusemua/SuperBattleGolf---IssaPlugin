@@ -55,18 +55,6 @@ namespace IssaPlugin.Items
             if (mouse == null || !mouse.leftButton.isPressed)
                 GrapplingHookItem.ClearFireLatch();
 
-            if (GrapplingHookSession.IsAttached)
-            {
-                var keyboard = Keyboard.current;
-                GrapplingHookSession.IsReeling = keyboard != null && keyboard.rKey.isPressed;
-                if (mouse != null && mouse.rightButton.wasPressedThisFrame)
-                    GrapplingHookSession.Release();
-            }
-            else
-            {
-                GrapplingHookSession.IsReeling = false;
-            }
-
             GrapplingHookItem.AimSample aim = GrapplingHookItem.EvaluateAim(_inventory);
             if (!aim.Hit || _ring == null)
             {
@@ -107,7 +95,6 @@ namespace IssaPlugin.Items
 
         private void OnDestroy()
         {
-            GrapplingHookSession.IsReeling = false;
             if (_ring != null)
                 Destroy(_ring.gameObject);
         }

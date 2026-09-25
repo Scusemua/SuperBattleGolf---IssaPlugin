@@ -1,5 +1,6 @@
 using Mirror;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace IssaPlugin.Items
 {
@@ -140,6 +141,21 @@ namespace IssaPlugin.Items
             HideRope();
             if (isLocalPlayer)
                 GrapplingHookSession.ForceStop(false);
+        }
+
+        // The last use removes the item, and the aim marker with it. Reel and
+        // release stay here so the rope can still be let go.
+        private void Update()
+        {
+            if (!isLocalPlayer || !GrapplingHookSession.IsAttached)
+                return;
+
+            var keyboard = Keyboard.current;
+            GrapplingHookSession.IsReeling = keyboard != null && keyboard.rKey.isPressed;
+
+            var mouse = Mouse.current;
+            if (mouse != null && mouse.rightButton.wasPressedThisFrame)
+                GrapplingHookSession.Release();
         }
 
         private void LateUpdate()
