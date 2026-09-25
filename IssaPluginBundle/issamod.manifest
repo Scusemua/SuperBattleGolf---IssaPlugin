@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 2104757671
+CRC: 2639580239
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: fbab1e0f30b8924349e668b9e324fe28
+    Hash: 191b8ab315e7d69df88649a188320c98
   TypeTreeHash:
     serializedVersion: 2
     Hash: 5a8cce00eebcad12dd14cf3a32c3a8ad
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 4c6ec780c245bd6f8efba3ea95ab3634
+    Hash: 0a366dc152fcf0ab5470479824ea087e
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -77,6 +77,8 @@ SerializeReferenceClassIdentifiers:
 - AssemblyName: UnityEngine.CoreModule
   ClassName: UnityEngine.RenderingLayerMask
 Assets:
+- Assets/Assets/shotgun_remington870.prefab
+- Assets/Assets/aa12_icon.png
 - Assets/Assets/ac130_model.prefab
 - Assets/Assets/blood_explosion_vfx.prefab
 - Assets/Assets/jetpack.prefab
@@ -105,13 +107,14 @@ Assets:
 - Assets/Assets/cube_ball_icon.png
 - Assets/Assets/flamethrower.prefab
 - Assets/Assets/gravity_gun_vfx.prefab
-- Assets/Assets/javelin_target_indicator.prefab
+- Assets/Assets/remington870_icon.png
 - Assets/Assets/toy_rocket.prefab
 - Assets/Assets/glove_icon.png
 - Assets/Assets/javelin_icon.png
 - Assets/Assets/drone_swarm_icon.png
 - Assets/Assets/jetpack_particles.prefab
 - Assets/Assets/position_swap_smoke.prefab
+- Assets/Assets/javelin_target_indicator.prefab
 - Assets/Assets/bat_model.prefab
 - Assets/Assets/intervention.prefab
 - Assets/Assets/rocket_tether_handheld.prefab
@@ -157,11 +160,12 @@ Assets:
 - Assets/Assets/gravity_gun.prefab
 - Assets/Assets/ac130_tablet.prefab
 - Assets/Assets/red_bull_trail.prefab
-- Assets/Assets/bowling_ball.dae
+- Assets/Assets/shotgun_aa12.prefab
 - Assets/Assets/ak47.prefab
 - Assets/Assets/poison_bottle_icon.png
 - Assets/Assets/moon_icon.png
 - Assets/Assets/position_swap_icon.png
+- Assets/Assets/bowling_ball.dae
 - Assets/Assets/booby_trap_vfx.prefab
 - Assets/Assets/flamethrower_vfx.prefab
 - Assets/Assets/harrier_tablet.prefab
