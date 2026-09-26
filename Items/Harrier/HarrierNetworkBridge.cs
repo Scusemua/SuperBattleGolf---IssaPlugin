@@ -33,9 +33,58 @@ namespace IssaPlugin.Items
         public bool PendingHarrierHoming;
 
         private bool _serverRoutineActive;
-        private bool _shotDown;
         private Coroutine _serverRoutine;
         private GameObject _serverHarrier;
+
+        /// <summary>
+        /// Straight-line inbound path: spawn uprange of the station point, hover there,
+        /// then continue past it to leave. Endpoints are raised together so the whole
+        /// path clears terrain.
+        /// </summary>
+        private readonly struct FlightPlan
+        {
+            public readonly Vector3 MapCenter;
+            public readonly Vector3 HoverPosition;
+            public readonly Vector3 SpawnPosition;
+            public readonly Vector3 FlyOutPosition;
+            public readonly float ApproachDistance;
+
+            public FlightPlan(
+                Vector3 mapCenter,
+                Vector3 hoverPosition,
+                Vector3 spawnPosition,
+                Vector3 flyOutPosition,
+                float approachDistance
+            )
+            {
+                MapCenter = mapCenter;
+                HoverPosition = hoverPosition;
+                SpawnPosition = spawnPosition;
+                FlyOutPosition = flyOutPosition;
+                ApproachDistance = approachDistance;
+            }
+        }
+
+        /// <summary>
+        /// State for one server-side run, shared by the phase methods and the hit
+        /// callbacks. The shot-down flag lives here so a hit during fly-in and the
+        /// coroutine agree without a field on the player bridge.
+        /// </summary>
+        private sealed class ServerSession
+        {
+            public readonly PlayerInventory Inventory;
+            public readonly FlightPlan Plan;
+
+            public GameObject Vehicle;
+            public HarrierBehaviour Behaviour;
+            public bool IsShotDown;
+
+            public ServerSession(PlayerInventory inventory, FlightPlan plan)
+            {
+                Inventory = inventory;
+                Plan = plan;
+            }
+        }
 
         // ================================================================
         //  Client state (local client only)
@@ -87,7 +136,50 @@ namespace IssaPlugin.Items
             _serverRoutineActive = true;
             ItemHelper.ConsumeEquippedItem(inventory);
 
-            // ── Choose hover position ────────────────────────────────────
+            var session = new ServerSession(inventory, PlanFlight());
+
+            if (!TrySpawnHarrier(session))
+            {
+                IssaPluginPlugin.Log.LogError("[Harrier] Failed to spawn harrier object.");
+                _serverRoutineActive = false;
+                yield break;
+            }
+
+            ArmHarrier(session);
+            AnnounceInbound(session);
+
+            foreach (object step in EachStep(WaitForArrival(session)))
+                yield return step;
+
+            if (session.Vehicle == null || session.Behaviour == null)
+            {
+                IssaPluginPlugin.Log.LogWarning(
+                    "[Harrier] Jet destroyed before arriving — aborting session."
+                );
+                ForceServerCleanup();
+                yield break;
+            }
+
+            IssaPluginPlugin.Log.LogInfo("[Harrier] Jet arrived — beginning attack phase.");
+
+            if (!session.IsShotDown)
+            {
+                foreach (object step in EachStep(EngageTargets(session)))
+                    yield return step;
+            }
+
+            foreach (object step in EachStep(ExitPhase(session)))
+                yield return step;
+
+            FinishSession(session);
+        }
+
+        // ================================================================
+        //  Session phases
+        // ================================================================
+
+        private static FlightPlan PlanFlight()
+        {
             Vector3 mapCenter = ComputeMapCenter();
             float altitude = ModConfig.Harrier.Altitude.Value;
             Vector3 hoverPos = new Vector3(mapCenter.x, mapCenter.y + altitude, mapCenter.z);
@@ -102,41 +194,55 @@ namespace IssaPlugin.Items
             float approachDist = ModConfig.Harrier.ApproachDistance.Value;
             Vector3 spawnPos = hoverPos + approachDir * approachDist;
             // Fly-out destination: continue beyond the hover point in the same direction.
-            Vector3 flyOutPos = hoverPos + approachDir * (approachDist * 1.5f);
+            const float flyOutDistanceMultiplier = 1.5f;
+            Vector3 flyOutPos = hoverPos + approachDir * (approachDist * flyOutDistanceMultiplier);
 
             // Raise the whole path if any terrain along it out-tops the hover altitude,
             // then re-derive the endpoints from the corrected hover height.
             hoverPos.y = TerrainHeight.ClearPath(spawnPos, hoverPos, flyOutPos, altitude);
             spawnPos = hoverPos + approachDir * approachDist;
-            flyOutPos = hoverPos + approachDir * (approachDist * 1.5f);
+            flyOutPos = hoverPos + approachDir * (approachDist * flyOutDistanceMultiplier);
 
-            // ── Spawn harrier ────────────────────────────────────────────
-            GameObject harrierGo = SpawnHarrierObject(spawnPos, hoverPos);
+            return new FlightPlan(mapCenter, hoverPos, spawnPos, flyOutPos, approachDist);
+        }
+
+        private bool TrySpawnHarrier(ServerSession session)
+        {
+            GameObject harrierGo = SpawnHarrierObject(
+                session.Plan.SpawnPosition,
+                session.Plan.HoverPosition
+            );
             if (harrierGo == null)
-            {
-                IssaPluginPlugin.Log.LogError("[Harrier] Failed to spawn harrier object.");
-                _serverRoutineActive = false;
-                yield break;
-            }
+                return false;
 
             _serverHarrier = harrierGo;
-            _shotDown = false;
+            session.Vehicle = harrierGo;
+            session.IsShotDown = false;
+            return true;
+        }
 
-            // Attach the movement driver (server-only; not replicated to clients).
+        /// <summary>
+        /// Attaches the server-only flight driver and the hit receiver. The jet can be
+        /// shot down as soon as this returns, including during fly-in. The destruction
+        /// callback starts the crash itself; the session only watches
+        /// <see cref="ServerSession.IsShotDown"/> and waits for impact.
+        /// </summary>
+        private void ArmHarrier(ServerSession session)
+        {
+            var harrierGo = session.Vehicle;
+
             var behaviour = harrierGo.AddComponent<HarrierBehaviour>();
-            behaviour.HoverTarget = hoverPos;
-            behaviour.FlyOutTarget = flyOutPos;
+            behaviour.HoverTarget = session.Plan.HoverPosition;
+            behaviour.FlyOutTarget = session.Plan.FlyOutPosition;
             behaviour.ApproachSpeed = ModConfig.Harrier.ApproachSpeed.Value;
             behaviour.DriftSpeed = ModConfig.Harrier.DriftSpeed.Value;
             behaviour.HoverRadius = ModConfig.Harrier.HoverRadius.Value;
+            session.Behaviour = behaviour;
 
-            // Attach the hit receiver so the jet can be shot down immediately
-            // (even during fly-in). The OnHitsExceeded callback captures locals
-            // from this coroutine so it can initiate the crash without polling.
             var hitReceiver = harrierGo.AddComponent<HarrierHitReceiver>();
             var harrierIdentity = harrierGo.GetComponent<NetworkIdentity>();
             ItemWarningBroadcaster.Broadcast(
-                inventory.PlayerInfo.PlayerId.PlayerName,
+                session.Inventory.PlayerInfo.PlayerId.PlayerName,
                 ItemRegistry.HarrierItemType,
                 "Harrier Jet",
                 trackedNetId: harrierIdentity.netId,
@@ -161,10 +267,10 @@ namespace IssaPlugin.Items
 
             hitReceiver.OnHitsExceeded += () =>
             {
-                if (_shotDown || harrierGo == null)
+                if (session.IsShotDown || harrierGo == null)
                     return;
 
-                _shotDown = true;
+                session.IsShotDown = true;
                 IssaPluginPlugin.Log.LogInfo("[Harrier] Shot down — initiating crash.");
 
                 NetworkServer.SendToAll(
@@ -172,117 +278,115 @@ namespace IssaPlugin.Items
                 );
 
                 var crash = harrierGo.AddComponent<HarrierCrashBehaviour>();
-                crash.ThrowerInventory = inventory;
+                crash.ThrowerInventory = session.Inventory;
                 crash.KillingRocketDir = (
                     harrierGo.transform.position - hitReceiver.LastHitWorldPos
                 ).normalized;
                 crash.ExplosionScale = ModConfig.Harrier.CrashExplosionScale.Value;
             };
+        }
 
+        private static void AnnounceInbound(ServerSession session)
+        {
             IssaPluginPlugin.Log.LogInfo(
-                $"[Harrier] Jet spawned at {spawnPos:F0}, heading to {hoverPos:F0}."
+                $"[Harrier] Jet spawned at {session.Plan.SpawnPosition:F0}, heading to {session.Plan.HoverPosition:F0}."
             );
 
-            NetworkServer.SendToAll(new HarrierBeginClientMessage { HoverCenter = mapCenter });
+            NetworkServer.SendToAll(
+                new HarrierBeginClientMessage { HoverCenter = session.Plan.MapCenter }
+            );
+        }
 
-            // ── Wait for fly-in ──────────────────────────────────────────
+        private static IEnumerator WaitForArrival(ServerSession session)
+        {
             float flyInTimeout =
-                approachDist / Mathf.Max(ModConfig.Harrier.ApproachSpeed.Value, 1f) + 8f;
-            float elapsed = 0f;
+                session.Plan.ApproachDistance / Mathf.Max(ModConfig.Harrier.ApproachSpeed.Value, 1f)
+                + 8f;
 
-            while (
-                harrierGo != null
-                && behaviour != null
-                && !behaviour.HasArrived
-                && !_shotDown
-                && elapsed < flyInTimeout
-            )
-            {
-                elapsed += Time.deltaTime;
-                yield return null;
-            }
+            return WaitWhile(
+                flyInTimeout,
+                () =>
+                    session.Vehicle != null
+                    && session.Behaviour != null
+                    && !session.Behaviour.HasArrived
+                    && !session.IsShotDown
+            );
+        }
 
-            if (harrierGo == null || behaviour == null)
-            {
-                IssaPluginPlugin.Log.LogWarning(
-                    "[Harrier] Jet destroyed before arriving — aborting session."
-                );
-                ForceServerCleanup();
-                yield break;
-            }
-
-            IssaPluginPlugin.Log.LogInfo("[Harrier] Jet arrived — beginning attack phase.");
-
-            // ── Attack phase ─────────────────────────────────────────────
-            float duration = ModConfig.Harrier.Duration.Value;
+        private static IEnumerator EngageTargets(ServerSession session)
+        {
             float fireInterval = ModConfig.Harrier.FireInterval.Value;
             bool friendlyFire = ModConfig.Harrier.FriendlyFire.Value;
-
-            float sessionElapsed = 0f;
             // Stagger the first shot by half an interval so the jet isn't
             // firing before it has fully settled into its hover position.
-            float fireCooldown = fireInterval * 0.5f;
+            float openingDelay = fireInterval * 0.5f;
 
-            while (sessionElapsed < duration && harrierGo != null && !_shotDown)
-            {
-                sessionElapsed += Time.deltaTime;
-                fireCooldown -= Time.deltaTime;
-
-                if (fireCooldown <= 0f)
-                {
-                    fireCooldown = fireInterval;
+            return EngageFor(
+                ModConfig.Harrier.Duration.Value,
+                fireInterval,
+                openingDelay,
+                () => session.Vehicle != null,
+                () => session.IsShotDown,
+                () =>
                     HarrierItem.FireAtRandomTarget(
-                        inventory,
-                        harrierGo.transform.position,
+                        session.Inventory,
+                        session.Vehicle.transform.position,
                         friendlyFire
-                    );
-                }
+                    )
+            );
+        }
 
-                yield return null;
-            }
+        /// <summary>
+        /// Shot down: wait until the crash behaviour reports impact.
+        /// Otherwise fly the jet off the map. If the vehicle is already gone, finishes immediately.
+        /// </summary>
+        private static IEnumerator ExitPhase(ServerSession session)
+        {
+            if (session.IsShotDown)
+                return WaitForCrash(session);
 
-            // ── Exit phase: normal fly-out OR wait for crash to complete ───
-            if (_shotDown)
-            {
-                // Jet was shot down — wait for HarrierCrashBehaviour to detect
-                // ground impact before we NetworkServer.Destroy it.
-                float crashTimeout = 20f;
-                elapsed = 0f;
-                var crashBehaviour = harrierGo?.GetComponent<HarrierCrashBehaviour>();
-                while (
-                    harrierGo != null
-                    && crashBehaviour != null
-                    && !crashBehaviour.IsComplete
-                    && elapsed < crashTimeout
-                )
-                {
-                    elapsed += Time.deltaTime;
-                    yield return null;
-                }
-            }
-            else if (harrierGo != null && behaviour != null)
-            {
-                // Session expired normally — fly the jet off the map.
-                behaviour.BeginFlyOut();
-                IssaPluginPlugin.Log.LogInfo("[Harrier] Beginning fly-out.");
+            if (session.Vehicle != null && session.Behaviour != null)
+                return FlyOut(session);
 
-                float flyOutTimeout = 12f;
-                elapsed = 0f;
-                while (
-                    harrierGo != null
-                    && behaviour != null
-                    && !behaviour.IsComplete
-                    && elapsed < flyOutTimeout
-                )
-                {
-                    elapsed += Time.deltaTime;
-                    yield return null;
-                }
-            }
+            return Finished();
+        }
 
-            // ── Cleanup ──────────────────────────────────────────────────
-            if (harrierGo != null)
-                NetworkServer.Destroy(harrierGo);
+        private static IEnumerator WaitForCrash(ServerSession session)
+        {
+            // Wait for HarrierCrashBehaviour to detect ground impact before
+            // FinishSession calls NetworkServer.Destroy.
+            const float crashTimeout = 20f;
+            var crashBehaviour =
+                session.Vehicle != null
+                    ? session.Vehicle.GetComponent<HarrierCrashBehaviour>()
+                    : null;
+
+            return WaitWhile(
+                crashTimeout,
+                () =>
+                    session.Vehicle != null && crashBehaviour != null && !crashBehaviour.IsComplete
+            );
+        }
+
+        private static IEnumerator FlyOut(ServerSession session)
+        {
+            session.Behaviour.BeginFlyOut();
+            IssaPluginPlugin.Log.LogInfo("[Harrier] Beginning fly-out.");
+
+            const float flyOutTimeout = 12f;
+            return WaitWhile(
+                flyOutTimeout,
+                () =>
+                    session.Vehicle != null
+                    && session.Behaviour != null
+                    && !session.Behaviour.IsComplete
+            );
+        }
+
+        private void FinishSession(ServerSession session)
+        {
+            if (session.Vehicle != null)
+                NetworkServer.Destroy(session.Vehicle);
 
             NetworkServer.SendToAll(new HarrierEndClientMessage());
 
@@ -291,6 +395,76 @@ namespace IssaPlugin.Items
             _serverRoutine = null;
 
             IssaPluginPlugin.Log.LogInfo("[Harrier] Session complete.");
+        }
+
+        // ================================================================
+        //  Phase primitives
+        //
+        //  These are Harrier-agnostic. An autonomous gunship can reuse the wait
+        //  and the timed firing loop, and supply its own flight plan and weapons.
+        // ================================================================
+
+        /// <summary>
+        /// Frames of <paramref name="phase"/>, yielded by <see cref="ServerHarrierRoutine"/>
+        /// so the whole session stays one coroutine. <see cref="ForceServerCleanup"/> stops
+        /// that coroutine; a nested <c>StartCoroutine</c> would keep running after it.
+        /// </summary>
+        private static IEnumerable EachStep(IEnumerator phase)
+        {
+            while (phase.MoveNext())
+                yield return phase.Current;
+        }
+
+        /// <summary>An already-finished phase, for an exit that has nothing to wait on.</summary>
+        private static IEnumerator Finished()
+        {
+            yield break;
+        }
+
+        /// <summary>
+        /// Yields one frame at a time until <paramref name="shouldContinue"/> is false
+        /// or <paramref name="timeoutSeconds"/> elapses.
+        /// </summary>
+        private static IEnumerator WaitWhile(float timeoutSeconds, System.Func<bool> shouldContinue)
+        {
+            float elapsed = 0f;
+            while (shouldContinue() && elapsed < timeoutSeconds)
+            {
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+        }
+
+        /// <summary>
+        /// Timed firing loop. The first shot waits <paramref name="openingDelay"/>;
+        /// later shots wait <paramref name="fireInterval"/>. Stops when the duration
+        /// elapses, the vehicle is gone, or the engagement is aborted.
+        /// </summary>
+        private static IEnumerator EngageFor(
+            float duration,
+            float fireInterval,
+            float openingDelay,
+            System.Func<bool> isVehiclePresent,
+            System.Func<bool> isAborted,
+            System.Action fire
+        )
+        {
+            float elapsed = 0f;
+            float cooldown = openingDelay;
+
+            while (elapsed < duration && isVehiclePresent() && !isAborted())
+            {
+                elapsed += Time.deltaTime;
+                cooldown -= Time.deltaTime;
+
+                if (cooldown <= 0f)
+                {
+                    cooldown = fireInterval;
+                    fire();
+                }
+
+                yield return null;
+            }
         }
 
         // ================================================================
