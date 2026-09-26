@@ -83,7 +83,7 @@ namespace IssaPlugin
             DetonationRange = cfg.Bind(
                 Section,
                 "DetonationRange",
-                4f,
+                8f,
                 "Horizontal distance in metres at which the orb stops and starts the detonation sequence."
             );
             CancelDetonationOutOfRange = cfg.Bind(
@@ -97,7 +97,7 @@ namespace IssaPlugin
             DetonationDuration = cfg.Bind(
                 Section,
                 "DetonationDuration",
-                2.5f,
+                1f,
                 "Seconds the orb flashes and grows before it explodes."
             );
             FlashCount = cfg.Bind(
@@ -115,7 +115,7 @@ namespace IssaPlugin
             ExplosionScale = cfg.Bind(
                 Section,
                 "ExplosionScale",
-                1.5f,
+                2f,
                 "Multiplier on the vanilla rocket explosion. Affects blast radius, knockback, and VFX size."
             );
             ClubKnockbackForce = cfg.Bind(

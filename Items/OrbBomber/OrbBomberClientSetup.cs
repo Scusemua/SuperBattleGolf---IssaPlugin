@@ -35,31 +35,58 @@ namespace IssaPlugin.Items
             _renderers = GetComponentsInChildren<Renderer>(true);
             _block = new MaterialPropertyBlock();
 
-            // The bundle sphere is on the mesh child: local scale 0.05, local
-            // Y of 1, radius about 37. That puts the visual center a metre
-            // above the root. Shift the child so the center is the pivot,
-            // then plant from the collider bottom. Tumble then spins in place.
+            // Leave the prefab's 1 m model offset in place. Shifting that child
+            // down onto this pivot buried the sphere. Plant from whichever
+            // bottom sits lower: the collider, or the visible mesh.
+            float drop = 0.5f;
+            Vector3 massPoint = transform.position;
             var sphere = GetComponentInChildren<SphereCollider>(true);
-            if (sphere == null)
+            if (sphere != null)
             {
-                BaseRadius = 0.5f;
-                return;
+                Vector3 center = sphere.transform.TransformPoint(sphere.center);
+                Vector3 bottom = sphere.transform.TransformPoint(
+                    sphere.center + Vector3.down * sphere.radius
+                );
+                drop = transform.position.y - bottom.y;
+                massPoint = center;
             }
 
-            if (sphere.transform != transform)
+            if (TryGetVisualBounds(out Bounds bounds))
             {
-                Vector3 worldCenter = sphere.transform.TransformPoint(sphere.center);
-                sphere.transform.position += transform.position - worldCenter;
+                drop = Mathf.Max(drop, transform.position.y - bounds.min.y);
+                massPoint = bounds.center;
             }
+
+            BaseRadius = drop;
 
             var body = GetComponent<Rigidbody>();
             if (body != null)
-                body.centerOfMass = Vector3.zero;
+                body.centerOfMass = transform.InverseTransformPoint(massPoint);
+        }
 
-            Vector3 bottom = sphere.transform.TransformPoint(
-                sphere.center + Vector3.down * sphere.radius
-            );
-            BaseRadius = -transform.InverseTransformPoint(bottom).y;
+        private bool TryGetVisualBounds(out Bounds bounds)
+        {
+            bounds = default;
+            bool found = false;
+            if (_renderers == null)
+                return false;
+
+            foreach (var renderer in _renderers)
+            {
+                if (renderer == null)
+                    continue;
+                if (!found)
+                {
+                    bounds = renderer.bounds;
+                    found = true;
+                }
+                else
+                {
+                    bounds.Encapsulate(renderer.bounds);
+                }
+            }
+
+            return found;
         }
 
         public void PlaySequence(float duration, int flashCount, float sizeMultiplier)

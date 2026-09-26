@@ -551,7 +551,7 @@ namespace IssaPlugin.Items
             float distance = toTarget.magnitude;
             direction = distance > 0.001f ? toTarget / distance : Vector3.zero;
 
-            float detonationRange = Mathf.Max(0.5f, ModConfig.OrbBomber.DetonationRange.Value);
+            float detonationRange = Mathf.Max(0.5f, ModConfig.OrbBomber.DetonationRange.Value * 0.25f);
             if (distance > detonationRange)
                 _mustLeaveRange = false;
             else if (!_mustLeaveRange)
@@ -698,7 +698,7 @@ namespace IssaPlugin.Items
             if (_rb == null || _setup == null || _rb.isKinematic)
                 return;
 
-            float radius = Mathf.Abs(_setup.BaseRadius) * Mathf.Max(transform.localScale.y, 1f);
+            float radius = _setup.BaseRadius * Mathf.Max(transform.localScale.y, 1f);
             Vector3 origin = _rb.position + Vector3.up * 12f;
             int count = Physics.RaycastNonAlloc(
                 origin,
