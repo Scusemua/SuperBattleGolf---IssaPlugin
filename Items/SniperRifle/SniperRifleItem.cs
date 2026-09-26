@@ -34,7 +34,7 @@ namespace IssaPlugin.Items
                 Inaccuracy = inaccuracy,
                 PelletCount = 1,
                 ScreenShakeIntensity = ModConfig.SniperRifle.ScreenShakeIntensity.Value,
-                ThrottleVfx = false,
+                VfxInterval = ModConfig.SniperRifle.VfxInterval.Value,
             };
         }
     }

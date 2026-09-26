@@ -17,6 +17,7 @@ namespace IssaPlugin
         public ConfigEntry<float> MaxAimingDistance { get; private set; }
         public ConfigEntry<float> MaxShotDistance { get; private set; }
         public ConfigEntry<float> ScreenShakeIntensity { get; private set; }
+        public ConfigEntry<float> VfxInterval { get; private set; }
 
         public MinigunConfig(ConfigFile cfg, GlobalConfig global)
         {
@@ -85,6 +86,15 @@ namespace IssaPlugin
                 "ScreenShakeIntensity",
                 0.75f,
                 "Intensity of the screen shake per bullet. 0 disables it. This gun fires quickly, so keep it low."
+            );
+            VfxInterval = cfg.Bind(
+                Section,
+                "VfxInterval",
+                0f,
+                new ConfigDescription(
+                    "Seconds between drawn shots. 0 draws every pellet. Damage still lands when a bullet is skipped.",
+                    new AcceptableValueRange<float>(0f, 1f)
+                )
             );
         }
     }

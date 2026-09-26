@@ -31,6 +31,7 @@ namespace IssaPlugin.Items
                 Inaccuracy = ModConfig.Minigun.Inaccuracy.Value,
                 PelletCount = Mathf.Max(1, Mathf.RoundToInt(ModConfig.Minigun.PelletCount.Value)),
                 ScreenShakeIntensity = ModConfig.Minigun.ScreenShakeIntensity.Value,
+                VfxInterval = ModConfig.Minigun.VfxInterval.Value,
                 UseShotgunVisuals = true,
             };
     }

@@ -24,12 +24,11 @@ namespace IssaPlugin.Items
         public float BonusKnockback;
 
         /// <summary>
-        /// When set, miss, shield, and hit VFX share one clock for this item type.
-        /// The first effect of a shell is skipped if it is under 0.1 s after the
-        /// previous shell. Every target in the shell that does play still gets
-        /// its own effect. The AK-47, AA-12, and minigun set this. Single-shot guns do not.
+        /// Minimum seconds between drawn shots for this gun. 0 draws every shot.
+        /// A skipped shot still deals damage. Once a shot is drawn, every target
+        /// in it still gets its own effect.
         /// </summary>
-        public bool ThrottleVfx;
+        public float VfxInterval;
 
         /// <summary>
         /// Fly the shotgun bullet prefab and muzzle flash for this shell, including
@@ -40,10 +39,6 @@ namespace IssaPlugin.Items
 
     public static class Firearm
     {
-        // Same interval the AK-47 used. Its old comment claimed a 0.25 s server
-        // floor; the constant that shipped is 0.1 s, so this keeps it.
-        private const float VfxMinInterval = 0.1f;
-
         private static readonly HashSet<ItemType> Busy = new HashSet<ItemType>();
         private static readonly Dictionary<ItemType, float> LastVfxTime = new Dictionary<ItemType, float>();
 
@@ -545,7 +540,8 @@ namespace IssaPlugin.Items
 
         private static bool AllowVfx(FirearmShellProfile profile)
         {
-            if (!profile.ThrottleVfx)
+            float interval = profile.VfxInterval;
+            if (interval <= 0f)
                 return true;
 
             // The clock gates shell from shell. Once this shell has been allowed,
@@ -556,7 +552,7 @@ namespace IssaPlugin.Items
             float now = Time.time;
             if (
                 LastVfxTime.TryGetValue(profile.ItemType, out float last)
-                && now - last < VfxMinInterval
+                && now - last < interval
             )
                 return false;
 

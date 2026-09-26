@@ -31,7 +31,7 @@ namespace IssaPlugin.Items
                 ),
                 ScreenShakeIntensity = ModConfig.Remington870.ScreenShakeIntensity.Value,
                 BonusKnockback = ModConfig.Remington870.BonusKnockback.Value,
-                ThrottleVfx = false,
+                VfxInterval = ModConfig.Remington870.VfxInterval.Value,
             };
     }
 }

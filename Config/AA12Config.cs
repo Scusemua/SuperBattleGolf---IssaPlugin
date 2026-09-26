@@ -16,6 +16,7 @@ namespace IssaPlugin
         public ConfigEntry<float> MaxShotDistance { get; private set; }
         public ConfigEntry<float> ScreenShakeIntensity { get; private set; }
         public ConfigEntry<float> BonusKnockback { get; private set; }
+        public ConfigEntry<float> VfxInterval { get; private set; }
 
         public AA12Config(ConfigFile cfg, GlobalConfig global)
         {
@@ -72,6 +73,15 @@ namespace IssaPlugin
                 "BonusKnockback",
                 8f,
                 "Extra velocity change applied to a player hit by a shell, on top of the elephant-gun knockback. 0 disables the bonus. Applies on the machine that simulates that player."
+            );
+            VfxInterval = cfg.Bind(
+                Section,
+                "VfxInterval",
+                0.1f,
+                new ConfigDescription(
+                    "Seconds between drawn shells. 0 draws every shell. Damage still lands when a bullet is skipped.",
+                    new AcceptableValueRange<float>(0f, 1f)
+                )
             );
         }
     }

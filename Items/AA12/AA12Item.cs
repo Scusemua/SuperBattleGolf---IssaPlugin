@@ -28,7 +28,7 @@ namespace IssaPlugin.Items
                 PelletCount = Mathf.Max(1, Mathf.RoundToInt(ModConfig.AA12.PelletCount.Value)),
                 ScreenShakeIntensity = ModConfig.AA12.ScreenShakeIntensity.Value,
                 BonusKnockback = ModConfig.AA12.BonusKnockback.Value,
-                ThrottleVfx = true,
+                VfxInterval = ModConfig.AA12.VfxInterval.Value,
             };
     }
 }
