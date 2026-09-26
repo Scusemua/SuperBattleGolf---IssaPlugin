@@ -52,6 +52,7 @@ namespace IssaPlugin.Integrations.ModConfigUI
                 Group("Javelin", "Javelin"),
                 Group("Jetpack", "Jetpack"),
                 Group("Low Gravity", "LowGravity"),
+                Group("Minigun", "Minigun"),
                 Group("Moon", "Moon"),
                 Group("Nuke", "Nuke"),
                 Group("Placeable Wall", "PlaceableWall"),

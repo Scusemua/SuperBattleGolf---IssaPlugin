@@ -2,7 +2,7 @@
 
 <img src="icon.png" width="256" height="256" />
 
-Adds **44 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
+Adds **45 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
 
 To download and/or install the mod, please check out [the GitHub releases](https://github.com/Scusemua/SuperBattleGolf---IssaPlugin/releases) or the mod's [ThunderStore page](https://thunderstore.io/c/super-battle-golf/p/TeamScusemua/IssaMod/).
 
@@ -145,6 +145,9 @@ A remote that turns the course to night. The sky and the light go dark for every
 
 ### 🪝 Grappling Hook
 Aim at a surface and fire. The rope sticks, and you swing from it. Hold left click to reel in, right click to let line out, or both to hang still.
+
+### 🔫 Minigun
+Hold the trigger and the barrels spin up before any bullets come out. Once it is going it fires very fast, with a wide spread, and you are stuck walking until you let go.
 
 ---
 
