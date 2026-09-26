@@ -29,11 +29,8 @@ namespace IssaPlugin.Items
         // message still in flight from the previous hole is ignored. A late joiner
         // adopts whatever generation the server is already on.
         private static int _generation = 1;
-        private static int _minGeneration = 1;
         private static int _lastClosedGeneration = 1;
         private static readonly List<uint> StalePending = new();
-
-        private bool _serverAttached;
 
         // isLocalPlayer is already false by the time the object is torn down.
         private bool _wasOwned;
@@ -104,10 +101,7 @@ namespace IssaPlugin.Items
             // about the hole change late. Closing again would skip a generation
             // and ignore the rest of the hole.
             if (_generation == _lastClosedGeneration)
-            {
                 _generation++;
-                _minGeneration = _generation;
-            }
 
             _lastClosedGeneration = _generation;
             DropStaleRopes();
@@ -206,7 +200,6 @@ namespace IssaPlugin.Items
             }
 
             ItemHelper.ConsumeItemAtSlot(inventory, slotIndex);
-            _serverAttached = true;
             ServerGrapples[netId] = new ServerGrapple { Anchor = anchor, Token = token };
             NetworkServer.SendToAll(
                 new GrappleAnchorMessage
@@ -229,17 +222,21 @@ namespace IssaPlugin.Items
 
         public static void HandleAnchor(GrappleAnchorMessage msg)
         {
-            if (!IsFinite(msg.Anchor) || !AcceptGeneration(msg.Generation))
+            if (!IsFinite(msg.Anchor) || !AcceptGeneration(msg.Generation, out bool raised))
                 return;
 
             if (!NetworkClient.spawned.TryGetValue(msg.PlayerNetId, out var identity))
-            {
                 PendingAnchors[msg.PlayerNetId] = msg;
-                return;
+            else
+            {
+                PendingAnchors.Remove(msg.PlayerNetId);
+                identity.GetComponent<GrapplingHookNetworkBridge>()?.ApplyAnchor(msg);
             }
 
-            PendingAnchors.Remove(msg.PlayerNetId);
-            identity.GetComponent<GrapplingHookNetworkBridge>()?.ApplyAnchor(msg);
+            // Adopted a generation this peer had not closed itself. Older lines
+            // would otherwise stay up until the next hole event.
+            if (raised)
+                DropStaleRopes();
         }
 
         public static void HandleReject(GrappleRejectMessage msg)
@@ -249,7 +246,7 @@ namespace IssaPlugin.Items
 
         public static void HandleClear(GrappleClearMessage msg)
         {
-            if (!AcceptGeneration(msg.Generation))
+            if (!AcceptGeneration(msg.Generation, out bool raised))
                 return;
 
             if (
@@ -258,10 +255,11 @@ namespace IssaPlugin.Items
             )
                 PendingAnchors.Remove(msg.PlayerNetId);
 
-            if (!NetworkClient.spawned.TryGetValue(msg.PlayerNetId, out var identity))
-                return;
+            if (NetworkClient.spawned.TryGetValue(msg.PlayerNetId, out var identity))
+                identity.GetComponent<GrapplingHookNetworkBridge>()?.HideRope(msg.Token);
 
-            identity.GetComponent<GrapplingHookNetworkBridge>()?.HideRope(msg.Token);
+            if (raised)
+                DropStaleRopes();
         }
 
         public override void ServerHoleCleanup()
@@ -273,10 +271,7 @@ namespace IssaPlugin.Items
 
         public override void ClientHoleCleanup()
         {
-            // Generation was already closed for this hole. This only catches a
-            // rope that appeared before that close finished.
-            if (isLocalPlayer)
-                DropStaleRopes();
+            // AdvanceGeneration already dropped ropes from the closed hole.
         }
 
         // The last use removes the item, and the aim marker with it. Reel and
@@ -352,14 +347,10 @@ namespace IssaPlugin.Items
 
         private void Forget(bool broadcast)
         {
-            if (!_serverAttached && !ServerGrapples.ContainsKey(netId))
+            if (!ServerGrapples.TryGetValue(netId, out var state))
                 return;
 
-            int token = 0;
-            if (ServerGrapples.TryGetValue(netId, out var state))
-                token = state.Token;
-
-            _serverAttached = false;
+            int token = state.Token;
             ServerGrapples.Remove(netId);
 
             if (!broadcast)
@@ -375,16 +366,17 @@ namespace IssaPlugin.Items
             );
         }
 
-        private static bool AcceptGeneration(int generation)
+        private static bool AcceptGeneration(int generation, out bool raised)
         {
-            if (generation < _minGeneration)
+            raised = false;
+            if (generation < _generation)
                 return false;
 
             // A player who joined mid-match has not seen the earlier hole changes.
             if (generation > _generation)
             {
                 _generation = generation;
-                _minGeneration = generation;
+                raised = true;
             }
 
             return true;
@@ -395,7 +387,7 @@ namespace IssaPlugin.Items
             StalePending.Clear();
             foreach (var pair in PendingAnchors)
             {
-                if (pair.Value.Generation < _minGeneration)
+                if (pair.Value.Generation < _generation)
                     StalePending.Add(pair.Key);
             }
 
@@ -407,7 +399,7 @@ namespace IssaPlugin.Items
             for (int i = 0; i < bridges.Length; i++)
             {
                 var bridge = bridges[i];
-                if (bridge._shownGeneration >= _minGeneration)
+                if (bridge._showing && bridge._shownGeneration >= _generation)
                     continue;
 
                 bridge.HideRope();

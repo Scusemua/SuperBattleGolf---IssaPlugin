@@ -36,7 +36,10 @@ namespace IssaPlugin.Items
             _ring.numCapVertices = 2;
             _ring.enabled = false;
 
-            var shader = Shader.Find("Sprites/Default");
+            var shader =
+                Shader.Find("Sprites/Default")
+                ?? Shader.Find("UI/Default")
+                ?? Shader.Find("Unlit/Color");
             if (shader != null)
             {
                 _ringMaterial = new Material(shader);
