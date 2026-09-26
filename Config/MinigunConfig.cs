@@ -30,7 +30,7 @@ namespace IssaPlugin
             Uses = cfg.Bind(
                 Section,
                 "Uses",
-                500f,
+                200f,
                 "Bullets per Minigun pickup. Each bullet consumes one use. The spin-up spends none."
             );
             FireRate = cfg.Bind(
@@ -72,7 +72,7 @@ namespace IssaPlugin
             MaxAimingDistance = cfg.Bind(
                 Section,
                 "MaxAimingDistance",
-                500f,
+                50f,
                 "Max distance used when computing the aim point for each bullet."
             );
             MaxShotDistance = cfg.Bind(
@@ -90,7 +90,7 @@ namespace IssaPlugin
             VfxInterval = cfg.Bind(
                 Section,
                 "VfxInterval",
-                0f,
+                0.03f,
                 new ConfigDescription(
                     "Seconds between drawn shots. 0 draws every pellet. Damage still lands when a bullet is skipped.",
                     new AcceptableValueRange<float>(0f, 1f)
