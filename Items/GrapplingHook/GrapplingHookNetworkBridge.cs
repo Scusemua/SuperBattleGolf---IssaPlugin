@@ -281,11 +281,18 @@ namespace IssaPlugin.Items
             if (!isLocalPlayer || !GrapplingHookSession.IsAttached)
                 return;
 
-            var keyboard = Keyboard.current;
-            GrapplingHookSession.IsReeling = keyboard != null && keyboard.rKey.isPressed;
-
             var mouse = Mouse.current;
-            if (mouse != null && mouse.rightButton.wasPressedThisFrame)
+            bool reelIn = mouse != null && mouse.leftButton.isPressed;
+            bool reelOut = mouse != null && mouse.rightButton.isPressed;
+            if (reelIn && !reelOut)
+                GrapplingHookSession.Reel = ReelDirection.In;
+            else if (reelOut && !reelIn)
+                GrapplingHookSession.Reel = ReelDirection.Out;
+            else
+                GrapplingHookSession.Reel = ReelDirection.None;
+
+            var keyboard = Keyboard.current;
+            if (keyboard != null && keyboard.rKey.wasPressedThisFrame)
                 GrapplingHookSession.Release();
         }
 

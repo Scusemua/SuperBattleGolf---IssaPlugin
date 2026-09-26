@@ -38,6 +38,11 @@ namespace IssaPlugin.Items
                 return;
 
             _firedWhileHeld = true;
+            // Once the rope is on, left click pays it in. A new point is a new
+            // press after R lets go.
+            if (GrapplingHookSession.IsAttached)
+                return;
+
             TryFire(inventory);
         }
 

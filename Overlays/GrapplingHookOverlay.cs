@@ -24,15 +24,16 @@ namespace IssaPlugin.Overlays
         private static readonly string[] Lines =
         {
             "Left click - attach to what you aim at",
-            "R - reel in",
-            "Right click - let go and keep your speed",
-            "Left click again - hook a new point",
+            "Once hooked, left click - reel in",
+            "Right click - reel out",
+            "R - dismount",
         };
 
         private static readonly string[] AttachedLines =
         {
-            "R - reel in",
-            "Right click - let go and keep your speed",
+            "Left click - reel in",
+            "Right click - reel out",
+            "R - dismount",
         };
 
         private static float PanelHeight(int lineCount) =>
@@ -52,7 +53,7 @@ namespace IssaPlugin.Overlays
             if (!hasItem && !GrapplingHookSession.IsAttached)
                 return;
 
-            string[] lines = hasItem ? Lines : AttachedLines;
+            string[] lines = GrapplingHookSession.IsAttached ? AttachedLines : Lines;
             EnsureStyles();
 
             float scale = UiScale;

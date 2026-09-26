@@ -2,6 +2,13 @@ using UnityEngine;
 
 namespace IssaPlugin.Items
 {
+    internal enum ReelDirection
+    {
+        None,
+        In,
+        Out,
+    }
+
     /// <summary>
     /// Local grappling-hook simulation. One player owns this machine's swing.
     ///
@@ -14,7 +21,11 @@ namespace IssaPlugin.Items
     internal static class GrapplingHookSession
     {
         public static bool IsAttached { get; private set; }
-        public static bool IsReeling { get; set; }
+
+        /// While attached: pay rope in, pay it back out toward the length at
+        /// attach, or hold still. Both mouse buttons at once hold still.
+        public static ReelDirection Reel { get; set; }
+
         public static bool OwnsSimulation => IsAttached || _isLaunching;
         public static int Token { get; private set; }
 
@@ -22,6 +33,7 @@ namespace IssaPlugin.Items
         private static Vector3 _anchor;
 
         private static float _ropeLength;
+        private static float _ropeLimit;
         private static Vector3 _savedVelocity;
         private static float _launchUntil;
         private static Vector3 _lastPosition;
@@ -32,6 +44,7 @@ namespace IssaPlugin.Items
         private static int _undoToken;
         private static Vector3 _undoAnchor;
         private static float _undoLength;
+        private static float _undoRopeLimit;
         private static Vector3 _undoVelocity;
 
         public static void Attach(Vector3 anchor, float length, Vector3 velocity)
@@ -40,15 +53,17 @@ namespace IssaPlugin.Items
             _undoToken = Token;
             _undoAnchor = _anchor;
             _undoLength = _ropeLength;
+            _undoRopeLimit = _ropeLimit;
             _undoVelocity = _savedVelocity;
             _hasUndo = true;
 
             Token++;
             IsAttached = true;
             _isLaunching = false;
-            IsReeling = false;
+            Reel = ReelDirection.None;
             _anchor = anchor;
             _ropeLength = Mathf.Max(0.5f, length);
+            _ropeLimit = _ropeLength;
             _savedVelocity = velocity;
             // A teleport between swings must not look like a discontinuity on the
             // first step of the new rope.
@@ -73,6 +88,7 @@ namespace IssaPlugin.Items
                 _isLaunching = false;
                 _anchor = _undoAnchor;
                 _ropeLength = _undoLength;
+                _ropeLimit = _undoRopeLimit;
                 _savedVelocity = _undoVelocity;
                 GrapplingHookNetworkBridge.ShowLocalRope(_anchor, _undoToken);
                 return;
@@ -89,7 +105,7 @@ namespace IssaPlugin.Items
                 return;
 
             IsAttached = false;
-            IsReeling = false;
+            Reel = ReelDirection.None;
             _isLaunching = true;
             _hasUndo = false;
             _launchUntil = Time.time + Mathf.Max(0f, ModConfig.GrapplingHook.ReleaseGrace.Value);
@@ -178,14 +194,16 @@ namespace IssaPlugin.Items
                 return false;
 
             float dt = Time.fixedDeltaTime;
-            if (IsReeling)
+            float reel = Mathf.Max(0f, ModConfig.GrapplingHook.ReelSpeed.Value) * dt;
+            if (Reel == ReelDirection.In)
             {
                 float minLength = Mathf.Max(0.5f, ModConfig.GrapplingHook.MinLength.Value);
                 if (_ropeLength > minLength)
-                {
-                    float reel = Mathf.Max(0f, ModConfig.GrapplingHook.ReelSpeed.Value);
-                    _ropeLength = Mathf.Max(minLength, _ropeLength - reel * dt);
-                }
+                    _ropeLength = Mathf.Max(minLength, _ropeLength - reel);
+            }
+            else if (Reel == ReelDirection.Out && _ropeLength < _ropeLimit)
+            {
+                _ropeLength = Mathf.Min(_ropeLimit, _ropeLength + reel);
             }
 
             Vector3 fromAnchor = position - _anchor;
@@ -237,7 +255,7 @@ namespace IssaPlugin.Items
         {
             IsAttached = false;
             _isLaunching = false;
-            IsReeling = false;
+            Reel = ReelDirection.None;
             _hasUndo = false;
             _hasLastPosition = false;
         }

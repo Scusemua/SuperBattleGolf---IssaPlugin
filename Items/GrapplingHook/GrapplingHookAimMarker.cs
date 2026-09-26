@@ -62,6 +62,14 @@ namespace IssaPlugin.Items
             if (mouse == null || !mouse.leftButton.isPressed)
                 GrapplingHookItem.ClearFireLatch();
 
+            // Left click reels while the rope is on, so the latch ring would lie.
+            if (GrapplingHookSession.IsAttached)
+            {
+                if (_ring != null)
+                    _ring.enabled = false;
+                return;
+            }
+
             GrapplingHookItem.AimSample aim = GrapplingHookItem.EvaluateAim(_inventory);
             if (!aim.Hit || _ring == null)
             {
