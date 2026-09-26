@@ -26,6 +26,7 @@ namespace IssaPlugin
         public ConfigEntry<bool> BomberOverlayEnabled { get; private set; }
         public ConfigEntry<bool> PlayerBoxOverlayEnabled { get; private set; }
         public ConfigEntry<bool> CustomVfxEnabled { get; private set; }
+        public ConfigEntry<bool> BulletImpactEnabled { get; private set; }
         public ConfigEntry<bool> PerfDiagnosticsEnabled { get; private set; }
         public ConfigEntry<bool> ModCpuProfilingEnabled { get; private set; }
         public ConfigEntry<float> PerfDiagnosticsInterval { get; private set; }
@@ -187,6 +188,13 @@ namespace IssaPlugin
                     + "are unaffected — only the visuals are skipped. Use it to test whether "
                     + "the mod's VFX prefabs, and the shaders they were converted to for "
                     + "URP, are responsible for frame drops."
+            );
+            BulletImpactEnabled = cfg.Bind(
+                "Diagnostics",
+                "BulletImpactEnabled",
+                true,
+                "Spawn the bullet impact effect where a shotgun or minigun pellet hits. "
+                    + "Turn this off to skip that prefab. The bullet trail and the hit still happen."
             );
             
             NetworkDiagnosticsEnabled = cfg.Bind(

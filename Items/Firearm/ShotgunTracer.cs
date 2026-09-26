@@ -251,6 +251,9 @@ namespace IssaPlugin.Items
 
         private static void SpawnImpacts(ShotgunTracerMessage msg)
         {
+            if (!ModConfig.Global.BulletImpactEnabled.Value)
+                return;
+
             var prefab = AssetLoader.BulletImpactPrefab;
             if (prefab == null || msg.Impacts == null)
                 return;
