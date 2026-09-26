@@ -38,7 +38,7 @@ namespace IssaPlugin.Patches
 
                 var colliders = Physics.OverlapSphere(
                     swingCenter,
-                    OrbBomberBehaviour.SwingOverlapRadius,
+                    OrbBomberBehaviour.SwingOverlapRadius + 3f,
                     Physics.AllLayers,
                     QueryTriggerInteraction.Collide
                 );
@@ -58,6 +58,45 @@ namespace IssaPlugin.Patches
 
                 elapsed += Time.deltaTime;
                 yield return null;
+            }
+        }
+    }
+
+    /// Server-side swing, including a detonating orb the client probe missed.
+    [HarmonyPatch(typeof(PlayerGolfer), "OnFinishedSwinging")]
+    static class OrbBomberSwingFallbackPatch
+    {
+        static void Postfix(PlayerGolfer __instance)
+        {
+            if (!NetworkServer.active || __instance == null)
+                return;
+
+            var swinger = __instance.PlayerInfo;
+            if (swinger == null)
+                return;
+
+            Vector3 swingCenter = __instance.transform.TransformPoint(
+                GameManager.GolfSettings.SwingHitBoxLocalCenter
+            );
+            var colliders = Physics.OverlapSphere(
+                swingCenter,
+                OrbBomberBehaviour.SwingOverlapRadius + 3f,
+                Physics.AllLayers,
+                QueryTriggerInteraction.Collide
+            );
+
+            var sent = new HashSet<uint>();
+            foreach (var col in colliders)
+            {
+                var behaviour = col.GetComponentInParent<OrbBomberBehaviour>();
+                if (behaviour == null)
+                    continue;
+
+                var identity = behaviour.GetComponent<NetworkIdentity>();
+                if (identity == null || !sent.Add(identity.netId))
+                    continue;
+
+                behaviour.ServerHandleSwing(swinger);
             }
         }
     }

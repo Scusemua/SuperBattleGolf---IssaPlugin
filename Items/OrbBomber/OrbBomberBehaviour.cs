@@ -47,6 +47,11 @@ namespace IssaPlugin.Items
         private bool _pendingFastContact;
         private float _blackHoleSuppressedUntil;
         private float _cartKnockCooldown;
+        private float _swingLockUntil;
+        private bool _mustLeaveRange;
+        private bool _reapplyKnock;
+        private Vector3 _knockVelocity;
+        private Vector3 _knockSpin;
         private int _groundMask;
 
         private static readonly RaycastHit[] GroundHits = new RaycastHit[8];
@@ -98,6 +103,16 @@ namespace IssaPlugin.Items
 
             if (Time.fixedTime < _blackHoleSuppressedUntil)
                 return;
+
+            if (_reapplyKnock && _rb != null && !_rb.isKinematic)
+            {
+                // The detonation tick may already have queued a kinematic move
+                // this frame. Put the knock back after that, or the countdown
+                // stays planted and the swing looks like it did nothing.
+                _rb.linearVelocity = _knockVelocity;
+                _rb.angularVelocity = _knockSpin;
+                _reapplyKnock = false;
+            }
 
             TryCartKnock();
 
@@ -176,7 +191,9 @@ namespace IssaPlugin.Items
                 var cartBody = cart.GetComponent<Rigidbody>() ?? cart.GetComponentInChildren<Rigidbody>();
                 bool cartSimulated =
                     cartBody != null && !cartBody.isKinematic && cartBody.linearVelocity.sqrMagnitude >= 1f;
-                if (!_rb.isKinematic && cartSimulated)
+                // A simulated cart can push a dynamic body on its own, but only
+                // once the chase has stopped writing velocity.
+                if (_phase != Phase.Approach && !_rb.isKinematic && cartSimulated)
                     return;
 
                 if (ApplyCartKnock(velocity))
@@ -249,6 +266,8 @@ namespace IssaPlugin.Items
         {
             if (!NetworkServer.active || _finished || swinger == null || _setup == null || _rb == null)
                 return;
+            if (Time.time < _swingLockUntil)
+                return;
 
             var swingerIdentity = swinger.GetComponent<NetworkIdentity>();
             if (swingerIdentity == null)
@@ -260,7 +279,12 @@ namespace IssaPlugin.Items
                 return;
 
             bool isVictim = swingerIdentity.netId == VictimNetId;
+            bool wasDetonating = _phase == Phase.Detonating;
+            if (wasDetonating)
+                _mustLeaveRange = true;
+            _swingLockUntil = Time.time + 0.5f;
             InterruptDetonationVisual();
+            _phase = Phase.Flung;
 
             Vector3 away = transform.position - swinger.transform.position;
             if (away.sqrMagnitude < 0.0001f)
@@ -273,14 +297,16 @@ namespace IssaPlugin.Items
                 Mathf.Max(0f, ModConfig.OrbBomber.ClubKnockbackForce.Value)
                 * SwingForceMultiplier(swinger);
 
-            // Become dynamic before writing velocity. Unity ignores velocity
-            // assigned to a kinematic body, so the impulse would be the only
-            // change and a second hit could not replace the previous fling.
+            // AddForce is ignored on the frame a kinematic body becomes dynamic,
+            // which is exactly the detonation pose. Write velocity directly and
+            // once more next tick so a queued MovePosition cannot pin it.
             ReleaseToPhysics(clearVelocity: true);
-            _rb.AddForce(knockDir * force, ForceMode.Impulse);
-            ApplyTumble(knockDir, force);
+            _knockVelocity = knockDir * force;
+            _knockSpin = TumbleSpin(knockDir, force);
+            _rb.linearVelocity = _knockVelocity;
+            _rb.angularVelocity = _knockSpin;
+            _reapplyKnock = true;
 
-            _phase = Phase.Flung;
             _ignoreUntil = Time.time + ImpactIgnoreSeconds;
             _leftGround = false;
             _pendingFastContact = false;
@@ -382,6 +408,7 @@ namespace IssaPlugin.Items
 
         private void ReleaseToPhysics(bool clearVelocity)
         {
+            _rb.constraints = RigidbodyConstraints.None;
             _rb.useGravity = true;
             _rb.isKinematic = false;
             if (!clearVelocity)
@@ -393,10 +420,15 @@ namespace IssaPlugin.Items
 
         private void ApplyTumble(Vector3 travelDirection, float force)
         {
+            _rb.angularVelocity = TumbleSpin(travelDirection, force);
+        }
+
+        private static Vector3 TumbleSpin(Vector3 travelDirection, float force)
+        {
             Vector3 axis = Vector3.Cross(Vector3.up, travelDirection);
             if (axis.sqrMagnitude < 0.001f)
                 axis = Vector3.right;
-            _rb.angularVelocity = axis.normalized * (force * SpinPerImpulse);
+            return axis.normalized * (force * SpinPerImpulse);
         }
 
         public static void ServerHandleSwingMessage(NetworkConnectionToClient conn, uint orbNetId)
@@ -413,38 +445,36 @@ namespace IssaPlugin.Items
 
         private void TickApproach(Vector3 targetPosition)
         {
+            // Low gravity scales Physics.gravity, which kinematic bodies ignore.
+            // Chase with a dynamic body for that window so bumps and falls hang.
+            // The planted kinematic chase stays for normal gravity: a fully
+            // dynamic chase would still need this state machine, because writing
+            // a homing velocity every tick cancels clubs, blasts, and the black hole.
+            if (LowGravityItem.IsActive)
+                TickApproachDynamic(targetPosition);
+            else
+                TickApproachPlanted(targetPosition);
+        }
+
+        private void TickApproachPlanted(Vector3 targetPosition)
+        {
+            if (!_rb.isKinematic)
+                EnterApproachBody();
+
             FaceTarget(targetPosition);
 
-            Vector3 toTarget = targetPosition - _rb.position;
-            toTarget.y = 0f;
-            float distance = toTarget.magnitude;
-
-            float detonationRange = Mathf.Max(0.5f, ModConfig.OrbBomber.DetonationRange.Value);
-            if (distance <= detonationRange)
-            {
-                BeginDetonation();
+            if (!TryApproachStep(targetPosition, out Vector3 next, out float speed, out Vector3 direction))
                 return;
-            }
 
-            float far = Mathf.Max(
-                ModConfig.OrbBomber.FarSpeedDistance.Value,
-                detonationRange + 0.01f
-            );
-            float blend = Mathf.InverseLerp(far, detonationRange, distance);
-            float speed = Mathf.Max(
-                0f,
-                Mathf.Lerp(
-                    ModConfig.OrbBomber.StartSpeed.Value,
-                    ModConfig.OrbBomber.MaxSpeed.Value,
-                    blend
-                )
-            );
-
-            Vector3 next = _rb.position;
-            if (distance > 0.001f)
+            if (speed > 0f && direction.sqrMagnitude > 0.0001f)
             {
+                float distance = new Vector3(
+                    targetPosition.x - _rb.position.x,
+                    0f,
+                    targetPosition.z - _rb.position.z
+                ).magnitude;
                 float step = Mathf.Min(speed * Time.fixedDeltaTime, distance);
-                next += toTarget / distance * step;
+                next += direction * step;
             }
 
             if (TryFindGround(next, out float groundY))
@@ -453,8 +483,82 @@ namespace IssaPlugin.Items
             _rb.MovePosition(next);
         }
 
+        private void TickApproachDynamic(Vector3 targetPosition)
+        {
+            _rb.constraints = RigidbodyConstraints.FreezeRotation;
+            _rb.useGravity = true;
+            _rb.isKinematic = false;
+
+            FaceTarget(targetPosition);
+
+            if (!TryApproachStep(targetPosition, out _, out float speed, out Vector3 direction))
+                return;
+
+            Vector3 velocity = _rb.linearVelocity;
+            velocity.x = direction.x * speed;
+            velocity.z = direction.z * speed;
+            _rb.linearVelocity = velocity;
+        }
+
+        /// False when the orb is close enough to start detonating.
+        private bool TryApproachStep(
+            Vector3 targetPosition,
+            out Vector3 next,
+            out float speed,
+            out Vector3 direction
+        )
+        {
+            next = _rb.position;
+            Vector3 toTarget = targetPosition - _rb.position;
+            toTarget.y = 0f;
+            float distance = toTarget.magnitude;
+            direction = distance > 0.001f ? toTarget / distance : Vector3.zero;
+
+            float detonationRange = Mathf.Max(0.5f, ModConfig.OrbBomber.DetonationRange.Value);
+            if (distance > detonationRange)
+                _mustLeaveRange = false;
+            else if (!_mustLeaveRange)
+            {
+                speed = 0f;
+                BeginDetonation();
+                return false;
+            }
+            else
+            {
+                // A swing cancelled the countdown. Stay in chase until the
+                // target is actually outside DetonationRange, or the next
+                // tick starts the flash again while they are still on top of it.
+                speed = 0f;
+                return true;
+            }
+
+            float far = Mathf.Max(
+                ModConfig.OrbBomber.FarSpeedDistance.Value,
+                detonationRange + 0.01f
+            );
+            float blend = Mathf.InverseLerp(far, detonationRange, distance);
+            speed = Mathf.Max(
+                0f,
+                Mathf.Lerp(
+                    ModConfig.OrbBomber.StartSpeed.Value,
+                    ModConfig.OrbBomber.MaxSpeed.Value,
+                    blend
+                )
+            );
+            return true;
+        }
+
         private void BeginDetonation()
         {
+            if (!_rb.isKinematic)
+            {
+                _rb.linearVelocity = Vector3.zero;
+                _rb.angularVelocity = Vector3.zero;
+                _rb.constraints = RigidbodyConstraints.None;
+                _rb.useGravity = false;
+                _rb.isKinematic = true;
+            }
+
             _phase = Phase.Detonating;
             _plantedCenterY = _rb.position.y;
             _sequenceStart = Time.time;
@@ -561,6 +665,7 @@ namespace IssaPlugin.Items
                 _rb.angularVelocity = Vector3.zero;
             }
 
+            _rb.constraints = RigidbodyConstraints.None;
             _rb.useGravity = false;
             _rb.isKinematic = true;
         }
