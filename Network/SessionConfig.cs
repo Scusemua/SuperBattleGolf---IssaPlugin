@@ -3,8 +3,9 @@
 //
 // The client's BepInEx ConfigFile is never written by sync. Gameplay reads
 // ConfigEntry<T>.Value, and the getter patches below return the overlay value
-// when one exists. Diagnostics, UI, and key bindings are not put in the overlay,
-// so those reads stay on the local file.
+// when one exists. BoxedValue calls Value, and Save() reads BoxedValue, so those
+// reads are marked and keep returning the stored file value. Diagnostics, UI,
+// and key bindings are not put in the overlay, so those reads stay on the local file.
 //
 // The dictionary is dropped on disconnect and again when this process starts a
 // server. A crash or hard shutdown never wrote the host values, so the next
@@ -28,7 +29,17 @@ namespace IssaPlugin
         // synced read misses and falls through to the local file.
         private static Dictionary<ConfigDefinition, object> _values;
 
+        // BoxedValue's getter calls Value. Save() and ModConfig read BoxedValue,
+        // so while this is above zero the Value postfix must return the stored
+        // file value. Otherwise a hotkey edit mid-match would save the host snapshot.
+        private static int _rawReadDepth;
+
         internal static bool IsActive => _values != null;
+
+        /// <summary>
+        /// This process is a connected client and not the listen-server host.
+        /// </summary>
+        internal static bool IsRemoteClient => NetworkClient.active && !NetworkServer.active;
 
         /// <summary>
         /// True for entries the host should broadcast and a client should apply.
@@ -116,13 +127,6 @@ namespace IssaPlugin
                 return true;
             }
 
-            // A host string can serialize as empty and parse as null.
-            if (boxed == null && !typeof(T).IsValueType)
-            {
-                value = default;
-                return true;
-            }
-
             return false;
         }
 
@@ -150,17 +154,34 @@ namespace IssaPlugin
 
         private static void InstallGetter<T>(Harmony harmony)
         {
-            MethodInfo getter = AccessTools.PropertyGetter(typeof(ConfigEntry<T>), nameof(ConfigEntry<T>.Value));
-            MethodInfo postfix = AccessTools.Method(typeof(GetterPatch<T>), nameof(GetterPatch<T>.Postfix));
-            if (getter == null || postfix == null)
+            var entryType = typeof(ConfigEntry<T>);
+            MethodInfo valueGetter = AccessTools.PropertyGetter(entryType, nameof(ConfigEntry<T>.Value));
+            MethodInfo valuePostfix = AccessTools.Method(typeof(GetterPatch<T>), nameof(GetterPatch<T>.Postfix));
+            MethodInfo boxedGetter = AccessTools.PropertyGetter(entryType, nameof(ConfigEntry<T>.BoxedValue));
+            MethodInfo enterRaw = AccessTools.Method(typeof(SessionConfig), nameof(EnterRawRead));
+            MethodInfo exitRaw = AccessTools.Method(typeof(SessionConfig), nameof(ExitRawRead));
+            if (valueGetter == null || valuePostfix == null || boxedGetter == null || enterRaw == null || exitRaw == null)
             {
                 IssaPluginPlugin.Log.LogWarning(
-                    $"[SessionConfig] Could not patch ConfigEntry<{typeof(T).Name}>.Value."
+                    $"[SessionConfig] Could not patch ConfigEntry<{typeof(T).Name}>."
                 );
                 return;
             }
 
-            harmony.Patch(getter, postfix: new HarmonyMethod(postfix));
+            harmony.Patch(valueGetter, postfix: new HarmonyMethod(valuePostfix));
+            harmony.Patch(
+                boxedGetter,
+                prefix: new HarmonyMethod(enterRaw),
+                postfix: new HarmonyMethod(exitRaw)
+            );
+        }
+
+        private static void EnterRawRead() => _rawReadDepth++;
+
+        private static void ExitRawRead()
+        {
+            if (_rawReadDepth > 0)
+                _rawReadDepth--;
         }
 
         private static class GetterPatch<T>
@@ -168,12 +189,19 @@ namespace IssaPlugin
             public static void Postfix(ConfigEntry<T> __instance, ref T __result)
             {
                 // Inactive session: one null check, including every other mod's entries.
-                // Listen host: the real file wins even if a client snapshot was left behind.
-                if (!IsActive || NetworkServer.active)
+                // Raw reads (BoxedValue, Save, ModConfig) and the listen host keep the file.
+                if (_rawReadDepth > 0 || !IsActive || !IsRemoteClient)
                     return;
 
-                if (TryGet(__instance.Definition, out T value))
-                    __result = value;
+                if (!TryGet(__instance.Definition, out T value))
+                    return;
+
+                // Section and key are not unique across plugins. Only our file is overlaid.
+                ConfigFile config = IssaPluginPlugin.Instance?.Config;
+                if (config == null || __instance.ConfigFile != config)
+                    return;
+
+                __result = value;
             }
         }
     }

@@ -54,8 +54,8 @@ namespace IssaPlugin.Items
             System.Text.RegularExpressions.Regex.Replace(DisplayName, @"[^A-Za-z0-9]", "");
 
         // Set on non-host clients by SpawnWeightsSyncer.HandleSpawnWeights for all 6 pools.
-        // Cleared by SpawnWeightsSyncer.BroadcastWeightsIfChanged before each host resolution.
-        // Host always resolves fresh from config.
+        // SessionConfig.Clear drops them on disconnect and when a server starts or stops.
+        // The host also clears them before each weight broadcast, then reads config.
         private readonly float?[] _serverPoolWeights = new float?[6];
 
         internal void SetServerPoolWeight(int poolIndex, float weight) =>

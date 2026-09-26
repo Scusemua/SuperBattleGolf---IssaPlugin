@@ -222,9 +222,9 @@ namespace IssaPlugin
         /// <summary>Called on each client when a SpawnWeightsMessage arrives.</summary>
         internal static void HandleSpawnWeights(SpawnWeightsMessage msg)
         {
-            // Host is authoritative. After OnStopClient, a late packet must not
+            // Host is authoritative. After disconnect, a late packet must not
             // refill the pool-weight cache or the session overlay.
-            if (!NetworkClient.active || NetworkServer.active)
+            if (!SessionConfig.IsRemoteClient)
                 return;
 
             SessionConfig.Set(ModConfig.Global.CustomItemSpawnsEnabled, msg.CustomItemSpawnsEnabled);

@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using BepInEx.Configuration;
 using IssaPlugin.Items;
-using Mirror;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin
@@ -62,7 +61,7 @@ namespace IssaPlugin
             // Remote clients keep the match's toggles in the session overlay.
             // Writing ConfigEntry.Value here would save the vote into their cfg.
             // Create the overlay even when the first snapshot has not arrived yet.
-            if (NetworkClient.active && !NetworkServer.active)
+            if (SessionConfig.IsRemoteClient)
             {
                 SessionConfig.Set(entry, enabled);
                 return;

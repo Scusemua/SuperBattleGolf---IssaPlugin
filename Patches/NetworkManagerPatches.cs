@@ -2181,17 +2181,14 @@ namespace IssaPlugin.Patches
             yield return AccessTools.Method(typeof(BNetworkManager), "OnStopServer");
         }
 
-        static void Postfix(MethodBase __originalMethod)
+        static void Postfix()
         {
             ItemConfigSyncer.ResetSyncState();
             FirearmKnockback.Reset();
 
-            // A listen host who missed OnStopClient after being a client would
-            // otherwise spawn with the previous match's pool weights until the
-            // first spawn-weights tick. OnStopServer does not need this; leaving
-            // already clears through OnStopClient.
-            if (__originalMethod != null && __originalMethod.Name == "OnStartServer")
-                SessionConfig.Clear();
+            // Start drops a session left over from being a client. Stop covers a
+            // listen host whose OnStopClient does not run. Clear is idempotent.
+            SessionConfig.Clear();
         }
     }
 

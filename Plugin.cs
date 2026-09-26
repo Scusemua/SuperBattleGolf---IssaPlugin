@@ -127,12 +127,9 @@ namespace IssaPlugin
             Log.LogInfo("IssaPlugin unloaded.");
         }
 
-        /// A single config entry changed (in-game UI, another plugin, or BepInEx
-        /// applying a value). Invalidate the sync guard so the host re-broadcasts.
-        ///
-        /// On a client this also fires while applying the host's own sync message,
-        /// but ItemConfigSyncer.Broadcast() is a no-op off the server, so clearing
-        /// the sentinel there is harmless and cannot feed back to the host.
+        /// A local config entry changed (in-game UI, another plugin, or BepInEx
+        /// reloading the file). Invalidate the sync guard so the host re-broadcasts.
+        /// Applying a host snapshot does not write entries, so it does not raise this.
         private void OnConfigSettingChanged(object sender, SettingChangedEventArgs e)
         {
             ItemConfigSyncer.ResetSyncState();

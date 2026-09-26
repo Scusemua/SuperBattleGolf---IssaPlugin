@@ -151,7 +151,8 @@ namespace IssaPlugin
         ///
         /// Single source of truth for both send paths — Broadcast() and
         /// BroadcastToConnection() must never disagree about what gets synced.
-        /// GetSerializedValue is the stored file value, not the session overlay.
+        /// GetSerializedValue reads BoxedValue, which bypasses the session overlay,
+        /// so a listen host broadcasts its file even if a client snapshot is still up.
         /// </summary>
         private static void BuildSnapshot(out string[] keys, out string[] values)
         {
@@ -215,9 +216,9 @@ namespace IssaPlugin
         /// </summary>
         internal static void HandleConfigSync(ItemConfigSyncMessage msg)
         {
-            // The listen-server host is also a client; it keeps reading its own file.
-            // After OnStopClient, a late packet must not refill the overlay.
-            if (!NetworkClient.active || NetworkServer.active)
+            // The listen-server host keeps its own file. After disconnect, a late
+            // packet must not refill the overlay.
+            if (!SessionConfig.IsRemoteClient)
                 return;
 
             int count = msg.Keys?.Length ?? 0;
