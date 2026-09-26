@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 1949110030
+CRC: 4091061227
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 66fc0420293cf7be3be6dfe27d488612
+    Hash: 014f65d6b4ac7ae666f403b9be0980cf
   TypeTreeHash:
     serializedVersion: 2
     Hash: 5a8cce00eebcad12dd14cf3a32c3a8ad
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: b7bc47232430b7ef8901ef7fba360db0
+    Hash: 57161180abb032981cc3a665d7a72c98
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -178,6 +178,7 @@ Assets:
 - Assets/Assets/bullet_impact.prefab
 - Assets/Assets/moon.prefab
 - Assets/Assets/hunter_drone_handheld.prefab
+- Assets/Assets/orb_bomber_icon.png
 - Assets/Assets/baseball_glove.prefab
 - Assets/Assets/jetpack_icon.png
 - Assets/Assets/black_hole.prefab
@@ -193,6 +194,7 @@ Assets:
 - Assets/Assets/hair_dryer.prefab
 - Assets/Assets/gravity_remote_icon.png
 - Assets/Assets/teleporter_icon.png
+- Assets/Assets/orb_bomber_handheld.prefab
 - Assets/Assets/sniper_scope.png
 - Assets/Assets/GolfBalls/golf_ball_acorn.prefab
 - Assets/Assets/nuclear_bomb.prefab
@@ -207,6 +209,7 @@ Assets:
 - Assets/Assets/spike_ball_icon.png
 - Assets/Assets/ufo_abduction.prefab
 - Assets/Assets/night_icon.png
+- Assets/Assets/orb_bomber.prefab
 - Assets/Assets/javelin_rocket_launcher.prefab
 - Assets/Assets/smoke_trail_prefab.prefab
 - Assets/Assets/brick.prefab

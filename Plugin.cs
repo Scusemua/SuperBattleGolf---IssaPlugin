@@ -39,6 +39,7 @@ namespace IssaPlugin
 
             _harmony = new Harmony(PluginInfo.PLUGIN_GUID);
             _harmony.PatchAll(typeof(IssaPluginPlugin).Assembly);
+            SessionConfig.Install(_harmony);
             Log.LogInfo("Harmony patches applied.");
 
             // Optional: adds search, per-item filtering, and collapsible sections to the

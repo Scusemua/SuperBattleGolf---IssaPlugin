@@ -323,10 +323,9 @@ namespace IssaPlugin.Overlays
                     ModConfig.SetItemPoolWeight(items[i].ItemType, p, _workingPoolWeights[i, p]);
             }
             SpawnWeightsSyncer.ForceServerSync();
-            // Immediately push all ConfigEntry values (including the new per-pool weights and
-            // CustomItemSpawnRate) to clients so they don't need to wait for the next
-            // 5-second ItemConfigSyncer tick before their local config reflects the change.
-            // ForceBroadcast bypasses the change guard so the edit always goes out now.
+            // Push the host's synced entries immediately. Clients store them in the
+            // session overlay and do not write their own cfg. ForceBroadcast bypasses
+            // the change guard so the edit always goes out now.
             ItemConfigSyncer.ForceBroadcast();
         }
 

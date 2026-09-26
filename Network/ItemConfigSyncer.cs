@@ -1,7 +1,7 @@
 // ItemConfigSyncer.cs
 // Runs on the host. Every SyncInterval seconds it broadcasts the host's BepInEx
-// config entries to all clients so they use the host's authoritative values
-// rather than their own local defaults.
+// config entries to all clients. A remote client stores that snapshot in
+// SessionConfig and leaves its own cfg file untouched.
 //
 // This covers every item in one shot — no per-item sync messages needed.
 // The listen-server host skips applying the message it receives from itself.
@@ -25,7 +25,6 @@ using BepInEx.Configuration;
 using IssaPlugin.Network;
 using Mirror;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace IssaPlugin
 {
@@ -146,12 +145,13 @@ namespace IssaPlugin
         }
 
         /// <summary>
-        /// Builds the wire payload: every non-keybinding config entry as a
-        /// "Section::Key" string plus its serialized value, in ConfigFile
-        /// enumeration order.
+        /// Builds the wire payload: every synced config entry as a "Section::Key"
+        /// string plus its serialized value, in ConfigFile enumeration order.
+        /// Diagnostics, UI, and key bindings are omitted — see SessionConfig.ShouldSync.
         ///
         /// Single source of truth for both send paths — Broadcast() and
         /// BroadcastToConnection() must never disagree about what gets synced.
+        /// GetSerializedValue is the stored file value, not the session overlay.
         /// </summary>
         private static void BuildSnapshot(out string[] keys, out string[] values)
         {
@@ -161,8 +161,7 @@ namespace IssaPlugin
 
             foreach (KeyValuePair<ConfigDefinition, ConfigEntryBase> kv in cfg)
             {
-                // Skip keybinding entries — clients control their own key mappings.
-                if (kv.Value.SettingType == typeof(Key))
+                if (!SessionConfig.ShouldSync(kv.Value))
                     continue;
 
                 keyList.Add($"{kv.Key.Section}::{kv.Key.Key}");
@@ -212,45 +211,17 @@ namespace IssaPlugin
 
         /// <summary>
         /// Called on each client when an ItemConfigSyncMessage arrives from the host.
-        /// Applies each entry to the local BepInEx ConfigFile via SetSerializedValue.
+        /// Stores the snapshot in SessionConfig. The local cfg file is not modified.
         /// </summary>
         internal static void HandleConfigSync(ItemConfigSyncMessage msg)
         {
-            // The listen-server host is also a client; don't overwrite its own config.
-            if (NetworkServer.active)
+            // The listen-server host is also a client; it keeps reading its own file.
+            // After OnStopClient, a late packet must not refill the overlay.
+            if (!NetworkClient.active || NetworkServer.active)
                 return;
 
-            var cfg = IssaPluginPlugin.Instance.Config;
             int count = msg.Keys?.Length ?? 0;
-            int applied = 0;
-
-            // SetSerializedValue fires SettingChanged, which writes the whole config
-            // file to disk when SaveOnConfigSet is true. Applying a few hundred
-            // entries would otherwise mean a few hundred synchronous file writes on
-            // the main thread. Suppress saving for the batch and restore afterwards.
-            bool previousSaveOnConfigSet = cfg.SaveOnConfigSet;
-            cfg.SaveOnConfigSet = false;
-
-            try
-            {
-                for (int i = 0; i < count; i++)
-                {
-                    var parts = msg.Keys[i].Split(new[] { "::" }, 2, StringSplitOptions.None);
-                    if (parts.Length != 2)
-                        continue;
-
-                    var def = new ConfigDefinition(parts[0], parts[1]);
-                    if (!cfg.ContainsKey(def))
-                        continue;
-
-                    cfg[def].SetSerializedValue(msg.Values[i]);
-                    applied++;
-                }
-            }
-            finally
-            {
-                cfg.SaveOnConfigSet = previousSaveOnConfigSet;
-            }
+            int applied = SessionConfig.Replace(msg);
 
             // Info rather than Debug so it appears in a player's log. On a client
             // this should be rare — once on join, then only when the host actually

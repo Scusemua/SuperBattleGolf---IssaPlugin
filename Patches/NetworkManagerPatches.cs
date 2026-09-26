@@ -2123,7 +2123,11 @@ namespace IssaPlugin.Patches
         static System.Reflection.MethodBase TargetMethod() =>
             AccessTools.Method(typeof(BNetworkManager), "OnStopClient");
 
-        static void Postfix() => NetworkManagerRegisterPrefabsPatch.ResetRegistration();
+        static void Postfix()
+        {
+            NetworkManagerRegisterPrefabsPatch.ResetRegistration();
+            SessionConfig.Clear();
+        }
     }
 
     /// When a remote client signals ready (after OnStartClient has registered their
@@ -2177,10 +2181,17 @@ namespace IssaPlugin.Patches
             yield return AccessTools.Method(typeof(BNetworkManager), "OnStopServer");
         }
 
-        static void Postfix()
+        static void Postfix(MethodBase __originalMethod)
         {
             ItemConfigSyncer.ResetSyncState();
             FirearmKnockback.Reset();
+
+            // A listen host who missed OnStopClient after being a client would
+            // otherwise spawn with the previous match's pool weights until the
+            // first spawn-weights tick. OnStopServer does not need this; leaving
+            // already clears through OnStopClient.
+            if (__originalMethod != null && __originalMethod.Name == "OnStartServer")
+                SessionConfig.Clear();
         }
     }
 

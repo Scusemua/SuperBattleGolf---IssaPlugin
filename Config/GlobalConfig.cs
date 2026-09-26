@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using BepInEx.Configuration;
 using IssaPlugin.Items;
+using Mirror;
 using UnityEngine.InputSystem;
 
 namespace IssaPlugin
@@ -55,8 +56,19 @@ namespace IssaPlugin
 
         public void SetItemEnabled(ItemType itemType, bool enabled)
         {
-            if (_itemEnabledEntries.TryGetValue((int)itemType, out var e))
-                e.Value = enabled;
+            if (!_itemEnabledEntries.TryGetValue((int)itemType, out var entry))
+                return;
+
+            // Remote clients keep the match's toggles in the session overlay.
+            // Writing ConfigEntry.Value here would save the vote into their cfg.
+            // Create the overlay even when the first snapshot has not arrived yet.
+            if (NetworkClient.active && !NetworkServer.active)
+            {
+                SessionConfig.Set(entry, enabled);
+                return;
+            }
+
+            entry.Value = enabled;
         }
 
         // ── Per-item warning flags ────────────────────────────────────────────

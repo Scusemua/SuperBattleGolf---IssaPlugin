@@ -3,9 +3,10 @@ using Mirror;
 namespace IssaPlugin.Network
 {
     /// <summary>
-    /// Server → all clients: full dump of the host's BepInEx config file so clients
-    /// use the host's authoritative values instead of their own local defaults.
-    /// Sent by ItemConfigSyncer every 5 seconds while the server is active.
+    /// Server → all clients: full dump of the host's synced BepInEx entries.
+    /// Clients keep the snapshot in memory for the session and do not write it
+    /// into their own cfg. Sent by ItemConfigSyncer every 5 seconds while the
+    /// server is active, and once immediately when a client becomes ready.
     /// </summary>
     public struct ItemConfigSyncMessage : NetworkMessage
     {
