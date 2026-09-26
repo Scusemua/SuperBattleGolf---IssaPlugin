@@ -13,6 +13,15 @@ namespace IssaPlugin.Items
         {
             public Vector3 Anchor;
             public int Token;
+            public uint TargetNetId;
+            public Vector3 LocalPoint;
+        }
+
+        private enum AnchorView
+        {
+            Ready,
+            Waiting,
+            Lost,
         }
 
         private static Material _ropeMaterial;
@@ -37,19 +46,34 @@ namespace IssaPlugin.Items
 
         private LineRenderer _line;
         private Vector3 _anchor;
+        private uint _targetNetId;
+        private Vector3 _localPoint;
+        private Transform _target;
+        private bool _sawTarget;
+        private bool _targetGone;
         private int _shownToken;
         private int _shownGeneration;
         private bool _showing;
         private PlayerMovement _movement;
 
-        public static void ShowLocalRope(Vector3 anchor) =>
-            ShowLocalRope(anchor, GrapplingHookSession.Token);
-
-        // Token is the shot the server still has. A rejected re-anchor restores
-        // the previous one, which is no longer GrapplingHookSession.Token.
-        internal static void ShowLocalRope(Vector3 anchor, int token)
+        public static void ShowLocalRope(Vector3 anchor, uint targetNetId, Vector3 localPoint)
         {
-            LocalBridge()?.ShowRope(anchor, token);
+            LocalBridge()?.ShowRope(anchor, GrapplingHookSession.Token, targetNetId, localPoint);
+        }
+
+        // The swing reads the same point the rope is drawn to. A target that
+        // was never found, or was found and then disappeared, is lost: the
+        // swing lets go instead of hanging on an empty point.
+        internal static bool TryReadLocalAnchor(out Vector3 world)
+        {
+            var bridge = LocalBridge();
+            if (bridge == null)
+            {
+                world = default;
+                return false;
+            }
+
+            return bridge.ReadAnchor(owner: true, out world) == AnchorView.Ready;
         }
 
         public static void HideLocalRope()
@@ -68,7 +92,13 @@ namespace IssaPlugin.Items
                 NetworkClient.Send(new GrappleReleaseMessage());
         }
 
-        public static void SendFire(Vector3 anchor, int slotIndex, int token)
+        public static void SendFire(
+            Vector3 anchor,
+            int slotIndex,
+            int token,
+            uint targetNetId,
+            Vector3 localPoint
+        )
         {
             if (!NetworkClient.active)
                 return;
@@ -79,6 +109,8 @@ namespace IssaPlugin.Items
                     Anchor = anchor,
                     SlotIndex = slotIndex,
                     Token = token,
+                    TargetNetId = targetNetId,
+                    LocalPoint = localPoint,
                 }
             );
         }
@@ -121,6 +153,8 @@ namespace IssaPlugin.Items
                         Anchor = pair.Value.Anchor,
                         Token = pair.Value.Token,
                         Generation = _generation,
+                        TargetNetId = pair.Value.TargetNetId,
+                        LocalPoint = pair.Value.LocalPoint,
                     }
                 );
             }
@@ -157,7 +191,13 @@ namespace IssaPlugin.Items
             GrapplingHookSession.ForceStop(false);
         }
 
-        public void ServerHandleFire(Vector3 anchor, int slotIndex, int token)
+        public void ServerHandleFire(
+            Vector3 anchor,
+            int slotIndex,
+            int token,
+            uint targetNetId,
+            Vector3 localPoint
+        )
         {
             if (!isServer)
                 return;
@@ -199,8 +239,33 @@ namespace IssaPlugin.Items
                 return;
             }
 
+            // A moving anchor has to be a spawned object other than the shooter.
+            // The world point is the client's; occupied carts and other players
+            // are not where the server thinks they are, so the local offset is
+            // only checked for size.
+            if (targetNetId != 0)
+            {
+                if (
+                    targetNetId == netId
+                    || !IsFinite(localPoint)
+                    || localPoint.sqrMagnitude
+                        > GrapplingHookItem.MaxLocalOffset * GrapplingHookItem.MaxLocalOffset
+                    || !NetworkServer.spawned.ContainsKey(targetNetId)
+                )
+                {
+                    Reject(token);
+                    return;
+                }
+            }
+
             ItemHelper.ConsumeItemAtSlot(inventory, slotIndex);
-            ServerGrapples[netId] = new ServerGrapple { Anchor = anchor, Token = token };
+            ServerGrapples[netId] = new ServerGrapple
+            {
+                Anchor = anchor,
+                Token = token,
+                TargetNetId = targetNetId,
+                LocalPoint = localPoint,
+            };
             NetworkServer.SendToAll(
                 new GrappleAnchorMessage
                 {
@@ -208,6 +273,8 @@ namespace IssaPlugin.Items
                     Anchor = anchor,
                     Token = token,
                     Generation = _generation,
+                    TargetNetId = targetNetId,
+                    LocalPoint = localPoint,
                 }
             );
         }
@@ -222,7 +289,11 @@ namespace IssaPlugin.Items
 
         public static void HandleAnchor(GrappleAnchorMessage msg)
         {
-            if (!IsFinite(msg.Anchor) || !AcceptGeneration(msg.Generation, out bool raised))
+            if (
+                !IsFinite(msg.Anchor)
+                || (msg.TargetNetId != 0 && !IsFinite(msg.LocalPoint))
+                || !AcceptGeneration(msg.Generation, out bool raised)
+            )
                 return;
 
             if (!NetworkClient.spawned.TryGetValue(msg.PlayerNetId, out var identity))
@@ -301,6 +372,13 @@ namespace IssaPlugin.Items
             if (!_showing || _line == null)
                 return;
 
+            if (_targetNetId != 0)
+            {
+                AnchorView view = ReadAnchor(owner: false, out Vector3 world);
+                if (view == AnchorView.Ready)
+                    _anchor = world;
+            }
+
             float scale = Movement != null ? Movement.CharacterScale : 1f;
             Vector3 start = transform.position + Vector3.up * (1.2f * scale);
             _line.SetPosition(0, start);
@@ -320,12 +398,24 @@ namespace IssaPlugin.Items
                 GrapplingHookSession.Confirm(msg.Token);
             }
 
-            ShowRope(msg.Anchor, msg.Token);
+            ShowRope(msg.Anchor, msg.Token, msg.TargetNetId, msg.LocalPoint);
         }
 
-        private void ShowRope(Vector3 anchor, int token)
+        private void ShowRope(Vector3 anchor, int token, uint targetNetId, Vector3 localPoint)
         {
-            _anchor = anchor;
+            // The owner's confirm repeats the shot they already drew. Keep the
+            // point that is already following the object.
+            bool sameShot = _showing && _shownToken == token && _targetNetId == targetNetId;
+            if (!sameShot)
+            {
+                _anchor = anchor;
+                _target = null;
+                _sawTarget = false;
+                _targetGone = false;
+            }
+
+            _targetNetId = targetNetId;
+            _localPoint = localPoint;
             _shownToken = token;
             _shownGeneration = _generation;
             _showing = true;
@@ -340,8 +430,66 @@ namespace IssaPlugin.Items
             _showing = false;
             _shownToken = 0;
             _shownGeneration = 0;
+            _targetNetId = 0;
+            _localPoint = Vector3.zero;
+            _target = null;
+            _sawTarget = false;
+            _targetGone = false;
             if (_line != null)
                 _line.enabled = false;
+        }
+
+        // World point when the target id is 0. Otherwise the stored offset on
+        // that object's transform. Remotes that have not seen it yet keep the
+        // point from the fire message. Once it has been seen, a missing
+        // transform stays missing even if the id is reused.
+        private AnchorView ReadAnchor(bool owner, out Vector3 world)
+        {
+            world = _anchor;
+            if (_targetNetId == 0)
+                return AnchorView.Ready;
+
+            if (_targetGone)
+                return AnchorView.Lost;
+
+            if (_target != null)
+                return FollowTarget(out world) ? AnchorView.Ready : AnchorView.Lost;
+
+            if (_sawTarget)
+            {
+                _targetGone = true;
+                return AnchorView.Lost;
+            }
+
+            if (
+                NetworkClient.spawned.TryGetValue(_targetNetId, out var identity)
+                && identity != null
+            )
+            {
+                _target = identity.transform;
+                _sawTarget = true;
+                return FollowTarget(out world) ? AnchorView.Ready : AnchorView.Lost;
+            }
+
+            if (owner)
+            {
+                _targetGone = true;
+                return AnchorView.Lost;
+            }
+
+            return AnchorView.Waiting;
+        }
+
+        private bool FollowTarget(out Vector3 world)
+        {
+            world = _target.TransformPoint(_localPoint);
+            if (IsFinite(world))
+                return true;
+
+            _targetGone = true;
+            _target = null;
+            world = _anchor;
+            return false;
         }
 
         private void HideRope(int token)

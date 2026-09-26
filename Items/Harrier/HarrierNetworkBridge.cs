@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using IssaPlugin.Network;
 using Mirror;
@@ -33,9 +34,58 @@ namespace IssaPlugin.Items
         public bool PendingHarrierHoming;
 
         private bool _serverRoutineActive;
-        private bool _shotDown;
         private Coroutine _serverRoutine;
         private GameObject _serverHarrier;
+
+        /// <summary>
+        /// Straight-line inbound path: spawn uprange of the station point, hover there,
+        /// then continue past it to leave. Endpoints are raised together so the whole
+        /// path clears terrain.
+        /// </summary>
+        private readonly struct FlightPlan
+        {
+            public readonly Vector3 MapCenter;
+            public readonly Vector3 HoverPosition;
+            public readonly Vector3 SpawnPosition;
+            public readonly Vector3 FlyOutPosition;
+            public readonly float ApproachDistance;
+
+            public FlightPlan(
+                Vector3 mapCenter,
+                Vector3 hoverPosition,
+                Vector3 spawnPosition,
+                Vector3 flyOutPosition,
+                float approachDistance
+            )
+            {
+                MapCenter = mapCenter;
+                HoverPosition = hoverPosition;
+                SpawnPosition = spawnPosition;
+                FlyOutPosition = flyOutPosition;
+                ApproachDistance = approachDistance;
+            }
+        }
+
+        /// <summary>
+        /// State for one server-side run, shared by the phase methods and the hit
+        /// callbacks. The shot-down flag lives here so a hit during fly-in and the
+        /// coroutine agree without a field on the player bridge.
+        /// </summary>
+        private sealed class ServerSession
+        {
+            public readonly PlayerInventory Inventory;
+            public readonly FlightPlan Plan;
+
+            public GameObject Vehicle;
+            public HarrierBehaviour Behaviour;
+            public bool IsShotDown;
+
+            public ServerSession(PlayerInventory inventory, FlightPlan plan)
+            {
+                Inventory = inventory;
+                Plan = plan;
+            }
+        }
 
         // ================================================================
         //  Client state (local client only)

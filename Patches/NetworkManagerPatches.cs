@@ -1772,7 +1772,13 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<GrappleFireMessage>(
                     (conn, msg) =>
                         GetBridge<GrapplingHookNetworkBridge>(conn)
-                            ?.ServerHandleFire(msg.Anchor, msg.SlotIndex, msg.Token)
+                            ?.ServerHandleFire(
+                                msg.Anchor,
+                                msg.SlotIndex,
+                                msg.Token,
+                                msg.TargetNetId,
+                                msg.LocalPoint
+                            )
                 );
                 NetworkServer.RegisterHandler<GrappleReleaseMessage>(
                     (conn, msg) =>

@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 1656150454
+CRC: 1861874037
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 17e9f570f98850d57f490e3dfb8f4ba0
+    Hash: 04b2b1fd59e3d38b1673a194a55229e4
   TypeTreeHash:
     serializedVersion: 2
     Hash: 5a8cce00eebcad12dd14cf3a32c3a8ad
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 3f5347aa1e0bb8fb0ab21569afb3c85f
+    Hash: 89f2fbfc456cc96cde915d08803ad567
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -77,6 +77,7 @@ SerializeReferenceClassIdentifiers:
 - AssemblyName: UnityEngine.CoreModule
   ClassName: UnityEngine.RenderingLayerMask
 Assets:
+- Assets/Assets/grappling_hook_icon.png
 - Assets/Assets/shotgun_remington870.prefab
 - Assets/Assets/aa12_icon.png
 - Assets/Assets/ac130_model.prefab
@@ -84,13 +85,13 @@ Assets:
 - Assets/Assets/jetpack.prefab
 - Assets/Assets/missile_icon.png
 - Assets/Assets/harrier.prefab
-- Assets/Assets/bomber_proxy.prefab
+- Assets/Assets/minigun.prefab
 - Assets/Assets/gravity_gun_icon.png
 - Assets/Assets/ConfettiBlastRainbow.prefab
 - Assets/Assets/warning_particle.prefab
 - Assets/Assets/GolfBalls/golf_ball_cone.prefab
 - Assets/Assets/donut_icon.png
-- Assets/Assets/hunter_drone_icon.png
+- Assets/Assets/bomber_proxy.prefab
 - Assets/Assets/weather_remote.prefab
 - Assets/Assets/GolfBalls/golf_ball_disk.prefab
 - Assets/Assets/teleporter_handheld.prefab
@@ -107,6 +108,7 @@ Assets:
 - Assets/Assets/donut_icon_v2.png
 - Assets/Assets/bomb_for_exploding_balls.prefab
 - Assets/Assets/cube_ball_icon.png
+- Assets/Assets/hunter_drone_icon.png
 - Assets/Assets/flamethrower.prefab
 - Assets/Assets/gravity_gun_vfx.prefab
 - Assets/Assets/remington870_icon.png
@@ -218,12 +220,12 @@ Assets:
 - Assets/Assets/NukeExplosionFire.prefab
 - Assets/Assets/shotgun_bullet.prefab
 - Assets/Assets/bear_icon.png
-- Assets/Assets/golf_cart_launcher_icon.png
+- Assets/Assets/minigun_icon.png
 - Assets/Assets/nuclear_detonator.prefab
-- Assets/Assets/blood_splatter_critical.prefab
+- Assets/Assets/golf_cart_launcher_icon.png
 - Assets/Assets/rocket_tether_icon.png
 - Assets/Assets/donut_vehicle.prefab
-- Assets/Assets/grappling_hook_icon.png
+- Assets/Assets/blood_splatter_critical.prefab
 - Assets/Assets/black_hole_grenade_icon.png
 - Assets/Assets/glove_ball_indicator.png
 Dependencies: []

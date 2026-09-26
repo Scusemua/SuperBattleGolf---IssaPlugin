@@ -17,9 +17,13 @@ namespace IssaPlugin.Items
     /// airborne keeps swing momentum without also inheriting that uncapped
     /// acceleration. Vertical velocity is left as the game wrote it, so gravity
     /// still runs. The rope only removes velocity aimed away from the anchor.
+    /// A moving anchor's speed is included while the rope is tight. It is kept
+    /// apart from the swing so the next step does not add it again.
     /// </summary>
     internal static class GrapplingHookSession
     {
+        private const float TeleportDistanceSqr = 625f;
+
         public static bool IsAttached { get; private set; }
 
         /// While attached: pay rope in, pay it back out toward the length at
@@ -39,22 +43,21 @@ namespace IssaPlugin.Items
         private static Vector3 _lastPosition;
         private static bool _hasLastPosition;
 
+        // Tight rope: saved velocity is the swing, and _anchorCarry is the
+        // anchor speed added on top. Slack folds that speed into the swing and
+        // clears both. _pendingCarry stays set until the first tight step, so
+        // that step can pick up a moving anchor without treating the speed you
+        // already had as the anchor's.
+        private static bool _hasPrevAnchor;
+        private static Vector3 _prevAnchor;
+        private static bool _savedIsRelative;
+        private static bool _pendingCarry;
+        private static Vector3 _anchorCarry;
+
         private static bool _hasUndo;
-        private static bool _undoAttached;
-        private static int _undoToken;
-        private static Vector3 _undoAnchor;
-        private static float _undoLength;
-        private static float _undoRopeLimit;
-        private static Vector3 _undoVelocity;
 
         public static void Attach(Vector3 anchor, float length, Vector3 velocity)
         {
-            _undoAttached = IsAttached;
-            _undoToken = Token;
-            _undoAnchor = _anchor;
-            _undoLength = _ropeLength;
-            _undoRopeLimit = _ropeLimit;
-            _undoVelocity = _savedVelocity;
             _hasUndo = true;
 
             Token++;
@@ -62,11 +65,16 @@ namespace IssaPlugin.Items
             _isLaunching = false;
             Reel = ReelDirection.None;
             _anchor = anchor;
+            _prevAnchor = anchor;
+            _hasPrevAnchor = true;
             _ropeLength = Mathf.Max(0.5f, length);
             _ropeLimit = _ropeLength;
             _savedVelocity = velocity;
-            // A teleport between swings must not look like a discontinuity on the
-            // first step of the new rope.
+            _savedIsRelative = false;
+            _pendingCarry = true;
+            _anchorCarry = Vector3.zero;
+            // A teleport between swings must not look like a discontinuity on
+            // the first step of the new rope.
             _hasLastPosition = false;
         }
 
@@ -82,18 +90,6 @@ namespace IssaPlugin.Items
                 return;
 
             _hasUndo = false;
-            if (_undoAttached)
-            {
-                IsAttached = true;
-                _isLaunching = false;
-                _anchor = _undoAnchor;
-                _ropeLength = _undoLength;
-                _ropeLimit = _undoRopeLimit;
-                _savedVelocity = _undoVelocity;
-                GrapplingHookNetworkBridge.ShowLocalRope(_anchor, _undoToken);
-                return;
-            }
-
             StopLocal();
             GrapplingHookNetworkBridge.HideLocalRope();
         }
@@ -104,6 +100,16 @@ namespace IssaPlugin.Items
             if (!IsAttached)
                 return;
 
+            // Saved speed is relative to the anchor while the rope is tight.
+            // Put the anchor's speed back before the launch grace reads it.
+            if (_savedIsRelative)
+            {
+                _savedVelocity += _anchorCarry;
+                _savedIsRelative = false;
+            }
+
+            _anchorCarry = Vector3.zero;
+            _pendingCarry = false;
             IsAttached = false;
             Reel = ReelDirection.None;
             _isLaunching = true;
@@ -167,7 +173,7 @@ namespace IssaPlugin.Items
             }
 
             Vector3 position = movement.Position;
-            if (_hasLastPosition && (position - _lastPosition).sqrMagnitude > 625f)
+            if (_hasLastPosition && (position - _lastPosition).sqrMagnitude > TeleportDistanceSqr)
             {
                 _lastPosition = position;
                 ForceStop(true);
@@ -193,6 +199,9 @@ namespace IssaPlugin.Items
             if (!IsAttached)
                 return false;
 
+            if (!PrepareAnchor(out Vector3 anchorVelocity))
+                return false;
+
             float dt = Time.fixedDeltaTime;
             float reel = Mathf.Max(0f, ModConfig.GrapplingHook.ReelSpeed.Value) * dt;
             if (Reel == ReelDirection.In)
@@ -209,10 +218,18 @@ namespace IssaPlugin.Items
             Vector3 fromAnchor = position - _anchor;
             float distance = fromAnchor.magnitude;
             Vector3 outward = distance > 0.001f ? fromAnchor / distance : Vector3.up;
-
+            bool taut = distance > _ropeLength && distance > 0.001f;
             bool airborne = !movement.IsGrounded;
+
+            // Slack already contains the anchor's speed. Take it back out once
+            // before this tight step adds the anchor's current speed.
+            bool foldAnchor = airborne && taut && !_savedIsRelative && !_pendingCarry;
+            Vector3 swing = _savedVelocity;
+            if (foldAnchor)
+                swing -= anchorVelocity;
+
             Vector3 horizontal = airborne
-                ? new Vector3(_savedVelocity.x, 0f, _savedVelocity.z)
+                ? new Vector3(swing.x, 0f, swing.z)
                 : new Vector3(gameVelocity.x, 0f, gameVelocity.z);
 
             if (airborne && wish.sqrMagnitude > 0.01f)
@@ -227,27 +244,100 @@ namespace IssaPlugin.Items
                 }
             }
 
-            velocity = new Vector3(horizontal.x, gameVelocity.y, horizontal.z);
+            // Gravity is already in the game's vertical speed. While the rope is
+            // tight that number also still holds the anchor's vertical speed from
+            // the previous step, so take that part off before adding the current one.
+            float vertical = gameVelocity.y;
+            if (airborne && taut && _savedIsRelative)
+                vertical -= _anchorCarry.y;
+            else if (foldAnchor)
+                vertical -= anchorVelocity.y;
 
-            if (distance > _ropeLength && distance > 0.001f)
+            velocity = new Vector3(horizontal.x, vertical, horizontal.z);
+
+            if (taut)
             {
                 correctedPosition = _anchor + outward * _ropeLength;
                 correctPosition = (correctedPosition - position).sqrMagnitude > 0.000001f;
                 float outwardSpeed = Vector3.Dot(velocity, outward);
                 if (outwardSpeed > 0f)
                     velocity -= outward * outwardSpeed;
+
+                // On the ground the game owns walking. Adding the anchor here
+                // would stack on top of the speed written last step.
+                if (airborne)
+                {
+                    velocity += anchorVelocity;
+                    _savedVelocity = velocity - anchorVelocity;
+                    _savedIsRelative = true;
+                    _anchorCarry = anchorVelocity;
+                    _pendingCarry = false;
+                }
+                else
+                {
+                    _savedVelocity = velocity;
+                    _savedIsRelative = false;
+                    _anchorCarry = Vector3.zero;
+                }
             }
             else if (!airborne)
             {
                 _savedVelocity = gameVelocity;
+                _savedIsRelative = false;
+                _anchorCarry = Vector3.zero;
                 _lastPosition = position;
                 _hasLastPosition = true;
                 return false;
             }
+            else if (_savedIsRelative)
+            {
+                velocity.x += _anchorCarry.x;
+                velocity.z += _anchorCarry.z;
+                _savedVelocity = velocity;
+                _savedIsRelative = false;
+                _anchorCarry = Vector3.zero;
+            }
+            else
+            {
+                _savedVelocity = velocity;
+            }
 
-            _savedVelocity = velocity;
             _lastPosition = correctPosition ? correctedPosition : position;
             _hasLastPosition = true;
+            return true;
+        }
+
+        // Resolve the anchor, then keep its speed for this step. A missing
+        // target or a target that jumped lets go and keeps the swing.
+        private static bool PrepareAnchor(out Vector3 anchorVelocity)
+        {
+            anchorVelocity = Vector3.zero;
+            if (
+                !GrapplingHookNetworkBridge.TryReadLocalAnchor(out Vector3 world)
+                || !IsFinite(world)
+            )
+            {
+                Release();
+                return false;
+            }
+
+            if (_hasPrevAnchor)
+            {
+                Vector3 delta = world - _prevAnchor;
+                if (delta.sqrMagnitude > TeleportDistanceSqr)
+                {
+                    Release();
+                    return false;
+                }
+
+                float step = Time.fixedDeltaTime;
+                if (step > 0f)
+                    anchorVelocity = delta / step;
+            }
+
+            _prevAnchor = world;
+            _hasPrevAnchor = true;
+            _anchor = world;
             return true;
         }
 
@@ -258,6 +348,13 @@ namespace IssaPlugin.Items
             Reel = ReelDirection.None;
             _hasUndo = false;
             _hasLastPosition = false;
+            _hasPrevAnchor = false;
+            _savedIsRelative = false;
+            _pendingCarry = false;
+            _anchorCarry = Vector3.zero;
         }
+
+        private static bool IsFinite(Vector3 v) =>
+            float.IsFinite(v.x) && float.IsFinite(v.y) && float.IsFinite(v.z);
     }
 }

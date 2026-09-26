@@ -8,6 +8,8 @@ namespace IssaPlugin.Items
         public Vector3 Anchor;
         public int SlotIndex;
         public int Token;
+        public uint TargetNetId;
+        public Vector3 LocalPoint;
     }
 
     public struct GrappleAnchorMessage : NetworkMessage
@@ -16,6 +18,8 @@ namespace IssaPlugin.Items
         public Vector3 Anchor;
         public int Token;
         public int Generation;
+        public uint TargetNetId;
+        public Vector3 LocalPoint;
     }
 
     public struct GrappleRejectMessage : NetworkMessage
@@ -39,6 +43,8 @@ namespace IssaPlugin.Items
             writer.WriteVector3(msg.Anchor);
             writer.WriteInt(msg.SlotIndex);
             writer.WriteInt(msg.Token);
+            writer.WriteUInt(msg.TargetNetId);
+            writer.WriteVector3(msg.LocalPoint);
         }
 
         public static GrappleFireMessage ReadFire(NetworkReader reader) =>
@@ -47,6 +53,8 @@ namespace IssaPlugin.Items
                 Anchor = reader.ReadVector3(),
                 SlotIndex = reader.ReadInt(),
                 Token = reader.ReadInt(),
+                TargetNetId = reader.ReadUInt(),
+                LocalPoint = reader.ReadVector3(),
             };
 
         public static void WriteAnchor(NetworkWriter writer, GrappleAnchorMessage msg)
@@ -55,6 +63,8 @@ namespace IssaPlugin.Items
             writer.WriteVector3(msg.Anchor);
             writer.WriteInt(msg.Token);
             writer.WriteInt(msg.Generation);
+            writer.WriteUInt(msg.TargetNetId);
+            writer.WriteVector3(msg.LocalPoint);
         }
 
         public static GrappleAnchorMessage ReadAnchor(NetworkReader reader) =>
@@ -64,6 +74,8 @@ namespace IssaPlugin.Items
                 Anchor = reader.ReadVector3(),
                 Token = reader.ReadInt(),
                 Generation = reader.ReadInt(),
+                TargetNetId = reader.ReadUInt(),
+                LocalPoint = reader.ReadVector3(),
             };
 
         public static void WriteReject(NetworkWriter writer, GrappleRejectMessage msg) =>

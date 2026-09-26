@@ -1,3 +1,4 @@
+using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -6,11 +7,15 @@ namespace IssaPlugin.Items
     public static class GrapplingHookItem
     {
         private const float MinAttachDistance = 0.75f;
+        internal const float MaxLocalOffset = 100f;
 
         // TryUseItem can fire again while the button is still held. One click
         // attaches once; the next click is a new press.
         private static bool _firedWhileHeld;
-        private static readonly RaycastHit[] AimHits = new RaycastHit[32];
+
+        // The combined ground and hittable masks can fill a short buffer and
+        // drop the closest surface.
+        private static readonly RaycastHit[] AimHits = new RaycastHit[64];
 
         internal readonly struct AimSample
         {
@@ -18,13 +23,24 @@ namespace IssaPlugin.Items
             public readonly bool Valid;
             public readonly Vector3 Point;
             public readonly Vector3 Normal;
+            public readonly uint TargetNetId;
+            public readonly Vector3 LocalPoint;
 
-            public AimSample(bool hit, bool valid, Vector3 point, Vector3 normal)
+            public AimSample(
+                bool hit,
+                bool valid,
+                Vector3 point,
+                Vector3 normal,
+                uint targetNetId,
+                Vector3 localPoint
+            )
             {
                 Hit = hit;
                 Valid = valid;
                 Point = point;
                 Normal = normal;
+                TargetNetId = targetNetId;
+                LocalPoint = localPoint;
             }
         }
 
@@ -62,18 +78,22 @@ namespace IssaPlugin.Items
             float castRange =
                 maxRange
                 + Mathf.Min(80f, Vector3.Distance(cam.transform.position, movement.Position));
+            int groundMask = GameManager.LayerSettings.PlayerGroundableMask;
             int hitCount = Physics.RaycastNonAlloc(
                 ray,
                 AimHits,
                 castRange,
-                GameManager.LayerSettings.PlayerGroundableMask,
+                groundMask | GameManager.LayerSettings.GunHittablesMask,
                 QueryTriggerInteraction.Ignore
             );
 
             var body = inventory.PlayerInfo.Rigidbody;
+            uint selfId = inventory.GetComponentInParent<NetworkIdentity>()?.netId ?? 0u;
             bool found = false;
             float bestDistance = float.MaxValue;
             RaycastHit hit = default;
+            uint bestId = 0;
+            Vector3 bestLocal = Vector3.zero;
             for (int i = 0; i < hitCount; i++)
             {
                 RaycastHit candidate = AimHits[i];
@@ -84,11 +104,39 @@ namespace IssaPlugin.Items
                     continue;
                 if (body != null && col.attachedRigidbody == body)
                     continue;
+
+                var hitPlayer = col.GetComponentInParent<PlayerInfo>();
+                if (hitPlayer != null && hitPlayer == inventory.PlayerInfo)
+                    continue;
+
+                var identity = col.GetComponentInParent<NetworkIdentity>();
+                uint targetId = identity != null ? identity.netId : 0u;
+                if (targetId != 0 && targetId == selfId)
+                    continue;
+
+                Vector3 localPoint = Vector3.zero;
+                if (targetId != 0)
+                {
+                    localPoint = identity.transform.InverseTransformPoint(candidate.point);
+                    // Skip a point this client cannot follow, and keep looking down the ray.
+                    if (
+                        !IsFinite(localPoint)
+                        || localPoint.sqrMagnitude > MaxLocalOffset * MaxLocalOffset
+                        || !NetworkClient.active
+                        || !NetworkClient.spawned.ContainsKey(targetId)
+                    )
+                        continue;
+                }
+                else if ((groundMask & (1 << col.gameObject.layer)) == 0)
+                    continue;
+
                 if (candidate.distance >= bestDistance)
                     continue;
 
                 bestDistance = candidate.distance;
                 hit = candidate;
+                bestId = targetId;
+                bestLocal = localPoint;
                 found = true;
             }
 
@@ -100,7 +148,7 @@ namespace IssaPlugin.Items
             float length = Vector3.Distance(movement.Position, hit.point);
             bool valid =
                 HasUse(inventory) && length >= MinAttachDistance && length <= maxRange;
-            return new AimSample(true, valid, hit.point, hit.normal);
+            return new AimSample(true, valid, hit.point, hit.normal, bestId, bestLocal);
         }
 
         private static void TryFire(PlayerInventory inventory)
@@ -113,9 +161,18 @@ namespace IssaPlugin.Items
             var movement = inventory.PlayerInfo.Movement;
             float length = Vector3.Distance(movement.Position, aim.Point);
             GrapplingHookSession.Attach(aim.Point, length, movement.Velocity);
-            GrapplingHookNetworkBridge.ShowLocalRope(aim.Point);
-            GrapplingHookNetworkBridge.SendFire(aim.Point, slot, GrapplingHookSession.Token);
+            GrapplingHookNetworkBridge.ShowLocalRope(aim.Point, aim.TargetNetId, aim.LocalPoint);
+            GrapplingHookNetworkBridge.SendFire(
+                aim.Point,
+                slot,
+                GrapplingHookSession.Token,
+                aim.TargetNetId,
+                aim.LocalPoint
+            );
         }
+
+        private static bool IsFinite(Vector3 v) =>
+            float.IsFinite(v.x) && float.IsFinite(v.y) && float.IsFinite(v.z);
 
         private static bool CanFire(PlayerInventory inventory, out PlayerMovement movement)
         {
