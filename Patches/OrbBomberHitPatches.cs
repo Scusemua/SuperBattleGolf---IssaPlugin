@@ -38,7 +38,7 @@ namespace IssaPlugin.Patches
 
                 var colliders = Physics.OverlapSphere(
                     swingCenter,
-                    OrbBomberBehaviour.SwingOverlapRadius + 3f,
+                    OrbBomberBehaviour.SwingProbeRadius,
                     Physics.AllLayers,
                     QueryTriggerInteraction.Collide
                 );
@@ -80,7 +80,7 @@ namespace IssaPlugin.Patches
             );
             var colliders = Physics.OverlapSphere(
                 swingCenter,
-                OrbBomberBehaviour.SwingOverlapRadius + 3f,
+                OrbBomberBehaviour.SwingProbeRadius,
                 Physics.AllLayers,
                 QueryTriggerInteraction.Collide
             );

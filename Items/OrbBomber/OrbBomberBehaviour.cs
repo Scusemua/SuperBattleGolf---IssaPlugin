@@ -14,6 +14,7 @@ namespace IssaPlugin.Items
         public const float ImpactIgnoreSeconds = 0.35f;
         public const float MinImpactSpeed = 3.5f;
         public const float SwingOverlapRadius = 1.75f;
+        public const float SwingProbeRadius = SwingOverlapRadius + 3f;
 
         private const float UpwardBias = 0.5f;
         private const float SpinPerImpulse = 0.55f;
@@ -195,10 +196,10 @@ namespace IssaPlugin.Items
                 var cartBody = cart.GetComponent<Rigidbody>() ?? cart.GetComponentInChildren<Rigidbody>();
                 bool cartSimulated =
                     cartBody != null && !cartBody.isKinematic && cartBody.linearVelocity.sqrMagnitude >= 1f;
-                // A simulated cart can push a dynamic body on its own, but only
-                // once the chase has stopped writing velocity.
+                // A simulated cart pushes a dynamic body on its own once the
+                // chase has stopped writing velocity. Keep scanning other hits.
                 if (_phase != Phase.Approach && !_rb.isKinematic && cartSimulated)
-                    return;
+                    continue;
 
                 if (ApplyCartKnock(velocity))
                     return;
@@ -250,21 +251,12 @@ namespace IssaPlugin.Items
             if (cartVelocity.sqrMagnitude < CartMinSpeed * CartMinSpeed)
                 return false;
 
-            if (_phase == Phase.Detonating)
-                _mustLeaveRange = true;
-            InterruptDetonationVisual();
-            ReleaseToPhysics(clearVelocity: true);
-            AddAnger();
-
             Vector3 direction = cartVelocity.normalized;
             float speed = cartVelocity.magnitude * CartKnockScale;
-            _rb.linearVelocity = direction * speed + Vector3.up * Mathf.Clamp(speed * 0.15f, 0.5f, 3f);
-            ApplyTumble(direction, speed);
-
-            _phase = Phase.Flung;
-            _ignoreUntil = Time.time + ImpactIgnoreSeconds;
-            _leftGround = false;
-            _pendingFastContact = false;
+            Fling(
+                direction * speed + Vector3.up * Mathf.Clamp(speed * 0.15f, 0.5f, 3f),
+                TumbleSpin(direction, speed)
+            );
             _cartKnockCooldown = Time.time + 0.45f;
             return true;
         }
@@ -286,13 +278,7 @@ namespace IssaPlugin.Items
                 return;
 
             bool isVictim = swingerIdentity.netId == VictimNetId;
-            bool wasDetonating = _phase == Phase.Detonating;
-            if (wasDetonating)
-                _mustLeaveRange = true;
             _swingLockUntil = Time.time + 0.5f;
-            AddAnger();
-            InterruptDetonationVisual();
-            _phase = Phase.Flung;
 
             Vector3 away = transform.position - swinger.transform.position;
             if (away.sqrMagnitude < 0.0001f)
@@ -305,19 +291,9 @@ namespace IssaPlugin.Items
                 Mathf.Max(0f, ModConfig.OrbBomber.ClubKnockbackForce.Value)
                 * SwingForceMultiplier(swinger);
 
-            // AddForce is ignored on the frame a kinematic body becomes dynamic,
-            // which is exactly the detonation pose. Write velocity directly and
-            // once more next tick so a queued MovePosition cannot pin it.
-            ReleaseToPhysics(clearVelocity: true);
-            _knockVelocity = knockDir * force;
-            _knockSpin = TumbleSpin(knockDir, force);
-            _rb.linearVelocity = _knockVelocity;
-            _rb.angularVelocity = _knockSpin;
-            _reapplyKnock = true;
-
-            _ignoreUntil = Time.time + ImpactIgnoreSeconds;
-            _leftGround = false;
-            _pendingFastContact = false;
+            // Velocity is written directly. AddForce is ignored on the frame a
+            // kinematic body, such as a detonating orb, becomes dynamic.
+            Fling(knockDir * force, TumbleSpin(knockDir, force));
             if (isVictim)
             {
                 _impactArmed =
@@ -326,28 +302,20 @@ namespace IssaPlugin.Items
         }
 
         /// Black hole suction already called AddForce. Stay dynamic and let that force stick.
-        public void NotifyBlackHoleSuction()
-        {
-            if (_finished || _rb == null)
-                return;
-
-            bool firstDisrupt = _phase != Phase.Flung;
-            _blackHoleSuppressedUntil = Time.fixedTime + Time.fixedDeltaTime * 2f;
-            InterruptDetonationVisual();
-            ReleaseToPhysics(clearVelocity: false);
-            _phase = Phase.Flung;
-            if (firstDisrupt)
-                AddAnger();
-        }
+        public void NotifyBlackHoleSuction() => YieldToBlackHole(Time.fixedDeltaTime * 2f);
 
         /// Called just before the black hole writes the spit velocity.
-        public void NotifyBlackHoleSpitLaunch()
+        public void NotifyBlackHoleSpitLaunch() => YieldToBlackHole(2f);
+
+        private void YieldToBlackHole(float seconds)
         {
             if (_finished || _rb == null)
                 return;
 
             bool firstDisrupt = _phase != Phase.Flung;
-            _blackHoleSuppressedUntil = Time.fixedTime + 2f;
+            _blackHoleSuppressedUntil = Time.fixedTime + seconds;
+            if (_phase == Phase.Detonating)
+                _mustLeaveRange = true;
             InterruptDetonationVisual();
             ReleaseToPhysics(clearVelocity: false);
             _phase = Phase.Flung;
@@ -360,29 +328,17 @@ namespace IssaPlugin.Items
             if (_finished || _rb == null || _setup == null)
                 return;
 
-            if (_phase == Phase.Detonating)
-                _mustLeaveRange = true;
-            InterruptDetonationVisual();
-            ReleaseToPhysics(clearVelocity: false);
-            AddAnger();
-            _phase = Phase.Flung;
-            _ignoreUntil = Time.time + ImpactIgnoreSeconds;
-            _leftGround = false;
-            _pendingFastContact = false;
-
             float scaledRadius = Mathf.Max(0.5f, radius);
-            _rb.AddExplosionForce(
-                ExplosionForce * Mathf.Max(1f, scale),
-                origin,
-                scaledRadius,
-                0.5f,
-                ForceMode.VelocityChange
-            );
-
             Vector3 away = transform.position - origin;
             if (away.sqrMagnitude < 0.0001f)
                 away = Vector3.up;
-            ApplyTumble(away.normalized, ExplosionForce * Mathf.Max(1f, scale));
+            away.Normalize();
+
+            float dist = Vector3.Distance(transform.position, origin);
+            float falloff = 1f - Mathf.Clamp01(dist / scaledRadius);
+            float speed = ExplosionForce * Mathf.Max(1f, scale) * Mathf.Lerp(0.35f, 1f, falloff);
+            Vector3 knockDir = (away + Vector3.up * 0.35f).normalized;
+            Fling(knockDir * speed, TumbleSpin(knockDir, speed));
         }
 
         public void ApplyFirearmHit(Vector3 shotDirection)
@@ -397,22 +353,8 @@ namespace IssaPlugin.Items
                 shotDirection = transform.forward;
             shotDirection.Normalize();
 
-            if (_phase == Phase.Detonating)
-                _mustLeaveRange = true;
-            AddAnger();
-            InterruptDetonationVisual();
-            _phase = Phase.Flung;
-
             Vector3 knockDir = (shotDirection + Vector3.up * 0.35f).normalized;
-            ReleaseToPhysics(clearVelocity: true);
-            _knockVelocity = knockDir * BulletKnockSpeed;
-            _knockSpin = TumbleSpin(knockDir, BulletKnockSpeed);
-            _rb.linearVelocity = _knockVelocity;
-            _rb.angularVelocity = _knockSpin;
-            _reapplyKnock = true;
-            _ignoreUntil = Time.time + ImpactIgnoreSeconds;
-            _leftGround = false;
-            _pendingFastContact = false;
+            Fling(knockDir * BulletKnockSpeed, TumbleSpin(knockDir, BulletKnockSpeed));
         }
 
         public static void ServerHandleBulletMessage(uint orbNetId, Vector3 direction)
@@ -423,6 +365,25 @@ namespace IssaPlugin.Items
                 return;
 
             identity.GetComponent<OrbBomberBehaviour>()?.ApplyFirearmHit(direction);
+        }
+
+        private void Fling(Vector3 velocity, Vector3 spin)
+        {
+            if (_phase == Phase.Detonating)
+                _mustLeaveRange = true;
+
+            InterruptDetonationVisual();
+            AddAnger();
+            _phase = Phase.Flung;
+            ReleaseToPhysics(clearVelocity: true);
+            _knockVelocity = velocity;
+            _knockSpin = spin;
+            _rb.linearVelocity = velocity;
+            _rb.angularVelocity = spin;
+            _reapplyKnock = true;
+            _ignoreUntil = Time.time + ImpactIgnoreSeconds;
+            _leftGround = false;
+            _pendingFastContact = false;
         }
 
         private void AddAnger()
@@ -450,22 +411,21 @@ namespace IssaPlugin.Items
 
         private void InterruptDetonationVisual()
         {
-            bool restorePlantedHeight = _phase == Phase.Detonating;
-            _setup.ResetSequence();
-            if (!restorePlantedHeight)
+            if (_phase != Phase.Detonating || _setup == null)
                 return;
 
+            _setup.ResetSequence();
             Vector3 planted = _rb.position;
             planted.y = _plantedCenterY;
             _rb.position = planted;
 
             var identity = GetComponent<NetworkIdentity>();
-            if (identity != null)
-            {
-                NetworkServer.SendToAll(
-                    new OrbBomberSequenceResetMessage { OrbNetId = identity.netId }
-                );
-            }
+            if (identity == null)
+                return;
+
+            NetworkServer.SendToAll(
+                new OrbBomberSequenceResetMessage { OrbNetId = identity.netId }
+            );
         }
 
         private void ReleaseToPhysics(bool clearVelocity)
@@ -478,11 +438,6 @@ namespace IssaPlugin.Items
 
             _rb.linearVelocity = Vector3.zero;
             _rb.angularVelocity = Vector3.zero;
-        }
-
-        private void ApplyTumble(Vector3 travelDirection, float force)
-        {
-            _rb.angularVelocity = TumbleSpin(travelDirection, force);
         }
 
         private static Vector3 TumbleSpin(Vector3 travelDirection, float force)
@@ -562,7 +517,8 @@ namespace IssaPlugin.Items
             _rb.linearVelocity = velocity;
         }
 
-        /// False when the orb is close enough to start detonating.
+        /// False when the orb starts detonating. A cancelled countdown keeps chasing
+        /// through the bubble until the target has been outside DetonationRange.
         private bool TryApproachStep(
             Vector3 targetPosition,
             out Vector3 next,
@@ -584,14 +540,6 @@ namespace IssaPlugin.Items
                 speed = 0f;
                 BeginDetonation();
                 return false;
-            }
-            else
-            {
-                // A swing cancelled the countdown. Stay in chase until the
-                // target is actually outside DetonationRange, or the next
-                // tick starts the flash again while they are still on top of it.
-                speed = 0f;
-                return true;
             }
 
             float far = Mathf.Max(
@@ -739,16 +687,20 @@ namespace IssaPlugin.Items
             _rb.isKinematic = true;
         }
 
+        private int GroundMask =>
+            _groundMask == 0 ? Physics.DefaultRaycastLayers : _groundMask;
+
         private bool TryFindGround(Vector3 position, out float groundY)
         {
             groundY = position.y;
-            Vector3 origin = position + Vector3.up * (_setup.BaseRadius + 3f);
+            float radius = Mathf.Abs(_setup.BaseRadius);
+            Vector3 origin = position + Vector3.up * (radius + 3f);
             int count = Physics.RaycastNonAlloc(
                 origin,
                 Vector3.down,
                 GroundHits,
-                _setup.BaseRadius + 8f,
-                _groundMask == 0 ? Physics.DefaultRaycastLayers : _groundMask,
+                radius + 8f,
+                GroundMask,
                 QueryTriggerInteraction.Ignore
             );
 
@@ -774,13 +726,13 @@ namespace IssaPlugin.Items
 
         private bool IsRestingOnGround()
         {
-            float reach = _setup.BaseRadius * Mathf.Max(transform.localScale.y, 1f) + 0.5f;
+            float reach = Mathf.Abs(_setup.BaseRadius) * Mathf.Max(transform.localScale.y, 1f) + 0.5f;
             int count = Physics.RaycastNonAlloc(
                 _rb.position,
                 Vector3.down,
                 GroundHits,
                 reach,
-                _groundMask == 0 ? Physics.DefaultRaycastLayers : _groundMask,
+                GroundMask,
                 QueryTriggerInteraction.Ignore
             );
 

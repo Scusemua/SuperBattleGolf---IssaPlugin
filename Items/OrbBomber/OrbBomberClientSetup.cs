@@ -30,6 +30,8 @@ namespace IssaPlugin.Items
             if (!gameObject.scene.IsValid())
                 return;
 
+            SetHittableLayer(gameObject);
+
             _renderers = GetComponentsInChildren<Renderer>(true);
             _block = new MaterialPropertyBlock();
 
@@ -153,6 +155,22 @@ namespace IssaPlugin.Items
                 if (renderer != null)
                     renderer.SetPropertyBlock(null);
             }
+        }
+
+        private static void SetHittableLayer(GameObject go)
+        {
+            var layers = GameManager.LayerSettings;
+            if (layers == null)
+                return;
+
+            ApplyLayer(go, layers.HittablesLayer);
+        }
+
+        private static void ApplyLayer(GameObject go, int layer)
+        {
+            go.layer = layer;
+            for (int i = 0; i < go.transform.childCount; i++)
+                ApplyLayer(go.transform.GetChild(i).gameObject, layer);
         }
     }
 }
