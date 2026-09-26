@@ -37,6 +37,13 @@ namespace IssaPlugin.Items
         private GameObject _serverHarrier;
 
         /// <summary>
+        /// True after <see cref="AnnounceInbound"/> until clients are told the session
+        /// ended. Hole cleanup clears this without broadcasting; <see cref="ClientHoleCleanup"/>
+        /// already drops <see cref="LocalSessionActive"/> on each client.
+        /// </summary>
+        private bool _clientsInSession;
+
+        /// <summary>
         /// Straight-line inbound path: spawn uprange of the station point, hover there,
         /// then continue past it to leave. Endpoints are raised together so the whole
         /// path clears terrain.
@@ -100,7 +107,7 @@ namespace IssaPlugin.Items
         public override void OnStopServer()
         {
             if (_serverRoutineActive)
-                ForceServerCleanup();
+                AbortSession();
         }
 
         // ================================================================
@@ -156,14 +163,17 @@ namespace IssaPlugin.Items
                 IssaPluginPlugin.Log.LogWarning(
                     "[Harrier] Jet destroyed before arriving — aborting session."
                 );
-                ForceServerCleanup();
+                AbortSession();
                 yield break;
             }
 
-            IssaPluginPlugin.Log.LogInfo("[Harrier] Jet arrived — beginning attack phase.");
-
-            if (!session.IsShotDown)
+            if (session.IsShotDown)
             {
+                IssaPluginPlugin.Log.LogInfo("[Harrier] Jet shot down during approach.");
+            }
+            else
+            {
+                IssaPluginPlugin.Log.LogInfo("[Harrier] Jet arrived — beginning attack phase.");
                 foreach (object step in EachStep(EngageTargets(session)))
                     yield return step;
             }
@@ -171,7 +181,7 @@ namespace IssaPlugin.Items
             foreach (object step in EachStep(ExitPhase(session)))
                 yield return step;
 
-            FinishSession(session);
+            FinishSession();
         }
 
         // ================================================================
@@ -217,7 +227,6 @@ namespace IssaPlugin.Items
 
             _serverHarrier = harrierGo;
             session.Vehicle = harrierGo;
-            session.IsShotDown = false;
             return true;
         }
 
@@ -286,12 +295,13 @@ namespace IssaPlugin.Items
             };
         }
 
-        private static void AnnounceInbound(ServerSession session)
+        private void AnnounceInbound(ServerSession session)
         {
             IssaPluginPlugin.Log.LogInfo(
                 $"[Harrier] Jet spawned at {session.Plan.SpawnPosition:F0}, heading to {session.Plan.HoverPosition:F0}."
             );
 
+            _clientsInSession = true;
             NetworkServer.SendToAll(
                 new HarrierBeginClientMessage { HoverCenter = session.Plan.MapCenter }
             );
@@ -339,22 +349,28 @@ namespace IssaPlugin.Items
         /// <summary>
         /// Shot down: wait until the crash behaviour reports impact.
         /// Otherwise fly the jet off the map. If the vehicle is already gone, finishes immediately.
+        /// An iterator so <see cref="FlyOut"/> does not start until this phase is pumped.
         /// </summary>
         private static IEnumerator ExitPhase(ServerSession session)
         {
             if (session.IsShotDown)
-                return WaitForCrash(session);
+            {
+                foreach (object step in EachStep(WaitForCrash(session)))
+                    yield return step;
+                yield break;
+            }
 
-            if (session.Vehicle != null && session.Behaviour != null)
-                return FlyOut(session);
+            if (session.Vehicle == null || session.Behaviour == null)
+                yield break;
 
-            return Finished();
+            foreach (object step in EachStep(FlyOut(session)))
+                yield return step;
         }
 
         private static IEnumerator WaitForCrash(ServerSession session)
         {
             // Wait for HarrierCrashBehaviour to detect ground impact before
-            // FinishSession calls NetworkServer.Destroy.
+            // the session destroys the jet.
             const float crashTimeout = 20f;
             var crashBehaviour =
                 session.Vehicle != null
@@ -368,40 +384,41 @@ namespace IssaPlugin.Items
             );
         }
 
+        /// <summary>
+        /// Iterator on purpose: <see cref="HarrierBehaviour.BeginFlyOut"/> runs when this
+        /// phase is pumped, not when <see cref="FlyOut"/> is called.
+        /// </summary>
         private static IEnumerator FlyOut(ServerSession session)
         {
             session.Behaviour.BeginFlyOut();
             IssaPluginPlugin.Log.LogInfo("[Harrier] Beginning fly-out.");
 
             const float flyOutTimeout = 12f;
-            return WaitWhile(
-                flyOutTimeout,
-                () =>
-                    session.Vehicle != null
-                    && session.Behaviour != null
-                    && !session.Behaviour.IsComplete
-            );
+            foreach (
+                object step in EachStep(
+                    WaitWhile(
+                        flyOutTimeout,
+                        () =>
+                            session.Vehicle != null
+                            && session.Behaviour != null
+                            && !session.Behaviour.IsComplete
+                    )
+                )
+            )
+                yield return step;
         }
 
-        private void FinishSession(ServerSession session)
+        private void FinishSession()
         {
-            if (session.Vehicle != null)
-                NetworkServer.Destroy(session.Vehicle);
-
-            NetworkServer.SendToAll(new HarrierEndClientMessage());
-
-            _serverHarrier = null;
-            _serverRoutineActive = false;
-            _serverRoutine = null;
-
+            AbortSession();
             IssaPluginPlugin.Log.LogInfo("[Harrier] Session complete.");
         }
 
         // ================================================================
         //  Phase primitives
         //
-        //  These are Harrier-agnostic. An autonomous gunship can reuse the wait
-        //  and the timed firing loop, and supply its own flight plan and weapons.
+        //  WaitWhile and EngageFor are this session's timed loops. EachStep runs a
+        //  phase inside ServerHarrierRoutine so one StopCoroutine halts every phase.
         // ================================================================
 
         /// <summary>
@@ -413,12 +430,6 @@ namespace IssaPlugin.Items
         {
             while (phase.MoveNext())
                 yield return phase.Current;
-        }
-
-        /// <summary>An already-finished phase, for an exit that has nothing to wait on.</summary>
-        private static IEnumerator Finished()
-        {
-            yield break;
         }
 
         /// <summary>
@@ -546,6 +557,10 @@ namespace IssaPlugin.Items
             return harrierGo;
         }
 
+        /// <summary>
+        /// Stops the session coroutine and destroys the jet. Does not tell clients;
+        /// call <see cref="AbortSession"/> when they were sent a begin message.
+        /// </summary>
         private void ForceServerCleanup()
         {
             if (_serverRoutine != null)
@@ -561,6 +576,26 @@ namespace IssaPlugin.Items
             }
 
             _serverRoutineActive = false;
+        }
+
+        /// <summary>
+        /// Stops the server session and, if clients were told it started, broadcasts
+        /// <see cref="HarrierEndClientMessage"/> so <see cref="LocalSessionActive"/> clears
+        /// on a mid-hole abort or summoner disconnect.
+        /// </summary>
+        private void AbortSession()
+        {
+            ForceServerCleanup();
+            EndClientSession();
+        }
+
+        private void EndClientSession()
+        {
+            if (!_clientsInSession)
+                return;
+
+            _clientsInSession = false;
+            NetworkServer.SendToAll(new HarrierEndClientMessage());
         }
 
         // ================================================================
@@ -631,6 +666,10 @@ namespace IssaPlugin.Items
 
             if (_serverRoutineActive)
                 ForceServerCleanup();
+
+            // Each client clears LocalSessionActive in ClientHoleCleanup, so a
+            // HarrierEndClientMessage here is unnecessary and can arrive late.
+            _clientsInSession = false;
         }
 
         public override void ClientHoleCleanup()
