@@ -16,7 +16,6 @@ namespace IssaPlugin.Items
         public const float SwingOverlapRadius = 1.75f;
         public const float SwingProbeRadius = SwingOverlapRadius + 3f;
 
-        private const float UpwardBias = 0.5f;
         private const float SpinPerImpulse = 0.55f;
         private const float ExplosionForce = 15f;
         private const float BulletKnockSpeed = 10f;
@@ -280,15 +279,10 @@ namespace IssaPlugin.Items
             bool isVictim = swingerIdentity.netId == VictimNetId;
             _swingLockUntil = Time.time + 0.5f;
 
-            Vector3 away = transform.position - swinger.transform.position;
-            if (away.sqrMagnitude < 0.0001f)
-                away = swinger.transform.forward;
-            else
-                away.Normalize();
-
-            Vector3 knockDir = (away + Vector3.up * UpwardBias).normalized;
+            Vector3 knockDir = SwingLaunchDirection(swinger);
             float force =
                 Mathf.Max(0f, ModConfig.OrbBomber.ClubKnockbackForce.Value)
+                * SwingPowerScale(swinger)
                 * SwingForceMultiplier(swinger);
 
             // Velocity is written directly. AddForce is ignored on the frame a
@@ -391,6 +385,30 @@ namespace IssaPlugin.Items
             _angerBonus += Mathf.Max(0f, ModConfig.OrbBomber.AngerSpeedBonus.Value);
         }
 
+        /// Same construction as PlayerGolfer.GetSwingDirection: facing, pitched
+        /// up by the club loft. Pitch 0 stays flat, like a putt.
+        private static Vector3 SwingLaunchDirection(PlayerInfo swinger)
+        {
+            var golfer = swinger.AsGolfer;
+            Vector3 forward = swinger.transform.forward;
+            if (forward.sqrMagnitude < 0.0001f)
+                forward = Vector3.forward;
+            if (golfer == null)
+                return forward.normalized;
+
+            return (
+                Quaternion.AngleAxis(-golfer.SwingPitch, swinger.transform.right) * forward
+            ).normalized;
+        }
+
+        private static float SwingPowerScale(PlayerInfo swinger)
+        {
+            var golfer = swinger.AsGolfer;
+            if (golfer == null)
+                return 1f;
+            return Mathf.Max(0.5f, golfer.SwingNormalizedPower);
+        }
+
         private static float SwingForceMultiplier(PlayerInfo swinger)
         {
             float multiplier = 1f;
@@ -433,6 +451,7 @@ namespace IssaPlugin.Items
             _rb.constraints = RigidbodyConstraints.None;
             _rb.useGravity = true;
             _rb.isKinematic = false;
+            _rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
             if (!clearVelocity)
                 return;
 
@@ -632,6 +651,8 @@ namespace IssaPlugin.Items
 
         private void TickFlung()
         {
+            KeepAboveGround();
+
             // A short probe. The chase ray looks several metres down, which would
             // still "find ground" at the top of a fling and skip the landing.
             bool grounded = IsRestingOnGround();
@@ -670,6 +691,58 @@ namespace IssaPlugin.Items
         private static float ResumeSpeed() =>
             Mathf.Max(0.05f, ModConfig.OrbBomber.SettleSpeed.Value);
 
+        /// ContinuousDynamic still misses a fast sphere against a terrain mesh.
+        /// If the center has gone through the nearest ground, put it back on top.
+        private void KeepAboveGround()
+        {
+            if (_rb == null || _setup == null || _rb.isKinematic)
+                return;
+
+            float radius = Mathf.Abs(_setup.BaseRadius) * Mathf.Max(transform.localScale.y, 1f);
+            Vector3 origin = _rb.position + Vector3.up * 12f;
+            int count = Physics.RaycastNonAlloc(
+                origin,
+                Vector3.down,
+                GroundHits,
+                24f,
+                GroundMask,
+                QueryTriggerInteraction.Ignore
+            );
+
+            float best = float.MaxValue;
+            float surfaceY = 0f;
+            bool found = false;
+            for (int i = 0; i < count; i++)
+            {
+                var hit = GroundHits[i];
+                if (hit.collider == null || hit.normal.y < 0.45f)
+                    continue;
+                if (hit.collider.transform == transform || hit.collider.transform.IsChildOf(transform))
+                    continue;
+
+                float gap = Mathf.Abs(hit.point.y - _rb.position.y);
+                if (gap >= best)
+                    continue;
+                best = gap;
+                surfaceY = hit.point.y;
+                found = true;
+            }
+
+            float minY = surfaceY + radius;
+            if (!found || best > 8f || _rb.position.y >= minY - 0.05f)
+                return;
+
+            var position = _rb.position;
+            position.y = minY;
+            _rb.position = position;
+            if (_rb.linearVelocity.y < 0f)
+            {
+                var velocity = _rb.linearVelocity;
+                velocity.y = 0f;
+                _rb.linearVelocity = velocity;
+            }
+        }
+
         private void EnterApproachBody()
         {
             _phase = Phase.Approach;
@@ -683,6 +756,7 @@ namespace IssaPlugin.Items
             }
 
             _rb.constraints = RigidbodyConstraints.None;
+            _rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
             _rb.useGravity = false;
             _rb.isKinematic = true;
         }

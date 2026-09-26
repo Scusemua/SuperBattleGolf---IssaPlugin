@@ -121,8 +121,8 @@ namespace IssaPlugin
             ClubKnockbackForce = cfg.Bind(
                 Section,
                 "ClubKnockbackForce",
-                14f,
-                "Impulse applied when the victim's swing hits the orb."
+                28f,
+                "Full-swing launch speed in metres per second. Club loft aims it, and a partial charge scales it down."
             );
             ImpactExplodeChance = cfg.Bind(
                 Section,
