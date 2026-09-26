@@ -1748,6 +1748,38 @@ namespace IssaPlugin.Patches
                     (conn, msg) => GetBridge<NightNetworkBridge>(conn)?.ServerActivate()
                 );
 
+            Writer<GrappleFireMessage>.write = GrappleMessageSerialization.WriteFire;
+            Reader<GrappleFireMessage>.read = GrappleMessageSerialization.ReadFire;
+            Writer<GrappleAnchorMessage>.write = GrappleMessageSerialization.WriteAnchor;
+            Reader<GrappleAnchorMessage>.read = GrappleMessageSerialization.ReadAnchor;
+            Writer<GrappleRejectMessage>.write = GrappleMessageSerialization.WriteReject;
+            Reader<GrappleRejectMessage>.read = GrappleMessageSerialization.ReadReject;
+            Writer<GrappleReleaseMessage>.write = GrappleMessageSerialization.WriteRelease;
+            Reader<GrappleReleaseMessage>.read = GrappleMessageSerialization.ReadRelease;
+            Writer<GrappleClearMessage>.write = GrappleMessageSerialization.WriteClear;
+            Reader<GrappleClearMessage>.read = GrappleMessageSerialization.ReadClear;
+            NetworkClient.RegisterHandler<GrappleAnchorMessage>(
+                GrapplingHookNetworkBridge.HandleAnchor
+            );
+            NetworkClient.RegisterHandler<GrappleRejectMessage>(
+                GrapplingHookNetworkBridge.HandleReject
+            );
+            NetworkClient.RegisterHandler<GrappleClearMessage>(
+                GrapplingHookNetworkBridge.HandleClear
+            );
+            if (NetworkServer.active)
+            {
+                NetworkServer.RegisterHandler<GrappleFireMessage>(
+                    (conn, msg) =>
+                        GetBridge<GrapplingHookNetworkBridge>(conn)
+                            ?.ServerHandleFire(msg.Anchor, msg.SlotIndex, msg.Token)
+                );
+                NetworkServer.RegisterHandler<GrappleReleaseMessage>(
+                    (conn, msg) =>
+                        GetBridge<GrapplingHookNetworkBridge>(conn)?.ServerHandleRelease()
+                );
+            }
+
             // ── UFO Abduction ─────────────────────────────────────────────────────
 
             // Client → Server

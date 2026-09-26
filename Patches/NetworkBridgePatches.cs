@@ -73,6 +73,8 @@ namespace IssaPlugin.Patches
                 __instance.gameObject.AddComponent<WindStormNetworkBridge>();
             if (!__instance.GetComponent<NightNetworkBridge>())
                 __instance.gameObject.AddComponent<NightNetworkBridge>();
+            if (!__instance.GetComponent<GrapplingHookNetworkBridge>())
+                __instance.gameObject.AddComponent<GrapplingHookNetworkBridge>();
             if (!__instance.GetComponent<HunterDroneNetworkBridge>())
                 __instance.gameObject.AddComponent<HunterDroneNetworkBridge>();
             if (!__instance.GetComponent<GolfCartLauncherNetworkBridge>())
