@@ -1,6 +1,6 @@
 # IssaMod
 
-Adds **37 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
+Adds **44 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
 
 For more information as well as the mod's source code, please see [the mod's GitHub repository](https://github.com/Scusemua/SuperBattleGolf---IssaPlugin/).
 
@@ -135,7 +135,28 @@ Holding a full launcher lets you flip it into **Joy Ride** mode (press `V` by de
 ### 🍔 Super Jumbo Burger
 A bigger version of the base game's Jumbo Burger. Eat it and you grow far larger than the normal giant form: 8x by default, and you can push it higher if you want to. The camera pulls back and lifts to keep you in frame, and your movement speed scales up with your size so you don't feel like you're wading through mud.
 
-The left-click flick that giants use to swat people is amplified too, at twice the normal power by default. Scale, duration, flick power, speed scaling, and the camera offsets are all configurable
+The left-click flick that giants use to swat people is amplified too, at twice the normal power by default. Scale, duration, flick power, speed scaling, and the camera offsets are all configurable.
+
+### 🎳 Cannon
+A cannon that fires bowling balls. Hold the trigger and it keeps launching them. Anyone a ball hits gets knocked flying.
+
+### 🧤 Glove
+Pick up your own golf ball and carry it. Drop it or throw it when you want it somewhere else.
+
+### 😈 Evil Glove
+Same idea as the glove, except you can aim at another player's ball and take that too. Throw it wherever you like.
+
+### 🔫 AA-12
+A fully automatic shotgun. Hold the trigger and it dumps shells in a wide cone. Each shell is a handful of pellets, and they hit hard up close.
+
+### 🔫 Remington 870
+A pump-action shotgun. One shell per click, then a short pause while you pump. Same short-range spread as the AA-12, just slower between shots.
+
+### 🌙 Night Time
+A remote that turns the course to night. The sky and the light go dark for everyone until it wears off.
+
+### 🪝 Grappling Hook
+Aim at a surface and fire. The rope sticks, and you swing from it. Hold left click to reel in, right click to let line out, or both to hang still.
 
 ---
 
@@ -335,6 +356,10 @@ Assets used in the project:
 
 -   "Remington 870 Shotgun" \
     (https://skfb.ly/o9MZx) by Andrei Milin 
+    Licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
+
+-   "Hair Dryer" \
+    (https://skfb.ly/oANKW) by Atilla Kutluay Erdoğay 
     Licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
 
 ---

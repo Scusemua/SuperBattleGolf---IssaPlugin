@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.3.10f1
-CRC: 1695482280
+CRC: 1656150454
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 14aad35bc5e55827ac878bfbc562702f
+    Hash: 17e9f570f98850d57f490e3dfb8f4ba0
   TypeTreeHash:
     serializedVersion: 2
     Hash: 5a8cce00eebcad12dd14cf3a32c3a8ad
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 5812f92ebd3deadecd2eab04acb48ac4
+    Hash: 3f5347aa1e0bb8fb0ab21569afb3c85f
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -187,6 +187,7 @@ Assets:
 - Assets/Assets/smoke_prefab.prefab
 - Assets/Assets/player_linker_rocket.prefab
 - Assets/Assets/GolfBalls/golf_ball_isosphere.prefab
+- Assets/Assets/hair_dryer.prefab
 - Assets/Assets/gravity_remote_icon.png
 - Assets/Assets/teleporter_icon.png
 - Assets/Assets/sniper_scope.png
@@ -222,6 +223,7 @@ Assets:
 - Assets/Assets/blood_splatter_critical.prefab
 - Assets/Assets/rocket_tether_icon.png
 - Assets/Assets/donut_vehicle.prefab
+- Assets/Assets/grappling_hook_icon.png
 - Assets/Assets/black_hole_grenade_icon.png
 - Assets/Assets/glove_ball_indicator.png
 Dependencies: []
