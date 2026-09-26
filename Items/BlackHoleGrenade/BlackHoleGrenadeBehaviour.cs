@@ -271,6 +271,7 @@ namespace IssaPlugin.Items
                 // Suppress the bear's AI velocity writes so the suction force is
                 // not overwritten by MoveInDirection on the bear's next FixedUpdate.
                 rb.GetComponent<BearBehaviour>()?.NotifyBlackHoleSuction();
+                rb.GetComponent<OrbBomberBehaviour>()?.NotifyBlackHoleSuction();
             }
         }
 
@@ -325,6 +326,7 @@ namespace IssaPlugin.Items
                 // Suppress the bear's AI for long enough that the spit velocity
                 // carries before MoveInDirection can overwrite it.
                 rb.GetComponent<BearBehaviour>()?.NotifyBlackHoleSpitLaunch();
+                rb.GetComponent<OrbBomberBehaviour>()?.NotifyBlackHoleSpitLaunch();
 
                 rb.linearVelocity = dir * SpitForce;
             }

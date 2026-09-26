@@ -113,6 +113,7 @@ namespace IssaPlugin
             gameObject.AddComponent<SpawnConfigUI>();
             gameObject.AddComponent<ShapeShifterManager>();
             gameObject.AddComponent<ShapeShifterOverlay>();
+            gameObject.AddComponent<OrbBomberOverlay>();
 
             Log.LogInfo("IssaPlugin by Scusemua has loaded.");
         }

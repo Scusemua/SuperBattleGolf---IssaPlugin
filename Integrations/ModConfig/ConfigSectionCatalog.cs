@@ -55,6 +55,7 @@ namespace IssaPlugin.Integrations.ModConfigUI
                 Group("Minigun", "Minigun"),
                 Group("Moon", "Moon"),
                 Group("Nuke", "Nuke"),
+                Group("Orb Bomber", "OrbBomber"),
                 Group("Placeable Wall", "PlaceableWall"),
                 Group("Poison Jar", "PoisonJar", "PoisonOverlay"),
                 Group("Position Swap", "PositionSwap"),

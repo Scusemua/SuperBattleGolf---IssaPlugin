@@ -1958,6 +1958,44 @@ namespace IssaPlugin.Patches
                 ShapeShifterHelper.HandleShapeShifterEnd
             );
 
+            // ── Orb Bomber ────────────────────────────────────────────────────
+            Writer<OrbBomberRequestMessage>.write =
+                OrbBomberRequestMessageSerialization.WriteOrbBomberRequestMessage;
+            Reader<OrbBomberRequestMessage>.read =
+                OrbBomberRequestMessageSerialization.ReadOrbBomberRequestMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<OrbBomberRequestMessage>(
+                    (conn, msg) =>
+                        GetBridge<OrbBomberNetworkBridge>(conn)
+                            ?.ServerHandleRequest(msg.TargetNetId, msg.EquippedSlotIndex)
+                );
+
+            Writer<OrbBomberSwingHitMessage>.write =
+                OrbBomberSwingHitMessageSerialization.WriteOrbBomberSwingHitMessage;
+            Reader<OrbBomberSwingHitMessage>.read =
+                OrbBomberSwingHitMessageSerialization.ReadOrbBomberSwingHitMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<OrbBomberSwingHitMessage>(
+                    (conn, msg) =>
+                        OrbBomberBehaviour.ServerHandleSwingMessage(conn, msg.OrbNetId)
+                );
+
+            Writer<OrbBomberSequenceStartMessage>.write =
+                OrbBomberSequenceStartMessageSerialization.WriteOrbBomberSequenceStartMessage;
+            Reader<OrbBomberSequenceStartMessage>.read =
+                OrbBomberSequenceStartMessageSerialization.ReadOrbBomberSequenceStartMessage;
+            NetworkClient.RegisterHandler<OrbBomberSequenceStartMessage>(
+                OrbBomberClientSetup.HandleSequenceStart
+            );
+
+            Writer<OrbBomberSequenceResetMessage>.write =
+                OrbBomberSequenceResetMessageSerialization.WriteOrbBomberSequenceResetMessage;
+            Reader<OrbBomberSequenceResetMessage>.read =
+                OrbBomberSequenceResetMessageSerialization.ReadOrbBomberSequenceResetMessage;
+            NetworkClient.RegisterHandler<OrbBomberSequenceResetMessage>(
+                OrbBomberClientSetup.HandleSequenceReset
+            );
+
             // ── Explosive Golf Balls (Server → All Clients) ──────────────────────
             Writer<ExplosiveGolfBallsExplodeMessage>.write =
                 ExplosiveGolfBallsExplodeMessageSerialization.WriteExplosiveGolfBallsExplodeMessage;

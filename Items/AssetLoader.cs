@@ -69,6 +69,7 @@ namespace IssaPlugin.Items
         public static Sprite AA12Icon { get; private set; }
         public static Sprite Remington870Icon { get; private set; }
         public static Sprite MinigunIcon { get; private set; }
+        public static Sprite OrbBomberIcon { get; private set; }
         public static Sprite HarrierIcon { get; private set; }
         public static Sprite PositionSwapIcon { get; private set; }
         public static Sprite PoisonJarIcon { get; private set; }
@@ -138,6 +139,11 @@ namespace IssaPlugin.Items
 
         /// Networked hunter drone projectile.
         public static GameObject HunterDronePrefab { get; private set; }
+
+        public static GameObject OrbBomberHandheldPrefab { get; private set; }
+
+        /// Networked orb that chases a player along the ground.
+        public static GameObject OrbBomberPrefab { get; private set; }
 
         /// Handheld UFO model shown in the player's hand.
         public static GameObject UfoAbductionHandheldPrefab { get; private set; }
@@ -468,6 +474,7 @@ namespace IssaPlugin.Items
                 SpriteAsset(p => AA12Icon = p, "aa12_icon.png"),
                 SpriteAsset(p => Remington870Icon = p, "remington870_icon.png"),
                 SpriteAsset(p => MinigunIcon = p, "minigun_icon.png"),
+                SpriteAsset(p => OrbBomberIcon = p, "orb_bomber_icon.png", optional: true),
                 SpriteAsset(p => HarrierIcon = p, "harrier_icon.png"),
                 SpriteAsset(p => PositionSwapIcon = p, "position_swap_icon.png"),
                 SpriteAsset(p => PoisonJarIcon = p, "poison_bottle_icon.png"),
@@ -505,6 +512,11 @@ namespace IssaPlugin.Items
                 HandheldPrefab(p => AA12Prefab = p, "shotgun_aa12.prefab"),
                 HandheldPrefab(p => Remington870Prefab = p, "shotgun_remington870.prefab"),
                 HandheldPrefab(p => MinigunPrefab = p, "minigun.prefab"),
+                HandheldPrefab(
+                    p => OrbBomberHandheldPrefab = p,
+                    "orb_bomber_handheld.prefab",
+                    optional: true
+                ),
                 HandheldPrefab(p => HarrierTabletPrefab = p, "harrier_tablet.prefab"),
                 HandheldPrefab(
                     p => PositionSwapHandheldPrefab = p,
@@ -596,6 +608,13 @@ namespace IssaPlugin.Items
                     p => HunterDronePrefab = p,
                     "hunter_drone.prefab",
                     0xD40E0002u,
+                    optional: true
+                ),
+                NetworkedPrefab(
+                    p => OrbBomberPrefab = p,
+                    "orb_bomber.prefab",
+                    0x04B80001u,
+                    typeof(OrbBomberClientSetup),
                     optional: true
                 ),
                 NetworkedPrefab(
@@ -817,6 +836,19 @@ namespace IssaPlugin.Items
 
             // SuperShapeShifter icon falls back to ShapeShifter icon when the dedicated one is absent.
             SuperShapeShifterIcon ??= ShapeShifterIcon;
+
+            // Held locally in the player's hand. The bundle includes a NetworkIdentity
+            // and NetworkTransform, which throw without a spawned network context.
+            // Its fitted sphere collider would also shove the player.
+            if (OrbBomberHandheldPrefab != null)
+            {
+                StripNetworkComponents(OrbBomberHandheldPrefab);
+                foreach (var collider in OrbBomberHandheldPrefab.GetComponentsInChildren<Collider>(true))
+                {
+                    if (collider != null)
+                        collider.enabled = false;
+                }
+            }
 
             // Held-ball indicator can reuse the inventory icon when a dedicated PNG is absent.
             GloveBallIndicatorIcon ??= GloveIcon;

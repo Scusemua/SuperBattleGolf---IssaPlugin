@@ -87,6 +87,8 @@ namespace IssaPlugin.Patches
                 __instance.gameObject.AddComponent<MoonNetworkBridge>();
             if (!__instance.GetComponent<ShapeShifterNetworkBridge>())
                 __instance.gameObject.AddComponent<ShapeShifterNetworkBridge>();
+            if (!__instance.GetComponent<OrbBomberNetworkBridge>())
+                __instance.gameObject.AddComponent<OrbBomberNetworkBridge>();
             if (!__instance.GetComponent<SuperShapeShifterNetworkBridge>())
                 __instance.gameObject.AddComponent<SuperShapeShifterNetworkBridge>();
             if (!__instance.GetComponent<ExplosiveGolfBallsNetworkBridge>())
