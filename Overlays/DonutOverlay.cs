@@ -97,7 +97,9 @@ namespace IssaPlugin.Overlays
         // ── Recharge state ────────────────────────────────────────────────
         private int _prevRemainingUses = -1;
         private float _rechargeFlashTimer;
-        private readonly float RechargeFlashDuration = ModConfig.Donut.LaserCooldown.Value;
+        // Captured when a laser charge is spent so the flash matches the match
+        // config at that moment, including a host snapshot received after load.
+        private float _rechargeFlashDuration;
 
         // ── Values cached in Update, consumed in OnGUI ────────────────────
         // OnGUI is called multiple times per frame (Layout pass + Repaint pass).
@@ -173,7 +175,10 @@ namespace IssaPlugin.Overlays
 
             // Laser-use spend detection
             if (_prevRemainingUses > 0 && RemainingLaserUses < _prevRemainingUses)
-                _rechargeFlashTimer = RechargeFlashDuration;
+            {
+                _rechargeFlashDuration = ModConfig.Donut.LaserCooldown.Value;
+                _rechargeFlashTimer = _rechargeFlashDuration;
+            }
             _prevRemainingUses = RemainingLaserUses;
             if (_rechargeFlashTimer > 0f)
                 _rechargeFlashTimer -= _deltaTime;
@@ -335,7 +340,7 @@ namespace IssaPlugin.Overlays
 
             if (recharging)
             {
-                float t = 1f - (_rechargeFlashTimer / RechargeFlashDuration);
+                float t = 1f - (_rechargeFlashTimer / _rechargeFlashDuration);
                 GUI.color = new Color(Orange.r, Orange.g, Orange.b, 0.85f);
                 GUI.DrawTexture(
                     new Rect(barX, barY, barW * (1f - t), barH),

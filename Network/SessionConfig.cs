@@ -7,9 +7,9 @@
 // reads are marked and keep returning the stored file value. Diagnostics, UI,
 // and key bindings are not put in the overlay, so those reads stay on the local file.
 //
-// The dictionary is dropped on disconnect and again when this process starts a
-// server. A crash or hard shutdown never wrote the host values, so the next
-// launch loads the client's own cfg.
+// The dictionary is dropped on disconnect, when this process starts a server,
+// and when that server stops. A crash or hard shutdown never wrote the host
+// values, so the next launch loads the client's own cfg.
 
 using System;
 using System.Collections.Generic;
