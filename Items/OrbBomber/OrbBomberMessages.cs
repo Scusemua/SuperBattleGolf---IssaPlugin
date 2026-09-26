@@ -1,4 +1,5 @@
 using Mirror;
+using UnityEngine;
 
 namespace IssaPlugin.Items
 {
@@ -105,6 +106,33 @@ namespace IssaPlugin.Items
         public static OrbBomberSwingHitMessage ReadOrbBomberSwingHitMessage(NetworkReader reader)
         {
             return new OrbBomberSwingHitMessage { OrbNetId = reader.ReadUInt() };
+        }
+    }
+
+    public struct OrbBomberBulletHitMessage : NetworkMessage
+    {
+        public uint OrbNetId;
+        public Vector3 Direction;
+    }
+
+    public static class OrbBomberBulletHitMessageSerialization
+    {
+        public static void WriteOrbBomberBulletHitMessage(
+            NetworkWriter writer,
+            OrbBomberBulletHitMessage msg
+        )
+        {
+            writer.WriteUInt(msg.OrbNetId);
+            writer.WriteVector3(msg.Direction);
+        }
+
+        public static OrbBomberBulletHitMessage ReadOrbBomberBulletHitMessage(NetworkReader reader)
+        {
+            return new OrbBomberBulletHitMessage
+            {
+                OrbNetId = reader.ReadUInt(),
+                Direction = reader.ReadVector3(),
+            };
         }
     }
 }

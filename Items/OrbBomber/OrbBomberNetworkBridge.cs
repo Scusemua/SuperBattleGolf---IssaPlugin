@@ -141,6 +141,9 @@ namespace IssaPlugin.Items
             foreach (var netTransform in orb.GetComponentsInChildren<NetworkTransformBase>(true))
                 netTransform.syncScale = false;
 
+            if (GameManager.LayerSettings != null)
+                SetLayerRecursive(orb, GameManager.LayerSettings.HittablesLayer);
+
             // Destroy is deferred to the end of the frame, which is late enough
             // for NetworkRigidbody to fight the first MovePosition. Disable it now.
             foreach (var component in orb.GetComponentsInChildren<Component>(true))
@@ -152,6 +155,13 @@ namespace IssaPlugin.Items
                     behaviour.enabled = false;
                 Object.Destroy(component);
             }
+        }
+
+        private static void SetLayerRecursive(GameObject go, int layer)
+        {
+            go.layer = layer;
+            for (int i = 0; i < go.transform.childCount; i++)
+                SetLayerRecursive(go.transform.GetChild(i).gameObject, layer);
         }
 
         private static bool TrySampleGround(Vector3 position, out float groundY)

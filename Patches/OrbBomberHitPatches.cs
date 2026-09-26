@@ -101,6 +101,65 @@ namespace IssaPlugin.Patches
         }
     }
 
+    /// Every firearm ray ends in TryParseFirearmRaycastResults. The orb is not a
+    /// Hittable, so the gun ignores it unless we read the raw buffer ourselves.
+    [HarmonyPatch(typeof(PlayerInventory), "TryParseFirearmRaycastResults")]
+    static class OrbBomberFirearmHitPatch
+    {
+        static void Postfix(
+            PlayerInventory __instance,
+            RaycastHit[] raycastResults,
+            int raycastHitCount
+        )
+        {
+            if (!NetworkClient.active || raycastResults == null || raycastHitCount <= 0)
+                return;
+
+            float bestDistance = float.MaxValue;
+            RaycastHit best = default;
+            bool found = false;
+            for (int i = 0; i < raycastHitCount; i++)
+            {
+                var hit = raycastResults[i];
+                if (hit.collider == null || hit.distance >= bestDistance)
+                    continue;
+                bestDistance = hit.distance;
+                best = hit;
+                found = true;
+            }
+
+            if (!found)
+                return;
+
+            var setup = best.collider.GetComponentInParent<OrbBomberClientSetup>();
+            if (setup == null)
+                return;
+
+            Vector3 origin = __instance.GetElephantGunBarrelEndPosition();
+            Vector3 direction = best.point - origin;
+            if (direction.sqrMagnitude < 0.0001f)
+                direction = -best.normal;
+
+            if (NetworkServer.active)
+            {
+                setup.GetComponent<OrbBomberBehaviour>()?.ApplyFirearmHit(direction);
+                return;
+            }
+
+            var identity = setup.GetComponent<NetworkIdentity>();
+            if (identity == null)
+                return;
+
+            __instance.connectionToServer?.Send(
+                new OrbBomberBulletHitMessage
+                {
+                    OrbNetId = identity.netId,
+                    Direction = direction.normalized,
+                }
+            );
+        }
+    }
+
     /// Any rocket blast, including scale-1 shots, knocks orbs in range.
     /// Runs before the scaled-explosion patch unregisters the rocket's scale.
     [HarmonyPatch(typeof(Rocket), "ServerExplode")]

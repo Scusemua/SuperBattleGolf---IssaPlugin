@@ -14,6 +14,7 @@ namespace IssaPlugin
         public ConfigEntry<bool> ChaseGolfBall { get; private set; }
         public ConfigEntry<float> StartSpeed { get; private set; }
         public ConfigEntry<float> MaxSpeed { get; private set; }
+        public ConfigEntry<float> AngerSpeedBonus { get; private set; }
         public ConfigEntry<float> FarSpeedDistance { get; private set; }
         public ConfigEntry<float> DetonationRange { get; private set; }
         public ConfigEntry<bool> CancelDetonationOutOfRange { get; private set; }
@@ -64,6 +65,12 @@ namespace IssaPlugin
                 "MaxSpeed",
                 11f,
                 "Ground speed in metres per second once the orb reaches DetonationRange."
+            );
+            AngerSpeedBonus = cfg.Bind(
+                Section,
+                "AngerSpeedBonus",
+                1.5f,
+                "Metres per second added to both StartSpeed and MaxSpeed each time the orb is knocked off its chase."
             );
             FarSpeedDistance = cfg.Bind(
                 Section,
@@ -131,7 +138,7 @@ namespace IssaPlugin
                 Section,
                 "SettleSpeed",
                 1.25f,
-                "Speed in metres per second below which a grounded orb, after a swing, starts chasing again."
+                "Speed in metres per second below which a tumbling orb resumes the chase, even if it has not fully stopped."
             );
             MaxLifetime = cfg.Bind(
                 Section,

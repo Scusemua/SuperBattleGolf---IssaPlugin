@@ -11,6 +11,7 @@ namespace IssaPlugin.Items
         public override Sprite Icon => AssetLoader.OrbBomberIcon;
         public override GameObject HeldModelPrefab => AssetLoader.OrbBomberHandheldPrefab;
         public override int MaxUses => (int)ModConfig.OrbBomber.Uses.Value;
+        // Tier 3 / Rare. Same default weight the spawn UI uses for the AK47.
         public override float DefaultPoolWeight => 5f;
         public override Key GiveKey => ModConfig.OrbBomber.GiveKey.Value;
 

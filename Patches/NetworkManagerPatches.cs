@@ -1980,6 +1980,15 @@ namespace IssaPlugin.Patches
                         OrbBomberBehaviour.ServerHandleSwingMessage(conn, msg.OrbNetId)
                 );
 
+            Writer<OrbBomberBulletHitMessage>.write =
+                OrbBomberBulletHitMessageSerialization.WriteOrbBomberBulletHitMessage;
+            Reader<OrbBomberBulletHitMessage>.read =
+                OrbBomberBulletHitMessageSerialization.ReadOrbBomberBulletHitMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<OrbBomberBulletHitMessage>(
+                    (_, msg) => OrbBomberBehaviour.ServerHandleBulletMessage(msg.OrbNetId, msg.Direction)
+                );
+
             Writer<OrbBomberSequenceStartMessage>.write =
                 OrbBomberSequenceStartMessageSerialization.WriteOrbBomberSequenceStartMessage;
             Reader<OrbBomberSequenceStartMessage>.read =

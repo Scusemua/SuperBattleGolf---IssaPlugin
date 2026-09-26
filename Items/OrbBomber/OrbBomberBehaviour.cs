@@ -18,6 +18,8 @@ namespace IssaPlugin.Items
         private const float UpwardBias = 0.5f;
         private const float SpinPerImpulse = 0.55f;
         private const float ExplosionForce = 15f;
+        private const float BulletKnockSpeed = 10f;
+        private const float FlungDrag = 1.6f;
         private const float CartMinSpeed = 2.5f;
         private const float CartKnockScale = 1.35f;
 
@@ -52,6 +54,8 @@ namespace IssaPlugin.Items
         private bool _reapplyKnock;
         private Vector3 _knockVelocity;
         private Vector3 _knockSpin;
+        private float _angerBonus;
+        private float _bulletLockUntil;
         private int _groundMask;
 
         private static readonly RaycastHit[] GroundHits = new RaycastHit[8];
@@ -246,8 +250,11 @@ namespace IssaPlugin.Items
             if (cartVelocity.sqrMagnitude < CartMinSpeed * CartMinSpeed)
                 return false;
 
+            if (_phase == Phase.Detonating)
+                _mustLeaveRange = true;
             InterruptDetonationVisual();
             ReleaseToPhysics(clearVelocity: true);
+            AddAnger();
 
             Vector3 direction = cartVelocity.normalized;
             float speed = cartVelocity.magnitude * CartKnockScale;
@@ -283,6 +290,7 @@ namespace IssaPlugin.Items
             if (wasDetonating)
                 _mustLeaveRange = true;
             _swingLockUntil = Time.time + 0.5f;
+            AddAnger();
             InterruptDetonationVisual();
             _phase = Phase.Flung;
 
@@ -323,10 +331,13 @@ namespace IssaPlugin.Items
             if (_finished || _rb == null)
                 return;
 
+            bool firstDisrupt = _phase != Phase.Flung;
             _blackHoleSuppressedUntil = Time.fixedTime + Time.fixedDeltaTime * 2f;
             InterruptDetonationVisual();
             ReleaseToPhysics(clearVelocity: false);
             _phase = Phase.Flung;
+            if (firstDisrupt)
+                AddAnger();
         }
 
         /// Called just before the black hole writes the spit velocity.
@@ -335,10 +346,13 @@ namespace IssaPlugin.Items
             if (_finished || _rb == null)
                 return;
 
+            bool firstDisrupt = _phase != Phase.Flung;
             _blackHoleSuppressedUntil = Time.fixedTime + 2f;
             InterruptDetonationVisual();
             ReleaseToPhysics(clearVelocity: false);
             _phase = Phase.Flung;
+            if (firstDisrupt)
+                AddAnger();
         }
 
         public void ApplyExplosion(Vector3 origin, float radius, float scale)
@@ -346,8 +360,11 @@ namespace IssaPlugin.Items
             if (_finished || _rb == null || _setup == null)
                 return;
 
+            if (_phase == Phase.Detonating)
+                _mustLeaveRange = true;
             InterruptDetonationVisual();
             ReleaseToPhysics(clearVelocity: false);
+            AddAnger();
             _phase = Phase.Flung;
             _ignoreUntil = Time.time + ImpactIgnoreSeconds;
             _leftGround = false;
@@ -366,6 +383,51 @@ namespace IssaPlugin.Items
             if (away.sqrMagnitude < 0.0001f)
                 away = Vector3.up;
             ApplyTumble(away.normalized, ExplosionForce * Mathf.Max(1f, scale));
+        }
+
+        public void ApplyFirearmHit(Vector3 shotDirection)
+        {
+            if (_finished || _rb == null || _setup == null)
+                return;
+            if (Time.time < _bulletLockUntil)
+                return;
+
+            _bulletLockUntil = Time.time + 0.03f;
+            if (shotDirection.sqrMagnitude < 0.0001f)
+                shotDirection = transform.forward;
+            shotDirection.Normalize();
+
+            if (_phase == Phase.Detonating)
+                _mustLeaveRange = true;
+            AddAnger();
+            InterruptDetonationVisual();
+            _phase = Phase.Flung;
+
+            Vector3 knockDir = (shotDirection + Vector3.up * 0.35f).normalized;
+            ReleaseToPhysics(clearVelocity: true);
+            _knockVelocity = knockDir * BulletKnockSpeed;
+            _knockSpin = TumbleSpin(knockDir, BulletKnockSpeed);
+            _rb.linearVelocity = _knockVelocity;
+            _rb.angularVelocity = _knockSpin;
+            _reapplyKnock = true;
+            _ignoreUntil = Time.time + ImpactIgnoreSeconds;
+            _leftGround = false;
+            _pendingFastContact = false;
+        }
+
+        public static void ServerHandleBulletMessage(uint orbNetId, Vector3 direction)
+        {
+            if (!NetworkServer.active)
+                return;
+            if (!NetworkServer.spawned.TryGetValue(orbNetId, out var identity))
+                return;
+
+            identity.GetComponent<OrbBomberBehaviour>()?.ApplyFirearmHit(direction);
+        }
+
+        private void AddAnger()
+        {
+            _angerBonus += Mathf.Max(0f, ModConfig.OrbBomber.AngerSpeedBonus.Value);
         }
 
         private static float SwingForceMultiplier(PlayerInfo swinger)
@@ -540,8 +602,8 @@ namespace IssaPlugin.Items
             speed = Mathf.Max(
                 0f,
                 Mathf.Lerp(
-                    ModConfig.OrbBomber.StartSpeed.Value,
-                    ModConfig.OrbBomber.MaxSpeed.Value,
+                    ModConfig.OrbBomber.StartSpeed.Value + _angerBonus,
+                    ModConfig.OrbBomber.MaxSpeed.Value + _angerBonus,
                     blend
                 )
             );
@@ -631,6 +693,10 @@ namespace IssaPlugin.Items
             if (Time.time < _ignoreUntil)
                 return;
 
+            float keep = 1f / (1f + FlungDrag * Time.fixedDeltaTime);
+            _rb.linearVelocity *= keep;
+            _rb.angularVelocity *= keep;
+
             bool touchdown = false;
             if (_leftGround && grounded)
             {
@@ -641,17 +707,20 @@ namespace IssaPlugin.Items
             bool fastContact = _pendingFastContact;
             _pendingFastContact = false;
             bool realLanding = fastContact || touchdown;
+            float speed = _rb.linearVelocity.magnitude;
 
-            if (_impactArmed && realLanding)
+            if (_impactArmed && realLanding && speed > ResumeSpeed())
             {
                 Detonate();
                 return;
             }
 
-            float settle = Mathf.Max(0.05f, ModConfig.OrbBomber.SettleSpeed.Value);
-            if (grounded && _rb.linearVelocity.magnitude <= settle && !realLanding)
+            if (speed <= ResumeSpeed())
                 EnterApproachBody();
         }
+
+        private static float ResumeSpeed() =>
+            Mathf.Max(0.05f, ModConfig.OrbBomber.SettleSpeed.Value);
 
         private void EnterApproachBody()
         {
