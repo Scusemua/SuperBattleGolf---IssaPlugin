@@ -1,6 +1,7 @@
 using System.Reflection;
 using HarmonyLib;
 using IssaPlugin.Items;
+using UnityEngine;
 
 namespace IssaPlugin.Patches
 {
@@ -29,39 +30,56 @@ namespace IssaPlugin.Patches
     }
 
     /// <summary>
-    /// Forces the base game's walk-speed clamp while the minigun is actually firing.
-    /// The clamp is the same one ctrl/alt walk uses. It does not write IsHoldingWalk,
-    /// so a real walk-key press is left alone when the burst ends.
+    /// Forces a fraction of normal move speed while the minigun is firing bullets.
+    /// The fraction is MoveSpeedScale. The spin-up does not apply it.
     /// </summary>
     [HarmonyPatch]
-    static class MinigunWalkPatch
+    static class MinigunGroundSpeedPatch
     {
-        // The |314 suffix is a compiler id and changes when the game method is recompiled.
-        static MethodBase TargetMethod()
+        static MethodBase TargetMethod() =>
+            MinigunSpeed.FindSpeedMethod("<UpdateMovementSpeed>g__GetTargetSpeedOnGround");
+
+        static void Postfix(PlayerMovement __instance, ref float __result) =>
+            MinigunSpeed.Scale(__instance, ref __result);
+    }
+
+    [HarmonyPatch]
+    static class MinigunAirSpeedPatch
+    {
+        static MethodBase TargetMethod() =>
+            MinigunSpeed.FindSpeedMethod("<UpdateMovementSpeed>g__GetTargetSpeedInAir");
+
+        static void Postfix(PlayerMovement __instance, ref float __result) =>
+            MinigunSpeed.Scale(__instance, ref __result);
+    }
+
+    static class MinigunSpeed
+    {
+        internal static MethodBase FindSpeedMethod(string prefix)
         {
-            const string prefix = "<ProcessMovementInput>g__ShouldClampToWalkingSpeed";
             var flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
             foreach (var method in typeof(PlayerMovement).GetMethods(flags))
             {
-                if (method.Name.StartsWith(prefix) && method.ReturnType == typeof(bool))
+                if (method.Name.StartsWith(prefix) && method.ReturnType == typeof(float))
                     return method;
             }
 
             return null;
         }
 
-        static void Postfix(PlayerMovement __instance, ref bool __result)
+        internal static void Scale(PlayerMovement movement, ref float speed)
         {
-            if (__result || __instance == null)
+            if (movement == null)
                 return;
-
             if (
-                Firearm.IsFiringBullets(
-                    __instance.PlayerInfo?.Inventory,
+                !Firearm.IsFiringBullets(
+                    movement.PlayerInfo?.Inventory,
                     ItemRegistry.MinigunItemType
                 )
             )
-                __result = true;
+                return;
+
+            speed *= Mathf.Clamp(ModConfig.Minigun.MoveSpeedScale.Value, 0f, 1f);
         }
     }
 }

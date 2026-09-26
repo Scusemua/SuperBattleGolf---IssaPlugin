@@ -14,6 +14,7 @@ namespace IssaPlugin.Items
         public Vector3 Origin;
         public Vector3[] Ends;
         public Vector3[] BloodPoints;
+        public Vector3[] Impacts;
         public bool BearRay;
         public Vector3 BearDirection;
         public float BearRange;
@@ -26,6 +27,7 @@ namespace IssaPlugin.Items
             writer.WriteVector3(msg.Origin);
             WritePoints(writer, msg.Ends);
             WritePoints(writer, msg.BloodPoints);
+            WritePoints(writer, msg.Impacts);
             writer.WriteBool(msg.BearRay);
             writer.WriteVector3(msg.BearDirection);
             writer.WriteFloat(msg.BearRange);
@@ -37,6 +39,7 @@ namespace IssaPlugin.Items
                 Origin = reader.ReadVector3(),
                 Ends = ReadPoints(reader),
                 BloodPoints = ReadPoints(reader),
+                Impacts = ReadPoints(reader),
                 BearRay = reader.ReadBool(),
                 BearDirection = reader.ReadVector3(),
                 BearRange = reader.ReadFloat(),
@@ -69,6 +72,7 @@ namespace IssaPlugin.Items
             Vector3 origin,
             List<Vector3> ends,
             List<Vector3> bloodPoints,
+            List<Vector3> impacts,
             bool bearRay,
             Vector3 bearDirection,
             float bearRange
@@ -79,11 +83,17 @@ namespace IssaPlugin.Items
                 Origin = origin,
                 Ends = Copy(ends),
                 BloodPoints = Copy(bloodPoints),
+                Impacts = Copy(impacts),
                 BearRay = bearRay,
                 BearDirection = bearDirection,
                 BearRange = bearRange,
             };
-            if (msg.Ends.Length == 0 && msg.BloodPoints.Length == 0 && !msg.BearRay)
+            if (
+                msg.Ends.Length == 0
+                && msg.BloodPoints.Length == 0
+                && msg.Impacts.Length == 0
+                && !msg.BearRay
+            )
                 return;
 
             Spawn(msg);
@@ -190,6 +200,8 @@ namespace IssaPlugin.Items
             if (msg.Ends != null && msg.Ends.Length > 0)
                 SpawnMuzzleFlash(msg);
 
+            SpawnImpacts(msg);
+
             if (msg.BloodPoints == null)
                 return;
 
@@ -235,6 +247,51 @@ namespace IssaPlugin.Items
             }
 
             Object.Destroy(go, 2.1f);
+        }
+
+        private static void SpawnImpacts(ShotgunTracerMessage msg)
+        {
+            var prefab = AssetLoader.BulletImpactPrefab;
+            if (prefab == null || msg.Impacts == null)
+                return;
+
+            if (prefab.activeSelf)
+                prefab.SetActive(false);
+
+            int count = Mathf.Min(msg.Impacts.Length, MaxPellets);
+            for (int i = 0; i < count; i++)
+            {
+                Vector3 point = msg.Impacts[i];
+                if (!IsFinite(point))
+                    continue;
+
+                Vector3 forward = point - msg.Origin;
+                if (forward.sqrMagnitude < 0.0001f || !IsFinite(forward))
+                {
+                    forward =
+                        msg.BearDirection.sqrMagnitude > 0.0001f
+                            ? msg.BearDirection
+                            : Vector3.forward;
+                }
+                forward.Normalize();
+
+                var go = Object.Instantiate(prefab, point, Quaternion.LookRotation(forward));
+                go.SetActive(true);
+                foreach (var col in go.GetComponentsInChildren<Collider>(true))
+                    col.enabled = false;
+
+                float life = 0.5f;
+                foreach (var particles in go.GetComponentsInChildren<ParticleSystem>(true))
+                {
+                    particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                    particles.Clear(true);
+                    particles.Play(true);
+                    var main = particles.main;
+                    life = Mathf.Max(life, main.duration + main.startLifetime.constantMax);
+                }
+
+                Object.Destroy(go, life + 0.1f);
+            }
         }
 
         private static bool IsFinite(Vector3 value) =>

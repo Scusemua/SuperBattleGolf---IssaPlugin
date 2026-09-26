@@ -29,6 +29,7 @@ namespace IssaPlugin.Items
         public override ItemType? EffectiveItemProxy => ItemType.ElephantGun;
         public override float? GetAimSpreadDegrees() => ModConfig.Minigun.Inaccuracy.Value;
         public override float? FirearmMaxShotDistance => ModConfig.Minigun.MaxShotDistance.Value;
+        public override bool RequiresAimToUse => true;
 
         public override void OnUse(PlayerInventory inventory) =>
             inventory.StartCoroutine(MinigunItem.FireLoop(inventory));

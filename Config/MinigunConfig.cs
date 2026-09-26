@@ -12,6 +12,8 @@ namespace IssaPlugin
         public ConfigEntry<float> FireRate { get; private set; }
         public ConfigEntry<float> SpinUp { get; private set; }
         public ConfigEntry<float> Inaccuracy { get; private set; }
+        public ConfigEntry<float> PelletCount { get; private set; }
+        public ConfigEntry<float> MoveSpeedScale { get; private set; }
         public ConfigEntry<float> MaxAimingDistance { get; private set; }
         public ConfigEntry<float> MaxShotDistance { get; private set; }
         public ConfigEntry<float> ScreenShakeIntensity { get; private set; }
@@ -46,7 +48,25 @@ namespace IssaPlugin
                 Section,
                 "Inaccuracy",
                 8f,
-                "Random spread angle (degrees) applied to each bullet. Higher = less accurate."
+                "Random spread angle (degrees) applied to each pellet. Higher = less accurate."
+            );
+            PelletCount = cfg.Bind(
+                Section,
+                "PelletCount",
+                1f,
+                new ConfigDescription(
+                    "Pellets fired each shot. Each pellet is its own bullet and can hit. One use is spent per shot, not per pellet. FireRate is the time between shots.",
+                    new AcceptableValueRange<float>(1f, 32f)
+                )
+            );
+            MoveSpeedScale = cfg.Bind(
+                Section,
+                "MoveSpeedScale",
+                0.5f,
+                new ConfigDescription(
+                    "Fraction of normal move speed while the minigun is firing bullets. 1 is full speed. 0 holds you in place. The spin-up does not slow you.",
+                    new AcceptableValueRange<float>(0f, 1f)
+                )
             );
             MaxAimingDistance = cfg.Bind(
                 Section,

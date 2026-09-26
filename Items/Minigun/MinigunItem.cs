@@ -1,11 +1,12 @@
 using System.Collections;
+using UnityEngine;
 
 namespace IssaPlugin.Items
 {
     /// <summary>
-    /// Heavy automatic gun. Spins up, then fires one bullet per fire-rate tick
-    /// while left-click is held. The shot sound plays once per trigger pull.
-    /// Each bullet consumes one use. The spin-up consumes none.
+    /// Heavy automatic gun. Spins up while aimed in, then fires one shot per
+    /// fire-rate tick while left-click and aim are held. The shot sound plays
+    /// once per trigger pull. Each shot consumes one use. The spin-up consumes none.
     /// </summary>
     public static class MinigunItem
     {
@@ -16,7 +17,8 @@ namespace IssaPlugin.Items
                 ShellProfile,
                 () => ModConfig.Minigun.FireRate.Value,
                 ModConfig.Minigun.SpinUp.Value,
-                driveUseAnimation: false
+                driveUseAnimation: false,
+                requireAim: true
             );
 
         private static FirearmShellProfile ShellProfile() =>
@@ -27,9 +29,8 @@ namespace IssaPlugin.Items
                 MaxAimingDistance = ModConfig.Minigun.MaxAimingDistance.Value,
                 MaxShotDistance = ModConfig.Minigun.MaxShotDistance.Value,
                 Inaccuracy = ModConfig.Minigun.Inaccuracy.Value,
-                PelletCount = 1,
+                PelletCount = Mathf.Max(1, Mathf.RoundToInt(ModConfig.Minigun.PelletCount.Value)),
                 ScreenShakeIntensity = ModConfig.Minigun.ScreenShakeIntensity.Value,
-                ThrottleVfx = true,
                 UseShotgunVisuals = true,
             };
     }

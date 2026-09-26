@@ -159,7 +159,7 @@ A remote that turns the course to night. The sky and the light go dark for every
 Aim at a surface and fire. The rope sticks, and you swing from it. Hold left click to reel in, right click to let line out, or both to hang still.
 
 ### 🔫 Minigun
-Hold the trigger and the barrels spin up before any bullets come out. Once it is going it fires very fast, with a wide spread, and you are stuck walking until you let go.
+Hold the trigger while aiming and the barrels spin up before any bullets come out. Once it is going it fires very fast, with a wide spread, and you move slower until you let go.
 
 ---
 

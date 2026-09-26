@@ -316,7 +316,8 @@ namespace IssaPlugin.Items
             System.Func<FirearmShellProfile> profile,
             System.Func<float> fireRate,
             float spinUpSeconds = 0f,
-            bool driveUseAnimation = true
+            bool driveUseAnimation = true,
+            bool requireAim = false
         )
         {
             if (inventory == null || !Busy.Add(itemType))
@@ -341,6 +342,8 @@ namespace IssaPlugin.Items
                 {
                     if (inventory.GetEffectivelyEquippedItem(true) != itemType)
                         yield break;
+                    if (requireAim && !IsHoldingAim(inventory))
+                        yield break;
                     if (
                         mouseWasDown
                         && (Mouse.current == null || !Mouse.current.leftButton.isPressed)
@@ -353,6 +356,8 @@ namespace IssaPlugin.Items
 
                 if (inventory.GetEffectivelyEquippedItem(true) != itemType)
                     yield break;
+                if (requireAim && !IsHoldingAim(inventory))
+                    yield break;
 
                 inventory.PlayerInfo.PlayerAudio.PlayElephantGunShotForAllClients();
                 _holdBullets = true;
@@ -360,6 +365,8 @@ namespace IssaPlugin.Items
                 do
                 {
                     if (inventory.GetEffectivelyEquippedItem(true) != itemType)
+                        break;
+                    if (requireAim && !IsHoldingAim(inventory))
                         break;
 
                     int slot = inventory.EquippedItemIndex;
@@ -385,6 +392,9 @@ namespace IssaPlugin.Items
                     ItemHelper.SetCurrentItemUse(inventory, ItemUseType.None);
             }
         }
+
+        private static bool IsHoldingAim(PlayerInventory inventory) =>
+            inventory.PlayerInfo?.Input?.IsHoldingAimSwing ?? false;
 
         /// <summary>
         /// One shell per use, then a recovery wait that ignores further uses.
@@ -454,9 +464,11 @@ namespace IssaPlugin.Items
                 return;
 
             List<Vector3> ends = null;
+            List<Vector3> impacts = null;
             if (show)
             {
                 ends = new List<Vector3>(PelletVisuals.Count);
+                impacts = new List<Vector3>();
                 for (int i = 0; i < PelletVisuals.Count; i++)
                 {
                     PelletVisual visual = PelletVisuals[i];
@@ -468,6 +480,8 @@ namespace IssaPlugin.Items
                             ? visual.WorldPoint
                             : barrelEnd + visual.Direction * profile.MaxShotDistance
                     );
+                    if (visual.Connected)
+                        impacts.Add(visual.WorldPoint);
                 }
             }
 
@@ -475,6 +489,7 @@ namespace IssaPlugin.Items
                 barrelEnd,
                 ends,
                 show ? BloodPoints : null,
+                impacts,
                 missedAll,
                 aimDirection,
                 profile.MaxShotDistance

@@ -91,6 +91,7 @@ namespace IssaPlugin
             gameObject.AddComponent<BearOverlay>();
             gameObject.AddComponent<BearHealthBarOverlay>();
             gameObject.AddComponent<GunCrosshairOverlay>();
+            gameObject.AddComponent<MinigunAmmoOverlay>();
             gameObject.AddComponent<GolfCartLauncherModeOverlay>();
             gameObject.AddComponent<GrapplingHookOverlay>();
             gameObject.AddComponent<HitNotificationOverlay>();
