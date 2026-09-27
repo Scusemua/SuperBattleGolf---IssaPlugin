@@ -13,7 +13,8 @@ namespace IssaPlugin.Items
                 inventory,
                 ItemRegistry.AK47ItemType,
                 ShellProfile,
-                () => ModConfig.AK47.FireRate.Value
+                () => ModConfig.AK47.FireRate.Value,
+                driveUseAnimation: false
             );
 
         private static FirearmShellProfile ShellProfile() =>

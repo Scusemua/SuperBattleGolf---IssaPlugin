@@ -106,7 +106,12 @@ namespace IssaPlugin.Items
             }
 
             if (Time.fixedTime < _blackHoleSuppressedUntil)
+            {
+                // A knock from before the grab would otherwise replay over the
+                // suction once the window ends.
+                _reapplyKnock = false;
                 return;
+            }
 
             if (_reapplyKnock && _rb != null && !_rb.isKinematic)
             {
@@ -169,7 +174,7 @@ namespace IssaPlugin.Items
             SampleCarts();
 
             float radius =
-                Mathf.Abs(_setup.BaseRadius) * Mathf.Max(transform.localScale.x, 1f) + 0.75f;
+                _setup.BodyRadius * Mathf.Max(transform.localScale.x, 1f) + 0.75f;
             int count = Physics.OverlapSphereNonAlloc(
                 _rb.position,
                 radius,
@@ -271,7 +276,7 @@ namespace IssaPlugin.Items
             if (swingerIdentity == null)
                 return;
 
-            float bodyRadius = Mathf.Abs(_setup.BaseRadius) * Mathf.Max(transform.localScale.x, 1f);
+            float bodyRadius = _setup.BodyRadius * Mathf.Max(transform.localScale.x, 1f);
             float reach = SwingOverlapRadius + bodyRadius + 2f;
             if ((swinger.transform.position - transform.position).sqrMagnitude > reach * reach)
                 return;
@@ -308,6 +313,7 @@ namespace IssaPlugin.Items
 
             bool firstDisrupt = _phase != Phase.Flung;
             _blackHoleSuppressedUntil = Time.fixedTime + seconds;
+            _reapplyKnock = false;
             if (_phase == Phase.Detonating)
                 _mustLeaveRange = true;
             InterruptDetonationVisual();
@@ -523,7 +529,12 @@ namespace IssaPlugin.Items
         {
             _rb.constraints = RigidbodyConstraints.FreezeRotation;
             _rb.useGravity = true;
-            _rb.isKinematic = false;
+            if (_rb.isKinematic)
+                _rb.isKinematic = false;
+            if (_rb.collisionDetectionMode != CollisionDetectionMode.ContinuousDynamic)
+                _rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+
+            KeepAboveGround();
 
             FaceTarget(targetPosition);
 
@@ -551,7 +562,7 @@ namespace IssaPlugin.Items
             float distance = toTarget.magnitude;
             direction = distance > 0.001f ? toTarget / distance : Vector3.zero;
 
-            float detonationRange = Mathf.Max(0.5f, ModConfig.OrbBomber.DetonationRange.Value * 0.25f);
+            float detonationRange = Mathf.Max(0.5f, ModConfig.OrbBomber.DetonationRange.Value);
             if (distance > detonationRange)
                 _mustLeaveRange = false;
             else if (!_mustLeaveRange)
@@ -584,6 +595,7 @@ namespace IssaPlugin.Items
                 _rb.linearVelocity = Vector3.zero;
                 _rb.angularVelocity = Vector3.zero;
                 _rb.constraints = RigidbodyConstraints.None;
+                _rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
                 _rb.useGravity = false;
                 _rb.isKinematic = true;
             }
@@ -691,8 +703,7 @@ namespace IssaPlugin.Items
         private static float ResumeSpeed() =>
             Mathf.Max(0.05f, ModConfig.OrbBomber.SettleSpeed.Value);
 
-        /// ContinuousDynamic still misses a fast sphere against a terrain mesh.
-        /// If the center has gone through the nearest ground, put it back on top.
+        /// If the pivot has gone through the nearest ground, put the bottom back on top.
         private void KeepAboveGround()
         {
             if (_rb == null || _setup == null || _rb.isKinematic)
@@ -749,6 +760,7 @@ namespace IssaPlugin.Items
             _impactArmed = false;
             _leftGround = false;
             _pendingFastContact = false;
+            _reapplyKnock = false;
             if (!_rb.isKinematic)
             {
                 _rb.linearVelocity = Vector3.zero;
@@ -767,13 +779,13 @@ namespace IssaPlugin.Items
         private bool TryFindGround(Vector3 position, out float groundY)
         {
             groundY = position.y;
-            float radius = Mathf.Abs(_setup.BaseRadius);
-            Vector3 origin = position + Vector3.up * (radius + 3f);
+            float lift = Mathf.Max(_setup.BodyRadius, Mathf.Max(0f, _setup.BaseRadius)) + 3f;
+            Vector3 origin = position + Vector3.up * lift;
             int count = Physics.RaycastNonAlloc(
                 origin,
                 Vector3.down,
                 GroundHits,
-                radius + 8f,
+                lift + Mathf.Max(0f, _setup.BaseRadius) + 4f,
                 GroundMask,
                 QueryTriggerInteraction.Ignore
             );
@@ -783,7 +795,7 @@ namespace IssaPlugin.Items
             for (int i = 0; i < count; i++)
             {
                 var hit = GroundHits[i];
-                if (hit.collider == null)
+                if (hit.collider == null || hit.normal.y < 0.45f)
                     continue;
                 if (hit.collider.transform.IsChildOf(transform) || hit.collider.transform == transform)
                     continue;
@@ -800,7 +812,7 @@ namespace IssaPlugin.Items
 
         private bool IsRestingOnGround()
         {
-            float reach = Mathf.Abs(_setup.BaseRadius) * Mathf.Max(transform.localScale.y, 1f) + 0.5f;
+            float reach = Mathf.Max(0f, _setup.BaseRadius) * Mathf.Max(transform.localScale.y, 1f) + 0.5f;
             int count = Physics.RaycastNonAlloc(
                 _rb.position,
                 Vector3.down,

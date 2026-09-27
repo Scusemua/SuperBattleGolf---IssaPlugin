@@ -12,6 +12,8 @@ namespace IssaPlugin.Patches
     [HarmonyPatch(typeof(PlayerGolfer), "ReleaseSwingChargeInternal")]
     static class OrbBomberSwingPatch
     {
+        private static readonly Collider[] SwingHits = new Collider[32];
+
         static void Postfix(PlayerGolfer __instance)
         {
             if (!__instance.isLocalPlayer)
@@ -36,15 +38,19 @@ namespace IssaPlugin.Patches
                     GameManager.GolfSettings.SwingHitBoxLocalCenter
                 );
 
-                var colliders = Physics.OverlapSphere(
+                int count = Physics.OverlapSphereNonAlloc(
                     swingCenter,
                     OrbBomberBehaviour.SwingProbeRadius,
+                    SwingHits,
                     Physics.AllLayers,
-                    QueryTriggerInteraction.Collide
+                    QueryTriggerInteraction.Ignore
                 );
 
-                foreach (var col in colliders)
+                for (int i = 0; i < count; i++)
                 {
+                    var col = SwingHits[i];
+                    if (col == null)
+                        continue;
                     var setup = col.GetComponentInParent<OrbBomberClientSetup>();
                     if (setup == null)
                         continue;
@@ -66,6 +72,8 @@ namespace IssaPlugin.Patches
     [HarmonyPatch(typeof(PlayerGolfer), "OnFinishedSwinging")]
     static class OrbBomberSwingFallbackPatch
     {
+        private static readonly Collider[] SwingHits = new Collider[32];
+
         static void Postfix(PlayerGolfer __instance)
         {
             if (!NetworkServer.active || __instance == null)
@@ -78,16 +86,21 @@ namespace IssaPlugin.Patches
             Vector3 swingCenter = __instance.transform.TransformPoint(
                 GameManager.GolfSettings.SwingHitBoxLocalCenter
             );
-            var colliders = Physics.OverlapSphere(
+            int count = Physics.OverlapSphereNonAlloc(
                 swingCenter,
                 OrbBomberBehaviour.SwingProbeRadius,
+                SwingHits,
                 Physics.AllLayers,
-                QueryTriggerInteraction.Collide
+                QueryTriggerInteraction.Ignore
             );
 
             var sent = new HashSet<uint>();
-            foreach (var col in colliders)
+            for (int i = 0; i < count; i++)
             {
+                var col = SwingHits[i];
+                if (col == null)
+                    continue;
+
                 var behaviour = col.GetComponentInParent<OrbBomberBehaviour>();
                 if (behaviour == null)
                     continue;

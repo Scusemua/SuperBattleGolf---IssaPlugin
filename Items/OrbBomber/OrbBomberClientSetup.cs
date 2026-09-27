@@ -7,9 +7,13 @@ namespace IssaPlugin.Items
     /// has its collider, rigidbody, and network components. Does not move the pivot.
     public class OrbBomberClientSetup : MonoBehaviour
     {
-        /// Added to the ground height to place the pivot so the visible bottom sits on the ground at scale 1.
-        /// Negative when the mesh sits above its origin.
+        /// Added to the ground height so the visible bottom sits on the ground at scale 1.
+        /// This is the pivot-to-bottom distance, not the sphere's radius. Negative when the
+        /// mesh sits entirely above the pivot.
         public float BaseRadius { get; private set; } = 0.5f;
+
+        /// Horizontal distance from the pivot to the outside of the sphere at scale 1.
+        public float BodyRadius { get; private set; } = 0.5f;
 
         private Renderer[] _renderers;
         private MaterialPropertyBlock _block;
@@ -35,33 +39,50 @@ namespace IssaPlugin.Items
             _renderers = GetComponentsInChildren<Renderer>(true);
             _block = new MaterialPropertyBlock();
 
-            // Leave the prefab's 1 m model offset in place. Shifting that child
-            // down onto this pivot buried the sphere. Plant from whichever
-            // bottom sits lower: the collider, or the visible mesh.
+            // Leave the prefab's model offset in place. The mesh is authored above
+            // this pivot; moving it down onto the pivot buried the sphere.
             float drop = 0.5f;
+            float reach = 0.5f;
             Vector3 massPoint = transform.position;
             var sphere = GetComponentInChildren<SphereCollider>(true);
             if (sphere != null)
             {
-                Vector3 center = sphere.transform.TransformPoint(sphere.center);
-                Vector3 bottom = sphere.transform.TransformPoint(
-                    sphere.center + Vector3.down * sphere.radius
+                Vector3 lossy = sphere.transform.lossyScale;
+                float maxAxis = Mathf.Max(
+                    Mathf.Abs(lossy.x),
+                    Mathf.Abs(lossy.y),
+                    Mathf.Abs(lossy.z)
                 );
-                drop = transform.position.y - bottom.y;
+                float worldRadius = sphere.radius * maxAxis;
+                Vector3 center = sphere.transform.TransformPoint(sphere.center);
+                drop = transform.position.y - (center.y - worldRadius);
+                reach = HorizontalReach(center, worldRadius);
                 massPoint = center;
             }
 
             if (TryGetVisualBounds(out Bounds bounds))
             {
                 drop = Mathf.Max(drop, transform.position.y - bounds.min.y);
+                reach = Mathf.Max(
+                    reach,
+                    HorizontalReach(bounds.center, Mathf.Max(bounds.extents.x, bounds.extents.z))
+                );
                 massPoint = bounds.center;
             }
 
             BaseRadius = drop;
+            BodyRadius = Mathf.Max(0.05f, reach);
 
             var body = GetComponent<Rigidbody>();
             if (body != null)
                 body.centerOfMass = transform.InverseTransformPoint(massPoint);
+        }
+
+        private float HorizontalReach(Vector3 worldCenter, float radius)
+        {
+            float dx = worldCenter.x - transform.position.x;
+            float dz = worldCenter.z - transform.position.z;
+            return Mathf.Sqrt(dx * dx + dz * dz) + radius;
         }
 
         private bool TryGetVisualBounds(out Bounds bounds)
@@ -73,7 +94,7 @@ namespace IssaPlugin.Items
 
             foreach (var renderer in _renderers)
             {
-                if (renderer == null)
+                if (renderer == null || !renderer.enabled || !renderer.gameObject.activeInHierarchy)
                     continue;
                 if (!found)
                 {
