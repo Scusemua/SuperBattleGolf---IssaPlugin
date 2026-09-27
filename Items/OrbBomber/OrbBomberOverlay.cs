@@ -40,6 +40,7 @@ namespace IssaPlugin.Items
 
         private void OnDestroy()
         {
+            CloseChooser();
             if (Instance == this)
                 Instance = null;
             Destroy(_panelBgTex);
@@ -52,11 +53,24 @@ namespace IssaPlugin.Items
         public void OpenChooser(int equippedSlotIndex)
         {
             _equippedSlotIndex = equippedSlotIndex;
-            _isOpen = true;
+            if (!_isOpen)
+            {
+                _isOpen = true;
+                CursorManager.SetCursorForceUnlocked(true);
+            }
             RefreshPlayerList();
         }
 
-        public void ForceClose() => _isOpen = false;
+        public void ForceClose() => CloseChooser();
+
+        private void CloseChooser()
+        {
+            if (!_isOpen)
+                return;
+
+            _isOpen = false;
+            CursorManager.SetCursorForceUnlocked(false);
+        }
 
         private void OnGUI()
         {
@@ -141,7 +155,7 @@ namespace IssaPlugin.Items
                                     EquippedSlotIndex = _equippedSlotIndex,
                                 }
                             );
-                            _isOpen = false;
+                            CloseChooser();
                         }
                     }
 
@@ -160,7 +174,7 @@ namespace IssaPlugin.Items
                 )
             )
             {
-                _isOpen = false;
+                CloseChooser();
             }
         }
 

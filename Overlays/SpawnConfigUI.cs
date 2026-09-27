@@ -183,6 +183,9 @@ namespace IssaPlugin.Overlays
 
         private void OnDestroy()
         {
+            if (_visible)
+                Close();
+
             if (Instance == this)
                 Instance = null;
         }
@@ -209,6 +212,9 @@ namespace IssaPlugin.Overlays
 
         public void Open()
         {
+            if (!_visible)
+                CursorManager.SetCursorForceUnlocked(true);
+
             _visible = true;
             InitWorkingCopy();
             IssaPluginPlugin.Log.LogInfo("[SpawnConfigUI] Opened.");
@@ -216,7 +222,11 @@ namespace IssaPlugin.Overlays
 
         public void Close()
         {
+            if (!_visible)
+                return;
+
             _visible = false;
+            CursorManager.SetCursorForceUnlocked(false);
             IssaPluginPlugin.Log.LogInfo("[SpawnConfigUI] Closed.");
         }
 

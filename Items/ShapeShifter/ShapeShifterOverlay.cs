@@ -71,6 +71,7 @@ namespace IssaPlugin.Items
 
         private void OnDestroy()
         {
+            CloseChooser();
             if (Instance == this)
                 Instance = null;
             DestroyBarTextures();
@@ -87,12 +88,25 @@ namespace IssaPlugin.Items
         public void OpenChooser(int equippedSlotIndex)
         {
             _equippedSlotIndex = equippedSlotIndex;
-            _isOpen = true;
+            if (!_isOpen)
+            {
+                _isOpen = true;
+                CursorManager.SetCursorForceUnlocked(true);
+            }
             RefreshPlayerList();
         }
 
         /// Closes the panel without sending a request (hole transition / item lost).
-        public void ForceClose() => _isOpen = false;
+        public void ForceClose() => CloseChooser();
+
+        private void CloseChooser()
+        {
+            if (!_isOpen)
+                return;
+
+            _isOpen = false;
+            CursorManager.SetCursorForceUnlocked(false);
+        }
 
         /// Shows or hides the time-remaining bar for the local player's cubed ball.
         public void SetCubed(bool cubed, float duration = 0f)
@@ -299,7 +313,7 @@ namespace IssaPlugin.Items
                                     EquippedSlotIndex = _equippedSlotIndex,
                                 }
                             );
-                            _isOpen = false;
+                            CloseChooser();
                         }
                     }
 
@@ -318,7 +332,7 @@ namespace IssaPlugin.Items
                 )
             )
             {
-                _isOpen = false;
+                CloseChooser();
             }
         }
 
