@@ -25,6 +25,7 @@ namespace IssaPlugin
         public ConfigEntry<float> AimAssistMaxDistance { get; private set; }
         public ConfigEntry<bool> AimAssistAffectsHeavy { get; private set; }
         public ConfigEntry<bool> AimAssistTargetsSelf { get; private set; }
+        public ConfigEntry<bool> AutonomousTargetsUser { get; private set; }
         public ConfigEntry<bool> AimAssistTargetsFinishedPlayers { get; private set; }
         public ConfigEntry<float> AimAssistTargetHeightOffset { get; private set; }
         public ConfigEntry<float> BoostMultiplier { get; private set; }
@@ -187,6 +188,13 @@ namespace IssaPlugin
                 "AimAssistTargetsSelf",
                 false,
                 "Whether aim assist may pick the AC130 user's own golfer as a target."
+            );
+            AutonomousTargetsUser = cfg.Bind(
+                Section,
+                "AutonomousTargetsUser",
+                false,
+                "Whether an autonomously deployed AC130 may shoot the player who called it. "
+                    + "Leave this off in a normal match. Turn it on to test the gunship alone."
             );
             AimAssistTargetsFinishedPlayers = cfg.Bind(
                 Section,

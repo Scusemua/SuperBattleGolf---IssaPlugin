@@ -82,6 +82,7 @@ namespace IssaPlugin
             gameObject.AddComponent<VoteOverlay>();
             gameObject.AddComponent<BomberOverlay>();
             gameObject.AddComponent<AC130Overlay>();
+            gameObject.AddComponent<AC130DeployPrompt>();
             gameObject.AddComponent<FreezeOverlay>();
             gameObject.AddComponent<FreezePhysicsHandler>();
             gameObject.AddComponent<LowGravityOverlay>();

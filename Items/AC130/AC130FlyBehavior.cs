@@ -35,7 +35,7 @@ namespace IssaPlugin.Items
         private float _currentAltitude;
         private const float AltitudeSnapThreshold = 0.01f;
         private const float ArrivalThreshold = 5f;
-        private const float FlyOutDestroyDistance = 2000f;
+        internal const float FlyOutDestroyDistance = 2000f;
 
         private Vector3 _flyOutStart;
 

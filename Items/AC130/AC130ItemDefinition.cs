@@ -1,4 +1,4 @@
-using Mirror;
+using IssaPlugin.Overlays;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -36,7 +36,7 @@ namespace IssaPlugin.Items
         {
             var bridge = inventory.GetComponent<AC130NetworkBridge>();
             if (bridge != null)
-                NetworkClient.Send(new AC130StartMessage());
+                AC130DeployPrompt.Show();
             else
                 IssaPluginPlugin.Log.LogError("[AC130] No AC130NetworkBridge on player.");
         }

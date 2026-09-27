@@ -131,14 +131,25 @@ namespace IssaPlugin.Items
 
     // ── [Command] replacements (client→server) ──────────────────────────────
 
-    public struct AC130StartMessage : NetworkMessage { }
+    public struct AC130StartMessage : NetworkMessage
+    {
+        /// <summary>
+        /// False pilots the gunship. True deploys it on its own, with no cockpit.
+        /// </summary>
+        public bool Autonomous;
+    }
 
     public static class AC130StartMessageSerialization
     {
-        public static void WriteAC130StartMessage(NetworkWriter writer, AC130StartMessage msg) { }
+        public static void WriteAC130StartMessage(NetworkWriter writer, AC130StartMessage msg)
+        {
+            writer.WriteBool(msg.Autonomous);
+        }
 
-        public static AC130StartMessage ReadAC130StartMessage(NetworkReader reader) =>
-            new AC130StartMessage();
+        public static AC130StartMessage ReadAC130StartMessage(NetworkReader reader)
+        {
+            return new AC130StartMessage { Autonomous = reader.ReadBool() };
+        }
     }
 
     public struct AC130EndMessage : NetworkMessage { }

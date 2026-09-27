@@ -35,6 +35,7 @@ namespace IssaPlugin.Items
 
         private Coroutine _serverTimeout;
         private bool _serverSessionActive;
+        private AutonomousVehicleSession _autonomousSession;
         private GameObject _serverGunship;
         private AC130FlyBehaviour _serverFlyBehaviour;
         private AC130MaydayBehaviour _serverMaydayBehaviour;
@@ -43,7 +44,7 @@ namespace IssaPlugin.Items
 
         /// Distance ahead of the gunship at which rockets are spawned, far enough that a
         /// rocket does not self-collide with the gunship mesh on its first physics step.
-        private const float RocketMuzzleOffset = 15f;
+        internal const float RocketMuzzleOffset = 15f;
 
         /// <summary>
         /// Set by CmdPrepareGunshipRocket when the owning client has the gunship
@@ -76,6 +77,9 @@ namespace IssaPlugin.Items
                 );
                 ForceServerCleanup();
             }
+
+            if (_autonomousSession != null && _autonomousSession.IsActive)
+                _autonomousSession.Abort();
         }
 
         // Rate-limiting state for per-frame sends
@@ -135,9 +139,9 @@ namespace IssaPlugin.Items
         //  Client → Server
         // ================================================================
 
-        public void ServerStartAC130()
+        public void ServerStartAC130(bool autonomous)
         {
-            if (_serverSessionActive)
+            if (_serverSessionActive || (_autonomousSession != null && _autonomousSession.IsActive))
             {
                 IssaPluginPlugin.Log.LogWarning("[AC130] Session already active for this player.");
                 return;
@@ -163,24 +167,29 @@ namespace IssaPlugin.Items
                 return;
             }
 
+            if (autonomous)
+            {
+                if (!GlobalSessionLock<AC130NetworkBridge>.TryAcquire(this))
+                {
+                    connectionToClient.Send(new AC130BusyMessage());
+                    return;
+                }
+
+                _autonomousSession ??= new AutonomousVehicleSession(
+                    this,
+                    new AC130AutonomousLogic(this)
+                );
+                _autonomousSession.Begin(inventory);
+                return;
+            }
+
             ItemHelper.ConsumeEquippedItem(inventory);
 
             // ----------------------------------------------------------------
             //  Spawn the gunship on the server so we hold a valid reference
             //  for mayday detection, external destruction, and disconnect cleanup.
             // ----------------------------------------------------------------
-            Vector3 playerPos = inventory.PlayerInfo.transform.position;
-            Vector3 orbitCenter = AC130Helpers.ComputeMapCenter(playerPos);
-
-            // Raise the orbit base so the whole ring clears terrain. The centre comes
-            // from the hole/tee landmarks, which carry a real ground height, but the
-            // gunship flies at OrbitRadius away from it — on hilly maps the ring can
-            // cross ground much higher than the centre sits. OrbitPosition adds the
-            // configured altitude to centre.y, so centre.y must stay a ground height.
-            orbitCenter.y = TerrainHeight.HighestGroundOnRing(
-                orbitCenter,
-                ModConfig.AC130.OrbitRadius.Value
-            );
+            Vector3 orbitCenter = ComputeRaisedOrbitCenter(inventory.PlayerInfo.transform.position);
 
             GameObject gunshipGo = SpawnGunship(orbitCenter);
 
@@ -1029,10 +1038,49 @@ namespace IssaPlugin.Items
         // ================================================================
 
         /// <summary>
+        /// Map centre raised so the orbit ring clears the highest ground along it.
+        /// </summary>
+        internal static Vector3 ComputeRaisedOrbitCenter(Vector3 playerPos)
+        {
+            Vector3 orbitCenter = AC130Helpers.ComputeMapCenter(playerPos);
+
+            // Raise the orbit base so the whole ring clears terrain. The centre comes
+            // from the hole/tee landmarks, which carry a real ground height, but the
+            // gunship flies at OrbitRadius away from it — on hilly maps the ring can
+            // cross ground much higher than the centre sits. OrbitPosition adds the
+            // configured altitude to centre.y, so centre.y must stay a ground height.
+            orbitCenter.y = TerrainHeight.HighestGroundOnRing(
+                orbitCenter,
+                ModConfig.AC130.OrbitRadius.Value
+            );
+            return orbitCenter;
+        }
+
+        /// <summary>
+        /// Clears the autonomous session's shooter-state and lock. The session itself
+        /// destroys the gunship. Only this bridge's lock is released.
+        /// </summary>
+        internal void EndAutonomousSideState()
+        {
+            ServerBroadcastShooterState(false);
+            GlobalSessionLock<AC130NetworkBridge>.Release(this);
+        }
+
+        /// <summary>
+        /// Impact blast for an autonomous crash. Does not destroy the gunship,
+        /// release the lock, or close a cockpit — the session owns those.
+        /// </summary>
+        internal void ServerAutonomousImpact(Vector3 impactPos)
+        {
+            NetworkServer.SendToAll(new AC130MaydayImpactMessage { ImpactPos = impactPos });
+            ServerSpawnImpactRocket(impactPos);
+        }
+
+        /// <summary>
         /// Instantiates, configures, and network-spawns the AC-130 gunship prefab.
         /// Returns the spawned GameObject, or null if the prefab is unavailable.
         /// </summary>
-        private static GameObject SpawnGunship(Vector3 orbitCenter)
+        internal static GameObject SpawnGunship(Vector3 orbitCenter)
         {
             if (AssetLoader.AC130Prefab == null)
             {
@@ -1146,10 +1194,14 @@ namespace IssaPlugin.Items
         {
             if (_serverSessionActive)
                 ForceServerCleanup();
+
+            _autonomousSession?.EndForHoleChange();
         }
 
         public override void ClientHoleCleanup() // Runs on client
         {
+            AC130DeployPrompt.Hide();
+
             if (LocalSessionActive)
                 _forceEnd = true;
 
@@ -1190,7 +1242,7 @@ namespace IssaPlugin.Items
         /// The host does not receive its own SendToAll, so the local set is updated
         /// directly as well.
         /// </summary>
-        private void ServerBroadcastShooterState(bool active)
+        internal void ServerBroadcastShooterState(bool active)
         {
             AC130RocketSpeed.SetShooterActive(netId, active);
             NetworkServer.SendToAll(

@@ -490,7 +490,7 @@ namespace IssaPlugin.Patches
                 NetworkServer.RegisterHandler<AC130StartMessage>(
                     (conn, msg) =>
                     {
-                        GetBridge<AC130NetworkBridge>(conn)?.ServerStartAC130();
+                        GetBridge<AC130NetworkBridge>(conn)?.ServerStartAC130(msg.Autonomous);
                     }
                 );
 
