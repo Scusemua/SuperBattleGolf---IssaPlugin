@@ -285,8 +285,7 @@ namespace IssaPlugin.Items
         private static GameObject _bloodSplatterPrefab;
         public static GameObject BloodSplatterPrefab => Vfx(_bloodSplatterPrefab);
 
-        /// Shotgun pellet. The particle system only draws while the object is moving,
-        /// so callers fly an instance from the barrel to the pellet's end point.
+        /// Shotgun pellet. One shared particle system draws every pellet.
         private static GameObject _shotgunBulletPrefab;
         public static GameObject ShotgunBulletPrefab => Vfx(_shotgunBulletPrefab);
 

@@ -160,8 +160,7 @@ namespace IssaPlugin.Items
 
         private static void Spawn(ShotgunTracerMessage msg)
         {
-            GameObject prefab = AssetLoader.ShotgunBulletPrefab;
-            if (prefab != null && msg.Ends != null)
+            if (AssetLoader.ShotgunBulletPrefab != null && msg.Ends != null)
             {
                 int count = Mathf.Min(msg.Ends.Length, MaxPellets);
                 for (int i = 0; i < count; i++)
@@ -171,29 +170,7 @@ namespace IssaPlugin.Items
                     if (direction.sqrMagnitude < 0.0001f || !IsFinite(msg.Origin) || !IsFinite(end))
                         continue;
 
-                    var go = Object.Instantiate(
-                        prefab,
-                        msg.Origin,
-                        Quaternion.LookRotation(direction)
-                    );
-                    go.SetActive(true);
-                    foreach (var col in go.GetComponentsInChildren<Collider>())
-                        col.enabled = false;
-
-                    Vector3 velocity = direction.normalized * Speed;
-                    foreach (var rb in go.GetComponentsInChildren<Rigidbody>())
-                    {
-                        rb.detectCollisions = false;
-                        rb.useGravity = false;
-                        rb.isKinematic = false;
-                        rb.linearVelocity = velocity;
-                    }
-
-                    foreach (var particles in go.GetComponentsInChildren<ParticleSystem>())
-                        particles.Play(true);
-
-                    var bullet = go.AddComponent<ShotgunBulletVisual>();
-                    bullet.Launch(end, Speed);
+                    BulletStream.Launch(msg.Origin, end);
                 }
             }
 
@@ -261,6 +238,9 @@ namespace IssaPlugin.Items
             if (prefab.activeSelf)
                 prefab.SetActive(false);
 
+            if (!ImpactStream.Ensure(prefab))
+                return;
+
             int count = Mathf.Min(msg.Impacts.Length, MaxPellets);
             for (int i = 0; i < count; i++)
             {
@@ -277,68 +257,296 @@ namespace IssaPlugin.Items
                             : Vector3.forward;
                 }
                 forward.Normalize();
-
-                var go = Object.Instantiate(prefab, point, Quaternion.LookRotation(forward));
-                go.SetActive(true);
-                foreach (var col in go.GetComponentsInChildren<Collider>(true))
-                    col.enabled = false;
-
-                float life = 0.5f;
-                foreach (var particles in go.GetComponentsInChildren<ParticleSystem>(true))
-                {
-                    particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-                    particles.Clear(true);
-                    particles.Play(true);
-                    var main = particles.main;
-                    life = Mathf.Max(life, main.duration + main.startLifetime.constantMax);
-                }
-
-                Object.Destroy(go, life + 0.1f);
+                ImpactStream.Emit(point, Quaternion.LookRotation(forward));
             }
         }
 
         private static bool IsFinite(Vector3 value) =>
             float.IsFinite(value.x) && float.IsFinite(value.y) && float.IsFinite(value.z);
-    }
 
-    /// Flies one bullet so its particle trail has movement to render.
-    public class ShotgunBulletVisual : MonoBehaviour
-    {
-        private Vector3 _end;
-        private float _speed;
-        private bool _done;
-
-        public void Launch(Vector3 end, float speed)
+        /// <summary>
+        /// Manual world-space emitter. Bursts and rates are cleared so only
+        /// explicit Emit calls spawn particles. Emitter velocity is zeroed
+        /// because the impact bank is moved to each hit, and that jump would
+        /// otherwise become the speed of the new particles.
+        /// </summary>
+        static void PrepareEmitter(ParticleSystem particles, int maxParticles)
         {
-            _end = end;
-            _speed = speed;
+            var main = particles.main;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.maxParticles = maxParticles;
+            main.prewarm = false;
+            main.playOnAwake = false;
+            main.cullingMode = ParticleSystemCullingMode.AlwaysSimulate;
+            main.ringBufferMode = ParticleSystemRingBufferMode.Disabled;
+            main.emitterVelocityMode = ParticleSystemEmitterVelocityMode.Custom;
+            main.emitterVelocity = Vector3.zero;
+
+            var emission = particles.emission;
+            emission.enabled = true;
+            emission.rateOverTime = 0f;
+            emission.rateOverDistance = 0f;
+            emission.SetBursts(System.Array.Empty<ParticleSystem.Burst>());
+
+            var inherit = particles.inheritVelocity;
+            inherit.enabled = false;
+
+            particles.Stop(false, ParticleSystemStopBehavior.StopEmittingAndClear);
+            particles.Clear(false);
+            particles.Play(false);
         }
 
-        private void Update()
+    /// <summary>
+    /// One shared copy of bullet_impact. Each hit emits that prefab's bursts
+    /// (sparks, the main puff, glow, dust) into those systems at the hit point.
+    /// </summary>
+    static class ImpactStream
+    {
+        static ParticleSystem[] _systems;
+        static int[] _burstCounts;
+        static Transform _bank;
+        static bool _ready;
+        static bool _failed;
+
+        public static bool Ensure(GameObject prefab)
         {
-            if (_done)
-                return;
+            if (_ready)
+                return true;
+            if (_failed || prefab == null)
+                return false;
 
-            Vector3 next = Vector3.MoveTowards(transform.position, _end, _speed * Time.deltaTime);
-            Vector3 step = next - transform.position;
-            transform.position = next;
+            var bank = Object.Instantiate(prefab);
+            bank.name = "ImpactStream";
+            bank.SetActive(true);
+            Object.DontDestroyOnLoad(bank);
+            foreach (var col in bank.GetComponentsInChildren<Collider>(true))
+                col.enabled = false;
 
-            if (step.sqrMagnitude > 0.0000001f && Time.deltaTime > 0f)
+            var systems = bank.GetComponentsInChildren<ParticleSystem>(true);
+            if (systems.Length == 0)
             {
-                Vector3 velocity = step / Time.deltaTime;
-                foreach (var rb in GetComponentsInChildren<Rigidbody>())
-                    rb.linearVelocity = velocity;
+                _failed = true;
+                Object.Destroy(bank);
+                return false;
             }
 
-            if ((next - _end).sqrMagnitude > 0.0001f)
-                return;
+            _systems = systems;
+            _burstCounts = new int[systems.Length];
+            for (int i = 0; i < systems.Length; i++)
+            {
+                var emission = systems[i].emission;
+                int burst = 0;
+                if (emission.burstCount > 0)
+                    burst = Mathf.Max(0, Mathf.RoundToInt(emission.GetBurst(0).count.constant));
+                _burstCounts[i] = burst;
 
-            _done = true;
-            foreach (var rb in GetComponentsInChildren<Rigidbody>())
-                rb.linearVelocity = Vector3.zero;
-            foreach (var particles in GetComponentsInChildren<ParticleSystem>())
-                particles.Stop(true, ParticleSystemStopBehavior.StopEmitting);
-            Destroy(gameObject, 0.5f);
+                float life = systems[i].main.startLifetime.constantMax;
+                int max = Mathf.Clamp(Mathf.CeilToInt(Mathf.Max(burst, 1) * Mathf.Max(life, 0.1f) * 1600f), 1024, 131072);
+                PrepareEmitter(systems[i], max);
+            }
+
+            _bank = bank.transform;
+            _ready = true;
+            return true;
+        }
+
+        public static void Emit(Vector3 point, Quaternion rotation)
+        {
+            _bank.SetPositionAndRotation(point, rotation);
+            for (int i = 0; i < _systems.Length; i++)
+            {
+                if (_burstCounts[i] <= 0)
+                    continue;
+
+                // Emit(count) reads a cached emitter pose, so a bank that just
+                // moved drops the burst at the previous hit. Pass the position.
+                var emit = new ParticleSystem.EmitParams
+                {
+                    position = _systems[i].transform.position,
+                    applyShapeToPosition = true,
+                };
+                _systems[i].Emit(emit, _burstCounts[i]);
+            }
         }
     }
+
+    /// <summary>
+    /// One shared copy of shotgun_bullet. Every pellet is a point moved from here.
+    /// Glow and SparkTrail emit along that point at the prefab's own rate-over-distance,
+    /// into world space, so every pellet still produces its particles and Unity draws
+    /// each system once.
+    /// </summary>
+    static class BulletStream
+    {
+        struct Flight
+        {
+            public Vector3 Position;
+            public Vector3 End;
+            public float GlowDebt;
+            public float SparkDebt;
+        }
+
+        static readonly List<Flight> Flights = new List<Flight>(256);
+        static ParticleSystem _glow;
+        static ParticleSystem _spark;
+        static ParticleSystem _head;
+        static float _glowPerMeter;
+        static float _sparkPerMeter;
+        static float _sparkInherit;
+        static bool _ready;
+        static bool _failed;
+
+        public static void Launch(Vector3 origin, Vector3 end)
+        {
+            if (_failed || (!_ready && !Create()))
+                return;
+
+            Vector3 delta = end - origin;
+            float distance = delta.magnitude;
+            float life = distance / Speed;
+            if (life <= 0f)
+                return;
+
+            var head = new ParticleSystem.EmitParams
+            {
+                position = origin,
+                velocity = distance > 0.0001f ? delta / distance * Speed : Vector3.zero,
+                applyShapeToPosition = false,
+                startLifetime = life,
+            };
+            _head.Emit(head, 1);
+
+            Flights.Add(
+                new Flight
+                {
+                    Position = origin,
+                    End = end,
+                }
+            );
+        }
+
+        public static void Tick(float dt)
+        {
+            if (!_ready || dt <= 0f)
+                return;
+
+            float step = Speed * dt;
+            for (int i = Flights.Count - 1; i >= 0; i--)
+            {
+                Flight flight = Flights[i];
+                Vector3 next = Vector3.MoveTowards(flight.Position, flight.End, step);
+                float distance = Vector3.Distance(flight.Position, next);
+                if (distance > 0f)
+                {
+                    Vector3 sparkVelocity = Vector3.zero;
+                    Vector3 travel = flight.End - flight.Position;
+                    if (_sparkInherit > 0f && travel.sqrMagnitude > 0.0001f)
+                        sparkVelocity = travel.normalized * (Speed * _sparkInherit);
+
+                    EmitAlong(_glow, flight.Position, next, ref flight.GlowDebt, _glowPerMeter, Vector3.zero);
+                    EmitAlong(_spark, flight.Position, next, ref flight.SparkDebt, _sparkPerMeter, sparkVelocity);
+                    flight.Position = next;
+                }
+
+                if ((next - flight.End).sqrMagnitude <= 0.0001f)
+                    Flights.RemoveAt(i);
+                else
+                    Flights[i] = flight;
+            }
+        }
+
+        static void EmitAlong(
+            ParticleSystem particles,
+            Vector3 from,
+            Vector3 to,
+            ref float debt,
+            float perMeter,
+            Vector3 velocity
+        )
+        {
+            if (particles == null || perMeter <= 0f)
+                return;
+
+            debt += Vector3.Distance(from, to) * perMeter;
+            int count = (int)debt;
+            if (count <= 0)
+                return;
+
+            debt -= count;
+            var emit = new ParticleSystem.EmitParams { applyShapeToPosition = true };
+            if (velocity.sqrMagnitude > 0.0001f)
+                emit.velocity = velocity;
+            float span = count;
+            for (int i = 1; i <= count; i++)
+            {
+                emit.position = Vector3.Lerp(from, to, i / span);
+                particles.Emit(emit, 1);
+            }
+        }
+
+        static bool Create()
+        {
+            var prefab = AssetLoader.ShotgunBulletPrefab;
+            if (prefab == null)
+                return false;
+
+            // Same reason as the muzzle flash: the loaded prefab is a live object,
+            // and play-on-awake would leave one mesh particle sitting on it.
+            if (prefab.activeSelf)
+                prefab.SetActive(false);
+
+            var bank = Object.Instantiate(prefab);
+            bank.name = "BulletStream";
+            bank.SetActive(true);
+            Object.DontDestroyOnLoad(bank);
+            bank.AddComponent<Ticker>();
+
+            _head = bank.GetComponent<ParticleSystem>();
+            _glow = bank.transform.Find("Glow")?.GetComponent<ParticleSystem>();
+            _spark = bank.transform.Find("SparkTrail")?.GetComponent<ParticleSystem>();
+            if (_head == null || _glow == null || _spark == null)
+            {
+                _failed = true;
+                Object.Destroy(bank);
+                return false;
+            }
+
+            _glowPerMeter = _glow.emission.rateOverDistance.constant;
+            _sparkPerMeter = _spark.emission.rateOverDistance.constant;
+            // SparkTrail is a stretched billboard. It used to inherit the moving
+            // bullet's speed so the streak pointed along the shot. The bank does
+            // not move, so apply that fraction as the particle's own velocity.
+            var sparkInherit = _spark.inheritVelocity;
+            _sparkInherit = sparkInherit.enabled ? sparkInherit.curve.Evaluate(0f, 1f) : 0f;
+
+            PrepareEmitter(_glow, 8192);
+            PrepareEmitter(_spark, 16384);
+            PrepareEmitter(_head, 16384);
+            // The prefab clamps speed toward zero. The mesh used to move because it was
+            // parented to the bullet object. It has to carry its own velocity now.
+            var limit = _head.limitVelocityOverLifetime;
+            limit.enabled = false;
+            var headRenderer = _head.GetComponent<ParticleSystemRenderer>();
+            if (headRenderer != null)
+            {
+                headRenderer.enableGPUInstancing = true;
+                // The slug is long on its local forward axis, and the prefab aligns
+                // that axis to this transform. The shared bank never turns, so looking
+                // left or right lays the length across the screen. Follow the shot.
+                headRenderer.alignment = ParticleSystemRenderSpace.Velocity;
+                // Those scales turn the 90-unit shot speed into a ribbon.
+                headRenderer.velocityScale = 0f;
+                headRenderer.lengthScale = 1f;
+            }
+
+            _ready = true;
+            return true;
+        }
+
+        sealed class Ticker : MonoBehaviour
+        {
+            void Update() => Tick(Time.deltaTime);
+        }
+    }
+}
 }
