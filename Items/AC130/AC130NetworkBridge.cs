@@ -249,7 +249,7 @@ namespace IssaPlugin.Items
 
             var gunshipIdentity = gunshipGo.GetComponent<NetworkIdentity>();
 
-            ServerBroadcastShooterState(true);
+            ServerBroadcastShooterState(true, ModConfig.AC130.RocketSpeedMultiplier.Value);
 
             NetworkServer.SendToAll(new AC130SoundMessage());
             ItemWarningBroadcaster.Broadcast(
@@ -1037,10 +1037,13 @@ namespace IssaPlugin.Items
         //  Server internals
         // ================================================================
 
+        internal static Vector3 ComputeRaisedOrbitCenter(Vector3 playerPos) =>
+            ComputeRaisedOrbitCenter(playerPos, ModConfig.AC130.OrbitRadius.Value);
+
         /// <summary>
         /// Map centre raised so the orbit ring clears the highest ground along it.
         /// </summary>
-        internal static Vector3 ComputeRaisedOrbitCenter(Vector3 playerPos)
+        internal static Vector3 ComputeRaisedOrbitCenter(Vector3 playerPos, float orbitRadius)
         {
             Vector3 orbitCenter = AC130Helpers.ComputeMapCenter(playerPos);
 
@@ -1049,10 +1052,7 @@ namespace IssaPlugin.Items
             // gunship flies at OrbitRadius away from it — on hilly maps the ring can
             // cross ground much higher than the centre sits. OrbitPosition adds the
             // configured altitude to centre.y, so centre.y must stay a ground height.
-            orbitCenter.y = TerrainHeight.HighestGroundOnRing(
-                orbitCenter,
-                ModConfig.AC130.OrbitRadius.Value
-            );
+            orbitCenter.y = TerrainHeight.HighestGroundOnRing(orbitCenter, orbitRadius);
             return orbitCenter;
         }
 
@@ -1077,10 +1077,30 @@ namespace IssaPlugin.Items
         }
 
         /// <summary>
-        /// Instantiates, configures, and network-spawns the AC-130 gunship prefab.
+        /// Instantiates, configures, and network-spawns the AC-130 gunship prefab
+        /// using the piloted flight settings.
         /// Returns the spawned GameObject, or null if the prefab is unavailable.
         /// </summary>
-        internal static GameObject SpawnGunship(Vector3 orbitCenter)
+        internal static GameObject SpawnGunship(Vector3 orbitCenter) =>
+            SpawnGunship(
+                orbitCenter,
+                ModConfig.AC130.Altitude.Value,
+                ModConfig.AC130.OrbitRadius.Value,
+                ModConfig.AC130.OrbitSpeed.Value,
+                ModConfig.AC130.ApproachDistance.Value,
+                ModConfig.AC130.ApproachSpeed.Value,
+                (int)ModConfig.AC130.HitsToMayday.Value
+            );
+
+        internal static GameObject SpawnGunship(
+            Vector3 orbitCenter,
+            float altitude,
+            float orbitRadius,
+            float orbitSpeed,
+            float approachDistance,
+            float approachSpeed,
+            int hitsToMayday
+        )
         {
             if (AssetLoader.AC130Prefab == null)
             {
@@ -1091,8 +1111,6 @@ namespace IssaPlugin.Items
             }
 
             float startAngle = 0f;
-            float altitude = ModConfig.AC130.Altitude.Value;
-            float orbitRadius = ModConfig.AC130.OrbitRadius.Value;
 
             Vector3 orbitEntry = AC130Helpers.OrbitPosition(
                 orbitCenter,
@@ -1101,10 +1119,7 @@ namespace IssaPlugin.Items
                 altitude
             );
             Vector3 approachDir = AC130Helpers.OrbitTangent(startAngle);
-            float approachDist = ModConfig.AC130.ApproachDistance.Value;
-            float approachSpeed = ModConfig.AC130.ApproachSpeed.Value;
-
-            Vector3 spawnPos = orbitEntry - approachDir * approachDist;
+            Vector3 spawnPos = orbitEntry - approachDir * approachDistance;
 
             var ac130GameObj = Object.Instantiate(
                 AssetLoader.AC130Prefab,
@@ -1119,12 +1134,13 @@ namespace IssaPlugin.Items
             // AC130HitReceiver (CustomHittable) needs Entity in its Awake;
             // Entity was already added by AC130ClientSetup.Awake() during Instantiate above.
             var hitReceiver = ac130GameObj.AddComponent<AC130HitReceiver>();
+            hitReceiver.SetHitsRequired(hitsToMayday);
 
             var flyComp = ac130GameObj.AddComponent<AC130FlyBehaviour>();
             flyComp.orbitCenter = orbitCenter;
             flyComp.orbitRadius = orbitRadius;
             flyComp.altitude = altitude;
-            flyComp.orbitSpeed = ModConfig.AC130.OrbitSpeed.Value;
+            flyComp.orbitSpeed = orbitSpeed;
             flyComp.currentAngle = startAngle;
             flyComp.flyTarget = orbitEntry;
             flyComp.flySpeed = approachSpeed;
@@ -1134,7 +1150,7 @@ namespace IssaPlugin.Items
             NetworkServer.Spawn(ac130GameObj);
 
             IssaPluginPlugin.Log.LogInfo(
-                $"[AC130] Gunship spawned at approach distance {approachDist:F0}m."
+                $"[AC130] Gunship spawned at approach distance {approachDistance:F0}m."
             );
 
             return ac130GameObj;
@@ -1242,11 +1258,16 @@ namespace IssaPlugin.Items
         /// The host does not receive its own SendToAll, so the local set is updated
         /// directly as well.
         /// </summary>
-        internal void ServerBroadcastShooterState(bool active)
+        internal void ServerBroadcastShooterState(bool active, float rocketSpeedMultiplier = 1f)
         {
-            AC130RocketSpeed.SetShooterActive(netId, active);
+            AC130RocketSpeed.SetShooterActive(netId, active, rocketSpeedMultiplier);
             NetworkServer.SendToAll(
-                new AC130ShooterStateMessage { ShooterNetId = netId, Active = active }
+                new AC130ShooterStateMessage
+                {
+                    ShooterNetId = netId,
+                    Active = active,
+                    RocketSpeedMultiplier = rocketSpeedMultiplier,
+                }
             );
         }
 

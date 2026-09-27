@@ -34,6 +34,11 @@ namespace IssaPlugin.Items
 
         public override void OnUse(PlayerInventory inventory)
         {
+            // TryUseItem rejects anyone but the local player, but this prefix runs
+            // before that check. The prompt is local UI, so a remote inventory must not open it.
+            if (!inventory.isLocalPlayer)
+                return;
+
             var bridge = inventory.GetComponent<AC130NetworkBridge>();
             if (bridge != null)
                 AC130DeployPrompt.Show();

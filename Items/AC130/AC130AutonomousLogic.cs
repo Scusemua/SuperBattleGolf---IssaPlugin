@@ -13,9 +13,10 @@ namespace IssaPlugin.Items
     internal sealed class AC130AutonomousLogic : IAutonomousVehicleLogic
     {
         /// <summary>
-        /// Sideways gap between a regular rocket and a heavy rocket fired on the same tick.
-        /// Without it they spawn inside each other, detonate at the muzzle, and can count
-        /// as a hit on the gunship.
+        /// Gap between a regular rocket and a heavy rocket fired on the same tick.
+        /// Applied perpendicular to the shot. The gunship's right points at the map
+        /// centre while it orbits, which is the direction it shoots, so an offset
+        /// along that axis pulls the heavy rocket back into the fuselage.
         /// </summary>
         private const float HeavyMuzzleSeparation = 4f;
 
@@ -42,31 +43,19 @@ namespace IssaPlugin.Items
         /// </summary>
         public bool HasDeparted => false;
 
-        public float ArrivalTimeout
-        {
-            get
-            {
-                float speed = Mathf.Max(ModConfig.AC130.ApproachSpeed.Value, 1f);
-                return ModConfig.AC130.ApproachDistance.Value / speed + 8f;
-            }
-        }
+        public float ArrivalTimeout => ApproachDistance / ApproachSpeed + 8f;
 
-        public float EngagementDuration => ModConfig.AC130.Duration.Value;
+        public float EngagementDuration => ModConfig.AC130Autonomous.Duration.Value;
 
         public float FireInterval => Mathf.Min(RegularCooldown, HeavyCooldown);
 
         public float OpeningFireDelay => FireInterval * 0.5f;
 
-        public float DepartureTimeout
-        {
-            get
-            {
-                float speed = Mathf.Max(ModConfig.AC130.ApproachSpeed.Value, 1f);
-                return AC130FlyBehaviour.FlyOutDestroyDistance / speed + 10f;
-            }
-        }
+        public float DepartureTimeout =>
+            AC130FlyBehaviour.FlyOutDestroyDistance / ApproachSpeed + 10f;
 
-        public float NeutralizedTimeout => 30f;
+        public float NeutralizedTimeout =>
+            Mathf.Max(1f, ModConfig.AC130Autonomous.CrashTimeout.Value);
 
         public bool IsNeutralizedComplete
         {
@@ -81,10 +70,21 @@ namespace IssaPlugin.Items
 
         public bool TrySpawn(PlayerInventory inventory)
         {
+            var autonomous = ModConfig.AC130Autonomous;
+            float orbitRadius = autonomous.OrbitRadius.Value;
             Vector3 orbitCenter = AC130NetworkBridge.ComputeRaisedOrbitCenter(
-                inventory.PlayerInfo.transform.position
+                inventory.PlayerInfo.transform.position,
+                orbitRadius
             );
-            GameObject gunship = AC130NetworkBridge.SpawnGunship(orbitCenter);
+            GameObject gunship = AC130NetworkBridge.SpawnGunship(
+                orbitCenter,
+                autonomous.Altitude.Value,
+                orbitRadius,
+                autonomous.OrbitSpeed.Value,
+                ApproachDistance,
+                ApproachSpeed,
+                Mathf.RoundToInt(autonomous.HitsToMayday.Value)
+            );
             if (gunship == null)
                 return false;
 
@@ -135,7 +135,10 @@ namespace IssaPlugin.Items
             if (_craft == null || _craft.Body == null || _craft.Inventory == null)
                 return;
 
-            _bridge.ServerBroadcastShooterState(true);
+            _bridge.ServerBroadcastShooterState(
+                true,
+                ModConfig.AC130Autonomous.RocketSpeedMultiplier.Value
+            );
             NetworkServer.SendToAll(new AC130SoundMessage());
 
             var identity = _craft.Body.GetComponent<NetworkIdentity>();
@@ -160,7 +163,7 @@ namespace IssaPlugin.Items
             if (_craft.Fly == null)
                 return;
 
-            _craft.Fly.BeginFlyOut();
+            _craft.Fly.BeginFlyOut(ApproachSpeed);
             IssaPluginPlugin.Log.LogInfo($"[{LogName}] Beginning fly-out.");
         }
 
@@ -169,10 +172,15 @@ namespace IssaPlugin.Items
             if (_craft == null)
                 return;
 
-            _craft.TargetSelf = ModConfig.AC130.AutonomousTargetsUser.Value;
+            var autonomous = ModConfig.AC130Autonomous;
+            // The session already captured FireInterval from these same values.
+            // Later shots keep that copy, so a config reload cannot outrun the poll.
+            _craft.RegularCooldown = RegularCooldown;
+            _craft.HeavyCooldown = HeavyCooldown;
+            _craft.TargetSelf = autonomous.TargetsUser.Value;
             _craft.HeavyMagazine = Mathf.Max(
                 1,
-                Mathf.RoundToInt(ModConfig.AC130.HeavyShotsBeforeReload.Value)
+                Mathf.RoundToInt(autonomous.HeavyShotsBeforeReload.Value)
             );
             _craft.HeavyShotsLeft = _craft.HeavyMagazine;
             _craft.HeavyReloading = false;
@@ -183,7 +191,7 @@ namespace IssaPlugin.Items
             {
                 string hint = _craft.TargetSelf
                     ? "There are no players in the match."
-                    : "Enable AC130.AutonomousTargetsUser to let it shoot the player who called it.";
+                    : "Enable AC130 Autonomous → TargetsUser to let it shoot the player who called it.";
                 IssaPluginPlugin.Log.LogInfo($"[{LogName}] No players to shoot. {hint}");
             }
         }
@@ -203,18 +211,18 @@ namespace IssaPlugin.Items
                 return;
 
             if (regularReady && TryLaunch(inventory, targets, heavy: false))
-                _craft.NextRegularTime = Time.time + RegularCooldown;
+                _craft.NextRegularTime = Time.time + _craft.RegularCooldown;
 
             if (!heavyReady || !TryLaunch(inventory, targets, heavy: true))
                 return;
 
-            _craft.NextHeavyTime = Time.time + HeavyCooldown;
+            _craft.NextHeavyTime = Time.time + _craft.HeavyCooldown;
             _craft.HeavyShotsLeft--;
             if (_craft.HeavyShotsLeft > 0)
                 return;
 
             _craft.HeavyReloading = true;
-            _craft.HeavyReloadReadyTime = Time.time + ModConfig.AC130.HeavyReloadTime.Value;
+            _craft.HeavyReloadReadyTime = Time.time + ModConfig.AC130Autonomous.HeavyReloadTime.Value;
             IssaPluginPlugin.Log.LogInfo($"[{LogName}] Heavy rocket reloading.");
         }
 
@@ -272,11 +280,27 @@ namespace IssaPlugin.Items
             IssaPluginPlugin.Log.LogInfo($"[{LogName}] Shot down — beginning crash.");
         }
 
+        /// <summary>
+        /// Speed written onto the gunship and used for both flight timeouts.
+        /// Zero or negative never reaches the orbit, so the arrival wait would not end.
+        /// </summary>
+        private static float ApproachSpeed
+        {
+            get
+            {
+                float speed = ModConfig.AC130Autonomous.ApproachSpeed.Value;
+                return speed > 0f ? speed : 1f;
+            }
+        }
+
+        private static float ApproachDistance =>
+            Mathf.Max(0f, ModConfig.AC130Autonomous.ApproachDistance.Value);
+
         private static float RegularCooldown =>
-            Mathf.Max(0.05f, ModConfig.AC130.FireCooldown.Value);
+            Mathf.Max(0.05f, ModConfig.AC130Autonomous.FireCooldown.Value);
 
         private static float HeavyCooldown =>
-            Mathf.Max(0.05f, ModConfig.AC130.HeavyFireCooldown.Value);
+            Mathf.Max(0.05f, ModConfig.AC130Autonomous.HeavyFireCooldown.Value);
 
         /// <summary>
         /// True when a heavy rocket may fire. A finished reload refills the magazine first.
@@ -304,13 +328,13 @@ namespace IssaPlugin.Items
             Vector3 origin = _craft.Body.transform.position;
             Vector3 aimPoint =
                 target.transform.position
-                + Vector3.up * ModConfig.AC130.AimAssistTargetHeightOffset.Value;
+                + Vector3.up * ModConfig.AC130Autonomous.AimHeightOffset.Value;
             Vector3 aim = aimPoint - origin;
             if (aim.sqrMagnitude < 0.01f)
                 return false;
 
             aim.Normalize();
-            float jitterDeg = ModConfig.AC130.RocketAngularJitter.Value;
+            float jitterDeg = ModConfig.AC130Autonomous.RocketAngularJitter.Value;
             Quaternion jitter = Quaternion.Euler(
                 Random.Range(-jitterDeg, jitterDeg),
                 Random.Range(-jitterDeg, jitterDeg),
@@ -318,11 +342,11 @@ namespace IssaPlugin.Items
             );
             Vector3 muzzle = origin + aim * AC130NetworkBridge.RocketMuzzleOffset;
             if (heavy)
-                muzzle += _craft.Body.transform.right * HeavyMuzzleSeparation;
+                muzzle += ShotLateral(aim) * HeavyMuzzleSeparation;
 
             float explosionScale = heavy
-                ? ModConfig.AC130.HeavyRocketExplosionScale.Value
-                : ModConfig.AC130.ExplosionScale.Value;
+                ? ModConfig.AC130Autonomous.HeavyRocketExplosionScale.Value
+                : ModConfig.AC130Autonomous.ExplosionScale.Value;
 
             AC130Item.SpawnRocketInDirection(
                 inventory,
@@ -331,6 +355,18 @@ namespace IssaPlugin.Items
                 explosionScale
             );
             return true;
+        }
+
+        /// <summary>
+        /// Unit vector perpendicular to <paramref name="aim"/>, kept level so a
+        /// shot at the map centre is pushed sideways rather than back into the plane.
+        /// </summary>
+        private static Vector3 ShotLateral(Vector3 aim)
+        {
+            Vector3 lateral = Vector3.Cross(aim, Vector3.up);
+            if (lateral.sqrMagnitude < 0.0001f)
+                lateral = Vector3.Cross(aim, Vector3.forward);
+            return lateral.normalized;
         }
 
         private List<PlayerInventory> CollectTargets()
@@ -366,6 +402,8 @@ namespace IssaPlugin.Items
             public bool CrashComplete;
             public bool Closed;
             public bool TargetSelf;
+            public float RegularCooldown;
+            public float HeavyCooldown;
             public int HeavyMagazine;
             public int HeavyShotsLeft;
             public bool HeavyReloading;

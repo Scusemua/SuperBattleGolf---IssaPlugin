@@ -14,6 +14,7 @@ namespace IssaPlugin
         public static StealthBomberConfig StealthBomber { get; private set; }
         public static PredatorMissileConfig PredatorMissile { get; private set; }
         public static AC130Config AC130 { get; private set; }
+        public static AC130AutonomousConfig AC130Autonomous { get; private set; }
         public static FreezeConfig Freeze { get; private set; }
         public static LowGravityConfig LowGravity { get; private set; }
         public static SniperRifleConfig SniperRifle { get; private set; }
@@ -67,6 +68,7 @@ namespace IssaPlugin
             StealthBomber = new StealthBomberConfig(cfg, Global);
             PredatorMissile = new PredatorMissileConfig(cfg, Global);
             AC130 = new AC130Config(cfg, Global);
+            AC130Autonomous = new AC130AutonomousConfig(cfg);
             Freeze = new FreezeConfig(cfg, Global);
             LowGravity = new LowGravityConfig(cfg, Global);
             SniperRifle = new SniperRifleConfig(cfg, Global);

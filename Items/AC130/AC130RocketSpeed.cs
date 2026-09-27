@@ -5,8 +5,9 @@ using UnityEngine;
 namespace IssaPlugin.Items
 {
     /// <summary>
-    /// Applies <see cref="AC130Config.RocketSpeedMultiplier"/> to rockets fired from
-    /// the AC130 gunship, identically on every peer.
+    /// Applies the session's rocket speed multiplier to rockets fired from
+    /// the AC130 gunship, identically on every peer. Piloted and autonomous
+    /// sessions each send their own multiplier.
     ///
     /// Rockets carry no NetworkTransform — each peer simulates them locally from the
     /// spawn position and rotation Mirror replicates, and <c>Rocket.Awake</c> seeds the
@@ -37,20 +38,24 @@ namespace IssaPlugin.Items
     /// </summary>
     public static class AC130RocketSpeed
     {
-        /// netIds of players with an AC130 session currently in progress. Maintained on
-        /// every peer from AC130ShooterStateMessage. A set rather than a single value
-        /// because the message pair must stay balanced even if sessions ever overlap.
-        private static readonly HashSet<uint> ActiveShooters = new HashSet<uint>();
+        /// netIds of players with an AC130 session currently in progress, and the rocket
+        /// speed multiplier for that session. Maintained on every peer from
+        /// AC130ShooterStateMessage.
+        private static readonly Dictionary<uint, float> ActiveShooters = new Dictionary<uint, float>();
 
         /// <summary>
         /// Records that <paramref name="shooterNetId"/> has started or finished an AC130
         /// session. Called on every peer from the AC130ShooterStateMessage handler, and
         /// directly on the host, which does not receive its own broadcast.
         /// </summary>
-        public static void SetShooterActive(uint shooterNetId, bool active)
+        public static void SetShooterActive(
+            uint shooterNetId,
+            bool active,
+            float rocketSpeedMultiplier = 1f
+        )
         {
             if (active)
-                ActiveShooters.Add(shooterNetId);
+                ActiveShooters[shooterNetId] = rocketSpeedMultiplier;
             else
                 ActiveShooters.Remove(shooterNetId);
         }
@@ -70,16 +75,14 @@ namespace IssaPlugin.Items
             if (rocket == null)
                 return;
 
-            // Rocket.Awake runs for every rocket in the game, so the cheap rejections —
-            // a multiplier of 1 and the empty-set case, which is the norm — come first.
+            // Most rockets in the match are not from an AC130. Bail before touching the launcher.
             if (ActiveShooters.Count == 0)
                 return;
 
-            float multiplier = ModConfig.AC130.RocketSpeedMultiplier.Value;
-            if (Mathf.Approximately(multiplier, 1f))
+            if (!TryGetMultiplier(rocket, out float multiplier))
                 return;
 
-            if (!IsAC130Rocket(rocket))
+            if (Mathf.Approximately(multiplier, 1f))
                 return;
 
             var entity = rocket.GetComponent<Entity>();
@@ -89,14 +92,15 @@ namespace IssaPlugin.Items
             entity.Rigidbody.linearVelocity *= multiplier;
         }
 
-        private static bool IsAC130Rocket(Rocket rocket)
+        private static bool TryGetMultiplier(Rocket rocket, out float multiplier)
         {
+            multiplier = 1f;
             var launcher = rocket.Launcher;
             if (launcher == null)
                 return false;
 
             var identity = launcher.netIdentity;
-            return identity != null && ActiveShooters.Contains(identity.netId);
+            return identity != null && ActiveShooters.TryGetValue(identity.netId, out multiplier);
         }
 
         /// <summary>
@@ -107,7 +111,7 @@ namespace IssaPlugin.Items
         {
             // The host already applied this locally when it sent the broadcast, and
             // SetShooterActive is idempotent, so re-applying here is harmless.
-            SetShooterActive(msg.ShooterNetId, msg.Active);
+            SetShooterActive(msg.ShooterNetId, msg.Active, msg.RocketSpeedMultiplier);
         }
     }
 }

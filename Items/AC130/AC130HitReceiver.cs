@@ -17,6 +17,11 @@ namespace IssaPlugin.Items
             OnHit += OnAC130Hit;
         }
 
+        public void SetHitsRequired(int hits)
+        {
+            HitsRequired = hits;
+        }
+
         private void OnAC130Hit()
         {
             if (!NetworkServer.active)

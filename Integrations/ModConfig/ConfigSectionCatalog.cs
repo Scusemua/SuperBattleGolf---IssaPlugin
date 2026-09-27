@@ -34,7 +34,7 @@ namespace IssaPlugin.Integrations.ModConfigUI
                 Group("Explosive Golf Balls", "ExplosiveGolfBalls"),
 
                 Group("AA-12", "AA12"),
-                Group("AC-130 Gunship", "AC130", "AC130Mayday"),
+                Group("AC-130 Gunship", "AC130", "AC130Mayday", "AC130 Autonomous"),
                 Group("AK-47", "AK47"),
                 Group("Baseball Bat", "BaseballBat"),
                 Group("Bear", "Bear"),

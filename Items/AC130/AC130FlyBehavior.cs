@@ -157,11 +157,13 @@ namespace IssaPlugin.Items
             }
         }
 
-        public void BeginFlyOut()
+        public void BeginFlyOut() => BeginFlyOut(ModConfig.AC130.ApproachSpeed.Value);
+
+        public void BeginFlyOut(float speed)
         {
             mode = AC130FlightMode.FlyOut;
             _flyOutStart = transform.position;
-            flySpeed = ModConfig.AC130.ApproachSpeed.Value;
+            flySpeed = speed;
         }
 
         private void OnDestroy()

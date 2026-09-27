@@ -106,6 +106,12 @@ namespace IssaPlugin.Items
 
         /// True when the session begins, false when it ends.
         public bool Active;
+
+        /// <summary>
+        /// Speed multiplier to apply while <see cref="Active"/> is true.
+        /// Ignored when the session ends.
+        /// </summary>
+        public float RocketSpeedMultiplier;
     }
 
     public static class AC130ShooterStateMessageSerialization
@@ -117,6 +123,7 @@ namespace IssaPlugin.Items
         {
             writer.WriteUInt(msg.ShooterNetId);
             writer.WriteBool(msg.Active);
+            writer.WriteFloat(msg.RocketSpeedMultiplier);
         }
 
         public static AC130ShooterStateMessage ReadAC130ShooterStateMessage(NetworkReader reader)
@@ -125,6 +132,7 @@ namespace IssaPlugin.Items
             {
                 ShooterNetId = reader.ReadUInt(),
                 Active = reader.ReadBool(),
+                RocketSpeedMultiplier = reader.ReadFloat(),
             };
         }
     }
