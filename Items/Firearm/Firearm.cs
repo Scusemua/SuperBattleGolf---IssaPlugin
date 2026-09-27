@@ -399,7 +399,8 @@ namespace IssaPlugin.Items
             PlayerInventory inventory,
             ItemType itemType,
             System.Func<FirearmShellProfile> profile,
-            System.Func<float> recovery
+            System.Func<float> recovery,
+            bool driveUseAnimation = true
         )
         {
             if (inventory == null || !Busy.Add(itemType))
@@ -407,7 +408,10 @@ namespace IssaPlugin.Items
 
             try
             {
-                ItemHelper.SetCurrentItemUse(inventory, ItemUseType.Regular);
+                // Regular is the elephant-gun shoot clip. Shotguns keep the rifle
+                // hold and draw their own muzzle flash and bullets instead.
+                if (driveUseAnimation)
+                    ItemHelper.SetCurrentItemUse(inventory, ItemUseType.Regular);
 
                 FireShell(inventory, profile());
 
@@ -426,8 +430,9 @@ namespace IssaPlugin.Items
             }
             finally
             {
-                ItemHelper.SetCurrentItemUse(inventory, ItemUseType.None);
                 Busy.Remove(itemType);
+                if (driveUseAnimation)
+                    ItemHelper.SetCurrentItemUse(inventory, ItemUseType.None);
             }
         }
 

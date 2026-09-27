@@ -14,7 +14,8 @@ namespace IssaPlugin.Items
                 inventory,
                 ItemRegistry.Remington870ItemType,
                 ShellProfile,
-                () => ModConfig.Remington870.PumpDuration.Value
+                () => ModConfig.Remington870.PumpDuration.Value,
+                driveUseAnimation: false
             );
 
         private static FirearmShellProfile ShellProfile() =>

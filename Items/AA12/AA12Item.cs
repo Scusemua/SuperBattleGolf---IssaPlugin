@@ -14,7 +14,8 @@ namespace IssaPlugin.Items
                 inventory,
                 ItemRegistry.AA12ItemType,
                 ShellProfile,
-                () => ModConfig.AA12.FireRate.Value
+                () => ModConfig.AA12.FireRate.Value,
+                driveUseAnimation: false
             );
 
         private static FirearmShellProfile ShellProfile() =>
