@@ -24,22 +24,36 @@ namespace IssaPlugin.Items
         public float BonusKnockback;
 
         /// <summary>
-        /// When set, miss, shield, and hit VFX share one clock for this item type.
-        /// The first effect of a shell is skipped if it is under 0.1 s after the
-        /// previous shell. Every target in the shell that does play still gets
-        /// its own effect. The AK-47 and AA-12 set this. Single-shot guns do not.
+        /// Minimum seconds between drawn shots for this gun. 0 draws every shot.
+        /// A skipped shot still deals damage. Once a shot is drawn, every target
+        /// in it still gets its own effect.
         /// </summary>
-        public bool ThrottleVfx;
+        public float VfxInterval;
+
+        /// <summary>
+        /// Fly the shotgun bullet prefab and muzzle flash for this shell, including
+        /// a single pellet. Otherwise one pellet keeps the elephant-gun tracer.
+        /// </summary>
+        public bool UseShotgunVisuals;
     }
 
     public static class Firearm
     {
-        // Same interval the AK-47 used. Its old comment claimed a 0.25 s server
-        // floor; the constant that shipped is 0.1 s, so this keeps it.
-        private const float VfxMinInterval = 0.1f;
-
         private static readonly HashSet<ItemType> Busy = new HashSet<ItemType>();
         private static readonly Dictionary<ItemType, float> LastVfxTime = new Dictionary<ItemType, float>();
+
+        // The inventory currently inside HoldFire, set only after Busy.Add succeeds.
+        // HoldBullets is true once the spin-up has finished and shells are firing.
+        private static PlayerInventory _holdInventory;
+        private static ItemType _holdItem;
+        private static bool _holdBullets;
+
+        internal static bool IsHolding(PlayerInventory inventory, ItemType itemType) =>
+            inventory != null && _holdInventory == inventory && _holdItem == itemType;
+
+        internal static bool IsFiringBullets(PlayerInventory inventory, ItemType itemType) =>
+            IsHolding(inventory, itemType) && _holdBullets;
+
         private static bool _shellVfxOpen;
 
         private static readonly Dictionary<Hittable, PelletImpact> DamageHits =
@@ -287,7 +301,7 @@ namespace IssaPlugin.Items
         }
 
         /// <summary>
-        /// Hold-to-fire loop. The shot sound plays once per trigger pull.
+        /// Hold-to-fire loop. The shot sound plays once per trigger pull, after any spin-up.
         /// Each shell consumes one use. Repeats while the left mouse button stays down.
         /// A use action that is not the mouse still fires the first shell.
         /// </summary>
@@ -295,19 +309,61 @@ namespace IssaPlugin.Items
             PlayerInventory inventory,
             ItemType itemType,
             System.Func<FirearmShellProfile> profile,
-            System.Func<float> fireRate
+            System.Func<float> fireRate,
+            float spinUpSeconds = 0f,
+            bool driveUseAnimation = true,
+            bool requireAim = false
         )
         {
             if (inventory == null || !Busy.Add(itemType))
                 yield break;
 
+            _holdInventory = inventory;
+            _holdItem = itemType;
+            _holdBullets = false;
+
             try
             {
-                ItemHelper.SetCurrentItemUse(inventory, ItemUseType.Regular);
+                if (driveUseAnimation)
+                    ItemHelper.SetCurrentItemUse(inventory, ItemUseType.Regular);
+
+                // If the left button was down when this started, releasing it cancels the
+                // wind-up and spends nothing. If it was already up, the wait still finishes
+                // so a gamepad use fires one shell.
+                bool mouseWasDown = Mouse.current != null && Mouse.current.leftButton.isPressed;
+                float spin = spinUpSeconds > 0f ? spinUpSeconds : 0f;
+                float elapsed = 0f;
+                while (elapsed < spin)
+                {
+                    if (inventory.GetEffectivelyEquippedItem(true) != itemType)
+                        yield break;
+                    if (requireAim && !IsHoldingAim(inventory))
+                        yield break;
+                    if (
+                        mouseWasDown
+                        && (Mouse.current == null || !Mouse.current.leftButton.isPressed)
+                    )
+                        yield break;
+
+                    elapsed += Time.deltaTime;
+                    yield return null;
+                }
+
+                if (inventory.GetEffectivelyEquippedItem(true) != itemType)
+                    yield break;
+                if (requireAim && !IsHoldingAim(inventory))
+                    yield break;
+
                 inventory.PlayerInfo.PlayerAudio.PlayElephantGunShotForAllClients();
+                _holdBullets = true;
 
                 do
                 {
+                    if (inventory.GetEffectivelyEquippedItem(true) != itemType)
+                        break;
+                    if (requireAim && !IsHoldingAim(inventory))
+                        break;
+
                     int slot = inventory.EquippedItemIndex;
                     FireShell(inventory, profile());
                     ItemHelper.DecrementAndRemove(inventory, slot);
@@ -320,10 +376,20 @@ namespace IssaPlugin.Items
             }
             finally
             {
-                ItemHelper.SetCurrentItemUse(inventory, ItemUseType.None);
+                if (_holdInventory == inventory && _holdItem == itemType)
+                {
+                    _holdInventory = null;
+                    _holdBullets = false;
+                }
+
                 Busy.Remove(itemType);
+                if (driveUseAnimation)
+                    ItemHelper.SetCurrentItemUse(inventory, ItemUseType.None);
             }
         }
+
+        private static bool IsHoldingAim(PlayerInventory inventory) =>
+            inventory.PlayerInfo?.Input?.IsHoldingAimSwing ?? false;
 
         /// <summary>
         /// One shell per use, then a recovery wait that ignores further uses.
@@ -366,11 +432,11 @@ namespace IssaPlugin.Items
         }
 
         /// <summary>
-        /// A single pellet keeps the rifle path: one elephant-gun miss, or the hit
-        /// effects already played, never both. A shotgun flies one bullet prefab
-        /// along every pellet. Blood for a player hit is sent with those bullets.
-        /// A shell that misses entirely asks the server to ray the bear down the
-        /// aim center, without an elephant-gun tracer.
+        /// A rifle shell keeps one elephant-gun miss, or the hit effects already
+        /// played, never both. A shotgun shell, and any shell that opts into shotgun
+        /// visuals, flies one bullet prefab along every pellet. Blood for a player
+        /// hit is sent with those bullets. A shell that misses entirely asks the
+        /// server to ray the bear down the aim center, without an elephant-gun tracer.
         /// </summary>
         private static void PlayPelletVisuals(
             PlayerInventory inventory,
@@ -380,7 +446,7 @@ namespace IssaPlugin.Items
             bool missedAll
         )
         {
-            if (PelletVisuals.Count <= 1)
+            if (!UsesShotgunVisuals(profile))
             {
                 if (missedAll && PelletVisuals.Count == 1)
                     PlayMiss(inventory, profile, PelletVisuals[0].Direction);
@@ -388,9 +454,16 @@ namespace IssaPlugin.Items
             }
 
             bool show = AllowVfx(profile);
-            var ends = new List<Vector3>();
+            // A throttled hit has nothing to draw. A throttled miss still rays the bear.
+            if (!show && !missedAll)
+                return;
+
+            List<Vector3> ends = null;
+            List<Vector3> impacts = null;
             if (show)
             {
+                ends = new List<Vector3>(PelletVisuals.Count);
+                impacts = new List<Vector3>();
                 for (int i = 0; i < PelletVisuals.Count; i++)
                 {
                     PelletVisual visual = PelletVisuals[i];
@@ -402,6 +475,8 @@ namespace IssaPlugin.Items
                             ? visual.WorldPoint
                             : barrelEnd + visual.Direction * profile.MaxShotDistance
                     );
+                    if (visual.Connected)
+                        impacts.Add(visual.WorldPoint);
                 }
             }
 
@@ -409,6 +484,7 @@ namespace IssaPlugin.Items
                 barrelEnd,
                 ends,
                 show ? BloodPoints : null,
+                impacts,
                 missedAll,
                 aimDirection,
                 profile.MaxShotDistance
@@ -441,7 +517,7 @@ namespace IssaPlugin.Items
             // The elephant-gun hit effect is itself a bullet. Shotgun pellets already
             // fly the bullet prefab, so a second line is not drawn. Blood still has
             // to be replicated, and the tracer message carries those points.
-            if (profile.PelletCount > 1)
+            if (UsesShotgunVisuals(profile))
             {
                 if (!shield && hittable != null && hittable.AsEntity != null && hittable.AsEntity.IsPlayer)
                     BloodPoints.Add(impact.WorldPoint);
@@ -459,9 +535,13 @@ namespace IssaPlugin.Items
             );
         }
 
+        private static bool UsesShotgunVisuals(FirearmShellProfile profile) =>
+            profile.UseShotgunVisuals || profile.PelletCount > 1;
+
         private static bool AllowVfx(FirearmShellProfile profile)
         {
-            if (!profile.ThrottleVfx)
+            float interval = profile.VfxInterval;
+            if (interval <= 0f)
                 return true;
 
             // The clock gates shell from shell. Once this shell has been allowed,
@@ -472,7 +552,7 @@ namespace IssaPlugin.Items
             float now = Time.time;
             if (
                 LastVfxTime.TryGetValue(profile.ItemType, out float last)
-                && now - last < VfxMinInterval
+                && now - last < interval
             )
                 return false;
 

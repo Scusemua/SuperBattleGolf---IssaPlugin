@@ -20,6 +20,7 @@ namespace IssaPlugin
         public ConfigEntry<float> MaxZoomFov { get; private set; }
         public ConfigEntry<float> ScrollSensitivity { get; private set; }
         public ConfigEntry<float> ScreenShakeIntensity { get; private set; }
+        public ConfigEntry<float> VfxInterval { get; private set; }
 
         public SniperRifleConfig(ConfigFile cfg, GlobalConfig global)
         {
@@ -95,6 +96,15 @@ namespace IssaPlugin
                 "ScreenShakeIntensity",
                 0.65f,
                 "Intensity of the screen shake when firing the Sniper Rifle. 0 disables it. Higher values shake more."
+            );
+            VfxInterval = cfg.Bind(
+                Section,
+                "VfxInterval",
+                0f,
+                new ConfigDescription(
+                    "Seconds between drawn shots. 0 draws every shot. Damage still lands when a tracer is skipped.",
+                    new AcceptableValueRange<float>(0f, 1f)
+                )
             );
         }
     }

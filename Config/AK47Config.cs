@@ -14,6 +14,7 @@ namespace IssaPlugin
         public ConfigEntry<float> MaxAimingDistance { get; private set; }
         public ConfigEntry<float> MaxShotDistance { get; private set; }
         public ConfigEntry<float> ScreenShakeIntensity { get; private set; }
+        public ConfigEntry<float> VfxInterval { get; private set; }
 
         public AK47Config(ConfigFile cfg, GlobalConfig global)
         {
@@ -58,6 +59,15 @@ namespace IssaPlugin
                 "ScreenShakeIntensity",
                 0.25f,
                 "Intensity of the screen shake when firing the AK47. 0 disables it. Higher values shake more."
+            );
+            VfxInterval = cfg.Bind(
+                Section,
+                "VfxInterval",
+                0.1f,
+                new ConfigDescription(
+                    "Seconds between drawn shots. 0 draws every shot. Damage still lands when a tracer is skipped.",
+                    new AcceptableValueRange<float>(0f, 1f)
+                )
             );
         }
     }

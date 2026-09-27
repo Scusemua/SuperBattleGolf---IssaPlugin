@@ -26,6 +26,7 @@ namespace IssaPlugin
         public ConfigEntry<bool> BomberOverlayEnabled { get; private set; }
         public ConfigEntry<bool> PlayerBoxOverlayEnabled { get; private set; }
         public ConfigEntry<bool> CustomVfxEnabled { get; private set; }
+        public ConfigEntry<bool> BulletImpactEnabled { get; private set; }
         public ConfigEntry<bool> PerfDiagnosticsEnabled { get; private set; }
         public ConfigEntry<bool> ModCpuProfilingEnabled { get; private set; }
         public ConfigEntry<float> PerfDiagnosticsInterval { get; private set; }
@@ -54,8 +55,19 @@ namespace IssaPlugin
 
         public void SetItemEnabled(ItemType itemType, bool enabled)
         {
-            if (_itemEnabledEntries.TryGetValue((int)itemType, out var e))
-                e.Value = enabled;
+            if (!_itemEnabledEntries.TryGetValue((int)itemType, out var entry))
+                return;
+
+            // Remote clients keep the match's toggles in the session overlay.
+            // Writing ConfigEntry.Value here would save the vote into their cfg.
+            // Create the overlay even when the first snapshot has not arrived yet.
+            if (SessionConfig.IsRemoteClient)
+            {
+                SessionConfig.Set(entry, enabled);
+                return;
+            }
+
+            entry.Value = enabled;
         }
 
         // ── Per-item warning flags ────────────────────────────────────────────
@@ -187,6 +199,13 @@ namespace IssaPlugin
                     + "are unaffected — only the visuals are skipped. Use it to test whether "
                     + "the mod's VFX prefabs, and the shaders they were converted to for "
                     + "URP, are responsible for frame drops."
+            );
+            BulletImpactEnabled = cfg.Bind(
+                "Diagnostics",
+                "BulletImpactEnabled",
+                true,
+                "Spawn the bullet impact effect where a shotgun or minigun pellet hits. "
+                    + "Turn this off to skip that prefab. The bullet trail and the hit still happen."
             );
             
             NetworkDiagnosticsEnabled = cfg.Bind(
@@ -417,6 +436,8 @@ namespace IssaPlugin
             Reg(cfg, _itemEnabledEntries, 140, "AA12Enabled", "AA-12");
             Reg(cfg, _itemEnabledEntries, 141, "Remington870Enabled", "Remington 870");
             Reg(cfg, _itemEnabledEntries, 142, "NightTimeEnabled", "Night Time");
+            Reg(cfg, _itemEnabledEntries, 144, "MinigunEnabled", "Minigun");
+            Reg(cfg, _itemEnabledEntries, 145, "OrbBomberEnabled", "Orb Bomber");
 
             // ── Warnings ───────────────────────────────────────────────────────
             WarningsEnabled = cfg.Bind(
@@ -624,6 +645,8 @@ namespace IssaPlugin
                 false
             );
             RegWarn(cfg, _itemWarningEnabledEntries, 142, "NightTimeWarning", "Night Time", false);
+            RegWarn(cfg, _itemWarningEnabledEntries, 144, "MinigunWarning", "Minigun", false);
+            RegWarn(cfg, _itemWarningEnabledEntries, 145, "OrbBomberWarning", "Orb Bomber", true);
 
             // GlobalConfig.BindAllItemPoolWeights binds all per-pool weights centrally.
             BindAllItemPoolWeights(cfg);

@@ -1,6 +1,6 @@
 # IssaMod
 
-Adds **44 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
+Adds **46 new items** to Super Battle Golf -- from an orbiting gunship you pilot from above, to a pack of angry attack bears. All items drop from standard item boxes and are fully configurable.
 
 For more information as well as the mod's source code, please see [the mod's GitHub repository](https://github.com/Scusemua/SuperBattleGolf---IssaPlugin/).
 
@@ -157,6 +157,14 @@ A remote that turns the course to night. The sky and the light go dark for every
 
 ### 🪝 Grappling Hook
 Aim at a surface and fire. The rope sticks, and you swing from it. Hold left click to reel in, right click to let line out, or both to hang still.
+
+### 🔫 Minigun
+Hold the trigger while aiming and the barrels spin up before any bullets come out. Once it is going it fires very fast, with a wide spread, and you move slower until you let go.
+
+### 🔮 Orb Bomber
+Pick a player, including yourself. A sphere spawns nearby and chases them along the ground, speeding up as it gets close. Once it is in range it stops, flashes, and grows, then explodes.
+
+A club, bat, bullet, golf cart, blast, or black hole knocks it off the chase and sends it tumbling. Each knock makes the next chase faster. By default, leaving range during the countdown cancels the blast and it comes after you again.
 
 ---
 
@@ -360,6 +368,10 @@ Assets used in the project:
 
 -   "Hair Dryer" \
     (https://skfb.ly/oANKW) by Atilla Kutluay Erdoğay 
+    Licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
+
+-   "Pokémon Voltorb Fanart [Toon-Shader]" \
+    (https://skfb.ly/6WTEJ) by Kafu Design 
     Licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
 
 ---

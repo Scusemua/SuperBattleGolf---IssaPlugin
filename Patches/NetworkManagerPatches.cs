@@ -1958,6 +1958,53 @@ namespace IssaPlugin.Patches
                 ShapeShifterHelper.HandleShapeShifterEnd
             );
 
+            // ── Orb Bomber ────────────────────────────────────────────────────
+            Writer<OrbBomberRequestMessage>.write =
+                OrbBomberRequestMessageSerialization.WriteOrbBomberRequestMessage;
+            Reader<OrbBomberRequestMessage>.read =
+                OrbBomberRequestMessageSerialization.ReadOrbBomberRequestMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<OrbBomberRequestMessage>(
+                    (conn, msg) =>
+                        GetBridge<OrbBomberNetworkBridge>(conn)
+                            ?.ServerHandleRequest(msg.TargetNetId, msg.EquippedSlotIndex)
+                );
+
+            Writer<OrbBomberSwingHitMessage>.write =
+                OrbBomberSwingHitMessageSerialization.WriteOrbBomberSwingHitMessage;
+            Reader<OrbBomberSwingHitMessage>.read =
+                OrbBomberSwingHitMessageSerialization.ReadOrbBomberSwingHitMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<OrbBomberSwingHitMessage>(
+                    (conn, msg) =>
+                        OrbBomberBehaviour.ServerHandleSwingMessage(conn, msg.OrbNetId)
+                );
+
+            Writer<OrbBomberBulletHitMessage>.write =
+                OrbBomberBulletHitMessageSerialization.WriteOrbBomberBulletHitMessage;
+            Reader<OrbBomberBulletHitMessage>.read =
+                OrbBomberBulletHitMessageSerialization.ReadOrbBomberBulletHitMessage;
+            if (NetworkServer.active)
+                NetworkServer.RegisterHandler<OrbBomberBulletHitMessage>(
+                    (_, msg) => OrbBomberBehaviour.ServerHandleBulletMessage(msg.OrbNetId, msg.Direction)
+                );
+
+            Writer<OrbBomberSequenceStartMessage>.write =
+                OrbBomberSequenceStartMessageSerialization.WriteOrbBomberSequenceStartMessage;
+            Reader<OrbBomberSequenceStartMessage>.read =
+                OrbBomberSequenceStartMessageSerialization.ReadOrbBomberSequenceStartMessage;
+            NetworkClient.RegisterHandler<OrbBomberSequenceStartMessage>(
+                OrbBomberClientSetup.HandleSequenceStart
+            );
+
+            Writer<OrbBomberSequenceResetMessage>.write =
+                OrbBomberSequenceResetMessageSerialization.WriteOrbBomberSequenceResetMessage;
+            Reader<OrbBomberSequenceResetMessage>.read =
+                OrbBomberSequenceResetMessageSerialization.ReadOrbBomberSequenceResetMessage;
+            NetworkClient.RegisterHandler<OrbBomberSequenceResetMessage>(
+                OrbBomberClientSetup.HandleSequenceReset
+            );
+
             // ── Explosive Golf Balls (Server → All Clients) ──────────────────────
             Writer<ExplosiveGolfBallsExplodeMessage>.write =
                 ExplosiveGolfBallsExplodeMessageSerialization.WriteExplosiveGolfBallsExplodeMessage;
@@ -2123,7 +2170,11 @@ namespace IssaPlugin.Patches
         static System.Reflection.MethodBase TargetMethod() =>
             AccessTools.Method(typeof(BNetworkManager), "OnStopClient");
 
-        static void Postfix() => NetworkManagerRegisterPrefabsPatch.ResetRegistration();
+        static void Postfix()
+        {
+            NetworkManagerRegisterPrefabsPatch.ResetRegistration();
+            SessionConfig.Clear();
+        }
     }
 
     /// When a remote client signals ready (after OnStartClient has registered their
@@ -2181,6 +2232,10 @@ namespace IssaPlugin.Patches
         {
             ItemConfigSyncer.ResetSyncState();
             FirearmKnockback.Reset();
+
+            // Start drops a session left over from being a client. Stop covers a
+            // listen host whose OnStopClient does not run. Clear is idempotent.
+            SessionConfig.Clear();
         }
     }
 

@@ -68,6 +68,8 @@ namespace IssaPlugin.Items
         public static Sprite AK47Icon { get; private set; }
         public static Sprite AA12Icon { get; private set; }
         public static Sprite Remington870Icon { get; private set; }
+        public static Sprite MinigunIcon { get; private set; }
+        public static Sprite OrbBomberIcon { get; private set; }
         public static Sprite HarrierIcon { get; private set; }
         public static Sprite PositionSwapIcon { get; private set; }
         public static Sprite PoisonJarIcon { get; private set; }
@@ -99,6 +101,7 @@ namespace IssaPlugin.Items
         public static GameObject AK47Prefab { get; private set; }
         public static GameObject AA12Prefab { get; private set; }
         public static GameObject Remington870Prefab { get; private set; }
+        public static GameObject MinigunPrefab { get; private set; }
         public static GameObject HarrierTabletPrefab { get; private set; }
         public static GameObject PositionSwapHandheldPrefab { get; private set; }
         public static GameObject PoisonJarHandheldPrefab { get; private set; }
@@ -136,6 +139,11 @@ namespace IssaPlugin.Items
 
         /// Networked hunter drone projectile.
         public static GameObject HunterDronePrefab { get; private set; }
+
+        public static GameObject OrbBomberHandheldPrefab { get; private set; }
+
+        /// Networked orb that chases a player along the ground.
+        public static GameObject OrbBomberPrefab { get; private set; }
 
         /// Handheld UFO model shown in the player's hand.
         public static GameObject UfoAbductionHandheldPrefab { get; private set; }
@@ -277,14 +285,17 @@ namespace IssaPlugin.Items
         private static GameObject _bloodSplatterPrefab;
         public static GameObject BloodSplatterPrefab => Vfx(_bloodSplatterPrefab);
 
-        /// Shotgun pellet. The particle system only draws while the object is moving,
-        /// so callers fly an instance from the barrel to the pellet's end point.
+        /// Shotgun pellet. One shared particle system draws every pellet.
         private static GameObject _shotgunBulletPrefab;
         public static GameObject ShotgunBulletPrefab => Vfx(_shotgunBulletPrefab);
 
         /// One-shot muzzle burst. Plays on awake, does not loop, and simulates in world space.
         private static GameObject _shotgunMuzzleFlashPrefab;
         public static GameObject ShotgunMuzzleFlashPrefab => Vfx(_shotgunMuzzleFlashPrefab);
+
+        /// Hit burst for shotgun and minigun pellets. Plays where a pellet connects.
+        private static GameObject _bulletImpactPrefab;
+        public static GameObject BulletImpactPrefab => Vfx(_bulletImpactPrefab);
 
         /// The blood splatter prefab ignoring the VFX toggle.
         ///
@@ -461,6 +472,8 @@ namespace IssaPlugin.Items
                 SpriteAsset(p => AK47Icon = p, "ak47_icon.png"),
                 SpriteAsset(p => AA12Icon = p, "aa12_icon.png"),
                 SpriteAsset(p => Remington870Icon = p, "remington870_icon.png"),
+                SpriteAsset(p => MinigunIcon = p, "minigun_icon.png"),
+                SpriteAsset(p => OrbBomberIcon = p, "orb_bomber_icon.png", optional: true),
                 SpriteAsset(p => HarrierIcon = p, "harrier_icon.png"),
                 SpriteAsset(p => PositionSwapIcon = p, "position_swap_icon.png"),
                 SpriteAsset(p => PoisonJarIcon = p, "poison_bottle_icon.png"),
@@ -497,6 +510,12 @@ namespace IssaPlugin.Items
                 HandheldPrefab(p => AK47Prefab = p, "ak47.prefab"),
                 HandheldPrefab(p => AA12Prefab = p, "shotgun_aa12.prefab"),
                 HandheldPrefab(p => Remington870Prefab = p, "shotgun_remington870.prefab"),
+                HandheldPrefab(p => MinigunPrefab = p, "minigun.prefab"),
+                HandheldPrefab(
+                    p => OrbBomberHandheldPrefab = p,
+                    "orb_bomber_handheld.prefab",
+                    optional: true
+                ),
                 HandheldPrefab(p => HarrierTabletPrefab = p, "harrier_tablet.prefab"),
                 HandheldPrefab(
                     p => PositionSwapHandheldPrefab = p,
@@ -591,6 +610,13 @@ namespace IssaPlugin.Items
                     optional: true
                 ),
                 NetworkedPrefab(
+                    p => OrbBomberPrefab = p,
+                    "orb_bomber.prefab",
+                    0x04B80001u,
+                    typeof(OrbBomberClientSetup),
+                    optional: true
+                ),
+                NetworkedPrefab(
                     p => BlackHoleGrenadePrefab = p,
                     "black_hole_grenade.prefab",
                     0xB14C0001u,
@@ -624,6 +650,7 @@ namespace IssaPlugin.Items
                 LocalVfxPrefab(p => _bloodSplatterPrefab = p, "blood_explosion_vfx.prefab"),
                 LocalVfxPrefab(p => _shotgunBulletPrefab = p, "shotgun_bullet.prefab"),
                 LocalVfxPrefab(p => _shotgunMuzzleFlashPrefab = p, "shotgun_muzzle_flash.prefab"),
+                LocalVfxPrefab(p => _bulletImpactPrefab = p, "bullet_impact.prefab"),
                 LocalVfxPrefab(p => _javelinTrailVfxPrefab = p, "javelin_trail.prefab"),
                 // ── Audio ─────────────────────────────────────────────────────
                 // AudioClips are addressed without file extensions — Unity compiles
@@ -808,6 +835,19 @@ namespace IssaPlugin.Items
 
             // SuperShapeShifter icon falls back to ShapeShifter icon when the dedicated one is absent.
             SuperShapeShifterIcon ??= ShapeShifterIcon;
+
+            // Held locally in the player's hand. The bundle includes a NetworkIdentity
+            // and NetworkTransform, which throw without a spawned network context.
+            // Its fitted sphere collider would also shove the player.
+            if (OrbBomberHandheldPrefab != null)
+            {
+                StripNetworkComponents(OrbBomberHandheldPrefab);
+                foreach (var collider in OrbBomberHandheldPrefab.GetComponentsInChildren<Collider>(true))
+                {
+                    if (collider != null)
+                        collider.enabled = false;
+                }
+            }
 
             // Held-ball indicator can reuse the inventory icon when a dedicated PNG is absent.
             GloveBallIndicatorIcon ??= GloveIcon;

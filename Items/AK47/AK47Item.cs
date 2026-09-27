@@ -26,7 +26,7 @@ namespace IssaPlugin.Items
                 Inaccuracy = ModConfig.AK47.Inaccuracy.Value,
                 PelletCount = 1,
                 ScreenShakeIntensity = ModConfig.AK47.ScreenShakeIntensity.Value,
-                ThrottleVfx = true,
+                VfxInterval = ModConfig.AK47.VfxInterval.Value,
             };
     }
 }

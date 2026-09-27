@@ -650,7 +650,7 @@ namespace IssaPlugin.Patches
     /// <summary>
     /// Makes GetEffectivelyEquippedItem(false) return a base-game ItemType for custom
     /// items that borrow that item's stance / aim / use animation:
-    ///   • Sniper, AK-47, AA-12, Remington 870 → ElephantGun
+    ///   • Sniper, AK-47, AA-12, Remington 870, Minigun → ElephantGun
     ///     (items whose EffectiveItemProxy is ElephantGun)
     ///   • Golf Cart Launcher / Javelin / Cannon → RocketLauncher
     ///   • Freeze / Low Gravity / Wind Storm / Glove / Evil Glove / AC130 /
