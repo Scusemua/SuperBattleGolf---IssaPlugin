@@ -91,7 +91,7 @@ namespace IssaPlugin.Items
             if (!_isOpen)
             {
                 _isOpen = true;
-                CursorManager.SetCursorForceUnlocked(true);
+                MenuCursor.Acquire();
             }
             RefreshPlayerList();
         }
@@ -105,7 +105,7 @@ namespace IssaPlugin.Items
                 return;
 
             _isOpen = false;
-            CursorManager.SetCursorForceUnlocked(false);
+            MenuCursor.Release();
         }
 
         /// Shows or hides the time-remaining bar for the local player's cubed ball.

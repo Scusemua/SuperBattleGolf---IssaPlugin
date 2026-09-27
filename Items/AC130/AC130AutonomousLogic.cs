@@ -47,9 +47,16 @@ namespace IssaPlugin.Items
 
         public float EngagementDuration => ModConfig.AC130Autonomous.Duration.Value;
 
-        public float FireInterval => Mathf.Min(RegularCooldown, HeavyCooldown);
+        /// <summary>
+        /// How often the attack checks the weapon clocks. Those clocks are the
+        /// configured cooldowns. Checking only as often as the faster gun made
+        /// the slower gun wait until the next check.
+        /// </summary>
+        private const float FirePollInterval = 0.05f;
 
-        public float OpeningFireDelay => FireInterval * 0.5f;
+        public float FireInterval => FirePollInterval;
+
+        public float OpeningFireDelay => Mathf.Min(RegularCooldown, HeavyCooldown) * 0.5f;
 
         public float DepartureTimeout => FlyOutTime + 10f;
 
@@ -173,8 +180,8 @@ namespace IssaPlugin.Items
                 return;
 
             var autonomous = ModConfig.AC130Autonomous;
-            // The session already captured FireInterval from these same values.
-            // Later shots keep that copy, so a config reload cannot outrun the poll.
+            // Copied once for this attack. The session only uses FireInterval as
+            // how often it asks to shoot; these clocks decide when a gun is ready.
             _craft.RegularCooldown = RegularCooldown;
             _craft.HeavyCooldown = HeavyCooldown;
             _craft.TargetSelf = autonomous.TargetsUser.Value;

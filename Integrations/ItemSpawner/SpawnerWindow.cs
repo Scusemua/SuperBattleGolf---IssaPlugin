@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using IssaPlugin.Overlays;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
@@ -231,20 +232,21 @@ namespace IssaPlugin.Integrations.SpawnerUI
             RefreshCatalog();
             RefreshPlayers();
 
-            _open = true;
+            if (_open)
+                return;
 
-            // Use the game's own cursor owner rather than setting Cursor.lockState
-            // directly: it is a force-unlock override, so clearing it restores whatever
-            // state the game wanted (including Confined for gamepad) instead of us
-            // guessing "Locked" and stealing the cursor from e.g. an open pause menu.
-            CursorManager.SetCursorForceUnlocked(true);
+            _open = true;
+            MenuCursor.Acquire();
         }
 
         private void Close()
         {
+            if (!_open)
+                return;
+
             _open = false;
             _searchFocused = false;
-            CursorManager.SetCursorForceUnlocked(false);
+            MenuCursor.Release();
         }
 
         /// <summary>

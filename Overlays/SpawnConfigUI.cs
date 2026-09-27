@@ -213,7 +213,7 @@ namespace IssaPlugin.Overlays
         public void Open()
         {
             if (!_visible)
-                CursorManager.SetCursorForceUnlocked(true);
+                MenuCursor.Acquire();
 
             _visible = true;
             InitWorkingCopy();
@@ -226,7 +226,7 @@ namespace IssaPlugin.Overlays
                 return;
 
             _visible = false;
-            CursorManager.SetCursorForceUnlocked(false);
+            MenuCursor.Release();
             IssaPluginPlugin.Log.LogInfo("[SpawnConfigUI] Closed.");
         }
 

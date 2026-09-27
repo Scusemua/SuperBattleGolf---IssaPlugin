@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using IssaPlugin.Overlays;
 using Mirror;
 using UnityEngine;
 
@@ -56,7 +57,7 @@ namespace IssaPlugin.Items
             if (!_isOpen)
             {
                 _isOpen = true;
-                CursorManager.SetCursorForceUnlocked(true);
+                MenuCursor.Acquire();
             }
             RefreshPlayerList();
         }
@@ -69,7 +70,7 @@ namespace IssaPlugin.Items
                 return;
 
             _isOpen = false;
-            CursorManager.SetCursorForceUnlocked(false);
+            MenuCursor.Release();
         }
 
         private void OnGUI()

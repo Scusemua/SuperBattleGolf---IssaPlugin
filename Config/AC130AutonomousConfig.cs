@@ -5,7 +5,7 @@ namespace IssaPlugin
     /// <summary>
     /// Settings for an AC130 that flies and shoots on its own.
     /// The piloted gunship keeps using <see cref="AC130Config"/>.
-    /// Defaults match that config, so an autonomous deploy behaves the same until these are changed.
+    /// These values are separate, so changing one mode does not change the other.
     /// </summary>
     public class AC130AutonomousConfig
     {

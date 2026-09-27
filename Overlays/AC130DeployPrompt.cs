@@ -40,11 +40,11 @@ namespace IssaPlugin.Overlays
 
         private void OnDestroy()
         {
-            if (_visible)
-                CursorManager.SetCursorForceUnlocked(false);
-
             if (_instance == this)
+            {
+                Hide();
                 _instance = null;
+            }
 
             DestroyTex(_panelTex);
             DestroyTex(_buttonTex);
@@ -62,17 +62,20 @@ namespace IssaPlugin.Overlays
             if (Time.frameCount <= _instance._suppressShowUntilFrame)
                 return;
 
+            if (_instance._visible)
+                return;
+
             _instance._visible = true;
-            CursorManager.SetCursorForceUnlocked(true);
+            MenuCursor.Acquire();
         }
 
         public static void Hide()
         {
-            if (_instance == null)
+            if (_instance == null || !_instance._visible)
                 return;
 
             _instance._visible = false;
-            CursorManager.SetCursorForceUnlocked(false);
+            MenuCursor.Release();
         }
 
         public static void ShowNotice(string message)
