@@ -273,9 +273,8 @@ namespace IssaPlugin.Items
             var inherit = particles.inheritVelocity;
             inherit.enabled = false;
 
-            // World collision on the impact puff simulates every particle against the
-            // level. Noise and trails are already off. Shadows and a screen-size cap
-            // keep transparent pixels from stacking over the whole frame up close.
+            // Kept off even if a prefab turns it back on. One shared system
+            // colliding with the world is the whole cost of the old impacts.
             var collision = particles.collision;
             collision.enabled = false;
             CheapenRenderer(particles);
@@ -285,8 +284,6 @@ namespace IssaPlugin.Items
             particles.Play(false);
         }
 
-        const float MaxBillboardScreenFraction = 0.2f;
-
         static void CheapenRenderer(ParticleSystem particles)
         {
             var renderer = particles.GetComponent<ParticleSystemRenderer>();
@@ -295,14 +292,7 @@ namespace IssaPlugin.Items
 
             renderer.shadowCastingMode = ShadowCastingMode.Off;
             renderer.receiveShadows = false;
-            // The mesh slug keeps its authored size. Billboards were allowed to
-            // cover half the screen, which is a stack of transparent pixels at
-            // the muzzle.
-            if (
-                renderer.renderMode != ParticleSystemRenderMode.Mesh
-                && renderer.maxParticleSize > MaxBillboardScreenFraction
-            )
-                renderer.maxParticleSize = MaxBillboardScreenFraction;
+            renderer.motionVectorGenerationMode = MotionVectorGenerationMode.ForceNoMotion;
         }
 
         /// <summary>
@@ -317,11 +307,11 @@ namespace IssaPlugin.Items
 
             struct Live
             {
-                public GameObject Go;
+                public Flash Flash;
                 public float Until;
             }
 
-            static readonly List<GameObject> Free = new List<GameObject>(8);
+            static readonly List<Flash> Free = new List<Flash>(8);
             static readonly List<Live> Playing = new List<Live>(8);
             static Ticker _ticker;
 
@@ -337,32 +327,25 @@ namespace IssaPlugin.Items
                     _ticker = host.AddComponent<Ticker>();
                 }
 
-                GameObject go;
+                Flash flash;
                 if (Free.Count > 0)
                 {
                     int last = Free.Count - 1;
-                    go = Free[last];
+                    flash = Free[last];
                     Free.RemoveAt(last);
-                    go.transform.SetPositionAndRotation(position, rotation);
+                    flash.transform.SetPositionAndRotation(position, rotation);
                 }
                 else
                 {
-                    go = Object.Instantiate(prefab, position, rotation);
+                    var go = Object.Instantiate(prefab, position, rotation);
                     go.name = "MuzzleFlash";
                     Object.DontDestroyOnLoad(go);
-                    foreach (var particles in go.GetComponentsInChildren<ParticleSystem>(true))
-                        CheapenRenderer(particles);
+                    flash = go.AddComponent<Flash>();
+                    flash.Bind();
                 }
 
-                go.SetActive(true);
-                foreach (var particles in go.GetComponentsInChildren<ParticleSystem>(true))
-                {
-                    particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-                    particles.Clear(true);
-                    particles.Play(true);
-                }
-
-                Playing.Add(new Live { Go = go, Until = Time.time + Lifetime });
+                flash.Replay();
+                Playing.Add(new Live { Flash = flash, Until = Time.time + Lifetime });
             }
 
             public static void Tick()
@@ -375,10 +358,34 @@ namespace IssaPlugin.Items
                         continue;
 
                     Playing.RemoveAt(i);
-                    if (live.Go == null)
+                    if (live.Flash == null)
                         continue;
-                    live.Go.SetActive(false);
-                    Free.Add(live.Go);
+                    live.Flash.gameObject.SetActive(false);
+                    Free.Add(live.Flash);
+                }
+            }
+
+            sealed class Flash : MonoBehaviour
+            {
+                ParticleSystem[] _systems;
+
+                public void Bind()
+                {
+                    _systems = GetComponentsInChildren<ParticleSystem>(true);
+                    for (int i = 0; i < _systems.Length; i++)
+                        CheapenRenderer(_systems[i]);
+                }
+
+                public void Replay()
+                {
+                    gameObject.SetActive(true);
+                    for (int i = 0; i < _systems.Length; i++)
+                    {
+                        ParticleSystem particles = _systems[i];
+                        particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                        particles.Clear(true);
+                        particles.Play(true);
+                    }
                 }
             }
 
@@ -535,13 +542,17 @@ namespace IssaPlugin.Items
                     if (_sparkInherit > 0f && travel.sqrMagnitude > 0.0001f)
                         sparkVelocity = travel.normalized * (Speed * _sparkInherit);
 
-                    EmitAlong(_glow, flight.Position, next, ref flight.GlowDebt, _glowPerMeter, Vector3.zero);
-                    EmitAlong(_spark, flight.Position, next, ref flight.SparkDebt, _sparkPerMeter, sparkVelocity);
+                    EmitAlong(_glow, flight.Position, next, distance, ref flight.GlowDebt, _glowPerMeter, Vector3.zero);
+                    EmitAlong(_spark, flight.Position, next, distance, ref flight.SparkDebt, _sparkPerMeter, sparkVelocity);
                     flight.Position = next;
                 }
 
                 if ((next - flight.End).sqrMagnitude <= 0.0001f)
-                    Flights.RemoveAt(i);
+                {
+                    int last = Flights.Count - 1;
+                    Flights[i] = Flights[last];
+                    Flights.RemoveAt(last);
+                }
                 else
                     Flights[i] = flight;
             }
@@ -551,6 +562,7 @@ namespace IssaPlugin.Items
             ParticleSystem particles,
             Vector3 from,
             Vector3 to,
+            float distance,
             ref float debt,
             float perMeter,
             Vector3 velocity
@@ -559,7 +571,7 @@ namespace IssaPlugin.Items
             if (particles == null || perMeter <= 0f)
                 return;
 
-            debt += Vector3.Distance(from, to) * perMeter;
+            debt += distance * perMeter;
             int count = (int)debt;
             if (count <= 0)
                 return;
