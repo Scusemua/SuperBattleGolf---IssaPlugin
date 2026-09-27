@@ -38,6 +38,7 @@ namespace IssaPlugin.Items
         internal const float FlyOutDestroyDistance = 2000f;
 
         private Vector3 _flyOutStart;
+        private float _flyOutDestroyDistance = FlyOutDestroyDistance;
 
         /// <summary>
         /// Set to true by BeginFlyOut() so OnDestroy knows this was a
@@ -132,7 +133,7 @@ namespace IssaPlugin.Items
                 transform.position + transform.forward * flySpeed * Time.fixedDeltaTime;
             Move(nextPos, transform.rotation);
 
-            if (Vector3.Distance(nextPos, _flyOutStart) > FlyOutDestroyDistance)
+            if (Vector3.Distance(nextPos, _flyOutStart) > _flyOutDestroyDistance)
             {
                 _normalFlyOutComplete = true;
                 Destroy(gameObject);
@@ -159,11 +160,18 @@ namespace IssaPlugin.Items
 
         public void BeginFlyOut() => BeginFlyOut(ModConfig.AC130.ApproachSpeed.Value);
 
-        public void BeginFlyOut(float speed)
+        public void BeginFlyOut(float speed) => BeginFlyOut(speed, FlyOutDestroyDistance);
+
+        /// <summary>
+        /// Starts the fly-out. <paramref name="destroyDistance"/> is how far the gunship
+        /// travels before it removes itself. The piloted fly-out uses <see cref="FlyOutDestroyDistance"/>.
+        /// </summary>
+        public void BeginFlyOut(float speed, float destroyDistance)
         {
             mode = AC130FlightMode.FlyOut;
             _flyOutStart = transform.position;
             flySpeed = speed;
+            _flyOutDestroyDistance = Mathf.Max(0f, destroyDistance);
         }
 
         private void OnDestroy()

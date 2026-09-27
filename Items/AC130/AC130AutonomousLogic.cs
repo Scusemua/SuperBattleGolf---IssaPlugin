@@ -51,8 +51,7 @@ namespace IssaPlugin.Items
 
         public float OpeningFireDelay => FireInterval * 0.5f;
 
-        public float DepartureTimeout =>
-            AC130FlyBehaviour.FlyOutDestroyDistance / ApproachSpeed + 10f;
+        public float DepartureTimeout => FlyOutTime + 10f;
 
         public float NeutralizedTimeout =>
             Mathf.Max(1f, ModConfig.AC130Autonomous.CrashTimeout.Value);
@@ -163,7 +162,8 @@ namespace IssaPlugin.Items
             if (_craft.Fly == null)
                 return;
 
-            _craft.Fly.BeginFlyOut(ApproachSpeed);
+            float flyOutTime = FlyOutTime;
+            _craft.Fly.BeginFlyOut(ApproachSpeed, ApproachSpeed * flyOutTime);
             IssaPluginPlugin.Log.LogInfo($"[{LogName}] Beginning fly-out.");
         }
 
@@ -295,6 +295,9 @@ namespace IssaPlugin.Items
 
         private static float ApproachDistance =>
             Mathf.Max(0f, ModConfig.AC130Autonomous.ApproachDistance.Value);
+
+        private static float FlyOutTime =>
+            Mathf.Max(0f, ModConfig.AC130Autonomous.FlyOutTime.Value);
 
         private static float RegularCooldown =>
             Mathf.Max(0.05f, ModConfig.AC130Autonomous.FireCooldown.Value);

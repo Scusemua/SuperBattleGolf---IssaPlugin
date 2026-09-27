@@ -27,6 +27,7 @@ namespace IssaPlugin
         public ConfigEntry<float> Altitude { get; private set; }
         public ConfigEntry<float> ApproachDistance { get; private set; }
         public ConfigEntry<float> ApproachSpeed { get; private set; }
+        public ConfigEntry<float> FlyOutTime { get; private set; }
         public ConfigEntry<float> HitsToMayday { get; private set; }
         public ConfigEntry<float> CrashTimeout { get; private set; }
 
@@ -130,6 +131,14 @@ namespace IssaPlugin
                 "ApproachSpeed",
                 60f,
                 "Speed in units per second at which an autonomous AC130 flies in and out."
+            );
+            FlyOutTime = cfg.Bind(
+                Section,
+                "FlyOutTime",
+                2000f / 60f,
+                "Seconds an autonomous AC130 spends flying away after it stops shooting. "
+                    + "It keeps moving at ApproachSpeed for this long, then leaves. "
+                    + "The default matches the old fly-out: 2000 units at an approach speed of 60."
             );
             HitsToMayday = cfg.Bind(
                 Section,

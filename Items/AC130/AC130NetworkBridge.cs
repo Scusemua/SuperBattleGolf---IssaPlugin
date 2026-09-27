@@ -144,6 +144,7 @@ namespace IssaPlugin.Items
             if (_serverSessionActive || (_autonomousSession != null && _autonomousSession.IsActive))
             {
                 IssaPluginPlugin.Log.LogWarning("[AC130] Session already active for this player.");
+                connectionToClient.Send(new AC130BusyMessage());
                 return;
             }
 
@@ -455,8 +456,8 @@ namespace IssaPlugin.Items
 
         public void ClientAC130Busy()
         {
-            IssaPluginPlugin.Log.LogInfo("[AC130] AC130 is already in use by another player.");
-            // TODO: surface a HUD notification to the player.
+            IssaPluginPlugin.Log.LogInfo("[AC130] AC130 is already in use.");
+            AC130DeployPrompt.ShowNotice("An AC-130 is already in the air.");
         }
 
         // ================================================================
