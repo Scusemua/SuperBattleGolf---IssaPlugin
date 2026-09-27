@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using IssaPlugin.Patches;
 using Mirror;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace IssaPlugin.Items
 {
@@ -204,26 +205,7 @@ namespace IssaPlugin.Items
                 return;
 
             forward.Normalize();
-
-            // The loaded prefab stays alive and play-on-awake spends its one-particle
-            // burst at the origin. Instances copied from that spent system emit nothing.
-            if (prefab.activeSelf)
-                prefab.SetActive(false);
-
-            var go = Object.Instantiate(
-                prefab,
-                msg.Origin + forward * 0.2f,
-                Quaternion.LookRotation(forward)
-            );
-            go.SetActive(true);
-            foreach (var particles in go.GetComponentsInChildren<ParticleSystem>(true))
-            {
-                particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-                particles.Clear(true);
-                particles.Play(true);
-            }
-
-            Object.Destroy(go, 2.1f);
+            MuzzleFlashPool.Play(prefab, msg.Origin + forward * 0.2f, Quaternion.LookRotation(forward));
         }
 
         private static void SpawnImpacts(ShotgunTracerMessage msg)
@@ -291,9 +273,119 @@ namespace IssaPlugin.Items
             var inherit = particles.inheritVelocity;
             inherit.enabled = false;
 
+            // World collision on the impact puff simulates every particle against the
+            // level. Noise and trails are already off. Shadows and a screen-size cap
+            // keep transparent pixels from stacking over the whole frame up close.
+            var collision = particles.collision;
+            collision.enabled = false;
+            CheapenRenderer(particles);
+
             particles.Stop(false, ParticleSystemStopBehavior.StopEmittingAndClear);
             particles.Clear(false);
             particles.Play(false);
+        }
+
+        const float MaxBillboardScreenFraction = 0.2f;
+
+        static void CheapenRenderer(ParticleSystem particles)
+        {
+            var renderer = particles.GetComponent<ParticleSystemRenderer>();
+            if (renderer == null)
+                return;
+
+            renderer.shadowCastingMode = ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            // The mesh slug keeps its authored size. Billboards were allowed to
+            // cover half the screen, which is a stack of transparent pixels at
+            // the muzzle.
+            if (
+                renderer.renderMode != ParticleSystemRenderMode.Mesh
+                && renderer.maxParticleSize > MaxBillboardScreenFraction
+            )
+                renderer.maxParticleSize = MaxBillboardScreenFraction;
+        }
+
+        /// <summary>
+        /// Muzzle flashes used to be created and destroyed per shell. A shell every
+        /// few hundredths of a second made that allocate constantly. Instances are
+        /// reused, and the loaded prefab stays inactive so play-on-awake cannot
+        /// spend its burst on the template.
+        /// </summary>
+        static class MuzzleFlashPool
+        {
+            const float Lifetime = 2.1f;
+
+            struct Live
+            {
+                public GameObject Go;
+                public float Until;
+            }
+
+            static readonly List<GameObject> Free = new List<GameObject>(8);
+            static readonly List<Live> Playing = new List<Live>(8);
+            static Ticker _ticker;
+
+            public static void Play(GameObject prefab, Vector3 position, Quaternion rotation)
+            {
+                if (prefab.activeSelf)
+                    prefab.SetActive(false);
+
+                if (_ticker == null)
+                {
+                    var host = new GameObject("MuzzleFlashPool");
+                    Object.DontDestroyOnLoad(host);
+                    _ticker = host.AddComponent<Ticker>();
+                }
+
+                GameObject go;
+                if (Free.Count > 0)
+                {
+                    int last = Free.Count - 1;
+                    go = Free[last];
+                    Free.RemoveAt(last);
+                    go.transform.SetPositionAndRotation(position, rotation);
+                }
+                else
+                {
+                    go = Object.Instantiate(prefab, position, rotation);
+                    go.name = "MuzzleFlash";
+                    Object.DontDestroyOnLoad(go);
+                    foreach (var particles in go.GetComponentsInChildren<ParticleSystem>(true))
+                        CheapenRenderer(particles);
+                }
+
+                go.SetActive(true);
+                foreach (var particles in go.GetComponentsInChildren<ParticleSystem>(true))
+                {
+                    particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                    particles.Clear(true);
+                    particles.Play(true);
+                }
+
+                Playing.Add(new Live { Go = go, Until = Time.time + Lifetime });
+            }
+
+            public static void Tick()
+            {
+                float now = Time.time;
+                for (int i = Playing.Count - 1; i >= 0; i--)
+                {
+                    Live live = Playing[i];
+                    if (now < live.Until)
+                        continue;
+
+                    Playing.RemoveAt(i);
+                    if (live.Go == null)
+                        continue;
+                    live.Go.SetActive(false);
+                    Free.Add(live.Go);
+                }
+            }
+
+            sealed class Ticker : MonoBehaviour
+            {
+                void Update() => Tick();
+            }
         }
 
     /// <summary>
