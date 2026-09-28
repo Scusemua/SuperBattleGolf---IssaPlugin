@@ -73,9 +73,27 @@ namespace IssaPlugin.Items
             BaseRadius = drop;
             BodyRadius = Mathf.Max(0.05f, reach);
 
+            // The prefab ships client-to-server. Spawn is server-owned, so every
+            // copy should take position from the server.
+            foreach (var netTransform in GetComponents<NetworkTransformBase>())
+                netTransform.syncDirection = SyncDirection.ServerToClient;
+
             var body = GetComponent<Rigidbody>();
-            if (body != null)
-                body.centerOfMass = transform.InverseTransformPoint(massPoint);
+            if (body == null)
+                return;
+
+            body.centerOfMass = transform.InverseTransformPoint(massPoint);
+
+            // Remote copies have no chase behaviour. The prefab body is dynamic
+            // and uses gravity, so it falls through the ground on those clients.
+            if (NetworkServer.active)
+                return;
+
+            body.useGravity = false;
+            body.linearVelocity = Vector3.zero;
+            body.angularVelocity = Vector3.zero;
+            body.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+            body.isKinematic = true;
         }
 
         private float HorizontalReach(Vector3 worldCenter, float radius)
