@@ -2130,6 +2130,10 @@ namespace IssaPlugin.Patches
             // Null-safe: BowlingBallPrefab is null until bowling_ball.prefab is in the bundle.
             if (AssetLoader.BowlingBallPrefab != null)
                 RegisterPrefab(AssetLoader.BowlingBallPrefab);
+            // Null-safe: OrbBomberPrefab is null until orb_bomber.prefab is in the bundle.
+            // Without this, NetworkServer.Spawn is visible only on the host.
+            if (AssetLoader.OrbBomberPrefab != null)
+                RegisterPrefab(AssetLoader.OrbBomberPrefab);
         }
 
         private static void RegisterPrefab(GameObject prefab)
