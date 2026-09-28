@@ -484,6 +484,34 @@ namespace IssaPlugin.Items
             return slots[slotIndex].remainingUses;
         }
 
+        private static readonly MethodInfo GetEffectiveSlotMethod = AccessTools.Method(
+            typeof(PlayerInventory),
+            "GetEffectiveSlot"
+        );
+        private static readonly object[] EffectiveSlotArgs = { 0 };
+
+        /// <summary>
+        /// Remaining uses the local player is actually spending.
+        ///
+        /// A remote client writes each decrement into a slot override. The synced
+        /// list only changes when the server accepts the decrement command, and that
+        /// command is rejected once shots arrive closer together than a tenth of a
+        /// second. A held minigun therefore leaves the synced count almost still
+        /// while the override keeps falling. The host writes the synced list directly,
+        /// and this reads the same value either way.
+        /// </summary>
+        public static int GetEffectiveRemainingUses(PlayerInventory inventory, int slotIndex)
+        {
+            if (inventory == null || slotIndex < 0 || GetEffectiveSlotMethod == null)
+                return 0;
+
+            EffectiveSlotArgs[0] = slotIndex;
+            var slot = (InventorySlot)GetEffectiveSlotMethod.Invoke(inventory, EffectiveSlotArgs);
+            if (slot.itemType == ItemType.None)
+                return 0;
+            return slot.remainingUses;
+        }
+
         /// <summary>
         /// Finds the first slot index that contains <paramref name="itemType"/>.
         /// Returns -1 if not found. Safe to call on the server for any player because
