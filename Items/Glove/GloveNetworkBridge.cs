@@ -360,20 +360,15 @@ namespace IssaPlugin.Items
             if (equippedSlotIndex < 0)
                 return;
 
-            // Require the claimed slot to be the currently equipped one.
-            int equippedNow = ServerGetEquippedSlotIndex(inventory, info);
-            if (equippedNow != equippedSlotIndex)
-            {
-                IssaPluginPlugin.Log.LogDebug(
-                    "[Glove] Pickup rejected: slot is not currently equipped."
-                );
-                return;
-            }
-
+            // Trust the client-sent slot index. NetworkedEquippedItemIndex is never
+            // synced client→server, and EquippedItemIndex is unset on the server for
+            // remote players — same pattern as PositionSwap / ShapeShifter / ItemHelper.
             ItemType itemType = ItemRegistry.GetItemTypeAtSlot(inventory, equippedSlotIndex);
             if (!PlayerBallResolver.IsGloveLike(itemType))
             {
-                IssaPluginPlugin.Log.LogWarning("[Glove] Pickup rejected: glove-like item not in slot.");
+                IssaPluginPlugin.Log.LogWarning(
+                    "[Glove] Pickup rejected: glove-like item not in claimed slot."
+                );
                 return;
             }
 
@@ -392,38 +387,62 @@ namespace IssaPlugin.Items
             }
             else
             {
-                // Authoritative aim-cone selection. Origin is server-derived at the
+                // Authoritative aim validation. Origin is server-derived at the
                 // holder's head so a forged client AimOrigin cannot teleport the cone.
+                // Prefer the client's lock when that ball is still in-cone (camera vs
+                // head origin can disagree with a pure re-select); otherwise re-pick.
                 uint clientClaim = ballOwnerNetId;
                 if (!IsFinite(aimDirection) || aimDirection.sqrMagnitude < 0.0001f)
                 {
-                    IssaPluginPlugin.Log.LogDebug("[EvilGlove] Pickup rejected: invalid aim direction.");
+                    IssaPluginPlugin.Log.LogDebug(
+                        "[EvilGlove] Pickup rejected: invalid aim direction."
+                    );
                     return;
                 }
 
                 Vector3 aimOrigin = GetServerAimOrigin(info);
-                var selected = GolfBallAimTargeting.SelectBallOwner(
-                    aimOrigin,
-                    aimDirection,
-                    ModConfig.EvilGlove.MaxAimAngle.Value,
-                    ModConfig.EvilGlove.MaxTargetDistance.Value,
-                    _aimScratch,
-                    ServerIsBallBusy
-                );
-                ballOwnerNetId = PlayerBallResolver.GetPlayerNetId(selected);
-                if (ballOwnerNetId == 0)
-                {
-                    IssaPluginPlugin.Log.LogDebug(
-                        "[EvilGlove] Pickup rejected: no ball in aim cone."
-                    );
-                    return;
-                }
+                float maxAngle = ModConfig.EvilGlove.MaxAimAngle.Value;
+                float maxDist = ModConfig.EvilGlove.MaxTargetDistance.Value;
 
-                if (clientClaim != 0 && clientClaim != ballOwnerNetId)
+                if (
+                    clientClaim != 0
+                    && GolfBallAimTargeting.IsBallOwnerInAimCone(
+                        clientClaim,
+                        aimOrigin,
+                        aimDirection,
+                        maxAngle,
+                        maxDist,
+                        ServerIsBallBusy
+                    )
+                )
                 {
-                    IssaPluginPlugin.Log.LogDebug(
-                        $"[EvilGlove] Client lock {clientClaim} ≠ server pick {ballOwnerNetId}; using server."
+                    ballOwnerNetId = clientClaim;
+                }
+                else
+                {
+                    var selected = GolfBallAimTargeting.SelectBallOwner(
+                        aimOrigin,
+                        aimDirection,
+                        maxAngle,
+                        maxDist,
+                        _aimScratch,
+                        ServerIsBallBusy
                     );
+                    ballOwnerNetId = PlayerBallResolver.GetPlayerNetId(selected);
+                    if (ballOwnerNetId == 0)
+                    {
+                        IssaPluginPlugin.Log.LogDebug(
+                            "[EvilGlove] Pickup rejected: no ball in aim cone."
+                        );
+                        return;
+                    }
+
+                    if (clientClaim != 0 && clientClaim != ballOwnerNetId)
+                    {
+                        IssaPluginPlugin.Log.LogDebug(
+                            $"[EvilGlove] Client lock {clientClaim} not in cone; using server pick {ballOwnerNetId}."
+                        );
+                    }
                 }
             }
 
@@ -726,28 +745,13 @@ namespace IssaPlugin.Items
             if (inventory == null || _wielderSlot < 0)
                 return false;
 
-            if (
-                !PlayerBallResolver.IsGloveLike(
-                    ItemRegistry.GetItemTypeAtSlot(inventory, _wielderSlot)
-                )
-            )
-                return false;
-
-            var playerInfo = inventory.PlayerInfo ?? GetComponent<PlayerInfo>();
-            return ServerGetEquippedSlotIndex(inventory, playerInfo) == _wielderSlot;
-        }
-
-        private static int ServerGetEquippedSlotIndex(PlayerInventory inventory, PlayerInfo info)
-        {
-            // Prefer networked equipped index for remote clients on the server.
-            if (inventory != null && !inventory.isLocalPlayer && NetworkServer.active)
-            {
-                if (info == null)
-                    return -1;
-                return info.NetworkedEquippedItemIndex;
-            }
-
-            return inventory != null ? inventory.EquippedItemIndex : -1;
+            // Only verify the session slot still holds a glove. Do not require the
+            // networked equipped index — it is never synced client→server, so remote
+            // holders would always look "unequipped" and drop the ball immediately.
+            // Client-side CanSelectItemAt already blocks switching while holding.
+            return PlayerBallResolver.IsGloveLike(
+                ItemRegistry.GetItemTypeAtSlot(inventory, _wielderSlot)
+            );
         }
 
         private void ServerRelease(

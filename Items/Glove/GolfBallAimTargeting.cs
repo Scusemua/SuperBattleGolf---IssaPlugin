@@ -92,17 +92,77 @@ namespace IssaPlugin.Items
                 if (isBallBusy != null && isBallBusy(ownerNetId))
                     return;
 
-                Vector3 toBall = ball.transform.position - origin;
-                float sqDist = toBall.sqrMagnitude;
-                if (sqDist < 0.0001f || sqDist > maxSqDist)
-                    return;
-
-                float angle = Vector3.Angle(aimDir, toBall);
-                if (angle > maxAimAngleDeg)
+                if (
+                    !TryGetAimMetrics(
+                        origin,
+                        aimDir,
+                        ball,
+                        maxAimAngleDeg,
+                        maxSqDist,
+                        out float angle,
+                        out float sqDist
+                    )
+                )
                     return;
 
                 scratch.Add((owner, angle, sqDist));
             }
+        }
+
+        /// <summary>
+        /// True if <paramref name="ballOwnerNetId"/>'s OwnBall lies in the aim cone.
+        /// Used to accept a client's lock without a full re-select when camera vs
+        /// head origin would otherwise pick a different (or no) target.
+        /// </summary>
+        public static bool IsBallOwnerInAimCone(
+            uint ballOwnerNetId,
+            Vector3 origin,
+            Vector3 direction,
+            float maxAimAngleDeg,
+            float maxTargetDistance,
+            System.Func<uint, bool> isBallBusy = null
+        )
+        {
+            if (ballOwnerNetId == 0 || direction.sqrMagnitude < 0.0001f)
+                return false;
+            if (isBallBusy != null && isBallBusy(ballOwnerNetId))
+                return false;
+
+            var ball = PlayerBallResolver.TryGetOwnBall(ballOwnerNetId);
+            if (ball == null || !IsBallEligible(ball))
+                return false;
+
+            return TryGetAimMetrics(
+                origin,
+                direction.normalized,
+                ball,
+                maxAimAngleDeg,
+                maxTargetDistance * maxTargetDistance,
+                out _,
+                out _
+            );
+        }
+
+        private static bool TryGetAimMetrics(
+            Vector3 origin,
+            Vector3 aimDirNormalized,
+            GolfBall ball,
+            float maxAimAngleDeg,
+            float maxSqDist,
+            out float angle,
+            out float sqDist
+        )
+        {
+            angle = 0f;
+            sqDist = 0f;
+
+            Vector3 toBall = ball.transform.position - origin;
+            sqDist = toBall.sqrMagnitude;
+            if (sqDist < 0.0001f || sqDist > maxSqDist)
+                return false;
+
+            angle = Vector3.Angle(aimDirNormalized, toBall);
+            return angle <= maxAimAngleDeg;
         }
 
         /// <summary>
