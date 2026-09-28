@@ -27,6 +27,16 @@ namespace IssaPlugin.Items
             "OnPlayerHitOwnBall"
         );
 
+        /// <summary>
+        /// Private Hittable path used by club / golf-glove swings. Marks the ball as a
+        /// swing projectile so collisions knock players via HitWithSwingProjectile.
+        /// </summary>
+        private static readonly MethodInfo BecomeSwingProjectileMethod = AccessTools.Method(
+            typeof(Hittable),
+            "BecomeSwingProjectile",
+            new[] { typeof(PlayerGolfer), typeof(bool) }
+        );
+
         private static readonly Dictionary<uint, ActiveHold> ServerActiveHolds = new();
 
         /// <summary>Server: ballOwnerNetId → holderNetId for exclusive holds.</summary>
@@ -810,6 +820,9 @@ namespace IssaPlugin.Items
             {
                 RestoreAndLaunchBall(ball, releasePos, velocity, snapToFeet);
                 MaybeBeginSpinachFlight(ball, reason, powerMultiplier);
+                // After velocity is applied: same projectile flag a club / golf-glove
+                // swing uses, so hitting a player knocks them over.
+                MaybeBecomeSwingProjectile(ball, info, reason, velocity);
             }
             else
                 // Still undo ignore/collider state if we captured on this peer.
@@ -843,6 +856,37 @@ namespace IssaPlugin.Items
                 return;
             var rb = ball.Rigidbody ?? ball.AsEntity?.Rigidbody;
             HitWithGolfSwingInternalPatch.BeginBoostedFlight(this, rb, powerMultiplier);
+        }
+
+        /// <summary>
+        /// Marks a thrown ball as a swing projectile (club / golf-glove path) so
+        /// player collisions knock them over. Soft drops and below-threshold tosses
+        /// stay inert. Responsible player is the glove wielder.
+        /// </summary>
+        private static void MaybeBecomeSwingProjectile(
+            GolfBall ball,
+            PlayerInfo thrower,
+            GloveReleaseReason reason,
+            Vector3 velocity
+        )
+        {
+            if (reason != GloveReleaseReason.Throw || ball == null || thrower == null)
+                return;
+            if (BecomeSwingProjectileMethod == null)
+                return;
+
+            var hittable = ball.AsEntity?.AsHittable;
+            var golfer = thrower.AsGolfer;
+            if (hittable == null || golfer == null)
+                return;
+
+            var settings = hittable.SwingSettings;
+            if (settings == null || !settings.CanBecomeSwingProjectile)
+                return;
+            if (velocity.sqrMagnitude < settings.MinProjectileSwingSpeed * settings.MinProjectileSwingSpeed)
+                return;
+
+            BecomeSwingProjectileMethod.Invoke(hittable, new object[] { golfer, false });
         }
 
         /// <summary>
