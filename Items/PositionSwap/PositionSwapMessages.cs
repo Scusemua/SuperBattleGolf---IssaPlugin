@@ -11,8 +11,7 @@ namespace IssaPlugin.Items
         /// <summary>
         /// The client's local EquippedItemIndex when the item was used.
         /// Passed so the server can validate and consume the correct inventory slot
-        /// without relying on NetworkedEquippedItemIndex (which is not synced
-        /// client→server).
+        /// without racing a ClientToServer SyncVar lag on NetworkedEquippedItemIndex.
         /// </summary>
         public int EquippedSlotIndex;
     }

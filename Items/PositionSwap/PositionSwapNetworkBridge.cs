@@ -48,9 +48,9 @@ namespace IssaPlugin.Items
             if (_inventory == null)
                 return;
 
-            // Validate against the slots SyncList directly using the slot index the
-            // client sent. NetworkedEquippedItemIndex is a server→client SyncVar and
-            // is never updated on the server when a non-host client equips an item.
+            // Validate against the slots SyncList using the slot index the client
+            // sent. EquippedItemIndex is local-only on remotes; NetworkedEquippedItemIndex
+            // is ClientToServer but can lag by a syncInterval after a hotkey switch.
             if (
                 ItemRegistry.GetItemTypeAtSlot(_inventory, equippedSlotIndex)
                 != ItemRegistry.PositionSwapItemType

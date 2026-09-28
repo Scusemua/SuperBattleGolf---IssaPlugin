@@ -11,7 +11,6 @@ namespace IssaPlugin.Overlays
     {
         public static GloveOverlay Instance { get; private set; }
 
-        private bool _holding;
         private float _holdStart;
         private float _holdDuration;
 
@@ -37,29 +36,23 @@ namespace IssaPlugin.Overlays
 
         public void SetHolding(bool holding, float timeRemaining = 0f)
         {
-            _holding = holding;
-            if (holding)
-            {
-                _holdDuration = Mathf.Max(0.1f, timeRemaining);
-                _holdStart = Time.time;
-            }
+            if (!holding)
+                return;
+            _holdDuration = Mathf.Max(0.1f, timeRemaining);
+            _holdStart = Time.time;
         }
 
         public void ForceClose()
         {
-            _holding = false;
+            _holdDuration = 0f;
         }
 
         private void OnGUI()
         {
             var bridge = GameManager.LocalPlayerInfo?.GetComponent<GloveNetworkBridge>();
             if (bridge == null || !bridge.IsHolding)
-            {
-                _holding = false;
                 return;
-            }
 
-            _holding = true;
             if (_holdDuration <= 0f)
                 _holdDuration = bridge.HoldDuration;
 

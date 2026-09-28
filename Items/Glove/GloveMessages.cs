@@ -19,8 +19,9 @@ namespace IssaPlugin.Items
         public int EquippedSlotIndex;
         /// <summary>
         /// Player NetworkIdentity netId whose OwnBall to pick up.
-        /// Glove sends self. Evil Glove may send the client lock for logging;
-        /// the server re-runs aim selection and does not trust this id.
+        /// Glove sends self. Evil Glove sends the client aim lock; the server
+        /// accepts it when that ball is still in the server aim cone, otherwise
+        /// re-selects from the holder's head origin + client aim direction.
         /// </summary>
         public uint BallOwnerNetId;
         /// <summary>
@@ -94,6 +95,8 @@ namespace IssaPlugin.Items
         public float TimeRemaining;
         /// <summary>Player netId whose OwnBall is being carried.</summary>
         public uint BallOwnerNetId;
+        /// <summary>Glove or EvilGlove item type for this session (for remote peers).</summary>
+        public ItemType SessionItemType;
     }
 
     public static class GloveHoldStartedMessageSerialization
@@ -105,6 +108,7 @@ namespace IssaPlugin.Items
             w.WriteFloat(msg.Duration);
             w.WriteFloat(msg.TimeRemaining);
             w.WriteUInt(msg.BallOwnerNetId);
+            w.WriteInt((int)msg.SessionItemType);
         }
 
         public static GloveHoldStartedMessage ReadGloveHoldStartedMessage(NetworkReader r) =>
@@ -115,6 +119,7 @@ namespace IssaPlugin.Items
                 Duration = r.ReadFloat(),
                 TimeRemaining = r.ReadFloat(),
                 BallOwnerNetId = r.ReadUInt(),
+                SessionItemType = (ItemType)r.ReadInt(),
             };
     }
 

@@ -78,9 +78,9 @@ namespace IssaPlugin.Items
 
         /// <summary>
         /// Server-side: consumes the item at an explicit <paramref name="slotIndex"/>.
-        /// Use this overload when the slot index was transmitted in a network message,
-        /// because <c>NetworkedEquippedItemIndex</c> is never synced client→server and
-        /// <c>EquippedItemIndex</c> is not set on the server for remote-client objects.
+        /// Prefer this overload when the slot index was transmitted in a network message
+        /// so a ClientToServer SyncVar lag on <c>NetworkedEquippedItemIndex</c> cannot
+        /// consume the wrong slot. <c>EquippedItemIndex</c> is local-only on remotes.
         /// </summary>
         public static void ConsumeItemAtSlot(PlayerInventory inventory, int slotIndex)
         {

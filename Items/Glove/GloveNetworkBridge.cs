@@ -54,6 +54,7 @@ namespace IssaPlugin.Items
             public float EndTime;
             public float Duration;
             public uint BallOwnerNetId;
+            public ItemType SessionItemType;
         }
 
         // ── Server session ────────────────────────────────────────────────
@@ -370,9 +371,9 @@ namespace IssaPlugin.Items
             if (equippedSlotIndex < 0)
                 return;
 
-            // Trust the client-sent slot index. NetworkedEquippedItemIndex is never
-            // synced client→server, and EquippedItemIndex is unset on the server for
-            // remote players — same pattern as PositionSwap / ShapeShifter / ItemHelper.
+            // Trust the client-sent slot index at use time. EquippedItemIndex is
+            // local-only on remotes; NetworkedEquippedItemIndex is a ClientToServer
+            // SyncVar and can lag by a syncInterval after a hotkey switch.
             ItemType itemType = ItemRegistry.GetItemTypeAtSlot(inventory, equippedSlotIndex);
             if (!PlayerBallResolver.IsGloveLike(itemType))
             {
@@ -510,6 +511,7 @@ namespace IssaPlugin.Items
                 EndTime = _serverEndTime,
                 Duration = _serverDuration,
                 BallOwnerNetId = ballOwnerNetId,
+                SessionItemType = itemType,
             };
 
             // Apply on the server peer first so dedicated servers (no local client
@@ -528,6 +530,7 @@ namespace IssaPlugin.Items
                     Duration = _serverDuration,
                     TimeRemaining = _serverDuration,
                     BallOwnerNetId = ballOwnerNetId,
+                    SessionItemType = itemType,
                 }
             );
 
@@ -756,13 +759,18 @@ namespace IssaPlugin.Items
                 return false;
 
             // Only verify the session slot still holds a glove. Do not require the
-            // networked equipped index — it is never synced client→server, so remote
-            // holders would always look "unequipped" and drop the ball immediately.
-            // Client-side CanSelectItemAt already blocks switching while holding.
+            // equipped index to match — SyncVar lag after a hotkey switch would
+            // otherwise drop the ball. Client CanSelectItemAt already blocks switching
+            // while holding.
             return PlayerBallResolver.IsGloveLike(
                 ItemRegistry.GetItemTypeAtSlot(inventory, _wielderSlot)
             );
         }
+
+        private static bool IsFeetDropRelease(GloveReleaseReason reason) =>
+            reason == GloveReleaseReason.Timeout
+            || reason == GloveReleaseReason.Interrupt
+            || reason == GloveReleaseReason.Cleanup;
 
         private void ServerRelease(
             GloveReleaseReason reason,
@@ -785,10 +793,7 @@ namespace IssaPlugin.Items
             var info = GetComponent<PlayerInfo>();
 
             Vector3 releasePos = transform.position;
-            bool snapToFeet =
-                reason == GloveReleaseReason.Timeout
-                || reason == GloveReleaseReason.Interrupt
-                || reason == GloveReleaseReason.Cleanup;
+            bool snapToFeet = IsFeetDropRelease(reason);
             if (snapToFeet)
             {
                 releasePos = GetFeetDropPosition();
@@ -820,13 +825,15 @@ namespace IssaPlugin.Items
             {
                 RestoreAndLaunchBall(ball, releasePos, velocity, snapToFeet);
                 MaybeBeginSpinachFlight(ball, reason, powerMultiplier);
-                // After velocity is applied: same projectile flag a club / golf-glove
-                // swing uses, so hitting a player knocks them over.
-                MaybeBecomeSwingProjectile(ball, info, reason, velocity);
             }
-            else
+            else if (ball != null)
                 // Still undo ignore/collider state if we captured on this peer.
                 RestoreCollisionStateOnly(ball);
+
+            // Knockout from player hits is decided on the server (Hittable.OnCollisionEnter).
+            // Always mark here — even when this peer is not simulating the rigidbody —
+            // so dedicated servers still get SwingProjectileState + client Rpc.
+            MaybeBecomeSwingProjectile(ball, info, reason, velocity);
 
             NetworkServer.SendToAll(
                 new GloveReleasedMessage
@@ -1156,7 +1163,10 @@ namespace IssaPlugin.Items
             if (!alreadyThisSession)
             {
                 bridge._heldBallOwnerNetId = msg.BallOwnerNetId;
-                bridge.TryCaptureSessionItemTypeFromInventory();
+                if (PlayerBallResolver.IsGloveLike(msg.SessionItemType))
+                    bridge._sessionItemType = msg.SessionItemType;
+                else
+                    bridge.TryCaptureSessionItemTypeFromInventory();
                 bridge.ApplyClientHoldState(msg.SessionId, msg.Duration, msg.TimeRemaining);
 
                 var ball = bridge.ResolveHeldBall();
@@ -1181,6 +1191,8 @@ namespace IssaPlugin.Items
             {
                 // Listen-host already applied hold on the server path — still sync owner.
                 bridge._heldBallOwnerNetId = msg.BallOwnerNetId;
+                if (PlayerBallResolver.IsGloveLike(msg.SessionItemType))
+                    bridge._sessionItemType = msg.SessionItemType;
             }
 
             GloveHoldIndicatorOverlay.Instance?.Show(msg.HolderNetId);
@@ -1228,12 +1240,13 @@ namespace IssaPlugin.Items
                 var entity = ball.AsEntity;
                 if (entity == null || entity.IsSimulatingRigidbody())
                 {
-                    bool snap =
-                        msg.Reason == GloveReleaseReason.Timeout
-                        || msg.Reason == GloveReleaseReason.Interrupt
-                        || msg.Reason == GloveReleaseReason.Cleanup;
+                    bool snap = IsFeetDropRelease(msg.Reason);
                     bridge.RestoreAndLaunchBall(ball, msg.WorldPosition, msg.Velocity, snap);
                     bridge.MaybeBeginSpinachFlight(ball, msg.Reason, msg.PowerMultiplier);
+                    // Early local projectile flag before RpcBecomeSwingProjectile arrives
+                    // (listen-host already marked in ServerRelease and skips this path).
+                    var holder = bridge.GetComponent<PlayerInfo>();
+                    MaybeBecomeSwingProjectile(ball, holder, msg.Reason, msg.Velocity);
                 }
                 else
                 {
@@ -1276,6 +1289,7 @@ namespace IssaPlugin.Items
                         Duration = kv.Value.Duration,
                         TimeRemaining = remaining,
                         BallOwnerNetId = kv.Value.BallOwnerNetId,
+                        SessionItemType = kv.Value.SessionItemType,
                     }
                 );
             }
@@ -1292,7 +1306,13 @@ namespace IssaPlugin.Items
             if (inventory == null)
                 return;
 
-            int equipped = inventory.EquippedItemIndex;
+            // EquippedItemIndex is local-only; remotes use the C2S SyncVar.
+            int equipped =
+                inventory.isLocalPlayer
+                    ? inventory.EquippedItemIndex
+                    : inventory.PlayerInfo != null
+                        ? inventory.PlayerInfo.NetworkedEquippedItemIndex
+                        : -1;
             if (equipped < 0)
                 return;
 
@@ -1416,6 +1436,7 @@ namespace IssaPlugin.Items
             }
 
             GloveHoldIndicatorOverlay.Instance?.ClearAll();
+            // Hole transition: every hold ends server-side; wipe the local mirror.
             ClientBusyBalls.Clear();
             if (isOwned)
                 GloveOverlay.Instance?.ForceClose();
@@ -1439,6 +1460,7 @@ namespace IssaPlugin.Items
             _heldBallOwnerNetId = 0;
             _sessionItemType = default;
             CancelLocalCharge();
+            _throwInputArmed = false;
             if (isOwned)
                 GloveOverlay.Instance?.ForceClose();
         }

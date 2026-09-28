@@ -22,14 +22,8 @@ namespace IssaPlugin.Overlays
 
         public static GloveHoldIndicatorOverlay Instance { get; private set; }
 
-        private readonly Dictionary<uint, IndicatorInstance> _indicators = new();
+        private readonly Dictionary<uint, GameObject> _indicators = new();
         private Material _sharedBillboardMaterial;
-
-        private struct IndicatorInstance
-        {
-            public GameObject Go;
-            public Material OwnedMaterial;
-        }
 
         private void Awake() => Instance = this;
 
@@ -83,32 +77,24 @@ namespace IssaPlugin.Overlays
             indicator.transform.localScale = Vector3.one * IndicatorWorldScale;
             indicator.SetActive(true);
 
-            _indicators[holderNetId] = new IndicatorInstance
-            {
-                Go = indicator,
-                OwnedMaterial = null,
-            };
+            _indicators[holderNetId] = indicator;
         }
 
         public void Hide(uint holderNetId)
         {
-            if (!_indicators.TryGetValue(holderNetId, out var inst))
+            if (!_indicators.TryGetValue(holderNetId, out var go))
                 return;
             _indicators.Remove(holderNetId);
-            if (inst.Go != null)
-                Destroy(inst.Go);
-            if (inst.OwnedMaterial != null)
-                Destroy(inst.OwnedMaterial);
+            if (go != null)
+                Destroy(go);
         }
 
         public void ClearAll()
         {
-            foreach (var inst in _indicators.Values)
+            foreach (var go in _indicators.Values)
             {
-                if (inst.Go != null)
-                    Destroy(inst.Go);
-                if (inst.OwnedMaterial != null)
-                    Destroy(inst.OwnedMaterial);
+                if (go != null)
+                    Destroy(go);
             }
             _indicators.Clear();
         }
@@ -169,7 +155,7 @@ namespace IssaPlugin.Overlays
 
             foreach (var kv in _indicators)
             {
-                var go = kv.Value.Go;
+                var go = kv.Value;
                 if (go == null)
                 {
                     stale.Add(kv.Key);

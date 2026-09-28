@@ -11,8 +11,8 @@ namespace IssaPlugin.Items
         public uint TargetNetId;
 
         /// The client's local EquippedItemIndex at the moment of use.
-        /// Passed so the server can validate the correct slot without relying on
-        /// NetworkedEquippedItemIndex (not synced client → server).
+        /// Passed so the server can validate the correct slot without racing a
+        /// ClientToServer SyncVar lag on NetworkedEquippedItemIndex.
         public int EquippedSlotIndex;
     }
 
