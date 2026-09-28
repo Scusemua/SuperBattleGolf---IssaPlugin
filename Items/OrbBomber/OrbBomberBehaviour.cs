@@ -58,8 +58,8 @@ namespace IssaPlugin.Items
         private float _bulletLockUntil;
         private int _groundMask;
 
-        private static readonly RaycastHit[] GroundHits = new RaycastHit[32];
-        private static readonly Collider[] CartOverlap = new Collider[16];
+        private static readonly RaycastHit[] GroundHits = new RaycastHit[64];
+        private static readonly Collider[] CartOverlap = new Collider[64];
         private static readonly Dictionary<int, Vector3> CartPositions = new Dictionary<int, Vector3>();
         private static readonly Dictionary<int, Vector3> CartVelocities = new Dictionary<int, Vector3>();
         private static readonly List<int> CartPrune = new List<int>();
@@ -119,7 +119,7 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            if (_reapplyKnock && _rb != null && !_rb.isKinematic)
+            if (_reapplyKnock && !_rb.isKinematic)
             {
                 // The detonation tick may already have queued a kinematic move
                 // this frame. Put the knock back after that, or the countdown
@@ -725,8 +725,8 @@ namespace IssaPlugin.Items
         {
             KeepAboveGround();
 
-            // A short probe. The chase ray looks several metres down, which would
-            // still "find ground" at the top of a fling and skip the landing.
+            // Short probe. Resume uses this, so a slow orb at the top of a lob
+            // keeps falling instead of treating the long chase ray as a landing.
             bool grounded = IsRestingOnGround();
             if (!grounded)
                 _leftGround = true;
@@ -788,7 +788,7 @@ namespace IssaPlugin.Items
             for (int i = 0; i < count; i++)
             {
                 var hit = GroundHits[i];
-                if (!IsUsableGround(hit))
+                if (!IsChaseGround(hit))
                     continue;
 
                 float gap = Mathf.Abs(hit.point.y - _rb.position.y);
@@ -797,6 +797,22 @@ namespace IssaPlugin.Items
                 best = gap;
                 surfaceY = hit.point.y;
                 found = true;
+            }
+
+            // A full buffer can be nothing but sibling orbs, which hides the floor.
+            if (
+                !found
+                && count >= GroundHits.Length
+                && TryFirstGround(origin, 24f, GroundMask, out float walked)
+            )
+            {
+                float gap = Mathf.Abs(walked - _rb.position.y);
+                if (gap <= 8f)
+                {
+                    best = gap;
+                    surfaceY = walked;
+                    found = true;
+                }
             }
 
             float minY = surfaceY + radius;
@@ -838,62 +854,53 @@ namespace IssaPlugin.Items
 
         private bool TryFindGround(Vector3 position, out float groundY)
         {
-            groundY = position.y;
             float lift = Mathf.Max(_setup.BodyRadius, Mathf.Max(0f, _setup.BaseRadius)) + 3f;
-            float castDistance = lift + 80f;
             Vector3 origin = position + Vector3.up * lift;
-            int count = Physics.RaycastNonAlloc(
-                origin,
-                Vector3.down,
-                GroundHits,
-                castDistance,
-                GroundMask,
-                QueryTriggerInteraction.Ignore
-            );
-
-            float bestDistance = float.MaxValue;
-            bool found = false;
-            for (int i = 0; i < count; i++)
-            {
-                var hit = GroundHits[i];
-                if (!IsUsableGround(hit))
-                    continue;
-                if (hit.distance < bestDistance)
-                {
-                    bestDistance = hit.distance;
-                    groundY = hit.point.y;
-                    found = true;
-                }
-            }
-
-            // A full buffer drops hits in undefined order, so the ground under the
-            // orb can be missing. The single raycast is the closest surface.
-            if (
-                count >= GroundHits.Length
-                && Physics.Raycast(
-                    origin,
-                    Vector3.down,
-                    out RaycastHit closest,
-                    castDistance,
-                    GroundMask,
-                    QueryTriggerInteraction.Ignore
-                )
-                && IsUsableGround(closest)
-                && (!found || closest.distance < bestDistance)
-            )
-            {
-                groundY = closest.point.y;
-                found = true;
-            }
-
-            return found;
+            return TryFirstGround(origin, lift + 80f, GroundMask, out groundY);
         }
 
-        private bool IsUsableGround(RaycastHit hit)
+        /// Closest upward surface under the ray. Other orbs and steep faces are
+        /// stepped past, so a crowd cannot plant a sibling on top of itself and a
+        /// full overlap buffer cannot hide the ground.
+        internal static bool TryFirstGround(Vector3 origin, float distance, int mask, out float groundY)
+        {
+            groundY = 0f;
+            const int MaxSkips = 12;
+            float remaining = distance;
+            Vector3 cursor = origin;
+            for (int i = 0; i < MaxSkips && remaining > 0.05f; i++)
+            {
+                if (
+                    !Physics.Raycast(
+                        cursor,
+                        Vector3.down,
+                        out RaycastHit hit,
+                        remaining,
+                        mask,
+                        QueryTriggerInteraction.Ignore
+                    )
+                )
+                    return false;
+
+                if (IsChaseGround(hit))
+                {
+                    groundY = hit.point.y;
+                    return true;
+                }
+
+                float advance = Mathf.Max(hit.distance, 0.02f) + 0.05f;
+                cursor += Vector3.down * advance;
+                remaining -= advance;
+            }
+
+            return false;
+        }
+
+        private static bool IsChaseGround(RaycastHit hit)
         {
             if (hit.collider == null || hit.normal.y < 0.45f)
                 return false;
-            return hit.collider.transform != transform && !hit.collider.transform.IsChildOf(transform);
+            return hit.collider.GetComponentInParent<OrbBomberClientSetup>() == null;
         }
 
         private bool IsRestingOnGround()
@@ -910,7 +917,7 @@ namespace IssaPlugin.Items
 
             for (int i = 0; i < count; i++)
             {
-                if (IsUsableGround(GroundHits[i]))
+                if (IsChaseGround(GroundHits[i]))
                     return true;
             }
 

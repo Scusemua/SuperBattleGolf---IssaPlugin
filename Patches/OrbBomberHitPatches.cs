@@ -12,7 +12,7 @@ namespace IssaPlugin.Patches
     [HarmonyPatch(typeof(PlayerGolfer), "ReleaseSwingChargeInternal")]
     static class OrbBomberSwingPatch
     {
-        private static readonly Collider[] SwingHits = new Collider[32];
+        private static readonly Collider[] SwingHits = new Collider[128];
 
         static void Postfix(PlayerGolfer __instance)
         {
@@ -69,7 +69,7 @@ namespace IssaPlugin.Patches
     [HarmonyPatch(typeof(PlayerGolfer), "OnFinishedSwinging")]
     static class OrbBomberSwingFallbackPatch
     {
-        private static readonly Collider[] SwingHits = new Collider[32];
+        private static readonly Collider[] SwingHits = new Collider[128];
 
         static void Postfix(PlayerGolfer __instance)
         {

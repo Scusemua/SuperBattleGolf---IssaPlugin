@@ -76,28 +76,31 @@ namespace IssaPlugin.Items
 
             int count = Mathf.Clamp(
                 Mathf.RoundToInt(ModConfig.OrbBomber.SpawnCount.Value),
-                1,
-                16
+                OrbBomberConfig.MinSpawnCount,
+                OrbBomberConfig.MaxSpawnCount
             );
             // Sample every spot before any orb exists, so a later ray cannot
             // land on an orb that was just spawned.
             float ringAngle = Random.Range(0f, Mathf.PI * 2f);
-            var spots = new Vector3[count];
-            var groundY = new float[count];
-            var foundGround = new bool[count];
+            var spots = new SpawnSpot[count];
             for (int i = 0; i < count; i++)
             {
-                float angle = count == 1 ? ringAngle : ringAngle + Mathf.PI * 2f * i / count;
-                spots[i] = PickSpawnPosition(chaseTarget.position, angle);
-                foundGround[i] = TrySampleGround(spots[i], out groundY[i]);
+                float angle = ringAngle + Mathf.PI * 2f * i / count;
+                Vector3 spot = PickSpawnPosition(chaseTarget.position, angle);
+                spots[i] = new SpawnSpot
+                {
+                    Position = spot,
+                    FoundGround = TrySampleGround(spot, out float ground),
+                    GroundY = ground,
+                };
             }
 
             for (int i = 0; i < count; i++)
             {
                 SpawnOrb(
-                    spots[i],
-                    foundGround[i],
-                    groundY[i],
+                    spots[i].Position,
+                    spots[i].FoundGround,
+                    spots[i].GroundY,
                     chaseTarget.position.y,
                     summoner,
                     targetInfo,
@@ -108,6 +111,13 @@ namespace IssaPlugin.Items
             IssaPluginPlugin.Log.LogInfo(
                 $"[OrbBomber] Spawned {count} for {summoner.PlayerId.PlayerName} targeting netId={targetNetId}."
             );
+        }
+
+        private struct SpawnSpot
+        {
+            public Vector3 Position;
+            public float GroundY;
+            public bool FoundGround;
         }
 
         private static void SpawnOrb(
@@ -189,8 +199,6 @@ namespace IssaPlugin.Items
             }
         }
 
-        private static readonly RaycastHit[] SpawnGroundHits = new RaycastHit[32];
-
         private static bool TrySampleGround(Vector3 position, out float groundY)
         {
             groundY = position.y;
@@ -198,61 +206,15 @@ namespace IssaPlugin.Items
                 ? GameManager.LayerSettings.PlayerGroundableMask
                 : Physics.DefaultRaycastLayers;
 
-            // Start just above the target so a roof over them is not the first hit.
+            // Start just above this spot, at the target's altitude, so a roof
+            // over the target is not the first hit. The high ray covers a hill
+            // that rises above that altitude.
             var near = new Vector3(position.x, position.y + 6f, position.z);
-            if (TryGroundHit(near, 80f, mask, out groundY))
+            if (OrbBomberBehaviour.TryFirstGround(near, 80f, mask, out groundY))
                 return true;
 
             var high = new Vector3(position.x, position.y + 2000f, position.z);
-            return TryGroundHit(high, 4000f, mask, out groundY);
-        }
-
-        private static bool TryGroundHit(Vector3 origin, float distance, int mask, out float groundY)
-        {
-            groundY = 0f;
-            int count = Physics.RaycastNonAlloc(
-                origin,
-                Vector3.down,
-                SpawnGroundHits,
-                distance,
-                mask,
-                QueryTriggerInteraction.Ignore
-            );
-
-            float bestDistance = float.MaxValue;
-            bool found = false;
-            for (int i = 0; i < count; i++)
-            {
-                var hit = SpawnGroundHits[i];
-                if (hit.collider == null || hit.normal.y < 0.45f)
-                    continue;
-                if (hit.distance >= bestDistance)
-                    continue;
-                bestDistance = hit.distance;
-                groundY = hit.point.y;
-                found = true;
-            }
-
-            if (
-                count >= SpawnGroundHits.Length
-                && Physics.Raycast(
-                    origin,
-                    Vector3.down,
-                    out RaycastHit closest,
-                    distance,
-                    mask,
-                    QueryTriggerInteraction.Ignore
-                )
-                && closest.collider != null
-                && closest.normal.y >= 0.45f
-                && (!found || closest.distance < bestDistance)
-            )
-            {
-                groundY = closest.point.y;
-                found = true;
-            }
-
-            return found;
+            return OrbBomberBehaviour.TryFirstGround(high, 4000f, mask, out groundY);
         }
 
         public override void ServerHoleCleanup() => OrbBomberBehaviour.ServerCleanupAll();
