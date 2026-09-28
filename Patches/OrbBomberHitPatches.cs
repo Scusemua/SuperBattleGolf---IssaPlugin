@@ -24,23 +24,20 @@ namespace IssaPlugin.Patches
 
         private static IEnumerator DetectSwing(PlayerGolfer golfer)
         {
-            yield return new WaitForSeconds(GameManager.GolfSettings.SwingHitStartTime);
+            OrbBomberBehaviour.GetSwingHitWindow(golfer, out float start, out float end);
+            yield return new WaitForSeconds(Mathf.Max(0f, start));
 
-            float hitWindow =
-                GameManager.GolfSettings.SwingHitEndTime
-                - GameManager.GolfSettings.SwingHitStartTime;
+            float hitWindow = Mathf.Max(0f, end - start);
             float elapsed = 0f;
             var sent = new HashSet<uint>();
 
             while (golfer.IsSwinging && elapsed < hitWindow)
             {
-                Vector3 swingCenter = golfer.transform.TransformPoint(
-                    GameManager.GolfSettings.SwingHitBoxLocalCenter
-                );
+                OrbBomberBehaviour.GetSwingProbe(golfer, out Vector3 swingCenter, out float probeRadius);
 
                 int count = Physics.OverlapSphereNonAlloc(
                     swingCenter,
-                    OrbBomberBehaviour.SwingProbeRadius,
+                    probeRadius,
                     SwingHits,
                     Physics.AllLayers,
                     QueryTriggerInteraction.Ignore
@@ -83,12 +80,12 @@ namespace IssaPlugin.Patches
             if (swinger == null)
                 return;
 
-            Vector3 swingCenter = __instance.transform.TransformPoint(
-                GameManager.GolfSettings.SwingHitBoxLocalCenter
-            );
+            Vector3 swingCenter;
+            float probeRadius;
+            OrbBomberBehaviour.GetSwingProbe(__instance, out swingCenter, out probeRadius);
             int count = Physics.OverlapSphereNonAlloc(
                 swingCenter,
-                OrbBomberBehaviour.SwingProbeRadius,
+                probeRadius,
                 SwingHits,
                 Physics.AllLayers,
                 QueryTriggerInteraction.Ignore
@@ -191,7 +188,9 @@ namespace IssaPlugin.Patches
             {
                 if (orb == null)
                     continue;
-                if ((orb.transform.position - worldPosition).sqrMagnitude > range * range)
+                var body = orb.GetComponent<Rigidbody>();
+                Vector3 center = body != null ? body.worldCenterOfMass : orb.transform.position;
+                if ((center - worldPosition).sqrMagnitude > range * range)
                     continue;
                 orb.ApplyExplosion(worldPosition, range, scale);
             }

@@ -154,30 +154,70 @@ namespace IssaPlugin.Items
             }
         }
 
+        private static readonly RaycastHit[] SpawnGroundHits = new RaycastHit[32];
+
         private static bool TrySampleGround(Vector3 position, out float groundY)
         {
             groundY = position.y;
-            var origin = new Vector3(position.x, position.y + 2000f, position.z);
             int mask = GameManager.LayerSettings != null
                 ? GameManager.LayerSettings.PlayerGroundableMask
                 : Physics.DefaultRaycastLayers;
 
+            // Start just above the target so a roof over them is not the first hit.
+            var near = new Vector3(position.x, position.y + 6f, position.z);
+            if (TryGroundHit(near, 80f, mask, out groundY))
+                return true;
+
+            var high = new Vector3(position.x, position.y + 2000f, position.z);
+            return TryGroundHit(high, 4000f, mask, out groundY);
+        }
+
+        private static bool TryGroundHit(Vector3 origin, float distance, int mask, out float groundY)
+        {
+            groundY = 0f;
+            int count = Physics.RaycastNonAlloc(
+                origin,
+                Vector3.down,
+                SpawnGroundHits,
+                distance,
+                mask,
+                QueryTriggerInteraction.Ignore
+            );
+
+            float bestDistance = float.MaxValue;
+            bool found = false;
+            for (int i = 0; i < count; i++)
+            {
+                var hit = SpawnGroundHits[i];
+                if (hit.collider == null || hit.normal.y < 0.45f)
+                    continue;
+                if (hit.distance >= bestDistance)
+                    continue;
+                bestDistance = hit.distance;
+                groundY = hit.point.y;
+                found = true;
+            }
+
             if (
-                Physics.Raycast(
+                count >= SpawnGroundHits.Length
+                && Physics.Raycast(
                     origin,
                     Vector3.down,
-                    out RaycastHit hit,
-                    4000f,
+                    out RaycastHit closest,
+                    distance,
                     mask,
                     QueryTriggerInteraction.Ignore
                 )
+                && closest.collider != null
+                && closest.normal.y >= 0.45f
+                && (!found || closest.distance < bestDistance)
             )
             {
-                groundY = hit.point.y;
-                return true;
+                groundY = closest.point.y;
+                found = true;
             }
 
-            return false;
+            return found;
         }
 
         public override void ServerHoleCleanup() => OrbBomberBehaviour.ServerCleanupAll();

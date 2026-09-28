@@ -58,7 +58,7 @@ namespace IssaPlugin.Items
         private float _bulletLockUntil;
         private int _groundMask;
 
-        private static readonly RaycastHit[] GroundHits = new RaycastHit[8];
+        private static readonly RaycastHit[] GroundHits = new RaycastHit[32];
         private static readonly Collider[] CartOverlap = new Collider[16];
         private static readonly Dictionary<int, Vector3> CartPositions = new Dictionary<int, Vector3>();
         private static readonly Dictionary<int, Vector3> CartVelocities = new Dictionary<int, Vector3>();
@@ -91,6 +91,12 @@ namespace IssaPlugin.Items
         {
             if (!NetworkServer.active || _finished)
                 return;
+
+            if (_rb == null || _setup == null)
+            {
+                Despawn();
+                return;
+            }
 
             if (Time.time - _spawnTime >= Mathf.Max(1f, ModConfig.OrbBomber.MaxLifetime.Value))
             {
@@ -277,8 +283,15 @@ namespace IssaPlugin.Items
                 return;
 
             float bodyRadius = _setup.BodyRadius * Mathf.Max(transform.localScale.x, 1f);
-            float reach = SwingOverlapRadius + bodyRadius + 2f;
-            if ((swinger.transform.position - transform.position).sqrMagnitude > reach * reach)
+            Vector3 probeCenter = swinger.transform.position;
+            float probeRadius = SwingProbeRadius;
+            if (swinger.AsGolfer != null)
+                GetSwingProbe(swinger.AsGolfer, out probeCenter, out probeRadius);
+
+            // Reach is measured from the swing box, so a giant's long reach still
+            // counts and a swing from across the hole does not.
+            float reach = probeRadius + bodyRadius + 2f;
+            if ((probeCenter - transform.position).sqrMagnitude > reach * reach)
                 return;
 
             bool isVictim = swingerIdentity.netId == VictimNetId;
@@ -329,12 +342,13 @@ namespace IssaPlugin.Items
                 return;
 
             float scaledRadius = Mathf.Max(0.5f, radius);
-            Vector3 away = transform.position - origin;
+            Vector3 center = _rb.worldCenterOfMass;
+            Vector3 away = center - origin;
             if (away.sqrMagnitude < 0.0001f)
                 away = Vector3.up;
             away.Normalize();
 
-            float dist = Vector3.Distance(transform.position, origin);
+            float dist = Vector3.Distance(center, origin);
             float falloff = 1f - Mathf.Clamp01(dist / scaledRadius);
             float speed = ExplosionForce * Mathf.Max(1f, scale) * Mathf.Lerp(0.35f, 1f, falloff);
             Vector3 knockDir = (away + Vector3.up * 0.35f).normalized;
@@ -389,6 +403,52 @@ namespace IssaPlugin.Items
         private void AddAnger()
         {
             _angerBonus += Mathf.Max(0f, ModConfig.OrbBomber.AngerSpeedBonus.Value);
+        }
+
+        /// Matches the club's swing box, including a Jumbo Burger giant and the
+        /// extra reach Super Jumbo Burger adds on top of that.
+        internal static void GetSwingProbe(PlayerGolfer golfer, out Vector3 worldCenter, out float radius)
+        {
+            var info = golfer.PlayerInfo;
+            bool giant = info != null && info.IsInJumboBurgerGiantForm;
+            Vector3 localCenter = GameManager.GolfSettings.SwingHitBoxLocalCenter;
+            float cover = SwingProbeRadius;
+            if (giant && GameManager.ItemSettings != null)
+            {
+                localCenter = GameManager.ItemSettings.JumboBurgerSwingHitBoxLocalCenter;
+                Vector3 size = GameManager.ItemSettings.JumboBurgerSwingHitBoxSize;
+                cover = Mathf.Max(cover, 0.5f * size.magnitude);
+            }
+
+            Vector3 playerPosition = golfer.transform.position;
+            worldCenter = golfer.transform.TransformPoint(localCenter);
+            float multiplier = 1f;
+            if (giant && info.Movement != null)
+            {
+                multiplier = SuperJumboBurgerBehaviour.GetFlickHitboxMultiplier(
+                    info.Movement.CharacterScale
+                );
+            }
+
+            if (multiplier > 1f)
+                worldCenter = playerPosition + (worldCenter - playerPosition) * multiplier;
+
+            radius = cover * Mathf.Max(1f, multiplier);
+        }
+
+        internal static void GetSwingHitWindow(PlayerGolfer golfer, out float start, out float end)
+        {
+            var settings = GameManager.GolfSettings;
+            bool giant = golfer.PlayerInfo != null && golfer.PlayerInfo.IsInJumboBurgerGiantForm;
+            if (giant)
+            {
+                start = settings.GetSwingHitStartTime(SwingType.JumboBurgerGiant);
+                end = settings.GetSwingHitEndTime(SwingType.JumboBurgerGiant);
+                return;
+            }
+
+            start = settings.SwingHitStartTime;
+            end = settings.SwingHitEndTime;
         }
 
         /// Same construction as PlayerGolfer.GetSwingDirection: facing, pitched
@@ -696,7 +756,9 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            if (speed <= ResumeSpeed())
+            // Stay dynamic until the bottom is actually near the ground. Taking
+            // over at the top of a lob would either hover there or snap down.
+            if (speed <= ResumeSpeed() && grounded)
                 EnterApproachBody();
         }
 
@@ -726,9 +788,7 @@ namespace IssaPlugin.Items
             for (int i = 0; i < count; i++)
             {
                 var hit = GroundHits[i];
-                if (hit.collider == null || hit.normal.y < 0.45f)
-                    continue;
-                if (hit.collider.transform == transform || hit.collider.transform.IsChildOf(transform))
+                if (!IsUsableGround(hit))
                     continue;
 
                 float gap = Mathf.Abs(hit.point.y - _rb.position.y);
@@ -780,12 +840,13 @@ namespace IssaPlugin.Items
         {
             groundY = position.y;
             float lift = Mathf.Max(_setup.BodyRadius, Mathf.Max(0f, _setup.BaseRadius)) + 3f;
+            float castDistance = lift + 80f;
             Vector3 origin = position + Vector3.up * lift;
             int count = Physics.RaycastNonAlloc(
                 origin,
                 Vector3.down,
                 GroundHits,
-                lift + Mathf.Max(0f, _setup.BaseRadius) + 4f,
+                castDistance,
                 GroundMask,
                 QueryTriggerInteraction.Ignore
             );
@@ -795,9 +856,7 @@ namespace IssaPlugin.Items
             for (int i = 0; i < count; i++)
             {
                 var hit = GroundHits[i];
-                if (hit.collider == null || hit.normal.y < 0.45f)
-                    continue;
-                if (hit.collider.transform.IsChildOf(transform) || hit.collider.transform == transform)
+                if (!IsUsableGround(hit))
                     continue;
                 if (hit.distance < bestDistance)
                 {
@@ -807,7 +866,34 @@ namespace IssaPlugin.Items
                 }
             }
 
+            // A full buffer drops hits in undefined order, so the ground under the
+            // orb can be missing. The single raycast is the closest surface.
+            if (
+                count >= GroundHits.Length
+                && Physics.Raycast(
+                    origin,
+                    Vector3.down,
+                    out RaycastHit closest,
+                    castDistance,
+                    GroundMask,
+                    QueryTriggerInteraction.Ignore
+                )
+                && IsUsableGround(closest)
+                && (!found || closest.distance < bestDistance)
+            )
+            {
+                groundY = closest.point.y;
+                found = true;
+            }
+
             return found;
+        }
+
+        private bool IsUsableGround(RaycastHit hit)
+        {
+            if (hit.collider == null || hit.normal.y < 0.45f)
+                return false;
+            return hit.collider.transform != transform && !hit.collider.transform.IsChildOf(transform);
         }
 
         private bool IsRestingOnGround()
@@ -824,12 +910,8 @@ namespace IssaPlugin.Items
 
             for (int i = 0; i < count; i++)
             {
-                var hit = GroundHits[i];
-                if (hit.collider == null)
-                    continue;
-                if (hit.collider.transform == transform || hit.collider.transform.IsChildOf(transform))
-                    continue;
-                return true;
+                if (IsUsableGround(GroundHits[i]))
+                    return true;
             }
 
             return false;
@@ -854,7 +936,7 @@ namespace IssaPlugin.Items
                 return;
             _finished = true;
 
-            Vector3 pos = transform.position;
+            Vector3 pos = _rb != null ? _rb.worldCenterOfMass : transform.position;
             var tempRocket = Object.Instantiate(
                 GameManager.ItemSettings.RocketPrefab,
                 pos,
@@ -867,7 +949,16 @@ namespace IssaPlugin.Items
                 tempRocket.ServerInitialize(ThrowerInfo, null, ItemUseId);
                 NetworkServer.Spawn(tempRocket.gameObject, (NetworkConnectionToClient)null);
                 ExplosionScaler.Register(tempRocket, ModConfig.OrbBomber.ExplosionScale.Value);
-                ServerExplodeMethod?.Invoke(tempRocket, new object[] { pos });
+                if (ServerExplodeMethod == null)
+                {
+                    IssaPluginPlugin.Log.LogError(
+                        "[OrbBomber] Rocket.ServerExplode was not found. The orb was removed without a blast."
+                    );
+                }
+                else
+                {
+                    ServerExplodeMethod.Invoke(tempRocket, new object[] { pos });
+                }
             }
 
             NetworkServer.Destroy(gameObject);
