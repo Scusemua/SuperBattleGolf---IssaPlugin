@@ -488,6 +488,10 @@ namespace IssaPlugin.Items
             typeof(PlayerInventory),
             "GetEffectiveSlot"
         );
+        private static readonly FieldInfo LocalSlotOverridesField = AccessTools.Field(
+            typeof(PlayerInventory),
+            "localPlayerSlotOverrides"
+        );
         private static readonly object[] EffectiveSlotArgs = { 0 };
 
         /// <summary>
@@ -510,6 +514,45 @@ namespace IssaPlugin.Items
             if (slot.itemType == ItemType.None)
                 return 0;
             return slot.remainingUses;
+        }
+
+        /// <summary>
+        /// Writes rounds a remote client has already fired back onto the local slot
+        /// override. The server accepts one decrement per burst. Syncing that copy
+        /// deletes the override and puts the rest of the burst back in the gun.
+        /// The host writes the synced slot directly and must not take this path.
+        /// </summary>
+        public static void RestoreLocalUses(
+            PlayerInventory inventory,
+            int slotIndex,
+            ItemType itemType,
+            int expectedRemaining
+        )
+        {
+            if (inventory == null || inventory.isServer || slotIndex < 0 || expectedRemaining < 0)
+                return;
+            if (inventory.GetEffectivelyEquippedItem(true) != itemType)
+                return;
+            if (inventory.EquippedItemIndex != slotIndex)
+                return;
+            if (GetEffectiveSlotMethod == null)
+                return;
+            if (
+                LocalSlotOverridesField?.GetValue(inventory)
+                is not Dictionary<int, InventorySlot> overrides
+            )
+                return;
+
+            EffectiveSlotArgs[0] = slotIndex;
+            var slot = (InventorySlot)GetEffectiveSlotMethod.Invoke(inventory, EffectiveSlotArgs);
+            if (slot.itemType != itemType || slot.remainingUses <= expectedRemaining)
+                return;
+
+            // Keep the validation seed. A fresh slot would mint a new one, and the
+            // game's own decrement only changes the remaining count.
+            slot.remainingUses = expectedRemaining;
+            overrides[slotIndex] = slot;
+            Hotkeys.UpdatePlayerInventoryIcon(slotIndex);
         }
 
         /// <summary>

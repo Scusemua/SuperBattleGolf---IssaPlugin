@@ -357,7 +357,12 @@ namespace IssaPlugin.Items
                 inventory.PlayerInfo.PlayerAudio.PlayElephantGunShotForAllClients();
                 _holdBullets = true;
 
-                do
+                // Rounds still owed after the shots fired this hold. A remote client's
+                // slot override is wiped by the one decrement the server accepts, which
+                // would hand those rounds back. -1 until the first shot records a count.
+                int owed = -1;
+                bool again = true;
+                while (again)
                 {
                     if (inventory.GetEffectivelyEquippedItem(true) != itemType)
                         break;
@@ -365,14 +370,40 @@ namespace IssaPlugin.Items
                         break;
 
                     int slot = inventory.EquippedItemIndex;
-                    FireShell(inventory, profile());
-                    ItemHelper.DecrementAndRemove(inventory, slot);
+                    if (owed >= 0)
+                        ItemRegistry.RestoreLocalUses(inventory, slot, itemType, owed);
 
                     if (inventory.GetEffectivelyEquippedItem(true) != itemType)
                         break;
 
-                    yield return new WaitForSeconds(fireRate());
-                } while (Mouse.current != null && Mouse.current.leftButton.isPressed);
+                    if (owed < 0)
+                        owed = ItemRegistry.GetEffectiveRemainingUses(inventory, slot);
+
+                    FireShell(inventory, profile());
+                    ItemHelper.DecrementAndRemove(inventory, slot);
+                    if (owed > 0)
+                        owed--;
+                    ItemRegistry.RestoreLocalUses(inventory, slot, itemType, owed);
+
+                    if (inventory.GetEffectivelyEquippedItem(true) != itemType)
+                        break;
+
+                    // At least one frame, matching WaitForSeconds, so a zero rate cannot spin.
+                    float wait = fireRate();
+                    if (float.IsNaN(wait) || wait < 0f)
+                        wait = 0f;
+                    float elapsedWait = 0f;
+                    while (true)
+                    {
+                        yield return null;
+                        elapsedWait += Time.deltaTime;
+                        ItemRegistry.RestoreLocalUses(inventory, slot, itemType, owed);
+                        if (elapsedWait >= wait)
+                            break;
+                    }
+
+                    again = Mouse.current != null && Mouse.current.leftButton.isPressed;
+                }
             }
             finally
             {

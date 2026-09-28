@@ -92,7 +92,7 @@ namespace IssaPlugin
                 "VfxInterval",
                 0.03f,
                 new ConfigDescription(
-                    "Seconds between drawn shots. 0 draws every pellet. Damage still lands when a bullet is skipped.",
+                    "Seconds between drawn shots. 0 draws every shot. Damage still lands when a shot is skipped.",
                     new AcceptableValueRange<float>(0f, 1f)
                 )
             );

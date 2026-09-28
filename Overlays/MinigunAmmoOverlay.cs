@@ -10,11 +10,6 @@ namespace IssaPlugin.Overlays
         private GUIStyle _countStyle;
         private Texture2D _panelTex;
 
-        // Lowest remaining seen during this trigger hold. The first accepted server
-        // decrement syncs back and wipes the local override, which jumps the live
-        // count up. The readout keeps falling through that.
-        private int _displayRemaining = -1;
-
         private const float ReferenceHeight = 1080f;
         private const float PanelWidth = 240f;
         private const float PanelHeight = 88f;
@@ -33,12 +28,12 @@ namespace IssaPlugin.Overlays
                 inventory == null
                 || inventory.GetEffectivelyEquippedItem(true) != ItemRegistry.MinigunItemType
             )
-            {
-                _displayRemaining = -1;
                 return;
-            }
 
-            int remaining = ShownRemaining(inventory);
+            int remaining = ItemRegistry.GetEffectiveRemainingUses(
+                inventory,
+                inventory.EquippedItemIndex
+            );
             int full = Mathf.Max(1, (int)ModConfig.Minigun.Uses.Value);
             EnsureStyles();
 
@@ -67,26 +62,6 @@ namespace IssaPlugin.Overlays
                 remaining + " / " + full,
                 _countStyle
             );
-        }
-
-        private int ShownRemaining(PlayerInventory inventory)
-        {
-            int live = ItemRegistry.GetEffectiveRemainingUses(
-                inventory,
-                inventory.EquippedItemIndex
-            );
-
-            // While the trigger is down, ignore a count that climbed. That climb is
-            // the synced slot replacing the local override, not ammo coming back.
-            if (
-                !Firearm.IsHolding(inventory, ItemRegistry.MinigunItemType)
-                || _displayRemaining < 0
-            )
-                _displayRemaining = live;
-            else if (live < _displayRemaining)
-                _displayRemaining = live;
-
-            return _displayRemaining;
         }
 
         private void EnsureStyles()

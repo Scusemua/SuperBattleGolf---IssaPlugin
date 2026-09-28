@@ -19,12 +19,13 @@ namespace IssaPlugin.Patches
             if (!Firearm.IsHolding(__instance, ItemRegistry.MinigunItemType))
                 return;
 
-            int slot = __instance.EquippedItemIndex;
-            if (slot < 0 || slot >= __instance.slots.Count)
-                return;
-
-            var held = __instance.slots[slot];
-            if (held.itemType == ItemRegistry.MinigunItemType && held.remainingUses > 0)
+            // The synced slot lags behind a remote client, so it still shows rounds
+            // after the local gun is empty and RemoveItemAt's deselect is rejected.
+            int remaining = ItemRegistry.GetEffectiveRemainingUses(
+                __instance,
+                __instance.EquippedItemIndex
+            );
+            if (remaining > 0)
                 __result = false;
         }
     }
