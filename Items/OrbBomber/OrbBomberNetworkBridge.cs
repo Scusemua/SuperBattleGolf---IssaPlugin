@@ -74,10 +74,52 @@ namespace IssaPlugin.Items
                 senderNetId: netId
             );
 
-            Vector3 spawnPos = PickSpawnPosition(chaseTarget.position);
-            // Sample before the orb exists so the ray cannot hit the orb and
-            // plant it on top of itself.
-            bool foundGround = TrySampleGround(spawnPos, out float groundY);
+            int count = Mathf.Clamp(
+                Mathf.RoundToInt(ModConfig.OrbBomber.SpawnCount.Value),
+                1,
+                16
+            );
+            // Sample every spot before any orb exists, so a later ray cannot
+            // land on an orb that was just spawned.
+            float ringAngle = Random.Range(0f, Mathf.PI * 2f);
+            var spots = new Vector3[count];
+            var groundY = new float[count];
+            var foundGround = new bool[count];
+            for (int i = 0; i < count; i++)
+            {
+                float angle = count == 1 ? ringAngle : ringAngle + Mathf.PI * 2f * i / count;
+                spots[i] = PickSpawnPosition(chaseTarget.position, angle);
+                foundGround[i] = TrySampleGround(spots[i], out groundY[i]);
+            }
+
+            for (int i = 0; i < count; i++)
+            {
+                SpawnOrb(
+                    spots[i],
+                    foundGround[i],
+                    groundY[i],
+                    chaseTarget.position.y,
+                    summoner,
+                    targetInfo,
+                    targetNetId
+                );
+            }
+
+            IssaPluginPlugin.Log.LogInfo(
+                $"[OrbBomber] Spawned {count} for {summoner.PlayerId.PlayerName} targeting netId={targetNetId}."
+            );
+        }
+
+        private static void SpawnOrb(
+            Vector3 spawnPos,
+            bool foundGround,
+            float groundY,
+            float fallbackY,
+            PlayerInfo summoner,
+            PlayerInfo targetInfo,
+            uint targetNetId
+        )
+        {
             var orb = Object.Instantiate(
                 AssetLoader.OrbBomberPrefab,
                 spawnPos,
@@ -88,7 +130,7 @@ namespace IssaPlugin.Items
 
             var setup = orb.GetComponent<OrbBomberClientSetup>();
             float radius = setup != null ? setup.BaseRadius : 0.5f;
-            spawnPos.y = (foundGround ? groundY : chaseTarget.position.y) + radius;
+            spawnPos.y = (foundGround ? groundY : fallbackY) + radius;
 
             orb.transform.position = spawnPos;
 
@@ -99,27 +141,21 @@ namespace IssaPlugin.Items
             rb.useGravity = false;
             rb.position = spawnPos;
 
-            var itemUseId = new ItemUseId(
+            var behaviour = orb.AddComponent<OrbBomberBehaviour>();
+            behaviour.ThrowerInfo = summoner;
+            behaviour.TargetInfo = targetInfo;
+            behaviour.VictimNetId = targetNetId;
+            behaviour.ItemUseId = new ItemUseId(
                 summoner.PlayerId.Guid,
                 NextUseIndex(),
                 ItemType.RocketLauncher,
                 false
             );
 
-            var behaviour = orb.AddComponent<OrbBomberBehaviour>();
-            behaviour.ThrowerInfo = summoner;
-            behaviour.TargetInfo = targetInfo;
-            behaviour.VictimNetId = targetNetId;
-            behaviour.ItemUseId = itemUseId;
-
             NetworkServer.Spawn(orb);
-
-            IssaPluginPlugin.Log.LogInfo(
-                $"[OrbBomber] Spawned for {summoner.PlayerId.PlayerName} targeting netId={targetNetId}."
-            );
         }
 
-        private static Vector3 PickSpawnPosition(Vector3 ballPosition)
+        private static Vector3 PickSpawnPosition(Vector3 ballPosition, float angle)
         {
             float minR = ModConfig.OrbBomber.MinSpawnRadius.Value;
             float maxR = ModConfig.OrbBomber.MaxSpawnRadius.Value;
@@ -129,7 +165,6 @@ namespace IssaPlugin.Items
             maxR = Mathf.Max(minR, maxR);
 
             float radius = Random.Range(minR, maxR);
-            float angle = Random.Range(0f, Mathf.PI * 2f);
             return ballPosition
                 + new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
         }

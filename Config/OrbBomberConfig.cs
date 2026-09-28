@@ -9,6 +9,7 @@ namespace IssaPlugin
 
         public ConfigEntry<Key> GiveKey { get; private set; }
         public ConfigEntry<float> Uses { get; private set; }
+        public ConfigEntry<float> SpawnCount { get; private set; }
         public ConfigEntry<float> MinSpawnRadius { get; private set; }
         public ConfigEntry<float> MaxSpawnRadius { get; private set; }
         public ConfigEntry<bool> ChaseGolfBall { get; private set; }
@@ -36,6 +37,16 @@ namespace IssaPlugin
                 "Debug key to add the Orb Bomber to your inventory. Key.None disables it."
             );
             Uses = cfg.Bind(Section, "Uses", 1f, "Number of uses per Orb Bomber pickup.");
+            SpawnCount = cfg.Bind(
+                Section,
+                "SpawnCount",
+                1f,
+                new ConfigDescription(
+                    "How many orbs one use creates. The server's value is used for the whole match, "
+                        + "so every player sees the same orbs. They are spaced around the target.",
+                    new AcceptableValueRange<float>(1f, 64f)
+                )
+            );
             MinSpawnRadius = cfg.Bind(
                 Section,
                 "MinSpawnRadius",
