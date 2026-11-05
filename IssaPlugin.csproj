@@ -3,7 +3,7 @@
     <TargetFramework>netstandard2.1</TargetFramework>
     <AssemblyName>IssaPlugin</AssemblyName>
     <Product>My first plugin</Product>
-    <Version>0.0.48</Version>
+    <Version>0.0.49</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
     <RestoreAdditionalProjectSources>

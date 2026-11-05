@@ -52,6 +52,16 @@ namespace IssaPlugin.Items
 
         public static void HandleMoonBegin(MoonBeginMessage msg)
         {
+            // On a remote client a MoonBeginMessage can arrive after the local
+            // hole-transition cleanup already ran (HoleOverview). The server cleaned
+            // up without broadcasting MoonEndMessage, so no end will ever come.
+            if (CourseManager.MatchState == MatchState.HoleOverview)
+            {
+                IssaPluginPlugin.Log.LogInfo(
+                    "[MoonClientLogic] Ignoring stale MoonBeginMessage — hole transition already in progress."
+                );
+                return;
+            }
             BeginSession(msg);
         }
 
