@@ -68,6 +68,8 @@ namespace IssaPlugin.Patches
             IssaPluginPlugin.Log.LogInfo("[Flamethrower] Panic movement patch ready.");
         }
 
+        static bool Prepare() => TargetMb != null;
+
         static MethodBase TargetMethod() => TargetMb;
 
         static void Prefix(object __instance)
