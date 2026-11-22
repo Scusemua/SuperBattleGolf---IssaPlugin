@@ -12,12 +12,12 @@ namespace IssaPlugin.Patches
     /// we suppress the kick at the single point where confirmed cheating results
     /// in a player being disconnected.
     ///
-    /// BNetworkManager.OnPlayerConfirmedCheatingDetected is a private method in
-    /// GameAssembly.dll — Harmony can patch it by name.
+    /// In game v4 the old OnPlayerConfirmedCheatingDetected was split into
+    /// per-source handlers that all funnel into OnConfirmedCheating(int, string).
     /// </summary>
-    [HarmonyPatch(typeof(BNetworkManager), "OnPlayerConfirmedCheatingDetected")]
+    [HarmonyPatch(typeof(BNetworkManager), "OnConfirmedCheating")]
     static class SuppressCheatKickPatch
     {
-        static bool Prefix() => false; // skip the kick entirely
+        static bool Prefix() => false;
     }
 }
