@@ -86,6 +86,8 @@ namespace IssaPlugin.Patches
             _velocityProp = AccessTools.Property(pmType, "Velocity");
         }
 
+        static bool Prepare() => _targetMb != null;
+
         static MethodBase TargetMethod() => _targetMb;
 
         static void Postfix(object __instance)
