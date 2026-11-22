@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
 using IssaPlugin.Items;
@@ -31,11 +32,25 @@ namespace IssaPlugin.Patches
     [HarmonyPatch]
     static class SuperJumboBurgerUpperBodyPatch
     {
-        static MethodBase TargetMethod() =>
-            AccessTools.Method(
-                typeof(PlayerAnimatorIo),
-                "<LocalPlayerUpdateUpperBodyLayerEnabled>g__ShouldUpperBodyLayerBeEnabled|153_0"
-            );
+        private static MethodBase _target;
+
+        static bool Prepare()
+        {
+            _target = AccessTools.GetDeclaredMethods(typeof(PlayerAnimatorIo))
+                .Find(m => m.Name.Contains("ShouldUpperBodyLayerBeEnabled"));
+
+            if (_target == null)
+            {
+                IssaPluginPlugin.Log.LogWarning(
+                    "[SuperJumboBurger] ShouldUpperBodyLayerBeEnabled not found — "
+                        + "upper-body layer patch disabled."
+                );
+            }
+
+            return _target != null;
+        }
+
+        static MethodBase TargetMethod() => _target;
 
         static void Postfix(PlayerAnimatorIo __instance, ref bool __result)
         {
