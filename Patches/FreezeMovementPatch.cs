@@ -60,6 +60,8 @@ namespace IssaPlugin.Patches
             );
         }
 
+        static bool Prepare() => TargetMb != null;
+
         static MethodBase TargetMethod() => TargetMb;
 
         // Capture velocity BEFORE the game's drag runs.
