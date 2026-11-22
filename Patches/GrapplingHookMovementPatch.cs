@@ -42,6 +42,8 @@ namespace IssaPlugin.Patches
             }
         }
 
+        static bool Prepare() => TargetMb != null;
+
         static MethodBase TargetMethod() => TargetMb;
 
         static void Postfix(PlayerMovement __instance)
