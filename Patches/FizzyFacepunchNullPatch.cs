@@ -32,7 +32,7 @@ namespace IssaPlugin.Patches
     [HarmonyPatch]
     static class FizzyFacepunchClientSendPatch
     {
-        static MethodBase TargetMethod()
+        static bool Prepare()
         {
             var type = AccessTools.TypeByName("Mirror.FizzySteam.FizzyFacepunch");
             if (type == null)
@@ -40,18 +40,16 @@ namespace IssaPlugin.Patches
                 IssaPluginPlugin.Log.LogWarning(
                     "[FizzyPatch] Mirror.FizzySteam.FizzyFacepunch not found — patch skipped."
                 );
-                return null;
+                return false;
             }
 
-            var method = AccessTools.Method(type, "ClientSend");
-            if (method == null)
-            {
-                IssaPluginPlugin.Log.LogWarning(
-                    "[FizzyPatch] FizzyFacepunch.ClientSend not found — patch skipped."
-                );
-            }
+            return AccessTools.Method(type, "ClientSend") != null;
+        }
 
-            return method;
+        static MethodBase TargetMethod()
+        {
+            var type = AccessTools.TypeByName("Mirror.FizzySteam.FizzyFacepunch");
+            return AccessTools.Method(type, "ClientSend");
         }
 
         static Exception Finalizer(Exception __exception)
