@@ -37,28 +37,33 @@ namespace IssaPlugin.Patches
     [HarmonyPatch]
     static class SuperJumboBurgerSpeedPatch
     {
-        private const string OnGroundName = "<UpdateMovementSpeed>g__GetTargetSpeedOnGround|321_0";
-        private const string InAirName = "<UpdateMovementSpeed>g__GetTargetSpeedInAir|321_1";
+        private static MethodBase _onGround;
+        private static MethodBase _inAir;
 
-        static IEnumerable<MethodBase> TargetMethods()
+        static bool Prepare()
         {
-            var onGround = AccessTools.Method(typeof(PlayerMovement), OnGroundName);
-            var inAir = AccessTools.Method(typeof(PlayerMovement), InAirName);
+            var methods = AccessTools.GetDeclaredMethods(typeof(PlayerMovement));
+            _onGround = methods.Find(m => m.Name.Contains("GetTargetSpeedOnGround"));
+            _inAir = methods.Find(m => m.Name.Contains("GetTargetSpeedInAir"));
 
-            if (onGround == null || inAir == null)
+            if (_onGround == null || _inAir == null)
             {
                 IssaPluginPlugin.Log.LogWarning(
                     "[SuperJumboBurger] Movement target-speed methods not found "
-                        + $"(onGround={onGround != null}, inAir={inAir != null}) — giant "
+                        + $"(onGround={_onGround != null}, inAir={_inAir != null}) — giant "
                         + "movement speed will not scale with size. A game update likely "
                         + "renamed them."
                 );
+                return false;
             }
 
-            if (onGround != null)
-                yield return onGround;
-            if (inAir != null)
-                yield return inAir;
+            return true;
+        }
+
+        static IEnumerable<MethodBase> TargetMethods()
+        {
+            yield return _onGround;
+            yield return _inAir;
         }
 
         /// Scales the freshly computed target speed. __result is a new value each call,
