@@ -477,7 +477,7 @@ namespace IssaPlugin.Items
                 // bool. Cancellations that DO clear it (respawn, knockout, the base
                 // timer) are caught by the check above and exit before reaching here,
                 // so this cannot fight them.
-                if (!Mathf.Approximately(movement.CharacterScale, scale))
+                if (!Mathf.Approximately(movement.GetEffectiveCharacterScale(), scale))
                     movement.NetworkcharacterScale = scale;
 
                 // Knockout reductions arrive as exact values from
@@ -535,7 +535,7 @@ namespace IssaPlugin.Items
                 yield break;
             }
 
-            yield return Grow(movement, movement.CharacterScale, 1f, growDuration);
+            yield return Grow(movement, movement.GetEffectiveCharacterScale(), 1f, growDuration);
 
             EndSession();
 

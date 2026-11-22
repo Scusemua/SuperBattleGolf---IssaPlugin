@@ -93,7 +93,7 @@ namespace IssaPlugin.Patches
             // Keyed off the swinger's replicated scale, so this resolves identically on
             // whichever client owns the target and applies to remote giants too.
             __result *= SuperJumboBurgerBehaviour.GetFlickPowerMultiplier(
-                movement.CharacterScale
+                movement.GetEffectiveCharacterScale()
             );
         }
     }
@@ -144,7 +144,7 @@ namespace IssaPlugin.Patches
                 return;
 
             float multiplier = SuperJumboBurgerBehaviour.GetFlickHitboxMultiplier(
-                movement.CharacterScale
+                movement.GetEffectiveCharacterScale()
             );
             if (multiplier <= 1f)
                 return;

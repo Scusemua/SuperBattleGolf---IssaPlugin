@@ -426,7 +426,7 @@ namespace IssaPlugin.Items
             if (giant && info.Movement != null)
             {
                 multiplier = SuperJumboBurgerBehaviour.GetFlickHitboxMultiplier(
-                    info.Movement.CharacterScale
+                    info.Movement.GetEffectiveCharacterScale()
                 );
             }
 

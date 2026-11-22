@@ -63,7 +63,7 @@ namespace IssaPlugin.Items
             // instead would draw a full-size burst around a player who has only just
             // started growing — and it would also depend on the config having synced to
             // this client, which the live SyncVar does not.
-            float scale = info.Movement != null ? info.Movement.CharacterScale : 1f;
+            float scale = info.Movement != null ? info.Movement.GetEffectiveCharacterScale() : 1f;
             VfxManager.PlayPooledVfxLocalOnly(
                 VfxType.JumboBurgerGrow,
                 info.ChestBone.position,

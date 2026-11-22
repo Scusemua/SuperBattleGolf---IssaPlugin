@@ -145,7 +145,7 @@ namespace IssaPlugin.Patches
                 _cachedResolved = _cachedMovement != null;
             }
 
-            return _cachedMovement != null ? _cachedMovement.CharacterScale : 1f;
+            return _cachedMovement != null ? _cachedMovement.GetEffectiveCharacterScale() : 1f;
         }
     }
 

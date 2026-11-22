@@ -45,7 +45,7 @@ namespace IssaPlugin.Items
 
         /// <summary>
         /// The PlayerMovement on this bridge's player object, resolved once.
-        /// Used only to read <see cref="PlayerMovement.CharacterScale"/>.
+        /// Used only to read <see cref="PlayerMovement.GetEffectiveCharacterScale"/>.
         /// </summary>
         private PlayerMovement CachedMovement
         {
@@ -71,7 +71,7 @@ namespace IssaPlugin.Items
             get
             {
                 var movement = CachedMovement;
-                return movement == null ? 1f : movement.CharacterScale;
+                return movement == null ? 1f : movement.GetEffectiveCharacterScale();
             }
         }
 

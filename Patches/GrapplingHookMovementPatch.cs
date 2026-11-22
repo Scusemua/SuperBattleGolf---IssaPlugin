@@ -68,10 +68,6 @@ namespace IssaPlugin.Patches
                 PositionProp.SetValue(__instance, correctedPosition);
 
             VelocityProp.SetValue(__instance, velocity);
-
-            var body = __instance.PlayerInfo?.Rigidbody;
-            if (body != null)
-                __instance.NetworksyncedVelocity = body.linearVelocity;
         }
     }
 }

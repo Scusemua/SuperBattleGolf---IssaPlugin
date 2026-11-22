@@ -301,7 +301,7 @@ namespace IssaPlugin.Items
             if (!_showing || _line == null)
                 return;
 
-            float scale = Movement != null ? Movement.CharacterScale : 1f;
+            float scale = Movement != null ? Movement.GetEffectiveCharacterScale() : 1f;
             Vector3 start = transform.position + Vector3.up * (1.2f * scale);
             _line.SetPosition(0, start);
             _line.SetPosition(1, _anchor);
