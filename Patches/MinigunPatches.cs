@@ -37,6 +37,9 @@ namespace IssaPlugin.Patches
     [HarmonyPatch]
     static class MinigunGroundSpeedPatch
     {
+        static bool Prepare() =>
+            MinigunSpeed.FindSpeedMethod("<UpdateMovementSpeed>g__GetTargetSpeedOnGround") != null;
+
         static MethodBase TargetMethod() =>
             MinigunSpeed.FindSpeedMethod("<UpdateMovementSpeed>g__GetTargetSpeedOnGround");
 
@@ -47,6 +50,9 @@ namespace IssaPlugin.Patches
     [HarmonyPatch]
     static class MinigunAirSpeedPatch
     {
+        static bool Prepare() =>
+            MinigunSpeed.FindSpeedMethod("<UpdateMovementSpeed>g__GetTargetSpeedInAir") != null;
+
         static MethodBase TargetMethod() =>
             MinigunSpeed.FindSpeedMethod("<UpdateMovementSpeed>g__GetTargetSpeedInAir");
 
