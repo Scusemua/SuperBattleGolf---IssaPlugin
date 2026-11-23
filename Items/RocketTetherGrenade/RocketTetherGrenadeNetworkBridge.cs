@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using IssaPlugin.Network;
 using Mirror;
 using UnityEngine;
 
@@ -158,6 +159,7 @@ namespace IssaPlugin.Items
                 rb.angularVelocity = spinAxis * 8f;
             }
 
+            ServerAuthoritativeTransform.Apply(grenadeGo, "RocketTetherGrenade");
             NetworkServer.Spawn(grenadeGo);
 
             // AddComponent after Spawn so this behaviour is server-only

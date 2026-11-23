@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using IssaPlugin.Network;
 using Mirror;
 using UnityEngine;
 
@@ -87,6 +88,7 @@ namespace IssaPlugin.Items
                 rb.angularVelocity = spinAxis * 10f;
             }
 
+            ServerAuthoritativeTransform.Apply(grenadeGo, "BlackHoleGrenade");
             NetworkServer.Spawn(grenadeGo);
 
             var playerInfo = inventory.PlayerInfo;

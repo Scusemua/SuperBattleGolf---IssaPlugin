@@ -81,6 +81,7 @@ namespace IssaPlugin.Items
                 yield break;
             }
 
+            ServerAuthoritativeTransform.Apply(bombGo, "Nuke");
             NetworkServer.Spawn(bombGo);
 
             // Warn all other players before the bomb reaches the ground.
