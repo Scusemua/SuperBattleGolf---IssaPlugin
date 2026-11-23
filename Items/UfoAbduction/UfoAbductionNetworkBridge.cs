@@ -35,7 +35,6 @@ namespace IssaPlugin.Items
         private uint _victimNetId;
         private Coroutine _serverCoroutine;
         private Coroutine _serverDropoffTimeoutCoroutine;
-        private int _wielderSlot = -1;
 
         // Ground-level destination; stored for ServerEndSession explosion.
         private Vector3 _serverExplosionPos;
@@ -112,11 +111,8 @@ namespace IssaPlugin.Items
 
             // 2. Validate wielder has the item
             var inventory = GetComponent<PlayerInventory>();
-            int slot =
-                inventory != null
-                    ? ItemRegistry.FindSlotIndex(inventory, ItemRegistry.UfoAbductionItemType)
-                    : -1;
-            if (slot < 0)
+            var equipped = inventory?.GetEffectivelyEquippedItem(true);
+            if (equipped != ItemRegistry.UfoAbductionItemType)
             {
                 IssaPluginPlugin.Log.LogWarning(
                     "[UfoAbduction] Server: wielder does not have UFO Abduction."
@@ -124,8 +120,6 @@ namespace IssaPlugin.Items
                 GlobalSessionLock<UfoAbductionNetworkBridge>.Release();
                 return;
             }
-            _wielderSlot = slot;
-
             // 3. Validate target
             if (!NetworkServer.spawned.TryGetValue(msg.TargetNetId, out var targetIdentity))
             {
@@ -133,7 +127,6 @@ namespace IssaPlugin.Items
                     $"[UfoAbduction] Server: target netId={msg.TargetNetId} not found."
                 );
                 GlobalSessionLock<UfoAbductionNetworkBridge>.Release();
-                _wielderSlot = -1;
                 return;
             }
 
@@ -142,7 +135,6 @@ namespace IssaPlugin.Items
             {
                 IssaPluginPlugin.Log.LogWarning("[UfoAbduction] Server: target is not a player.");
                 GlobalSessionLock<UfoAbductionNetworkBridge>.Release();
-                _wielderSlot = -1;
                 return;
             }
 
@@ -151,7 +143,6 @@ namespace IssaPlugin.Items
             {
                 IssaPluginPlugin.Log.LogWarning("[UfoAbduction] Server: self-targeting rejected.");
                 GlobalSessionLock<UfoAbductionNetworkBridge>.Release();
-                _wielderSlot = -1;
                 return;
             }
 
@@ -162,14 +153,15 @@ namespace IssaPlugin.Items
                     "[UfoAbduction] Server: target has electromagnetic shield — rejecting."
                 );
                 GlobalSessionLock<UfoAbductionNetworkBridge>.Release();
-                _wielderSlot = -1;
                 targetInfo.PlayElectromagnetShieldHitForAllClients(
                     (targetInfo.transform.position - transform.position).normalized
                 );
                 return;
             }
 
-            // 5. Enter waiting-for-dropoff state
+            // 5. All validation passed — consume item and enter waiting-for-dropoff state
+            ItemHelper.ConsumeEquippedItem(inventory);
+
             _serverWaitingForDropoff = true;
             _wielderConn = conn;
             _targetInfo = targetInfo;
@@ -309,7 +301,6 @@ namespace IssaPlugin.Items
 
             _wielderConn = null;
             _targetInfo = null;
-            _wielderSlot = -1;
         }
 
         // ── Server — drop-off selection timeout ───────────────────────────────
@@ -371,19 +362,6 @@ namespace IssaPlugin.Items
                     ForceMode.VelocityChange
                 );
             }
-
-            // Consume item
-            if (_wielderSlot >= 0)
-            {
-                var inventory = GetComponent<PlayerInventory>();
-                if (inventory != null)
-                {
-                    ItemHelper.SetCurrentItemUse(inventory, ItemUseType.Regular);
-                    ItemHelper.DecrementAndRemove(inventory, _wielderSlot);
-                    ItemHelper.SetCurrentItemUse(inventory, ItemUseType.None);
-                }
-            }
-            _wielderSlot = -1;
 
             NetworkServer.SendToAll(
                 new UfoAbductionEndMessage
