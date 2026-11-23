@@ -25,7 +25,6 @@ namespace IssaPlugin.Items
 
         private bool _serverSessionActive;
         private Coroutine _serverCoroutine;
-        private int _wielderSlot = -1;
         private Vector3 _serverImpactPos;
 
         private readonly HashSet<Rigidbody> _seenRigidbodies = new HashSet<Rigidbody>();
@@ -74,11 +73,8 @@ namespace IssaPlugin.Items
             }
 
             var inventory = GetComponent<PlayerInventory>();
-            int slot =
-                inventory != null
-                    ? ItemRegistry.FindSlotIndex(inventory, ItemRegistry.MoonItemType)
-                    : -1;
-            if (slot < 0)
+            var equipped = inventory?.GetEffectivelyEquippedItem(true);
+            if (equipped != ItemRegistry.MoonItemType)
             {
                 IssaPluginPlugin.Log.LogWarning(
                     "[Moon] Server: wielder does not have the Moon item."
@@ -86,17 +82,16 @@ namespace IssaPlugin.Items
                 GlobalSessionLock<MoonNetworkBridge>.Release();
                 return;
             }
-            _wielderSlot = slot;
-
             if (GolfHoleManager.MainHole == null)
             {
                 IssaPluginPlugin.Log.LogWarning(
                     "[Moon] Server: GolfHoleManager.MainHole is null — aborting."
                 );
                 GlobalSessionLock<MoonNetworkBridge>.Release();
-                _wielderSlot = -1;
                 return;
             }
+
+            ItemHelper.ConsumeEquippedItem(inventory);
 
             Vector3 holePos = GolfHoleManager.MainHole.transform.position;
 
@@ -240,17 +235,6 @@ namespace IssaPlugin.Items
                     );
                 }
 
-                if (_wielderSlot >= 0)
-                {
-                    var inventory = GetComponent<PlayerInventory>();
-                    if (inventory != null)
-                    {
-                        ItemHelper.SetCurrentItemUse(inventory, ItemUseType.Regular);
-                        ItemHelper.DecrementAndRemove(inventory, _wielderSlot);
-                        ItemHelper.SetCurrentItemUse(inventory, ItemUseType.None);
-                    }
-                }
-
                 NetworkServer.SendToAll(
                     new MoonEndMessage
                     {
@@ -267,8 +251,6 @@ namespace IssaPlugin.Items
                 StopCoroutine(_serverCoroutine);
                 _serverCoroutine = null;
             }
-
-            _wielderSlot = -1;
         }
 
         // ── Hole cleanup ──────────────────────────────────────────────────────
