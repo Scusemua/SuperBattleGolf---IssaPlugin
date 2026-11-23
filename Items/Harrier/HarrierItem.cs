@@ -191,9 +191,6 @@ namespace IssaPlugin.Items
                 if (info.IsSmokeBombInvisibilityActive)
                     continue;
 
-                if (info.IsElectromagnetShieldActive)
-                    continue;
-
                 result.Add(inv);
             }
 
