@@ -128,6 +128,9 @@ namespace IssaPlugin.Items
             )
                 return false;
 
+            if (player.IsSmokeBombInvisibilityActive)
+                return false;
+
             return true;
         }
     }
