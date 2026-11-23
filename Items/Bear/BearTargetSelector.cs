@@ -167,20 +167,23 @@ namespace IssaPlugin.Items
 
         private static bool IsValidTarget(PlayerInfo p)
         {
-            // Null, destroyed, or disconnected player objects
             if (p == null || p.gameObject == null)
                 return false;
 
-            // Don't chase a player who is already dead / eliminated
             if (!p.gameObject.activeInHierarchy)
                 return false;
 
-            // Optionally ignore players who have already holed out
             if (
                 !ModConfig.Bear.AttackFinishedPlayers.Value
                 && p.AsGolfer != null
                 && p.AsGolfer.MatchResolution == PlayerMatchResolution.Scored
             )
+                return false;
+
+            if (p.IsSmokeBombInvisibilityActive)
+                return false;
+
+            if (p.IsElectromagnetShieldActive)
                 return false;
 
             return true;
