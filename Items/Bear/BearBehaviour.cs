@@ -1110,13 +1110,18 @@ namespace IssaPlugin.Items
             if (target == null || SummonerInfo == null)
                 return;
 
+            if (target.IsElectromagnetShieldActive)
+            {
+                Vector3 hitDir = (target.transform.position - transform.position).normalized;
+                target.PlayElectromagnetShieldHitForAllClients(hitDir);
+                return;
+            }
+
             var hittable = target.GetComponentInChildren<Hittable>();
             if (hittable == null)
                 return;
 
-            // Direction of knockback: away from the bear
             Vector3 knockDir = (target.transform.position - transform.position).normalized;
-            // Add a slight upward angle for the "thrown" feel
             knockDir = (knockDir + Vector3.up * 0.4f).normalized;
 
             Vector3 localHitPoint = hittable.transform.InverseTransformPoint(
