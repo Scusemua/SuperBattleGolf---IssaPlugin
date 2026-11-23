@@ -230,9 +230,34 @@ namespace IssaPlugin.Items
 
         // ── Hole transition cleanup ───────────────────────────────────────────
 
-        public override void ServerHoleCleanup() { }
+        public override void ServerHoleCleanup()
+        {
+            if (!_isBombing)
+                return;
 
-        // Runs on client
-        public override void ClientHoleCleanup() { }
+            StopAllCoroutines();
+            _isBombing = false;
+            PendingBomberHoming = false;
+
+            foreach (var proxy in Object.FindObjectsByType<BomberProxyBehaviour>(
+                FindObjectsSortMode.None
+            ))
+            {
+                if (proxy != null && proxy.gameObject != null)
+                    NetworkServer.Destroy(proxy.gameObject);
+            }
+        }
+
+        public override void ClientHoleCleanup()
+        {
+            StealthBomberItem.CancelTargeting();
+
+            var visual = StealthBomberItem.ActiveBomberVisual;
+            if (visual != null)
+            {
+                Object.Destroy(visual);
+                StealthBomberItem.ActiveBomberVisual = null;
+            }
+        }
     }
 }
