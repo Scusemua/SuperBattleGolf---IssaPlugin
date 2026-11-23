@@ -219,9 +219,18 @@ namespace IssaPlugin.Items
 
         // ── Hole transition cleanup ───────────────────────────────────────────
 
-        public override void ServerHoleCleanup() { }
+        public override void ServerHoleCleanup()
+        {
+            var info = GetComponent<PlayerInfo>();
+            foreach (var sg in Object.FindObjectsByType<StickyGrenadeBehaviour>(
+                FindObjectsSortMode.None
+            ))
+            {
+                if (sg != null && sg.ThrowerInfo == info && sg.gameObject != null)
+                    NetworkServer.Destroy(sg.gameObject);
+            }
+        }
 
-        // Runs on client
         public override void ClientHoleCleanup() { }
     }
 }
