@@ -1,3 +1,4 @@
+using System.Collections;
 using Mirror;
 using UnityEngine;
 
@@ -31,7 +32,17 @@ namespace IssaPlugin.Items
                 IssaPluginPlugin.Log.LogWarning(
                     $"[PlaceableWall] No more active chunks remaining. Cleaning up wall."
                 );
-                Destroy(gameObject, ModConfig.PlaceableWall.DebrisLifetime.Value);
+                StartCoroutine(DelayedNetworkDestroy(ModConfig.PlaceableWall.DebrisLifetime.Value));
+            }
+        }
+
+        private IEnumerator DelayedNetworkDestroy(float delay)
+        {
+            yield return new WaitForSeconds(delay);
+            if (gameObject != null)
+            {
+                OwnerBridge?._activeWalls.Remove(gameObject);
+                NetworkServer.Destroy(gameObject);
             }
         }
     }
