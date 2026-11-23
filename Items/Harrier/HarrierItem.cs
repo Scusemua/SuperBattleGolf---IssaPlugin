@@ -171,10 +171,27 @@ namespace IssaPlugin.Items
 
             foreach (var inv in Object.FindObjectsByType<PlayerInventory>(FindObjectsSortMode.None))
             {
+                var info = inv.PlayerInfo;
+                if (info == null || info.gameObject == null)
+                    continue;
+
+                if (!info.gameObject.activeInHierarchy)
+                    continue;
+
+                if (info.AsSpectator != null && info.AsSpectator.IsInSpectatorMode)
+                    continue;
+
                 if (
                     !friendlyFireEnabled
-                    && inv.PlayerInfo.PlayerId.Guid == throwerInfo.PlayerId.Guid
+                    && throwerInfo != null
+                    && info.PlayerId.Guid == throwerInfo.PlayerId.Guid
                 )
+                    continue;
+
+                if (info.IsSmokeBombInvisibilityActive)
+                    continue;
+
+                if (info.IsElectromagnetShieldActive)
                     continue;
 
                 result.Add(inv);
