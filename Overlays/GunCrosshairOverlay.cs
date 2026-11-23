@@ -91,7 +91,7 @@ namespace IssaPlugin.Overlays
 
                 // Project the inaccuracy half-angle onto screen space using the camera's
                 // vertical FOV so the ring edge matches where bullets can actually land.
-                _camera ??= Camera.main;
+                if (_camera == null) _camera = Camera.main;
                 float vFov = _camera != null ? _camera.fieldOfView : 60f;
                 screenRadius =
                     Screen.height
@@ -142,7 +142,7 @@ namespace IssaPlugin.Overlays
 
         private void FixLookRotationAfterScope()
         {
-            _camera ??= Camera.main;
+            if (_camera == null) _camera = Camera.main;
             if (_camera != null)
                 GameManager
                     .LocalPlayerInfo
@@ -189,7 +189,7 @@ namespace IssaPlugin.Overlays
             var li = GameManager.LocalPlayerInfo;
             if (li?.Movement == null)
                 return;
-            _camera ??= Camera.main;
+            if (_camera == null) _camera = Camera.main;
             var cam = _camera;
             if (cam == null)
                 return;
