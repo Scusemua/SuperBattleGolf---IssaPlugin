@@ -31,7 +31,7 @@ namespace IssaPlugin
             FuelPerUse = cfg.Bind(
                 Section,
                 "FuelPerUse",
-                1f,
+                3f,
                 "Seconds of thrust provided by each fuel canister. When exhausted, one use is consumed."
             );
             ThrustForce = cfg.Bind(

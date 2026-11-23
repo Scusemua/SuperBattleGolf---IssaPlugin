@@ -25,11 +25,15 @@ namespace IssaPlugin.Items
         /// </summary>
         public uint BallOwnerNetId;
         /// <summary>
-        /// Evil Glove: client aim direction. Server pairs this with a
-        /// server-derived origin at the holder's head (client origin is not trusted).
-        /// Glove leaves this at default/zero.
+        /// Evil Glove: client aim direction. Glove leaves this at default/zero.
         /// </summary>
         public Vector3 AimDirection;
+        /// <summary>
+        /// Evil Glove: client camera position used as the aim cone origin.
+        /// Clamped on the server to a max offset from the holder's head to
+        /// prevent teleport exploits. Glove leaves this at default/zero.
+        /// </summary>
+        public Vector3 AimOrigin;
     }
 
     public static class GlovePickupRequestMessageSerialization
@@ -42,6 +46,7 @@ namespace IssaPlugin.Items
             w.WriteInt(msg.EquippedSlotIndex);
             w.WriteUInt(msg.BallOwnerNetId);
             w.WriteVector3(msg.AimDirection);
+            w.WriteVector3(msg.AimOrigin);
         }
 
         public static GlovePickupRequestMessage ReadGlovePickupRequestMessage(NetworkReader r) =>
@@ -50,6 +55,7 @@ namespace IssaPlugin.Items
                 EquippedSlotIndex = r.ReadInt(),
                 BallOwnerNetId = r.ReadUInt(),
                 AimDirection = r.ReadVector3(),
+                AimOrigin = r.ReadVector3(),
             };
     }
 

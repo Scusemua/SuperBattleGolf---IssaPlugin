@@ -43,7 +43,7 @@ namespace IssaPlugin
             TetherDuration = cfg.Bind(
                 Section,
                 "TetherDuration",
-                8f,
+                4f,
                 "Duration in seconds before the tether automatically disconnects."
             );
             SpringForce = cfg.Bind(

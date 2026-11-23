@@ -261,6 +261,7 @@ namespace IssaPlugin.Items
                     EquippedSlotIndex = slot,
                     BallOwnerNetId = targetOwnerNetId,
                     AimDirection = cam.transform.forward,
+                    AimOrigin = cam.transform.position,
                 }
             );
         }
@@ -355,7 +356,8 @@ namespace IssaPlugin.Items
         public void ServerHandlePickupRequest(
             int equippedSlotIndex,
             uint ballOwnerNetId,
-            Vector3 aimDirection
+            Vector3 aimDirection,
+            Vector3 clientAimOrigin
         )
         {
             if (!NetworkServer.active || _serverHolding)
@@ -411,7 +413,7 @@ namespace IssaPlugin.Items
                     return;
                 }
 
-                Vector3 aimOrigin = GetServerAimOrigin(info);
+                Vector3 aimOrigin = GetValidatedAimOrigin(info, clientAimOrigin);
                 float maxAngle = ModConfig.EvilGlove.MaxAimAngle.Value;
                 float maxDist = ModConfig.EvilGlove.MaxTargetDistance.Value;
 
@@ -629,15 +631,28 @@ namespace IssaPlugin.Items
             return true;
         }
 
+        private const float MaxAimOriginOffset = 15f;
+
         /// <summary>
-        /// Server-side aim origin for Evil Glove cone selection — holder head/eyes,
-        /// never a client-supplied point.
+        /// Uses the client-sent camera position when it is within a sane distance
+        /// of the holder's head, otherwise falls back to the head. This avoids
+        /// the camera-vs-head origin mismatch that caused ~half of aim-cone
+        /// checks to fail (the third-person camera orbits several metres away).
         /// </summary>
+        private static Vector3 GetValidatedAimOrigin(PlayerInfo info, Vector3 clientOrigin)
+        {
+            Vector3 head = GetServerAimOrigin(info);
+            if (clientOrigin.sqrMagnitude < 0.0001f)
+                return head;
+            if ((clientOrigin - head).sqrMagnitude > MaxAimOriginOffset * MaxAimOriginOffset)
+                return head;
+            return clientOrigin;
+        }
+
         private static Vector3 GetServerAimOrigin(PlayerInfo info)
         {
             if (info?.HeadBone != null)
                 return info.HeadBone.position;
-            // Fallback: approximate eye height above the player root.
             return info != null
                 ? info.transform.position + Vector3.up * 1.6f
                 : Vector3.zero;
