@@ -159,7 +159,8 @@ namespace IssaPlugin.Patches
             // and CmdPrepareBomberRocket is called.
             if (!nowTargetingBomber && !__result)
             {
-                _cachedBomberMarker ??= GameObject.FindFirstObjectByType<BomberMarker>();
+                if (_cachedBomberMarker == null)
+                    _cachedBomberMarker = GameObject.FindFirstObjectByType<BomberMarker>();
                 if (_cachedBomberMarker != null)
                 {
                     var lot = _cachedBomberMarker.GetComponent<LockOnTarget>();
@@ -185,7 +186,8 @@ namespace IssaPlugin.Patches
             // Mirror the bomber fallback: find the marker directly and inject it.
             if (!nowTargetingGunship)
             {
-                _cachedGunshipMarker ??= GameObject.FindFirstObjectByType<AC130GunshipMarker>();
+                if (_cachedGunshipMarker == null)
+                    _cachedGunshipMarker = GameObject.FindFirstObjectByType<AC130GunshipMarker>();
                 if (_cachedGunshipMarker != null)
                 {
                     var lot = _cachedGunshipMarker.GetComponent<LockOnTarget>();
@@ -210,7 +212,8 @@ namespace IssaPlugin.Patches
             // clients. Find the marker directly and inject it when aimed toward the jet.
             if (!nowTargetingHarrier)
             {
-                _cachedHarrierMarker ??= GameObject.FindFirstObjectByType<HarrierMarker>();
+                if (_cachedHarrierMarker == null)
+                    _cachedHarrierMarker = GameObject.FindFirstObjectByType<HarrierMarker>();
                 if (_cachedHarrierMarker != null)
                 {
                     var lot = _cachedHarrierMarker.GetComponent<LockOnTarget>();
