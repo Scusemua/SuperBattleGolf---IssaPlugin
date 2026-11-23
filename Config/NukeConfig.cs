@@ -37,7 +37,7 @@ namespace IssaPlugin
             DropSpeed = cfg.Bind(
                 Section,
                 "DropSpeed",
-                80f,
+                90f,
                 "Downward speed of the falling nuke bomb in units per second."
             );
             SkyBlastForce = cfg.Bind(
@@ -79,7 +79,7 @@ namespace IssaPlugin
             ExplosionScale = cfg.Bind(
                 "Explosions",
                 "NukeScale",
-                6.0f,
+                3.0f,
                 "Explosion scale multiplier for the Nuke's detonation rocket. Affects blast radius, knockback force, and VFX size."
             );
         }
