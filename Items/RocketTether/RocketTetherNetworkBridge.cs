@@ -30,7 +30,6 @@ namespace IssaPlugin.Items
         private bool _serverSessionActive;
         private uint _targetNetId;
         private Coroutine _serverTimeout;
-        private int _wielderLinkerSlot = -1;
 
         private Vector3 _serverRocketStartPos;
         private float   _serverRocketSpeed;
@@ -99,13 +98,10 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            // ── 2. Validate wielder has Rocket Tether and find which slot ─────
+            // ── 2. Validate wielder has Rocket Tether ──────────────────────
             var inventory = GetComponent<PlayerInventory>();
-            int rocketTetherSlot =
-                inventory != null
-                    ? ItemRegistry.FindSlotIndex(inventory, ItemRegistry.RocketTetherItemType)
-                    : -1;
-            if (rocketTetherSlot < 0)
+            var equipped = inventory?.GetEffectivelyEquippedItem(true);
+            if (equipped != ItemRegistry.RocketTetherItemType)
             {
                 IssaPluginPlugin.Log.LogWarning(
                     "[RocketTether] Server: wielder does not have Rocket Tether."
@@ -114,17 +110,13 @@ namespace IssaPlugin.Items
                 return;
             }
 
-            // ── 3. Cache slot index before any state can change it ────────────
-            _wielderLinkerSlot = rocketTetherSlot;
-
-            // ── 4. Validate target — players only, no self-link ───────────────
+            // ── 3. Validate target — players only, no self-link ───────────────
             if (!NetworkServer.spawned.TryGetValue(msg.TargetNetId, out var targetIdentity))
             {
                 IssaPluginPlugin.Log.LogWarning(
                     $"[RocketTether] Server: target netId={msg.TargetNetId} not found."
                 );
                 GlobalSessionLock<RocketTetherNetworkBridge>.Release(this);
-                _wielderLinkerSlot = -1;
                 return;
             }
 
@@ -133,7 +125,6 @@ namespace IssaPlugin.Items
             {
                 IssaPluginPlugin.Log.LogWarning("[RocketTether] Server: target is not a player.");
                 GlobalSessionLock<RocketTetherNetworkBridge>.Release(this);
-                _wielderLinkerSlot = -1;
                 return;
             }
 
@@ -141,23 +132,24 @@ namespace IssaPlugin.Items
             {
                 IssaPluginPlugin.Log.LogWarning("[RocketTether] Server: self-targeting rejected.");
                 GlobalSessionLock<RocketTetherNetworkBridge>.Release(this);
-                _wielderLinkerSlot = -1;
                 return;
             }
 
-            // ── 4b. Electromagnetic shield check ─────────────────────────────
+            // ── 3b. Electromagnetic shield check ─────────────────────────────
             if (targetInfo.IsElectromagnetShieldActive)
             {
                 IssaPluginPlugin.Log.LogInfo(
                     "[RocketTether] Server: target has electromagnetic shield — rejecting."
                 );
                 GlobalSessionLock<RocketTetherNetworkBridge>.Release(this);
-                _wielderLinkerSlot = -1;
                 targetInfo.PlayElectromagnetShieldHitForAllClients(
                     (targetInfo.transform.position - transform.position).normalized
                 );
                 return;
             }
+
+            // ── 4. All validation passed — consume item ──────────────────────
+            ItemHelper.ConsumeEquippedItem(inventory);
 
             var wielderNetId = GetComponent<NetworkIdentity>().netId;
 
@@ -208,7 +200,6 @@ namespace IssaPlugin.Items
                     rocketStart,
                     0f,
                     0f,
-                    consumeItem: false,
                     broadcastDisconnect: connectedMessageSent
                 );
             }
@@ -278,7 +269,6 @@ namespace IssaPlugin.Items
             Vector3 explosionPos,
             float explosionForce,
             float explosionRadius,
-            bool consumeItem = true,
             bool broadcastDisconnect = true
         )
         {
@@ -307,40 +297,6 @@ namespace IssaPlugin.Items
                         IssaPluginPlugin.Log.LogWarning(
                             $"[RocketTether] Could not stop timeout coroutine: {ex}"
                         );
-                    }
-                }
-
-                // Consume via the slot cached at session start. Always restore the
-                // inventory's use state, even if its slots changed unexpectedly.
-                if (consumeItem && _wielderLinkerSlot >= 0)
-                {
-                    var inventory = GetComponent<PlayerInventory>();
-                    if (inventory != null)
-                    {
-                        try
-                        {
-                            ItemHelper.SetCurrentItemUse(inventory, ItemUseType.Regular);
-                            ItemHelper.DecrementAndRemove(inventory, _wielderLinkerSlot);
-                        }
-                        catch (System.Exception ex)
-                        {
-                            IssaPluginPlugin.Log.LogError(
-                                $"[RocketTether] Item consumption failed during teardown: {ex}"
-                            );
-                        }
-                        finally
-                        {
-                            try
-                            {
-                                ItemHelper.SetCurrentItemUse(inventory, ItemUseType.None);
-                            }
-                            catch (System.Exception ex)
-                            {
-                                IssaPluginPlugin.Log.LogWarning(
-                                    $"[RocketTether] Could not restore inventory use state: {ex}"
-                                );
-                            }
-                        }
                     }
                 }
 
@@ -374,7 +330,6 @@ namespace IssaPlugin.Items
             }
             finally
             {
-                _wielderLinkerSlot = -1;
                 _targetNetId = 0u;
                 GlobalSessionLock<RocketTetherNetworkBridge>.Release(this);
             }
@@ -397,7 +352,7 @@ namespace IssaPlugin.Items
         //  Hole cleanup
         // =====================================================================
 
-        private void ServerEndCurrentSession(bool consumeItem)
+        private void ServerEndCurrentSession()
         {
             float elapsed = Mathf.Max(0f, Time.time - _serverSessionStartTime);
             Vector3 explosionPos =
@@ -405,15 +360,14 @@ namespace IssaPlugin.Items
             ServerEndSession(
                 explosionPos,
                 ModConfig.RocketTether.ExplosionForce.Value,
-                ModConfig.RocketTether.ExplosionRadius.Value,
-                consumeItem
+                ModConfig.RocketTether.ExplosionRadius.Value
             );
         }
 
         public override void ServerHoleCleanup()
         {
             if (_serverSessionActive)
-                ServerEndCurrentSession(consumeItem: true);
+                ServerEndCurrentSession();
 
             if (_serverTimeout != null)
             {
@@ -435,7 +389,7 @@ namespace IssaPlugin.Items
                 );
 
                 if (_serverSessionActive)
-                    ServerEndCurrentSession(consumeItem: false);
+                    ServerEndCurrentSession();
                 else
                     GlobalSessionLock<RocketTetherNetworkBridge>.Release(this);
                 return;
@@ -448,7 +402,7 @@ namespace IssaPlugin.Items
                 IssaPluginPlugin.Log.LogInfo(
                     "[RocketTether] Victim disconnected during session — forcing cleanup."
                 );
-                holder.ServerEndCurrentSession(consumeItem: true);
+                holder.ServerEndCurrentSession();
             }
         }
 
