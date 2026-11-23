@@ -239,10 +239,35 @@ namespace IssaPlugin.Items
 
         // ── Hole transition cleanup ───────────────────────────────────────────
 
-        public override void ServerHoleCleanup() /* Runs on server */
-        { }
+        public override void ServerHoleCleanup()
+        {
+            if (!_serverMissileActive)
+                return;
 
-        public override void ClientHoleCleanup() /* Runs on client */
-        { }
+            StopAllCoroutines();
+
+            if (_activeRocket != null && _activeRocket.gameObject != null)
+            {
+                PredatorMissileItem.ActiveMissileRockets.Remove(_activeRocket);
+                NetworkServer.Destroy(_activeRocket.gameObject);
+            }
+
+            _activeRocket = null;
+            _activeRocketRigidbody = null;
+
+            connectionToClient?.Send(new MissileEndSteeringMessage());
+            _serverMissileActive = false;
+        }
+
+        public override void ClientHoleCleanup()
+        {
+            if (!_isSteering)
+                return;
+
+            StopAllCoroutines();
+            InputManager.Controls.Gameplay.Enable();
+            _isSteering = false;
+            _activeRocket = null;
+        }
     }
 }
