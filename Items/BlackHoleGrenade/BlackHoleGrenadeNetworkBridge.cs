@@ -492,11 +492,14 @@ namespace IssaPlugin.Items
 
         public override void ServerHoleCleanup()
         {
-            // The grenade is a self-managing networked object — it destroys itself
-            // when its timer expires.  No additional server state to clear.
-            IssaPluginPlugin.Log.LogInfo(
-                "[BlackHoleGrenade] ServerHoleCleanup called (no persistent state to clear)."
-            );
+            var info = GetComponent<PlayerInfo>();
+            foreach (var bh in Object.FindObjectsByType<BlackHoleGrenadeBehaviour>(
+                FindObjectsSortMode.None
+            ))
+            {
+                if (bh != null && bh.ThrowerInfo == info && bh.gameObject != null)
+                    NetworkServer.Destroy(bh.gameObject);
+            }
         }
 
         public override void ClientHoleCleanup() { }
