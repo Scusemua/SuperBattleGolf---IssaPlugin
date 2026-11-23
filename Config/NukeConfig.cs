@@ -37,7 +37,7 @@ namespace IssaPlugin
             DropSpeed = cfg.Bind(
                 Section,
                 "DropSpeed",
-                90f,
+                120f,
                 "Downward speed of the falling nuke bomb in units per second."
             );
             SkyBlastForce = cfg.Bind(
