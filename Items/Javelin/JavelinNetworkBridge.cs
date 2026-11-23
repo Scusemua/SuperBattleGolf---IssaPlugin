@@ -60,7 +60,7 @@ namespace IssaPlugin.Items
         public void ClientUpdateLockOn()
         {
             // Raycast from camera through crosshair into terrain/ground.
-            _camera ??= Camera.main;
+            if (_camera == null) _camera = Camera.main;
             var cam = _camera;
             if (cam == null)
             {
