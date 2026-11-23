@@ -502,6 +502,10 @@ namespace IssaPlugin.Items
             }
         }
 
-        public override void ClientHoleCleanup() { }
+        public override void ClientHoleCleanup()
+        {
+            foreach (var netId in new List<uint>(s_activeSuctions.Keys))
+                StopSuction(netId);
+        }
     }
 }
