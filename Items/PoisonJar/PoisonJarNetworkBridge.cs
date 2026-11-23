@@ -286,7 +286,16 @@ namespace IssaPlugin.Items
 
         // ── NetworkBridgeBase ──────────────────────────────────────────────
 
-        public override void ServerHoleCleanup() { }
+        public override void ServerHoleCleanup()
+        {
+            foreach (var jar in Object.FindObjectsByType<PoisonJarBehaviour>(
+                FindObjectsSortMode.None
+            ))
+            {
+                if (jar != null && jar.ThrowerNetId == netId && jar.gameObject != null)
+                    NetworkServer.Destroy(jar.gameObject);
+            }
+        }
 
         public override void ClientHoleCleanup() { }
     }
